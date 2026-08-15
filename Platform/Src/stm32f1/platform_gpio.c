@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/15.
 //
 
-#include "../Inc/platform_gpio.h"
+#include "../../Inc/platform_gpio.h"
 #include <assert.h>
 #include "stm32f1xx_hal.h"
 

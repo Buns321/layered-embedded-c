@@ -34,8 +34,8 @@ enable_language(C ASM)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_def.h
-        Platform/Src/platform_gpio.c
         Platform/Inc/platform_gpio.h)
+        Platform/Src/stm32f1/platform_gpio.c
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
