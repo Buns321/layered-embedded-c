@@ -1,0 +1,29 @@
+# ---- CMake 构建目录 ----
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+Makefile
+
+# ---- 编译/链接产物 ----
+*.o
+*.obj
+*.a
+*.lib
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+*.list
+
+# ---- 编辑器 / IDE ----
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
