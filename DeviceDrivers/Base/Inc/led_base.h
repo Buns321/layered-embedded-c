@@ -27,7 +27,7 @@ typedef struct led_base {
 }led_base_t;
 
 void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops);
-Dev_LED_State Dev_LED_Base_Read_Status(const led_base_t *this);
+Dev_LED_State Dev_LED_Base_ReadStatus(const led_base_t *this);
 void Dev_LED_Base_SetBrightness(led_base_t *this, uint16_t brightness);
 void Dev_LED_Base_ON(led_base_t *this);
 void Dev_LED_Base_OFF(led_base_t *this);
