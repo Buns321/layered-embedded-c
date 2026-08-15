@@ -13,7 +13,7 @@ void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops)
   this->is_on      = DEV_LED_OFF;
 }
 
-Dev_LED_State Dev_LED_Base_Read_Status(const led_base_t *this) {
+Dev_LED_State Dev_LED_Base_ReadStatus(const led_base_t *this) {
   assert(this);
   return this->is_on;
 }
