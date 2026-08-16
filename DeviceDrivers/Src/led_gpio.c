@@ -46,7 +46,7 @@ static const led_ops_t led_ops_gpio = {
   .set_brightness = Dev_LED_GPIO_SetBrightness,
 };
 
-void Dev_LED_GPIO_Init(led_gpio_t *this, const char *name, const Platform_GPIO_Port port, const uint16_t pin, const Platform_GPIO_Pin_State active_level) {
+void Dev_LED_GPIO_Init(led_gpio_t *this, const char *name, Platform_GPIO_Port port, uint16_t pin, Platform_GPIO_Pin_State active_level) {
   assert(this && name);
   Dev_LED_Base_Init(&this->led_base, name, &led_ops_gpio);
   this->port = port;

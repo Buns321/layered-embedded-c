@@ -1,0 +1,22 @@
+//
+// Created by Buns_ on 2026/8/16.
+//
+
+#include "../Inc/system_delay.h"
+#include "stm32f1xx_hal.h"
+
+void System_Delay_Init(void) {
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CYCCNT = 0;  //!< 啥意思，为啥要归零
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
+void System_Delay_Ms(uint32_t ms) {
+  HAL_Delay(ms);
+}
+
+void System_Delay_Us(uint32_t us) {
+  uint32_t startTick = DWT->CYCCNT;
+  uint32_t delayTicks = us * (SystemCoreClock / 1000000);
+  while (DWT->CYCCNT - startTick < delayTicks);
+}

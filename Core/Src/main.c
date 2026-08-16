@@ -24,6 +24,16 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+// Application Layer Includes
+#include "../../App/Inc/app_blink.h"
+
+// DeviceDriver Layer Includes
+#include "../../DeviceDrivers/Inc/led_gpio.h"
+
+// Platform Layer Includes
+#include "../../Platform/Inc/platform_gpio.h"
+#include "../../System/Inc/system_delay.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +54,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+led_gpio_t led;
 
 /* USER CODE END PV */
 
@@ -76,6 +88,9 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+  System_Delay_Init();
+  Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 13, PLATFORM_GPIO_PIN_RESET);
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -97,6 +112,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+   App_Blink(&led.led_base, 500);
 
     /* USER CODE BEGIN 3 */
   }

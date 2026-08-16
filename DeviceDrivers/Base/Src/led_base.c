@@ -17,7 +17,7 @@ Dev_LED_State Dev_LED_Base_ReadStatus(const led_base_t *this) {
   return this->is_on;
 }
 
-void Dev_LED_Base_SetBrightness(led_base_t *this, const uint16_t brightness) {
+void Dev_LED_Base_SetBrightness(led_base_t *this, uint16_t brightness) {
   assert(this && this->ops && this->ops->set_brightness);
   this->ops->set_brightness(this, brightness);
   this->is_on = brightness == 0 ? DEV_LED_OFF : DEV_LED_ON;

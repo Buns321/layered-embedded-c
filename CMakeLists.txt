@@ -39,7 +39,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Src/led_base.c
         DeviceDrivers/Base/Inc/led_base.h
         DeviceDrivers/Src/led_gpio.c
-        DeviceDrivers/Inc/led_gpio.h)
+        DeviceDrivers/Inc/led_gpio.h
+        App/Src/app_blink.c
+        App/Inc/app_blink.h
+        System/Src/system_delay.c
+        System/Inc/system_delay.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
