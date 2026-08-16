@@ -37,7 +37,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Src/stm32f1/platform_gpio.c
         Platform/Inc/platform_gpio.h
         DeviceDrivers/Base/Src/led_base.c
-        DeviceDrivers/Base/Inc/led_base.h)
+        DeviceDrivers/Base/Inc/led_base.h
+        DeviceDrivers/Src/led_gpio.c
+        DeviceDrivers/Inc/led_gpio.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
