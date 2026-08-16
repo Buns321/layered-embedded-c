@@ -55,7 +55,7 @@
 
 /* USER CODE BEGIN PV */
 
-led_gpio_t led;
+static led_gpio_t led;
 
 /* USER CODE END PV */
 
