@@ -12,12 +12,12 @@ typedef enum {
   DEV_LED_ON,
 }Dev_LED_State;
 
-struct led_base;
+typedef struct led_base led_base_t;
 
 typedef struct led_ops {
-  void (*on)(struct led_base *this);
-  void (*off)(struct led_base *this);
-  void (*set_brightness)(struct led_base *this, uint16_t brightness);
+  void (*on)             (led_base_t *this);
+  void (*off)            (led_base_t *this);
+  void (*set_brightness) (led_base_t *this, uint16_t brightness);
 }led_ops_t;
 
 typedef struct led_base {

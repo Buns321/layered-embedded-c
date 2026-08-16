@@ -3,7 +3,6 @@
 //
 
 #include "../Inc/led_base.h"
-
 #include <assert.h>
 
 void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops) {
