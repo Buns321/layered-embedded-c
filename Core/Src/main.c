@@ -89,7 +89,7 @@ int main(void)
   /* USER CODE BEGIN Init */
 
   System_Delay_Init();
-  Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 13, PLATFORM_GPIO_PIN_RESET);
+  Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 1u << 13, PLATFORM_GPIO_PIN_RESET);
 
   /* USER CODE END Init */
 
@@ -113,9 +113,8 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-   App_Blink(&led.led_base, 500);
-
     /* USER CODE BEGIN 3 */
+    App_Blink(&led.led_base, 500);
   }
   /* USER CODE END 3 */
 }
