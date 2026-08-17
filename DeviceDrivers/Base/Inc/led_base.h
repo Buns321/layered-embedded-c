@@ -24,7 +24,7 @@ typedef struct led_base {
   const led_ops_t *ops;
   const char      *name;
   Dev_LED_State   is_on;
-}led_base_t;
+}led_base_t; // TODO 使用 private header 对外隐藏结构体成员
 
 void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops);
 Dev_LED_State Dev_LED_Base_ReadStatus(const led_base_t *this);
