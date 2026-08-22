@@ -12,7 +12,11 @@ void System_Delay_Init(void) {
 }
 
 void System_Delay_Ms(uint32_t ms) {
-  HAL_Delay(ms);
+  #ifdef USE_FREERTOS
+    vTaskDelay(pdMS_TO_TICKS(ms));
+  #else
+    HAL_Delay(ms);
+  #endif
 }
 
 void System_Delay_Us(uint32_t us) {
