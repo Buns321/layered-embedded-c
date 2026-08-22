@@ -22,5 +22,7 @@ void System_Delay_Ms(uint32_t ms) {
 void System_Delay_Us(uint32_t us) {
   uint32_t startTick = DWT->CYCCNT;
   uint32_t delayTicks = us * (SystemCoreClock / 1000000);
-  while (DWT->CYCCNT - startTick < delayTicks);
+  while (DWT->CYCCNT - startTick < delayTicks) {
+    __asm volatile("" ::: "memory"); //!< 防止编译器优化导致执行顺序错误
+  }
 }
