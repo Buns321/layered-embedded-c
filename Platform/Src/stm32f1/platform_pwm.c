@@ -57,10 +57,10 @@ void Platform_PWM_SetCompare(Platform_TIM_Instance tim, Platform_TIM_Channel cha
   __HAL_TIM_SET_COMPARE(g, cha, compare);
 }
 
-void Platform_PWM_SetDuty(Platform_TIM_Instance tim, Platform_TIM_Channel channel, uint16_t max_duty, uint16_t duty) {
+void Platform_PWM_SetDuty(Platform_TIM_Instance tim, Platform_TIM_Channel channel, uint32_t max_duty, uint32_t duty) {
   TIM_HandleTypeDef *g = platform_to_hal_htim(tim);
-  assert(g != NULL);
-  uint16_t arr = __HAL_TIM_GET_AUTORELOAD(g);
-  uint16_t ccr = arr * duty / max_duty;
+  assert(g != NULL && max_duty);
+  uint32_t arr = __HAL_TIM_GET_AUTORELOAD(g);
+  uint32_t ccr = arr * duty / max_duty;
   Platform_PWM_SetCompare(tim, channel, ccr);
 }
