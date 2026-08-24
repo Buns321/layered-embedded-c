@@ -5,11 +5,13 @@
 #include "../Inc/motor_base.h"
 #include <assert.h>
 
-void Dev_Motor_Base_Init(motor_base_t *this, const char *name, const motor_ops_t *ops) {
-  assert(this && name && ops);
+void Dev_Motor_Base_Init(motor_base_t *this, const char *name, const motor_ops_t *ops, int32_t max_speed) {
+  assert(this && name && ops && max_speed > 0);
   this->ops     = ops;
   this->name    = name;
   this->is_motor_enabled = DEV_MOTOR_DISABLE;
+  this->max_speed = max_speed;
+  this->speed = 0;
 }
 
 Dev_Motor_State Dev_Motor_Base_ReadStatus(motor_base_t *this) {
