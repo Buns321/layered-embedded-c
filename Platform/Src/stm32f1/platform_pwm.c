@@ -4,7 +4,7 @@
 
 #include "../../Inc/platform_pwm.h"
 #include <assert.h>
-#include "stm32f1xx_hal_tim.h"
+#include "stm32f1xx_hal.h"
 #include "tim.h"
 
 static TIM_HandleTypeDef *platform_to_hal_htim(Platform_TIM_Instance tim) {
