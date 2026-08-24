@@ -48,8 +48,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_pwm.h
         Platform/Src/stm32f1/platform_tim.c
         Platform/Inc/platform_tim.h
-        DeviceDrivers/Src/motor_pwm.c
-        DeviceDrivers/Inc/motor_pwm.h
+        DeviceDrivers/Src/motor_tb6612.c
+        DeviceDrivers/Inc/motor_tb6612.h
         DeviceDrivers/Base/Src/motor_base.c
         DeviceDrivers/Base/Inc/motor_base.h
         Platform/Src/stm32f1/platform_encoder.c
