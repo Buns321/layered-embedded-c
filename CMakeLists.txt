@@ -43,7 +43,19 @@ add_executable(${CMAKE_PROJECT_NAME}
         App/Src/app_blink.c
         App/Inc/app_blink.h
         System/Src/system_delay.c
-        System/Inc/system_delay.h)
+        System/Inc/system_delay.h
+        Platform/Src/stm32f1/platform_pwm.c
+        Platform/Inc/platform_pwm.h
+        Platform/Src/stm32f1/platform_tim.c
+        Platform/Inc/platform_tim.h
+        DeviceDrivers/Src/motor_pwm.c
+        DeviceDrivers/Inc/motor_pwm.h
+        DeviceDrivers/Base/Src/motor_base.c
+        DeviceDrivers/Base/Inc/motor_base.h
+        Platform/Src/stm32f1/platform_encoder.c
+        Platform/Inc/platform_encoder.h
+        Platform/Src/stm32f1/platform_usart.c
+        Platform/Inc/platform_usart.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
