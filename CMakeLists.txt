@@ -55,7 +55,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Src/stm32f1/platform_encoder.c
         Platform/Inc/platform_encoder.h
         Platform/Src/stm32f1/platform_usart.c
-        Platform/Inc/platform_usart.h)
+        Platform/Inc/platform_usart.h
+        App/Src/app_motor_demo.c
+        App/Inc/app_motor_demo.h
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
