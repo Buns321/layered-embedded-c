@@ -53,6 +53,24 @@ Platform_StatusTypeDef Platform_UART_Receive_IT(Platform_UART_Instance uart, uin
   return hal_to_platform_statustypedef(HAL_UART_Receive_IT(huart, pdata, size));
 }
 
+Platform_StatusTypeDef Platform_UART_Transmit_IT(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
+  assert(huart != NULL);
+  return hal_to_platform_statustypedef(HAL_UART_Transmit_IT(huart, pdata, size));
+}
+
+Platform_StatusTypeDef Platform_UART_Receive_DMA(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
+  assert(huart != NULL);
+  return hal_to_platform_statustypedef(HAL_UART_Receive_DMA(huart, pdata, size));
+}
+
+Platform_StatusTypeDef Platform_UART_Transmit_DMA(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
+  assert(huart != NULL);
+  return hal_to_platform_statustypedef(HAL_UART_Transmit_DMA(huart, pdata, size));
+}
+
 Platform_StatusTypeDef Platform_UART_ClearBuffer(Platform_UART_Instance uart, uint8_t *pdata) {
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);

@@ -5,7 +5,6 @@
 #ifndef LAYERED_EMBEDDED_C_MOTOR_BASE_H
 #define LAYERED_EMBEDDED_C_MOTOR_BASE_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
 typedef enum {

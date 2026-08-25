@@ -70,7 +70,7 @@ static const motor_ops_t motor_ops_tb6612 = {
 };
 
 void Dev_Motor_TB6612_Init(
-  motor_tb6612_t *this,
+  motor_tb6612_t        *this,
   const char            *name,         int32_t              max_speed,
   Platform_TIM_Instance pwm_instance,  Platform_TIM_Channel pwm_channel,
   Platform_GPIO_Port    ain1_port,     uint16_t             ain1_pin,

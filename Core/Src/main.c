@@ -27,12 +27,15 @@
 
 // Application Layer Includes
 #include "../../App/Inc/app_blink.h"
+#include "../../App/Inc/app_motor_demo.h"
 
 // DeviceDriver Layer Includes
 #include "../../DeviceDrivers/Inc/led_gpio.h"
+#include "../../DeviceDrivers/Inc/motor_tb6612.h"
 
 // Platform Layer Includes
 #include "../../Platform/Inc/platform_gpio.h"
+#include "../../Platform/Inc/platform_tim.h"
 #include "../../System/Inc/system_delay.h"
 
 /* USER CODE END Includes */
@@ -57,6 +60,7 @@
 /* USER CODE BEGIN PV */
 
 static led_gpio_t led;
+static motor_tb6612_t motor;
 
 /* USER CODE END PV */
 
@@ -89,9 +93,6 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-  System_Delay_Init();
-  Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 1u << 13, PLATFORM_GPIO_PIN_RESET);
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -107,6 +108,10 @@ int main(void)
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  System_Delay_Init();
+  Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 1u << 13, PLATFORM_GPIO_PIN_RESET);
+  Dev_Motor_TB6612_Init(&motor, "motor", 10000, PLATFORM_TIM_TIM3, PLATFORM_TIM_CHANNEL_1,  PLATFORM_GPIO_PORT_B, 1u << 12, PLATFORM_GPIO_PORT_B, 1u << 13, PLATFORM_GPIO_PORT_B, 1u << 14);
+  Dev_Motor_Base_Enable(&motor.motor_base);
 
   /* USER CODE END 2 */
 
@@ -118,6 +123,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     App_Blink(&led.led_base, 500);
+    App_Motor_Demo(&motor.motor_base);
   }
   /* USER CODE END 3 */
 }
