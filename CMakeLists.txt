@@ -62,6 +62,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/usart_base.h
         DeviceDrivers/Src/usart_pingpong.c
         DeviceDrivers/Inc/usart_pingpong.h
+        Platform/Src/stm32f1/platform_exti.c
+        Platform/Inc/platform_exti.h
 )
 
 # Add STM32CubeMX generated sources
