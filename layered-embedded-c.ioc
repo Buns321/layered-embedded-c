@@ -2,8 +2,10 @@
 CAD.formats=
 CAD.pinconfig=
 CAD.provider=
-FREERTOS.IPParameters=Tasks01
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.FootprintOK=true
+FREERTOS.IPParameters=Tasks01,FootprintOK,Queues01
+FREERTOS.Queues01=LEDQueue,16,LEDQueueMessage*,0,Dynamic,NULL,NULL
+FREERTOS.Tasks01=USARTTask,40,128,StartUSARTTask,As weak,NULL,Dynamic,NULL,NULL;LEDTask,8,128,StartLEDTask,As weak,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false
