@@ -133,8 +133,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    App_Blink(&led.led_base, 500);
-    App_Motor_Demo(&motor.motor_base);
   }
   /* USER CODE END 3 */
 }

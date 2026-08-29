@@ -61,11 +61,6 @@ const osThreadAttr_t LEDTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for LEDQueue */
-osMessageQueueId_t LEDQueueHandle;
-const osMessageQueueAttr_t LEDQueue_attributes = {
-  .name = "LEDQueue"
-};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -98,10 +93,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-
-  /* Create the queue(s) */
-  /* creation of LEDQueue */
-  LEDQueueHandle = osMessageQueueNew (16, sizeof(LEDQueueMessage*), &LEDQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
