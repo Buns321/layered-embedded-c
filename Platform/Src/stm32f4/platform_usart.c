@@ -3,17 +3,20 @@
 //
 
 #include "../../Inc/platform_usart.h"
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 #include "usart.h"
 #include <assert.h>
 
-static platform_uart_callbacks_t uart_cb[3] = {{0}}; // 置零所有结构体成员
+static platform_uart_callbacks_t uart_cb[TOTAL_USART_NUM] = {{0}}; // 置零所有结构体成员
 
 static UART_HandleTypeDef *platform_to_hal_uart(Platform_UART_Instance uart) {
   switch (uart) {
-    // case PLATFORM_UART_1: return &huart1
-    case PLATFORM_USART_2: return &huart2;
-    // case PLATFORM_UART_3: return &huart3
+    case PLATFORM_USART_1: return &huart1;
+    // case PLATFORM_UART_2: return &huart2;
+    // case PLATFORM_UART_3: return &huart3;
+    // case PLATFORM_UART_4: return &huart4;
+    // case PLATFORM_UART_5: return &huart5;
+    // case PLATFORM_UART_6: return &huart6;
     default:              assert(0); return NULL;
   }
 }
@@ -29,8 +32,8 @@ static Platform_StatusTypeDef hal_to_platform_statustypedef(HAL_StatusTypeDef st
 }
 
 static Platform_UART_Instance hal_to_platform_huart(UART_HandleTypeDef *huart) {
-  // if (huart == &huart1) return PLATFORM_UART_1;
-  if (huart == &huart2) return PLATFORM_USART_2;
+  if (huart == &huart1) return PLATFORM_USART_1;
+  // if (huart == &huart2) return PLATFORM_UART_2;
   // if (huart == &huart3) return PLATFORM_UART_3;
   assert(0);        return 0;
 }

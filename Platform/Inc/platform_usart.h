@@ -8,10 +8,15 @@
 #include "platform_def.h"
 #include <stdint.h>
 
+#define TOTAL_USART_NUM 6
+
 typedef enum {
-  PLATFORM_UART_1 = 0U,
-  PLATFORM_UART_2,
-  PLATFORM_UART_3,
+  PLATFORM_USART_1 = 0U,
+  PLATFORM_USART_2,
+  PLATFORM_USART_3,
+  PLATFORM_UART_4,
+  PLATFORM_UART_5,
+  PLATFORM_USART_6,
 } Platform_UART_Instance;
 
 typedef void (*Platform_UART_Callback)(Platform_UART_Instance uart, void *context);

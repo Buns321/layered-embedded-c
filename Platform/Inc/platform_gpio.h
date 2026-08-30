@@ -14,8 +14,6 @@ typedef enum {
   PLATFORM_GPIO_PORT_C,
   PLATFORM_GPIO_PORT_D,
   PLATFORM_GPIO_PORT_E,
-  PLATFORM_GPIO_PORT_F,
-  PLATFORM_GPIO_PORT_G,
 } Platform_GPIO_Port;
 
 typedef enum {
