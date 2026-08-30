@@ -35,14 +35,13 @@ void StartLEDTask(void *argument) {
   for (;;) {
   led_rtos_demo_t *self = (led_rtos_demo_t*) argument;
   led_command_t cmd = 0;
-  if(osMessageQueueGet(self->led_queue, &cmd, NULL, osWaitForever) == osOK) {
+  if(osMessageQueueGet(self->led_queue, &cmd, NULL, osWaitForever) == osOK)
     switch (cmd) {
       case LED_CMD_ON:     Dev_LED_Base_ON(&self->led_gpio.led_base);     break;
       case LED_CMD_OFF:    Dev_LED_Base_OFF(&self->led_gpio.led_base);    break;
       case LED_CMD_TOGGLE: Dev_LED_Base_Toggle(&self->led_gpio.led_base); break;
       default:             break;
     }
-  }
   }
 }
 
