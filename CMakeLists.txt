@@ -32,45 +32,7 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 enable_language(C ASM)
 
 # Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME}
-        Platform/Inc/platform_def.h
-        Platform/Src/stm32f1/platform_gpio.c
-        Platform/Inc/platform_gpio.h
-        DeviceDrivers/Base/Src/led_base.c
-        DeviceDrivers/Base/Inc/led_base.h
-        DeviceDrivers/Src/led_gpio.c
-        DeviceDrivers/Inc/led_gpio.h
-        App/Src/app_blink.c
-        App/Inc/app_blink.h
-        System/Src/system_delay.c
-        System/Inc/system_delay.h
-        Platform/Src/stm32f1/platform_pwm.c
-        Platform/Inc/platform_pwm.h
-        Platform/Src/stm32f1/platform_tim.c
-        Platform/Inc/platform_tim.h
-        DeviceDrivers/Src/motor_tb6612.c
-        DeviceDrivers/Inc/motor_tb6612.h
-        DeviceDrivers/Base/Src/motor_base.c
-        DeviceDrivers/Base/Inc/motor_base.h
-        Platform/Src/stm32f1/platform_encoder.c
-        Platform/Inc/platform_encoder.h
-        Platform/Src/stm32f1/platform_usart.c
-        Platform/Inc/platform_usart.h
-        App/Src/app_motor_demo.c
-        App/Inc/app_motor_demo.h
-        DeviceDrivers/Base/Src/usart_base.c
-        DeviceDrivers/Base/Inc/usart_base.h
-        DeviceDrivers/Src/usart_pingpong.c
-        DeviceDrivers/Inc/usart_pingpong.h
-        Platform/Src/stm32f1/platform_exti.c
-        Platform/Inc/platform_exti.h
-        App/Src/app_rtosdemo.c
-        App/Inc/app_rtosdemo.h
-        DeviceDrivers/Base/Src/encoder_base.c
-        DeviceDrivers/Base/Inc/encoder_base.h
-        DeviceDrivers/Src/encoder_tim.c
-        DeviceDrivers/Inc/encoder_tim.h
-)
+add_executable(${CMAKE_PROJECT_NAME})
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
