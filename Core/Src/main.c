@@ -112,8 +112,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   System_Delay_Init();
   Dev_LED_GPIO_Init(&led, "led", PLATFORM_GPIO_PORT_C, 1u << 13, PLATFORM_GPIO_PIN_RESET);
-  Dev_Motor_TB6612_Init(&motor, "motor", 10000, PLATFORM_TIM_TIM3, PLATFORM_TIM_CHANNEL_1,  PLATFORM_GPIO_PORT_B, 1u << 12, PLATFORM_GPIO_PORT_B, 1u << 13, PLATFORM_GPIO_PORT_B, 1u << 14);
-  Dev_Motor_Base_Enable(&motor.motor_base);
+  // Dev_Motor_TB6612_Init(&motor, "motor", 10000, PLATFORM_TIM_TIM3, PLATFORM_TIM_CHANNEL_1,  PLATFORM_GPIO_PORT_B, 1u << 12, PLATFORM_GPIO_PORT_B, 1u << 13, PLATFORM_GPIO_PORT_B, 1u << 14);
+  // Dev_Motor_Base_Enable(&motor.motor_base);
 
   /* USER CODE END 2 */
 
@@ -133,6 +133,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // App_Blink(&led.led_base, 500);
+    // App_Motor_Demo(&motor.motor_base);
   }
   /* USER CODE END 3 */
 }

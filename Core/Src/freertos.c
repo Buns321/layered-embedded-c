@@ -61,6 +61,13 @@ const osThreadAttr_t LEDTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for TestTask */
+osThreadId_t TestTaskHandle;
+const osThreadAttr_t TestTask_attributes = {
+  .name = "TestTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -69,6 +76,7 @@ const osThreadAttr_t LEDTask_attributes = {
 
 void StartUSARTTask(void *argument);
 void StartLEDTask(void *argument);
+void StartTestTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -104,6 +112,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of LEDTask */
   LEDTaskHandle = osThreadNew(StartLEDTask, NULL, &LEDTask_attributes);
+
+  /* creation of TestTask */
+  TestTaskHandle = osThreadNew(StartTestTask, NULL, &TestTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -149,6 +160,24 @@ __weak void StartLEDTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartLEDTask */
+}
+
+/* USER CODE BEGIN Header_StartTestTask */
+/**
+* @brief Function implementing the TestTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTestTask */
+__weak void StartTestTask(void *argument)
+{
+  /* USER CODE BEGIN StartTestTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartTestTask */
 }
 
 /* Private application code --------------------------------------------------*/

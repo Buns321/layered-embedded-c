@@ -66,6 +66,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_exti.h
         App/Src/app_rtosdemo.c
         App/Inc/app_rtosdemo.h
+        DeviceDrivers/Base/Src/encoder_base.c
+        DeviceDrivers/Base/Inc/encoder_base.h
+        DeviceDrivers/Src/encoder_tim.c
+        DeviceDrivers/Inc/encoder_tim.h
 )
 
 # Add STM32CubeMX generated sources
