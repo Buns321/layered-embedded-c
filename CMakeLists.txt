@@ -64,12 +64,22 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Inc/usart_pingpong.h
         Platform/Src/stm32f4/platform_exti.c
         Platform/Inc/platform_exti.h
-        App/Src/app_rtosdemo.c
-        App/Inc/app_rtosdemo.h
         DeviceDrivers/Base/Src/encoder_base.c
         DeviceDrivers/Base/Inc/encoder_base.h
         DeviceDrivers/Src/encoder_tim.c
         DeviceDrivers/Inc/encoder_tim.h
+        Algorithm/Src/algorithm_pid_HongxiWong.c
+        Algorithm/Inc/algorithm_pid_HongxiWong.h
+        RTOS/Src/rtos_shared.c
+        RTOS/Inc/rtos_shared.h
+        RTOS/Src/rtos_monitor.c
+        RTOS/Inc/rtos_monitor.h
+        RTOS/Src/rtos_control.c
+        RTOS/Inc/rtos_control.h
+        RTOS/Src/rtos_usart.c
+        RTOS/Inc/rtos_usart.h
+        RTOS/Src/rtos_imu.c
+        RTOS/Inc/rtos_imu.h
 )
 
 # Add STM32CubeMX generated sources
