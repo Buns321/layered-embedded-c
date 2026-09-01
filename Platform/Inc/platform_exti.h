@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#define TOTAL_EXTI_NUM 16
+
 typedef void (*Platform_EXTI_Callback)(uint16_t GPIO_Pin, void* context);
 
 typedef struct {

@@ -34,7 +34,7 @@ enable_language(C ASM)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_def.h
-        Platform/Src/stm32f1/platform_gpio.c
+        Platform/Src/stm32f4/platform_gpio.c
         Platform/Inc/platform_gpio.h
         DeviceDrivers/Base/Src/led_base.c
         DeviceDrivers/Base/Inc/led_base.h
@@ -44,17 +44,17 @@ add_executable(${CMAKE_PROJECT_NAME}
         App/Inc/app_blink.h
         System/Src/system_delay.c
         System/Inc/system_delay.h
-        Platform/Src/stm32f1/platform_pwm.c
+        Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
-        Platform/Src/stm32f1/platform_tim.c
+        Platform/Src/stm32f4/platform_tim.c
         Platform/Inc/platform_tim.h
         DeviceDrivers/Src/motor_tb6612.c
         DeviceDrivers/Inc/motor_tb6612.h
         DeviceDrivers/Base/Src/motor_base.c
         DeviceDrivers/Base/Inc/motor_base.h
-        Platform/Src/stm32f1/platform_encoder.c
+        Platform/Src/stm32f4/platform_encoder.c
         Platform/Inc/platform_encoder.h
-        Platform/Src/stm32f1/platform_usart.c
+        Platform/Src/stm32f4/platform_usart.c
         Platform/Inc/platform_usart.h
         App/Src/app_motor_demo.c
         App/Inc/app_motor_demo.h
@@ -62,14 +62,30 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/usart_base.h
         DeviceDrivers/Src/usart_pingpong.c
         DeviceDrivers/Inc/usart_pingpong.h
-        Platform/Src/stm32f1/platform_exti.c
+        Platform/Src/stm32f4/platform_exti.c
         Platform/Inc/platform_exti.h
-        App/Src/app_rtosdemo.c
-        App/Inc/app_rtosdemo.h
         DeviceDrivers/Base/Src/encoder_base.c
         DeviceDrivers/Base/Inc/encoder_base.h
         DeviceDrivers/Src/encoder_tim.c
         DeviceDrivers/Inc/encoder_tim.h
+        Algorithm/Src/algorithm_pid_HongxiWong.c
+        Algorithm/Inc/algorithm_pid_HongxiWong.h
+        RTOS/Src/rtos_shared.c
+        RTOS/Inc/rtos_shared.h
+        RTOS/Src/rtos_monitor.c
+        RTOS/Inc/rtos_monitor.h
+        RTOS/Src/rtos_control.c
+        RTOS/Inc/rtos_control.h
+        RTOS/Src/rtos_usart.c
+        RTOS/Inc/rtos_usart.h
+        RTOS/Src/rtos_imu.c
+        RTOS/Inc/rtos_imu.h
+        Algorithm/Src/algorithm_omni.c
+        Algorithm/Inc/algorithm_omni.h
+        DeviceDrivers/Base/Src/imu_base.c
+        DeviceDrivers/Base/Inc/imu_base.h
+        DeviceDrivers/Src/imu_wht101_usart.c
+        DeviceDrivers/Inc/imu_wht101_usart.h
 )
 
 # Add STM32CubeMX generated sources

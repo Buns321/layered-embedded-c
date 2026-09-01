@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -57,12 +57,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define TB6612_AIN1_Pin GPIO_PIN_12
-#define TB6612_AIN1_GPIO_Port GPIOB
-#define TB6612_AIN2_Pin GPIO_PIN_13
-#define TB6612_AIN2_GPIO_Port GPIOB
-#define TB6612_STBY_Pin GPIO_PIN_14
-#define TB6612_STBY_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

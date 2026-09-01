@@ -3,7 +3,7 @@
 //
 
 #include "../Inc/system_delay.h"
-#include "stm32f1xx_hal.h"
+#include "stm32f4xx_hal.h"
 
 void System_Delay_Init(void) {
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;

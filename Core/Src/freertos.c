@@ -47,26 +47,26 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for USARTTask */
-osThreadId_t USARTTaskHandle;
-const osThreadAttr_t USARTTask_attributes = {
-  .name = "USARTTask",
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for LEDTask */
-osThreadId_t LEDTaskHandle;
-const osThreadAttr_t LEDTask_attributes = {
-  .name = "LEDTask",
-  .stack_size = 128 * 4,
+/* Definitions for MotorTask */
+osThreadId_t MotorTaskHandle;
+const osThreadAttr_t MotorTask_attributes = {
+  .name = "MotorTask",
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for TestTask */
-osThreadId_t TestTaskHandle;
-const osThreadAttr_t TestTask_attributes = {
-  .name = "TestTask",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+/* Definitions for ControlTask */
+osThreadId_t ControlTaskHandle;
+const osThreadAttr_t ControlTask_attributes = {
+  .name = "ControlTask",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,9 +74,9 @@ const osThreadAttr_t TestTask_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartUSARTTask(void *argument);
-void StartLEDTask(void *argument);
-void StartTestTask(void *argument);
+void StartDefaultTask(void *argument);
+void StartMonitor_Task(void *argument);
+void StartControlTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -107,14 +107,14 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of USARTTask */
-  USARTTaskHandle = osThreadNew(StartUSARTTask, NULL, &USARTTask_attributes);
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of LEDTask */
-  LEDTaskHandle = osThreadNew(StartLEDTask, NULL, &LEDTask_attributes);
+  /* creation of MotorTask */
+  MotorTaskHandle = osThreadNew(StartMonitor_Task, NULL, &MotorTask_attributes);
 
-  /* creation of TestTask */
-  TestTaskHandle = osThreadNew(StartTestTask, NULL, &TestTask_attributes);
+  /* creation of ControlTask */
+  ControlTaskHandle = osThreadNew(StartControlTask, NULL, &ControlTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -126,58 +126,58 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartUSARTTask */
+/* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the USARTTask thread.
+  * @brief  Function implementing the defaultTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartUSARTTask */
-__weak void StartUSARTTask(void *argument)
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void *argument)
 {
-  /* USER CODE BEGIN StartUSARTTask */
+  /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartUSARTTask */
+  /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartLEDTask */
+/* USER CODE BEGIN Header_StartMonitor_Task */
 /**
-* @brief Function implementing the LEDTask thread.
+* @brief Function implementing the MotorTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartLEDTask */
-__weak void StartLEDTask(void *argument)
+/* USER CODE END Header_StartMonitor_Task */
+__weak void StartMonitor_Task(void *argument)
 {
-  /* USER CODE BEGIN StartLEDTask */
+  /* USER CODE BEGIN StartMonitor_Task */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartLEDTask */
+  /* USER CODE END StartMonitor_Task */
 }
 
-/* USER CODE BEGIN Header_StartTestTask */
+/* USER CODE BEGIN Header_StartControlTask */
 /**
-* @brief Function implementing the TestTask thread.
+* @brief Function implementing the ControlTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTestTask */
-__weak void StartTestTask(void *argument)
+/* USER CODE END Header_StartControlTask */
+__weak void StartControlTask(void *argument)
 {
-  /* USER CODE BEGIN StartTestTask */
+  /* USER CODE BEGIN StartControlTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTestTask */
+  /* USER CODE END StartControlTask */
 }
 
 /* Private application code --------------------------------------------------*/
