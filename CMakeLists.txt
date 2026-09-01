@@ -80,6 +80,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         RTOS/Inc/rtos_usart.h
         RTOS/Src/rtos_imu.c
         RTOS/Inc/rtos_imu.h
+        Algorithm/Src/algorithm_omni.c
+        Algorithm/Inc/algorithm_omni.h
+        DeviceDrivers/Base/Src/imu_base.c
+        DeviceDrivers/Base/Inc/imu_base.h
+        DeviceDrivers/Src/imu_wht101_usart.c
+        DeviceDrivers/Inc/imu_wht101_usart.h
 )
 
 # Add STM32CubeMX generated sources
