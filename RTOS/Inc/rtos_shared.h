@@ -9,6 +9,8 @@
 #include "../../DeviceDrivers/Inc/motor_tb6612.h"
 #include "../../DeviceDrivers/Inc/encoder_tim.h"
 #include "../../DeviceDrivers/Inc/led_gpio.h"
+#include "../../DeviceDrivers/Inc/usart_controller.h"
+#include "cmsis_os2.h"
 
 extern PID_TypeDef       g_wheel_pid[4];
 extern motor_tb6612_t    g_motor[4];

@@ -86,6 +86,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/imu_base.h
         DeviceDrivers/Src/imu_wht101_usart.c
         DeviceDrivers/Inc/imu_wht101_usart.h
+        DeviceDrivers/Src/usart_controller.c
+        DeviceDrivers/Inc/usart_controller.h
 )
 
 # Add STM32CubeMX generated sources
