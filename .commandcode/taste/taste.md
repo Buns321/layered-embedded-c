@@ -1,0 +1,3 @@
+- Communicates in Chinese and expects assistant replies in Chinese. Confidence: 0.8
+- Prefers the assistant NOT to directly modify project files; instead wants guidance-style answers (approach, thought process, steps, key code examples) so the user writes the code themselves. Confidence: 0.9
+- Before giving guidance, wants the assistant to sync with the actual current state of the code — e.g., checking the user's local uncommitted git changes (status/diff) so advice matches reality rather than stale assumptions. Confidence: 0.5

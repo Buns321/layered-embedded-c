@@ -30,10 +30,10 @@ typedef struct {
   uint8_t frame[BT_FRAME_LEN];
   uint8_t frame_idx;
   volatile usart_controller_cmd_t cmd;   /* 解析出的最新运动指令 */
-} usart_controler_t;
+} usart_controller_t;
 
-void Dev_USART_Controller_Init(usart_controler_t *this, Platform_UART_Instance uart);
-void Dev_USART_Controller_FeedByte(usart_controler_t *this, uint8_t byte);
-usart_controller_cmd_t Dev_USART_Controller_GetCmd(usart_controler_t *this);
+void Dev_USART_Controller_Init(usart_controller_t *this, Platform_UART_Instance uart);
+void Dev_USART_Controller_FeedByte(usart_controller_t *this, uint8_t byte);
+usart_controller_cmd_t Dev_USART_Controller_GetCmd(usart_controller_t *this);
 
 #endif //LAYERED_EMBEDDED_C_USART_CONTROLLER_H

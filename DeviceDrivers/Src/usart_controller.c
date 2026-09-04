@@ -27,7 +27,7 @@ static int32_t bt_map_adc(int32_t adc) {
 
 /* ======================= 帧解析 ======================= */
 /* 校验 + 解析一帧 → 映射成运动指令 */
-static void bt_parse_frame(usart_controler_t *self) {
+static void bt_parse_frame(usart_controller_t *self) {
   /* 和校验：前 8 字节之和的低 8 位 == 第 9 字节 */
   uint8_t sum = 0;
   for (uint8_t i = 0; i < BT_FRAME_LEN - 1; i++) sum += self->frame[i];
@@ -45,7 +45,7 @@ static void bt_parse_frame(usart_controler_t *self) {
 }
 
 /* ======================= 驱动接口 ======================= */
-void Dev_USART_Controller_Init(usart_controler_t *this, Platform_UART_Instance uart) {
+void Dev_USART_Controller_Init(usart_controller_t *this, Platform_UART_Instance uart) {
   this->uart      = uart;
   this->state     = BT_STATE_SYNC_1;
   this->frame_idx = 0;
@@ -54,7 +54,7 @@ void Dev_USART_Controller_Init(usart_controler_t *this, Platform_UART_Instance u
   this->cmd.omega = 0;
 }
 
-void Dev_USART_Controller_FeedByte(usart_controler_t *this, uint8_t byte) {
+void Dev_USART_Controller_FeedByte(usart_controller_t *this, uint8_t byte) {
   switch (this->state) {
     case BT_STATE_SYNC_1:
       if (byte == BT_FRAME_HEADER_1) {
@@ -92,6 +92,6 @@ void Dev_USART_Controller_FeedByte(usart_controler_t *this, uint8_t byte) {
   }
 }
 
-usart_controller_cmd_t Dev_USART_Controller_GetCmd(usart_controler_t *this) {
+usart_controller_cmd_t Dev_USART_Controller_GetCmd(usart_controller_t *this) {
   return this->cmd;
 }

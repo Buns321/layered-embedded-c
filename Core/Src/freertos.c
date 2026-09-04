@@ -54,10 +54,10 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for MotorTask */
-osThreadId_t MotorTaskHandle;
-const osThreadAttr_t MotorTask_attributes = {
-  .name = "MotorTask",
+/* Definitions for MonitorTask */
+osThreadId_t MonitorTaskHandle;
+const osThreadAttr_t MonitorTask_attributes = {
+  .name = "MonitorTask",
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
@@ -68,6 +68,13 @@ const osThreadAttr_t ControlTask_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
+/* Definitions for USARTTask */
+osThreadId_t USARTTaskHandle;
+const osThreadAttr_t USARTTask_attributes = {
+  .name = "USARTTask",
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -77,6 +84,7 @@ const osThreadAttr_t ControlTask_attributes = {
 void StartDefaultTask(void *argument);
 void StartMonitor_Task(void *argument);
 void StartControlTask(void *argument);
+void StartUSARTTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -110,11 +118,14 @@ void MX_FREERTOS_Init(void) {
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of MotorTask */
-  MotorTaskHandle = osThreadNew(StartMonitor_Task, NULL, &MotorTask_attributes);
+  /* creation of MonitorTask */
+  MonitorTaskHandle = osThreadNew(StartMonitor_Task, NULL, &MonitorTask_attributes);
 
   /* creation of ControlTask */
   ControlTaskHandle = osThreadNew(StartControlTask, NULL, &ControlTask_attributes);
+
+  /* creation of USARTTask */
+  USARTTaskHandle = osThreadNew(StartUSARTTask, NULL, &USARTTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -178,6 +189,24 @@ __weak void StartControlTask(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartControlTask */
+}
+
+/* USER CODE BEGIN Header_StartUSARTTask */
+/**
+* @brief Function implementing the USARTTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUSARTTask */
+__weak void StartUSARTTask(void *argument)
+{
+  /* USER CODE BEGIN StartUSARTTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartUSARTTask */
 }
 
 /* Private application code --------------------------------------------------*/

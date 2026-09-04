@@ -1,8 +1,0 @@
-//
-// Created by Buns_ on 2026/8/31.
-//
-
-#ifndef LAYERED_EMBEDDED_C_RTOS_IMU_H
-#define LAYERED_EMBEDDED_C_RTOS_IMU_H
-
-#endif //LAYERED_EMBEDDED_C_RTOS_IMU_H
