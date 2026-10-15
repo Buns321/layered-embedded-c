@@ -85,6 +85,7 @@ void Platform_UART_RegisterCallbacks(Platform_UART_Instance uart, const platform
   uart_cb[uart] = *cb;
 }
 
+/* 重写 HAL 中断回调函数，在 HAL 回调中调用 uart_cb 中注册的中断回调函数 */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   assert(huart);
   Platform_UART_Instance uart = hal_to_platform_huart(huart);
@@ -120,6 +121,7 @@ void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart) {
   Platform_UART_Instance uart = hal_to_platform_huart(huart);
   if (uart_cb[uart].abort_cplt_cb) uart_cb[uart].abort_cplt_cb(uart, uart_cb[uart].context);
 }
+
 void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart) {
   assert(huart);
   Platform_UART_Instance uart = hal_to_platform_huart(huart);
