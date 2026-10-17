@@ -19,7 +19,7 @@
 
 #include "stdint.h"
 
-#define ABS(x) (((x) > 0) ? (x) : -(x))
+#include "../../System/Inc/system_abs.h"
 
 typedef enum pid_Improvement_e
 {

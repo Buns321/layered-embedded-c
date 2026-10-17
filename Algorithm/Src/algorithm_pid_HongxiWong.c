@@ -86,7 +86,7 @@ float PID_Calculate(PID_TypeDef *pid, float measure, float target)
     pid->Target = target;
     pid->Err = pid->Target - pid->Measure;
 
-    if (ABS(pid->Err) > pid->DeadBand)
+    if (SYS_ABS(pid->Err) > pid->DeadBand)
     {
         pid->Pout = pid->Kp * pid->Err;
         pid->ITerm = pid->Ki * pid->Err;
@@ -141,10 +141,10 @@ static void f_Changing_Integral_Rate(PID_TypeDef *pid)
     if (pid->Err * pid->Iout > 0)
     {
         //Integral still increasing
-        if (ABS(pid->Err) <= pid->ScalarB)
+        if (SYS_ABS(pid->Err) <= pid->ScalarB)
             return; //Full integral
-        if (ABS(pid->Err) <= (pid->ScalarA + pid->ScalarB))
-            pid->ITerm *= (pid->ScalarA - ABS(pid->Err) + pid->ScalarB) / pid->ScalarA;
+        if (SYS_ABS(pid->Err) <= (pid->ScalarA + pid->ScalarB))
+            pid->ITerm *= (pid->ScalarA - SYS_ABS(pid->Err) + pid->ScalarB) / pid->ScalarA;
         else
             pid->ITerm = 0;
     }
@@ -155,7 +155,7 @@ static void f_Integral_Limit(PID_TypeDef *pid)
     float temp_Output, temp_Iout;
     temp_Iout = pid->Iout + pid->ITerm;
     temp_Output = pid->Pout + pid->Iout + pid->Dout;
-    if (ABS(temp_Output) > pid->MaxOut)
+    if (SYS_ABS(temp_Output) > pid->MaxOut)
     {
         if (pid->Err * pid->Iout > 0)
         {
@@ -226,7 +226,7 @@ static void f_PID_ErrorHandle(PID_TypeDef *pid)
     if (pid->Output < pid->MaxOut * 0.01f)
         return;
 
-    if ((ABS(pid->Target - pid->Measure) / pid->Target) > 0.9f)
+    if ((SYS_ABS(pid->Target - pid->Measure) / pid->Target) > 0.9f)
     {
         //Motor blocked counting
         pid->ERRORHandler.ERRORCount++;

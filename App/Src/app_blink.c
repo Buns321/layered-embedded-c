@@ -9,5 +9,5 @@
 void App_Blink(led_base_t *this, uint32_t delay_ms) {
   assert(this);
   Dev_LED_Base_Toggle(this);
-  System_Delay_Ms(delay_ms);
+  Sys_Delay_Ms(delay_ms);
 }

@@ -111,16 +111,16 @@ void Dev_IMU_WHT101_USART_FeedByte(imu_wht101_usart_t *this, uint8_t byte) {
 
 void Dev_IMU_WHT101_USART_SetZero(imu_wht101_usart_t *this) {
   imu_wht101_write_reg(this, IMU_WHT101_REG_KEY,     IMU_WHT101_KEY_UNLOCK);
-  System_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
+  Sys_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
   imu_wht101_write_reg(this, IMU_WHT101_REG_CALIYAW, IMU_WHT101_CALIYAW_ZERO);
-  System_Delay_Ms(IMU_WHT101_DELAY_SAVE_MS);
+  Sys_Delay_Ms(IMU_WHT101_DELAY_SAVE_MS);
   imu_wht101_write_reg(this, IMU_WHT101_REG_SAVE,    IMU_WHT101_SAVE_VALUE);
 }
 
 void Dev_IMU_WHT101_USART_SetOutputRate(imu_wht101_usart_t *this, uint8_t rate) {
   imu_wht101_write_reg(this, IMU_WHT101_REG_KEY,   IMU_WHT101_KEY_UNLOCK);
-  System_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
+  Sys_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
   imu_wht101_write_reg(this, IMU_WHT101_REG_RRATE, rate);
-  System_Delay_Ms(IMU_WHT101_DELAY_WRITE_MS);
+  Sys_Delay_Ms(IMU_WHT101_DELAY_WRITE_MS);
   imu_wht101_write_reg(this, IMU_WHT101_REG_SAVE,  IMU_WHT101_SAVE_VALUE);
 }
