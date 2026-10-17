@@ -5,14 +5,16 @@
 #include "../Inc/motor_tb6612.h"
 #include <assert.h>
 
-/*
- * ********* TB6612 Truth Table *********
+/* ========= TB6612 Truth Table =========
+ * |------|------|-----|-----|----------|
  * | STBY | PWMA | IN1 | IN2 | Function |
+ * |------|------|-----|-----|----------|
  * | H    | H    | H   | L   | Forward  |
  * | H    | H    | L   | H   | Reverse  |
  * | H    | H    | H   | H   | Brake    |
  * | H    | H    | L   | L   | Coast    |
  * | L    | X    | X   | X   | STBY     |
+ * |------|------|-----|-----|----------|
  */
 
 static void Dev_Motor_TB6612_Enable(motor_base_t *this) {
@@ -76,7 +78,7 @@ void Dev_Motor_TB6612_Init(
   Platform_GPIO_Port    ain1_port,     uint16_t             ain1_pin,
   Platform_GPIO_Port    ain2_port,     uint16_t             ain2_pin,
   Platform_GPIO_Port    stby_port,     uint16_t             stby_pin) {
-  
+
   assert(this);
 
   Dev_Motor_Base_Init(&this->motor_base, name, &motor_ops_tb6612, max_speed);
