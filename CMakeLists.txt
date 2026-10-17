@@ -42,8 +42,14 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Inc/led_gpio.h
         App/Src/app_blink.c
         App/Inc/app_blink.h
-        System/Src/system_delay.c
         System/Inc/system_delay.h
+        System/Inc/system_abs.h
+        System/Inc/system_math_def.h
+        System/Inc/system_minmax.h
+        System/Inc/system_clamp.h
+        System/Inc/system_sign.h
+        System/Inc/system_check.h
+        System/Inc/system_math.h
         Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
         Platform/Src/stm32f4/platform_tim.c
