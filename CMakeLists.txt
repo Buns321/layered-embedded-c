@@ -94,6 +94,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         RTOS/Inc/rtos_usart.h
         Controller/Base/Inc/controller_base.h
         Controller/Base/Src/controller_base.c
+        Controller/Inc/controller_linear.h
+        Controller/Src/controller_linear.c
 )
 
 # Add STM32CubeMX generated sources
