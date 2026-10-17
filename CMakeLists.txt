@@ -92,6 +92,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Inc/usart_controller.h
         RTOS/Src/rtos_usart.c
         RTOS/Inc/rtos_usart.h
+        Controller/Base/Inc/controller_base.h
+        Controller/Base/Src/controller_base.c
 )
 
 # Add STM32CubeMX generated sources
