@@ -12,5 +12,6 @@
 Platform_StatusTypeDef Platform_Encoder_Start(Platform_TIM_Instance tim, Platform_TIM_Channel channel);
 uint32_t Platform_Encoder_GetCounter(Platform_TIM_Instance tim);
 void Platform_Encoder_SetCounter(Platform_TIM_Instance tim, uint32_t counter);
+uint8_t Platform_Encoder_GetCounterBits(Platform_TIM_Instance tim);
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_ENCODER_H

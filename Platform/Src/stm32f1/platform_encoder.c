@@ -46,3 +46,14 @@ void Platform_Encoder_SetCounter(Platform_TIM_Instance tim, uint32_t counter) {
   assert(htim != NULL);
   __HAL_TIM_SET_COUNTER(htim, counter);
 }
+
+uint8_t Platform_Encoder_GetCounterBits(Platform_TIM_Instance tim){
+  switch (tim) {
+    case PLATFORM_TIM_TIM1:  return 16U;
+    case PLATFORM_TIM_TIM2:  return 16U;
+    case PLATFORM_TIM_TIM3:  return 16U;
+    case PLATFORM_TIM_TIM4:  return 16U;
+    case PLATFORM_TIM_TIM5:  return 16U;
+    default:      assert(0); return 0U;
+  }
+}

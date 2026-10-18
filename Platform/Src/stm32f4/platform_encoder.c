@@ -23,8 +23,7 @@ static TIM_HandleTypeDef *platform_to_hal_htim(Platform_TIM_Instance tim) {
     // case PLATFORM_TIM_TIM12: return &htim12;
     // case PLATFORM_TIM_TIM13: return &htim13;
     // case PLATFORM_TIM_TIM14: return &htim14;
-
-    default:                assert(0); return NULL;
+    default:      assert(0); return NULL;
   }
 }
 
@@ -56,4 +55,24 @@ void Platform_Encoder_SetCounter(Platform_TIM_Instance tim, uint32_t counter) {
   TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
   assert(htim != NULL);
   __HAL_TIM_SET_COUNTER(htim, counter);
+}
+
+uint8_t Platform_Encoder_GetCounterBits(Platform_TIM_Instance tim){
+  switch (tim) {
+    case PLATFORM_TIM_TIM1:  return 16U;
+    case PLATFORM_TIM_TIM2:  return 32U;
+    case PLATFORM_TIM_TIM3:  return 16U;
+    case PLATFORM_TIM_TIM4:  return 16U;
+    case PLATFORM_TIM_TIM5:  return 32U;
+    // case PLATFORM_TIM_TIM6:  return ;
+    // case PLATFORM_TIM_TIM7:  return ;
+    // case PLATFORM_TIM_TIM8:  return ;
+    // case PLATFORM_TIM_TIM9:  return ;
+    // case PLATFORM_TIM_TIM10: return ;
+    // case PLATFORM_TIM_TIM11: return ;
+    // case PLATFORM_TIM_TIM12: return ;
+    // case PLATFORM_TIM_TIM13: return ;
+    // case PLATFORM_TIM_TIM14: return ;
+    default:      assert(0); return 0U;
+  }
 }
