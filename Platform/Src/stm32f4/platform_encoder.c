@@ -39,16 +39,6 @@ static uint32_t platform_to_hal_channel(Platform_TIM_Channel channel) {
   }
 }
 
-static Platform_StatusTypeDef hal_to_platform_statustypedef(HAL_StatusTypeDef statustypedef) {
-  switch (statustypedef) {
-    case HAL_OK:      return Platform_OK;
-    case HAL_ERROR:   return Platform_ERROR;
-    case HAL_BUSY:    return Platform_BUSY;
-    case HAL_TIMEOUT: return Platform_TIMEOUT;
-    default:          assert(0); return Platform_ERROR;
-  }
-}
-
 Platform_StatusTypeDef Platform_Encoder_Start(Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
   TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
   assert(htim != NULL);

@@ -54,22 +54,6 @@ static Platform_GPIO_Pin_State hal_to_platform_pinstate(GPIO_PinState state) {
 }
 
 /**
- * @brief 将传入的 HAL 类型 state 参数映射为 platform 类型 state，
-*         是platform层内部函数，不可外部调用
- * @param statustypedef (HAL 类型)
- * @return 转换后的 platform 类型
- */
-static Platform_StatusTypeDef hal_to_platform_statustypedef(HAL_StatusTypeDef statustypedef) {
-  switch (statustypedef) {
-    case HAL_OK:      return Platform_OK;
-    case HAL_ERROR:   return Platform_ERROR;
-    case HAL_BUSY:    return Platform_BUSY;
-    case HAL_TIMEOUT: return Platform_TIMEOUT;
-    default:          assert(0); return Platform_ERROR;
-  }
-}
-
-/**
   * @brief  封装的 HAL_GPIO_ReadPin ，供外部调用
   * @param  GPIOx
   * @param  GPIO_Pin

@@ -18,16 +18,6 @@ static UART_HandleTypeDef *platform_to_hal_uart(Platform_UART_Instance uart) {
   }
 }
 
-static Platform_StatusTypeDef hal_to_platform_statustypedef(HAL_StatusTypeDef statustypedef) {
-  switch (statustypedef) {
-    case HAL_OK:      return Platform_OK;
-    case HAL_ERROR:   return Platform_ERROR;
-    case HAL_BUSY:    return Platform_BUSY;
-    case HAL_TIMEOUT: return Platform_TIMEOUT;
-    default:          assert(0); return Platform_ERROR;
-  }
-}
-
 static Platform_UART_Instance hal_to_platform_huart(UART_HandleTypeDef *huart) {
   // if (huart == &huart1) return PLATFORM_UART_1;
   if (huart == &huart2) return PLATFORM_USART_2;
