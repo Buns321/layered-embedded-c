@@ -1,29 +1,72 @@
 # ---- CMake 构建目录 ----
-build/
-cmake-build-*/
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+
+# ---- CMake 生成文件 ----
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 CTestTestfile.cmake
+Testing/
 compile_commands.json
-Makefile
+CMakeUserPresets.json
+install_manifest.txt
+build.ninja
+rules.ninja
+.ninja_deps
+.ninja_log
+/Makefile
 
 # ---- 编译/链接产物 ----
 *.o
 *.obj
 *.a
 *.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
 *.elf
+*.axf
+*.out
 *.hex
+*.ihex
 *.bin
+*.srec
+*.s19
+*.uf2
 *.map
 *.lst
 *.list
+*.d
+*.su
+*.gcda
+*.gcno
+*.gcov
+*.pdb
+*.ilk
+
+# ---- 调试/日志文件 ----
+*.log
 
 # ---- 编辑器 / IDE ----
 .idea/
 .vscode/
+.cache/
+.ccls-cache/
 *.swp
+*.swo
 *~
+
+# ---- 临时文件 ----
+*.bak
+*.tmp
+
+# ---- 操作系统 ----
 .DS_Store
+._*
 Thumbs.db
+Desktop.ini
