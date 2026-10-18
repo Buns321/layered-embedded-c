@@ -10,8 +10,10 @@
 typedef struct encoder_base encoder_base_t;
 
 typedef struct encoder_ops {
-  void    (*set_zero)    (encoder_base_t *this);
-  int32_t (*get_position)(encoder_base_t *this);
+  void    (*set_zero)     (encoder_base_t *this); // 设当前位置为零点
+  int32_t (*get_position) (encoder_base_t *this); // 获取累计位置
+  int32_t (*get_delta)    (encoder_base_t *this); // 获取自上次采样的编码器的变化值
+  void    (*resync)       (encoder_base_t *this); // 
 } encoder_ops_t;
 
 typedef struct encoder_base {
@@ -22,5 +24,7 @@ typedef struct encoder_base {
 void Dev_Encoder_Base_Init(encoder_base_t *this, const char *name, const encoder_ops_t *ops);
 void Dev_Encoder_Base_SetZero(encoder_base_t *this);
 int32_t Dev_Encoder_Base_GetPosition(encoder_base_t *this);
+int32_t Dev_Encoder_Base_GetDelta(encoder_base_t *this);
+void Dev_Encoder_Base_Resync(encoder_base_t *this);
 
 #endif //LAYERED_EMBEDDED_C_ENCODER_BASE_H
