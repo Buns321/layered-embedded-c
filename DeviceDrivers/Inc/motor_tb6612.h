@@ -5,9 +5,9 @@
 #ifndef LAYERED_EMBEDDED_C_MOTOR_TB6612_H
 #define LAYERED_EMBEDDED_C_MOTOR_TB6612_H
 
-#include "../Base/Inc/motor_base.h"
-#include "../../Platform/Inc/platform_pwm.h"
-#include "../../Platform/Inc/platform_gpio.h"
+#include "motor_base.h"
+#include "platform_pwm.h"
+#include "platform_gpio.h"
 
 typedef enum {
   DEV_TB6612_DIRECTION_REVERSE = -1,

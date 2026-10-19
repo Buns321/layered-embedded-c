@@ -4,7 +4,7 @@
 
 #ifndef LAYERED_EMBEDDED_C_RTOS_MONITOR_H
 #define LAYERED_EMBEDDED_C_RTOS_MONITOR_H
-#include "../Inc/rtos_shared.h"
+#include "rtos_shared.h"
 
 typedef enum {
   MONITOR_NORMAL = 0,

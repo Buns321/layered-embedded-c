@@ -52,7 +52,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         System/Inc/system_math.h
         Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
-        Platform/Src/stm32f4/platform_tim.c
         Platform/Inc/platform_tim.h
         DeviceDrivers/Src/motor_tb6612.c
         DeviceDrivers/Inc/motor_tb6612.h
@@ -74,22 +73,16 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/encoder_base.h
         DeviceDrivers/Src/encoder_tim.c
         DeviceDrivers/Inc/encoder_tim.h
-        Algorithm/Src/algorithm_pid_HongxiWong.c
-        Algorithm/Inc/algorithm_pid_HongxiWong.h
         RTOS/Src/rtos_shared.c
         RTOS/Inc/rtos_shared.h
         RTOS/Src/rtos_monitor.c
         RTOS/Inc/rtos_monitor.h
         RTOS/Src/rtos_control.c
         RTOS/Inc/rtos_control.h
-        Algorithm/Src/algorithm_omni.c
-        Algorithm/Inc/algorithm_omni.h
         DeviceDrivers/Base/Src/imu_base.c
         DeviceDrivers/Base/Inc/imu_base.h
         DeviceDrivers/Src/imu_wht101_usart.c
         DeviceDrivers/Inc/imu_wht101_usart.h
-        DeviceDrivers/Src/usart_controller.c
-        DeviceDrivers/Inc/usart_controller.h
         RTOS/Src/rtos_usart.c
         RTOS/Inc/rtos_usart.h
         Controller/Base/Inc/controller_base.h
@@ -113,7 +106,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Controller/Base/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Controller/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/DeviceDrivers/Base/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/DeviceDrivers/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/System/Inc
 )
 
 # Add project symbols (macros)

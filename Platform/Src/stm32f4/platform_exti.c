@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/27.
 //
 
-#include "../../Inc/platform_exti.h"
+#include "platform_exti.h"
 #include <assert.h>
 
 static platform_exti_callbacks_t exti_cb[TOTAL_EXTI_NUM] = {{0}};

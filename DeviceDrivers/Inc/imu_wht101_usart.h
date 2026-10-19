@@ -5,8 +5,8 @@
 #ifndef LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
 #define LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
 
-#include "../Base/Inc/imu_base.h"
-#include "../../Platform/Inc/platform_usart.h"
+#include "imu_base.h"
+#include "platform_usart.h"
 
 typedef enum {
   IMU_WHT101_STATE_SYNCING_1 = 0U,

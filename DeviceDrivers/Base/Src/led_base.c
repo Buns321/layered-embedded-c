@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/15.
 //
 
-#include "../Inc/led_base.h"
+#include "led_base.h"
 #include <assert.h>
 
 void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops) {

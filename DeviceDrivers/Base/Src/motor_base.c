@@ -2,10 +2,10 @@
 // Created by Buns_ on 2026/8/24.
 //
 
-#include "../Inc/motor_base.h"
-#include "../../Controller/Base/Inc/controller_base.h"
-#include "../../Base/Inc/encoder_base.h"
-#include "../../System/Inc/system_math.h"
+#include "motor_base.h"
+#include "controller_base.h"
+#include "encoder_base.h"
+#include "system_math.h"
 #include <assert.h>
 
 void Dev_Motor_Base_Init(

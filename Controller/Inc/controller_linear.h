@@ -5,7 +5,7 @@
 #ifndef LAYERED_EMBEDDED_C_CONTROLLER_LINEAR_H
 #define LAYERED_EMBEDDED_C_CONTROLLER_LINEAR_H
 
-#include "../Base/Inc/controller_base.h"
+#include "controller_base.h"
 #include <stdbool.h>
 
 typedef struct controller_linear {

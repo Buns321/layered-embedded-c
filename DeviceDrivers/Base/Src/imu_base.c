@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/9/1.
 //
 
-#include "../Inc/imu_base.h"
+#include "imu_base.h"
 #include <assert.h>
 
 void Dev_IMU_Base_Init(imu_base_t *this, const char *name, const imu_ops_t *ops) {

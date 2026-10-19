@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/26.
 //
 
-#include "../Inc/usart_base.h"
+#include "usart_base.h"
 #include <assert.h>
 
 void Dev_USART_Base_Init(usart_base_t *this, const char *name, const usart_ops_t *ops) {

@@ -2,8 +2,8 @@
 // Created by Buns_ on 2026/10/17.
 //
 
-#include "../Inc/controller_linear.h"
-#include "../../System/Inc/system_math.h"
+#include "controller_linear.h"
+#include "system_math.h"
 #include <assert.h>
 
 static float Ctrl_Linear_Update(controller_base_t *this, float target, float measure) {

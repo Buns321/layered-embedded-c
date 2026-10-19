@@ -5,8 +5,8 @@
 #ifndef LAYERED_EMBEDDED_C_ENCODER_TIM_H
 #define LAYERED_EMBEDDED_C_ENCODER_TIM_H
 
-#include "../Base/Inc/encoder_base.h"
-#include "../../Platform/Inc/platform_tim.h"
+#include "encoder_base.h"
+#include "platform_tim.h"
 #include <stdbool.h>
 
 typedef struct {

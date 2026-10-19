@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/24.
 //
 
-#include "../../Inc/platform_usart.h"
+#include "platform_usart.h"
 #include "stm32f4xx_hal.h"
 #include "usart.h"
 #include <assert.h>

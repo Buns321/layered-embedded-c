@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/31.
 //
 
-#include "../Inc/rtos_shared.h"
+#include "rtos_shared.h"
 #include "cmsis_os2.h"
 
 PID_TypeDef        g_wheel_pid[4];

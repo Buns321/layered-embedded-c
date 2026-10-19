@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/31.
 //
 
-#include "../Inc/rtos_monitor.h"
+#include "rtos_monitor.h"
 
 #include "cmsis_os2.h"
 

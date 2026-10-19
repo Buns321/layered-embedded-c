@@ -2,8 +2,8 @@
 // Created by Buns_ on 2026/8/24.
 //
 
-#include "../Inc/motor_tb6612.h"
-#include "../../System/Inc/system_math.h"
+#include "motor_tb6612.h"
+#include "system_math.h"
 #include <assert.h>
 
 /* ========= TB6612 Truth Table =========

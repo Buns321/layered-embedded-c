@@ -5,7 +5,7 @@
 #ifndef LAYERED_EMBEDDED_C_USART_PINGPONG_H
 #define LAYERED_EMBEDDED_C_USART_PINGPONG_H
 
-#include "../../Platform/Inc/platform_usart.h"
+#include "platform_usart.h"
 
 typedef enum {
   DEV_USART_PINGPONG_DATA_NOTREADY = 0U,

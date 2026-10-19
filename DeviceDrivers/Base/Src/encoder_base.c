@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/30.
 //
 
-#include "../Inc/encoder_base.h"
+#include "encoder_base.h"
 #include  <assert.h>
 
 void Dev_Encoder_Base_Init(encoder_base_t *this, const char *name, const encoder_ops_t *ops) {

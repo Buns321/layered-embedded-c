@@ -5,8 +5,8 @@
 #ifndef LAYERED_EMBEDDED_C_LED_GPIO_H
 #define LAYERED_EMBEDDED_C_LED_GPIO_H
 
-#include "../Base/Inc/led_base.h"
-#include "../../Platform/Inc/platform_gpio.h"
+#include "led_base.h"
+#include "platform_gpio.h"
 
 typedef struct led_gpio {
   led_base_t              led_base;

@@ -2,8 +2,8 @@
 // Created by Buns_ on 2026/8/30.
 //
 
-#include "../Inc/encoder_tim.h"
-#include "../../Platform/Inc/platform_encoder.h"
+#include "encoder_tim.h"
+#include "platform_encoder.h"
 #include "assert.h"
 
 static int32_t dev_encoder_tim_readdelta(encoder_base_t *this) {

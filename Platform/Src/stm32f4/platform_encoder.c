@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/24.
 //
 
-#include "../../Inc/platform_encoder.h"
+#include "platform_encoder.h"
 #include "stm32f4xx_hal.h"
 #include <assert.h>
 #include "tim.h"

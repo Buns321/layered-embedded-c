@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/8/23.
 //
 
-#include "../../Inc/platform_pwm.h"
+#include "platform_pwm.h"
 #include <assert.h>
 #include "stm32f1xx_hal.h"
 #include "tim.h"

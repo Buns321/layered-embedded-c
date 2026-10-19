@@ -5,7 +5,7 @@
 #ifndef LAYERED_EMBEDDED_C_APP_MOTOR_DEMO_H
 #define LAYERED_EMBEDDED_C_APP_MOTOR_DEMO_H
 
-#include "../../DeviceDrivers/Base/Inc/motor_base.h"
+#include "motor_base.h"
 
 void App_Motor_Demo(motor_base_t *this);
 

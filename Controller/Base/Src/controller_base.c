@@ -2,7 +2,7 @@
 // Created by Buns_ on 2026/10/17.
 //
 
-#include "../Inc/controller_base.h"
+#include "controller_base.h"
 #include <assert.h>
 
 void Ctrl_Base_Init(controller_base_t *this, const char *name, const controller_ops_t *ops) {

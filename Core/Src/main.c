@@ -26,7 +26,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "../../RTOS/Inc/rtos_shared.h"
+#include "rtos_shared.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

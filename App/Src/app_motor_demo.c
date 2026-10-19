@@ -2,8 +2,8 @@
 // Created by Buns_ on 2026/8/25.
 //
 
-#include "../Inc/app_motor_demo.h"
-#include "../../System/Inc/system_delay.h"
+#include "app_motor_demo.h"
+#include "system_delay.h"
 #include <assert.h>
 
 void App_Motor_Demo(motor_base_t *this) {

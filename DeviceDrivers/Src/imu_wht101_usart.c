@@ -2,8 +2,8 @@
 // Created by Buns_ on 2026/9/1.
 //
 
-#include "../Inc/imu_wht101_usart.h"
-#include "../../System/Inc/system_delay.h"
+#include "imu_wht101_usart.h"
+#include "system_delay.h"
 #include <stdint.h>
 
 static float imu_wht101_get_yaw(imu_base_t *this) {
