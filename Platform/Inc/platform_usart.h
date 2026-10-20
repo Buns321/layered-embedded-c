@@ -39,7 +39,7 @@ Platform_StatusTypeDef Platform_UART_Receive_IT        (Platform_UART_Instance u
 Platform_StatusTypeDef Platform_UART_Transmit_IT       (Platform_UART_Instance uart, uint8_t *pdata, uint16_t size);
 Platform_StatusTypeDef Platform_UART_Receive_DMA       (Platform_UART_Instance uart, uint8_t *pdata, uint16_t size);
 Platform_StatusTypeDef Platform_UART_Transmit_DMA      (Platform_UART_Instance uart, uint8_t *pdata, uint16_t size);
-Platform_StatusTypeDef Platform_UART_ClearBuffer       (Platform_UART_Instance uart, uint8_t *pdata);
+Platform_StatusTypeDef Platform_UART_ClearBuffer       (Platform_UART_Instance uart);
 void                   Platform_UART_RegisterCallbacks (Platform_UART_Instance uart, const platform_uart_callbacks_t *cb);
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_USART_H

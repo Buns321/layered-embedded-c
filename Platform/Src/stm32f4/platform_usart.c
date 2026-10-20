@@ -29,49 +29,94 @@ static Platform_UART_Instance hal_to_platform_huart(UART_HandleTypeDef *huart) {
 }
 
 Platform_StatusTypeDef Platform_UART_Receive(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size, uint32_t timeout) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Receive(huart, pdata, size, timeout));
 }
 
 Platform_StatusTypeDef Platform_UART_Transmit(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size, uint32_t timeout) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Transmit(huart, pdata, size, timeout));
 }
 
 Platform_StatusTypeDef Platform_UART_Receive_IT(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Receive_IT(huart, pdata, size));
 }
 
 Platform_StatusTypeDef Platform_UART_Transmit_IT(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Transmit_IT(huart, pdata, size));
 }
 
 Platform_StatusTypeDef Platform_UART_Receive_DMA(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Receive_DMA(huart, pdata, size));
 }
 
 Platform_StatusTypeDef Platform_UART_Transmit_DMA(Platform_UART_Instance uart, uint8_t *pdata, uint16_t size) {
+  assert(
+    pdata != NULL                              &&
+    size != 0u                                 &&
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM
+  );
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
   return hal_to_platform_statustypedef(HAL_UART_Transmit_DMA(huart, pdata, size));
 }
 
-Platform_StatusTypeDef Platform_UART_ClearBuffer(Platform_UART_Instance uart, uint8_t *pdata) {
+Platform_StatusTypeDef Platform_UART_ClearBuffer(Platform_UART_Instance uart) {
+  assert((uint32_t)uart < (uint32_t)TOTAL_USART_NUM);
   UART_HandleTypeDef *huart = platform_to_hal_uart(uart);
   assert(huart != NULL);
-  return hal_to_platform_statustypedef(HAL_UART_Receive(huart, pdata, 1, 0));
+
+  HAL_StatusTypeDef hal_status = HAL_UART_AbortReceive(huart);
+  __HAL_UART_CLEAR_OREFLAG(huart);
+  __HAL_UART_CLEAR_FEFLAG(huart);
+  __HAL_UART_CLEAR_NEFLAG(huart);
+  __HAL_UART_CLEAR_PEFLAG(huart);
+
+  if (hal_status == HAL_BUSY) {
+    return Platform_OK;
+  }
+
+  return hal_to_platform_statustypedef(hal_status);
 }
 
 void Platform_UART_RegisterCallbacks(Platform_UART_Instance uart, const platform_uart_callbacks_t *cb) {
-  assert(cb);
+  assert(
+    (uint32_t)uart < (uint32_t)TOTAL_USART_NUM &&
+    cb != NULL
+  );
   uart_cb[uart] = *cb;
 }
 
