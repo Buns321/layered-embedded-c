@@ -3,6 +3,7 @@
 //
 
 #include "controller_base.h"
+#include "system_math.h"
 #include <assert.h>
 
 void Ctrl_Base_Init(controller_base_t *this, const char *name, const controller_ops_t *ops) {
@@ -14,9 +15,16 @@ void Ctrl_Base_Init(controller_base_t *this, const char *name, const controller_
   this->ops  = ops;
 }
 
-float Ctrl_Base_Update(controller_base_t *this, float target, float measure) {
-  assert(this && this->ops && this->ops->update);
-  return this->ops->update(this, target, measure);
+controller_status_t Ctrl_Base_Update(
+  controller_base_t *this,
+  float target,
+  float measure,
+  float dt,
+  float *out
+) {
+  assert(this && this->ops && this->ops->update && out);
+  assert(SYS_ISFINITE(dt) && dt > 0.0f);
+  return this->ops->update(this, target, measure, dt, out);
 }
 
 void Ctrl_Base_Reset(controller_base_t *this) {

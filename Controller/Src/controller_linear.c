@@ -6,31 +6,46 @@
 #include "system_math.h"
 #include <assert.h>
 
-static float Ctrl_Linear_Update(controller_base_t *this, float target, float measure) {
-  assert(this && SYS_ISFINITE(target) && SYS_ISFINITE(measure));
+static controller_status_t Ctrl_Linear_Update(
+  controller_base_t *this,
+  float target,
+  float measure,
+  float dt,
+  float *out
+) {
+  assert(this && out);
   (void) measure;
+  (void) dt;
   controller_linear_t *self = (controller_linear_t *) this;
 
-  // 非有限输入保护
   if (!SYS_ISFINITE(target)) {
     self->last_out = 0.0f;
-    return 0.0f;
+    *out = 0.0f;
+    return CONTROLLER_STATUS_ERROR;
   }
 
-  // 输入限幅
-  target = SYS_CLAMP(target, self->min_target, self->max_target);
+  bool saturated = false;
 
-  float out = target * self->k + self->b * (self->is_defriction_enabled ? SYS_SIGN(target * self->k) : 1.0f);
+  // 输入限幅
+  float clamped_target = SYS_CLAMP(target, self->min_target, self->max_target);
+  if (clamped_target != target) saturated = true;
+  target = clamped_target;
+
+  float result = target * self->k + self->b * (self->is_defriction_enabled ? SYS_SIGN(target * self->k) : 1.0f);
 
   // 绝对输出最大&最小限幅
-  out = SYS_CLAMP(out, self->min_out, self->max_out);
+  float clamped_out = SYS_CLAMP(result, self->min_out, self->max_out);
+  if (clamped_out != result) saturated = true;
+  result = clamped_out;
 
   // 相对输出最大限幅
-  out = SYS_CLAMP(
-    out,
+  clamped_out = SYS_CLAMP(
+    result,
     self->last_out - self->max_step,
     self->last_out + self->max_step
   );
+  if (clamped_out != result) saturated = true;
+  result = clamped_out;
 
   /* |-----------------|----------|----------|
    * | 死区 \ 最小步长 | FALSE    | TRUE     |
@@ -42,27 +57,32 @@ static float Ctrl_Linear_Update(controller_base_t *this, float target, float mea
 
   // 输出死区
   if (
-    out < self->last_out + self->deadzone &&
-    out > self->last_out - self->deadzone
-  ) out = self->last_out;
+    result < self->last_out + self->deadzone &&
+    result > self->last_out - self->deadzone
+  ) result = self->last_out;
 
   // 相对输出最小限幅
   else if (
-    out != self->last_out &&
-    out < self->last_out + self->min_step &&
-    out > self->last_out - self->min_step
-  ) out = self->last_out + (out > self->last_out ? +self->min_step : -self->min_step);
+    result != self->last_out &&
+    result < self->last_out + self->min_step &&
+    result > self->last_out - self->min_step
+  ) {
+    result = self->last_out + (result > self->last_out ? +self->min_step : -self->min_step);
+    saturated = true;
+  }
 
   // 非有限输出保护
-  if (!SYS_ISFINITE(out)) {
+  if (!SYS_ISFINITE(result)) {
     self->last_out = 0.0f;
-    return 0.0f;
+    *out = 0.0f;
+    return CONTROLLER_STATUS_ERROR;
   }
 
   // 更新 last_out
-  self->last_out = out;
+  self->last_out = result;
 
-  return out;
+  *out = result;
+  return saturated ? CONTROLLER_STATUS_SATURATED : CONTROLLER_STATUS_OK;
 }
 
 static void Ctrl_Linear_Reset(controller_base_t *this) {
