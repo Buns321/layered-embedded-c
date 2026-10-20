@@ -15,7 +15,13 @@
 #  pragma push_macro("USE_HAL_DRIVER")
 #  undef USE_HAL_DRIVER
 #endif
-#include "stm32f4xx.h"
+#if defined(STM32F4xx)
+#  include "stm32f4xx.h"
+#elif defined(STM32F1xx)
+#  include "stm32f1xx.h"
+#else
+#  error "Unsupported STM32 family"
+#endif
 #if defined(__GNUC__) || defined(__clang__)
 #  pragma pop_macro("USE_HAL_DRIVER")
 #endif

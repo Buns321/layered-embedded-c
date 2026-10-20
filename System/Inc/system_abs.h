@@ -56,12 +56,12 @@ SYS_MATH_INLINE long long Sys_Abs_LLong_Sat(long long x) {
 
 /* 通用入口：C11 _Generic，表达式只求值一次 */
 #define SYS_ABS(x) _Generic((x), \
-  char:               Sys_Abs_Int, \
-  signed char:        Sys_Abs_Int, \
-  short:              Sys_Abs_Int, \
-  int:                Sys_Abs_Int, \
-  long:               Sys_Abs_Long, \
-  long long:          Sys_Abs_LLong, \
+  char:               Sys_Abs_Int_Sat, \
+  signed char:        Sys_Abs_Int_Sat, \
+  short:              Sys_Abs_Int_Sat, \
+  int:                Sys_Abs_Int_Sat, \
+  long:               Sys_Abs_Long_Sat, \
+  long long:          Sys_Abs_LLong_Sat, \
   unsigned char:      Sys_Abs_UInt, \
   unsigned short:     Sys_Abs_UInt, \
   unsigned int:       Sys_Abs_UInt, \
