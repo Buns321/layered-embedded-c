@@ -16,7 +16,7 @@ void Dev_Encoder_Base_SetZero(encoder_base_t *this) {
   this->ops->set_zero(this);
 }
 
-int32_t Dev_Encoder_Base_GetPosition(encoder_base_t *this) {
+int64_t Dev_Encoder_Base_GetPosition(encoder_base_t *this) {
   assert(this && this->ops && this->ops->get_position);
   return this->ops->get_position(this);
 }

@@ -34,12 +34,27 @@ static int32_t dev_encoder_tim_readdelta(encoder_base_t *this) {
     }
   }
 
+  if (self->max_counts_per_period != 0u) {
+    int64_t delta64 = (int64_t)delta;
+    int64_t limit = (int64_t)self->max_counts_per_period;
+
+    if (delta64 > limit) {
+      delta64 = limit;
+      self->overflow = true;
+    } else if (delta64 < -limit) {
+      delta64 = -limit;
+      self->overflow = true;
+    }
+
+    delta = (int32_t)delta64;
+  }
+
   self->last_count = now;
   self->position += delta;
   return delta;
 }
 
-static int32_t Dev_Encoder_TIM_GetPosition(encoder_base_t *this) {
+static int64_t Dev_Encoder_TIM_GetPosition(encoder_base_t *this) {
   assert(this);
   encoder_tim_t *self = (encoder_tim_t*)this;
   return self->position;
@@ -51,6 +66,7 @@ static void Dev_Encoder_TIM_SetZero(encoder_base_t *this) {
   Platform_Encoder_SetCounter(self->tim, 0);
   self->last_count = 0;
   self->has_base_count = true;
+  self->overflow = false;
   self->position = 0;
 }
 
@@ -61,7 +77,10 @@ static int32_t Dev_Encoder_TIM_GetDelta(encoder_base_t *this) {
 
 static void Dev_Encoder_TIM_Resync(encoder_base_t *this) {
   assert(this);
-  dev_encoder_tim_readdelta(this);
+  encoder_tim_t *self = (encoder_tim_t*)this;
+  self->last_count = Platform_Encoder_GetCounter(self->tim);
+  self->has_base_count = true;
+  self->overflow = false;
 }
 
 static const encoder_ops_t encoder_ops_tim = {
@@ -71,20 +90,37 @@ static const encoder_ops_t encoder_ops_tim = {
   .resync = Dev_Encoder_TIM_Resync,
 };
 
-void Dev_Encoder_TIM_Init(encoder_tim_t *this, const char *name, Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
+Platform_StatusTypeDef Dev_Encoder_TIM_Init(encoder_tim_t *this, const char *name, Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
   assert(this && name);
 
   this->tim = tim;
   this->channel = channel;
   this->bit_width = Platform_Encoder_GetCounterBits(this->tim);
 
-  assert(this->bit_width == 16 || this->bit_width == 32);
+  assert(this->bit_width == 16U || this->bit_width == 32U);
 
   Dev_Encoder_Base_Init(&this->encoder_base, name, &encoder_ops_tim);
 
   this->position = 0;
   this->last_count = 0;
   this->has_base_count = false;
+  this->overflow = false;
+  this->max_counts_per_period = 0u;
 
-  if (Platform_Encoder_Start(this->tim, this->channel) != Platform_OK) assert(0);
+  return Platform_Encoder_Start(this->tim, this->channel);
+}
+
+void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *this, uint32_t max_counts) {
+  assert(this);
+  this->max_counts_per_period = max_counts;
+}
+
+bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *this) {
+  assert(this);
+  return this->overflow;
+}
+
+void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *this) {
+  assert(this);
+  this->overflow = false;
 }
