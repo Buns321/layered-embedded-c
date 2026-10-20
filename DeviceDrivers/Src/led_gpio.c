@@ -52,4 +52,8 @@ void Dev_LED_GPIO_Init(led_gpio_t *this, const char *name, Platform_GPIO_Port po
   this->port = port;
   this->pin = pin;
   this->active_level = active_level;
+
+  Platform_GPIO_Pin_State inactive_level =
+    (active_level == PLATFORM_GPIO_PIN_SET) ? PLATFORM_GPIO_PIN_RESET : PLATFORM_GPIO_PIN_SET;
+  Platform_GPIO_WritePin(port, pin, inactive_level);
 }
