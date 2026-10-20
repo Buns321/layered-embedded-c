@@ -75,6 +75,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/encoder_base.h
         DeviceDrivers/Src/encoder_tim.c
         DeviceDrivers/Inc/encoder_tim.h
+        DeviceDrivers/Base/Inc/chassis_base.h
+        DeviceDrivers/Base/Src/chassis_base.c
+        DeviceDrivers/Inc/chassis_omni.h
+        DeviceDrivers/Src/chassis_omni.c
         RTOS/Src/rtos_shared.c
         RTOS/Inc/rtos_shared.h
         RTOS/Src/rtos_monitor.c
@@ -93,6 +97,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Controller/Src/controller_linear.c
         Controller/Inc/controller_compose.h
         Controller/Src/controller_compose.c
+        Policy/Base/Inc/omni_policy_base.h
+        Policy/Base/Src/omni_policy_base.c
+        Policy/Inc/policy_omni_kinematics.h
+        Policy/Src/policy_omni_kinematics.c
         Filter/Base/Inc/filter_sample.h
         Filter/Base/Inc/filter_base.h
         Filter/Base/Src/filter_base.c
@@ -128,6 +136,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/DeviceDrivers/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Filter/Base/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Filter/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Base/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/System/Inc
