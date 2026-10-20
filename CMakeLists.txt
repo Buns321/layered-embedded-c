@@ -40,6 +40,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/led_base.h
         DeviceDrivers/Src/led_gpio.c
         DeviceDrivers/Inc/led_gpio.h
+        DeviceDrivers/Src/led_pwm.c
+        DeviceDrivers/Inc/led_pwm.h
         App/Src/app_blink.c
         App/Inc/app_blink.h
         System/Inc/system_delay.h
@@ -65,8 +67,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         App/Inc/app_motor_demo.h
         DeviceDrivers/Base/Src/usart_base.c
         DeviceDrivers/Base/Inc/usart_base.h
-        DeviceDrivers/Src/usart_pingpong.c
-        DeviceDrivers/Inc/usart_pingpong.h
+        DeviceDrivers/Src/usart_port.c
+        DeviceDrivers/Inc/usart_port.h
         Platform/Src/stm32f4/platform_exti.c
         Platform/Inc/platform_exti.h
         DeviceDrivers/Base/Src/encoder_base.c
@@ -89,6 +91,19 @@ add_executable(${CMAKE_PROJECT_NAME}
         Controller/Base/Src/controller_base.c
         Controller/Inc/controller_linear.h
         Controller/Src/controller_linear.c
+        Controller/Inc/controller_compose.h
+        Controller/Src/controller_compose.c
+        Filter/Base/Inc/filter_sample.h
+        Filter/Base/Inc/filter_base.h
+        Filter/Base/Src/filter_base.c
+        Filter/Inc/filter_lowpass.h
+        Filter/Src/filter_lowpass.c
+        Filter/Inc/filter_chain.h
+        Filter/Src/filter_chain.c
+        Filter/Inc/filter_distributor.h
+        Filter/Src/filter_distributor.c
+        Filter/Inc/filter_passthrough.h
+        Filter/Src/filter_passthrough.c
 )
 
 # Add STM32CubeMX generated sources
@@ -111,6 +126,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Controller/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/DeviceDrivers/Base/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/DeviceDrivers/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Filter/Base/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Filter/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/System/Inc
@@ -119,6 +136,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     USE_FREERTOS
+    STM32F4xx
     # Add user defined symbols
 )
 
