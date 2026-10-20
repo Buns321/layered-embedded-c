@@ -3,8 +3,13 @@
 //
 
 #include "imu_wht101_usart.h"
-#include "system_delay.h"
+#include <assert.h>
 #include <stdint.h>
+
+static void imu_wht101_start(imu_base_t *this);
+static void imu_wht101_process(imu_base_t *this, uint32_t now_ms);
+static void imu_wht101_rx_cplt_cb(usart_base_t *usart, void *context);
+static void imu_wht101_uart_err_cb(usart_base_t *usart, void *context);
 
 static float imu_wht101_get_yaw(imu_base_t *this) {
   imu_wht101_usart_t *self = (imu_wht101_usart_t*)this;
@@ -16,12 +21,63 @@ static float imu_wht101_get_gyro_z(imu_base_t *this) {
   return self->gyro_z;
 }
 
+static void imu_wht101_get_status(
+  imu_base_t *this,
+  imu_status_t *status
+) {
+  assert(this && status);
+  imu_wht101_usart_t *self = (imu_wht101_usart_t *)this;
+
+  uint32_t valid_mask = 0u;
+  if (self->has_yaw) {
+    valid_mask |= IMU_CHANNEL_YAW;
+  }
+  if (self->has_gyro_z) {
+    valid_mask |= IMU_CHANNEL_GYRO_Z;
+  }
+
+  uint64_t error_count =
+    (uint64_t)self->rx_error_count +
+    (uint64_t)self->rx_overflow_count +
+    (uint64_t)self->rx_checksum_error_count;
+
+  if (error_count > UINT32_MAX) {
+    error_count = UINT32_MAX;
+  }
+
+  *status = (imu_status_t){
+    .is_started      = self->is_started,
+    .is_busy         =
+      self->config_state != IMU_WHT101_CONFIG_IDLE ||
+      self->zero_pending ||
+      self->rate_pending,
+    .has_timestamp   = self->has_timestamp,
+    .last_request_failed = self->config_failed,
+    .valid_mask      = valid_mask,
+    .sample_count    = self->rx_frame_count,
+    .error_count     = (uint32_t)error_count,
+    .last_update_ms  = self->last_update_ms,
+  };
+
+  for (
+    uint8_t channel = 0u;
+    channel < IMU_CHANNEL_INDEX_COUNT;
+    channel++
+  ) {
+    status->channel_update_ms[channel] =
+      self->channel_update_ms[channel];
+  }
+}
+
 static void imu_wht101_set_zero(imu_base_t *this) {
   imu_wht101_usart_t *self = (imu_wht101_usart_t*)this;
   Dev_IMU_WHT101_USART_SetZero(self);
 }
 
 static const imu_ops_t imu_ops_wht101 = {
+  .start      = imu_wht101_start,
+  .process    = imu_wht101_process,
+  .get_status = imu_wht101_get_status,
   .get_yaw    = imu_wht101_get_yaw,
   .get_gyro_z = imu_wht101_get_gyro_z,
   .set_zero   = imu_wht101_set_zero,
@@ -29,7 +85,11 @@ static const imu_ops_t imu_ops_wht101 = {
 
 /******************************************************************************/
 
-static void imu_wht101_write_reg(imu_wht101_usart_t *self, imu_wht101_reg_t reg, uint16_t val) {
+static Dev_USART_Status imu_wht101_write_reg(
+  imu_wht101_usart_t *self,
+  imu_wht101_reg_t reg,
+  uint16_t val
+) {
   uint8_t cmd[IMU_WHT101_WRITE_LEN] = {
     IMU_WHT101_WRITE_HDR1,
     IMU_WHT101_WRITE_HDR2,
@@ -37,7 +97,12 @@ static void imu_wht101_write_reg(imu_wht101_usart_t *self, imu_wht101_reg_t reg,
     (uint8_t)(val & 0xFF),
     (uint8_t)((val >> 8) & 0xFF)
   };
-  Platform_UART_Transmit(self->uart, cmd, IMU_WHT101_WRITE_LEN, 10);
+  return Dev_USART_Base_Transmit(
+    self->usart,
+    cmd,
+    IMU_WHT101_WRITE_LEN,
+    10u
+  );
 }
 
 /******************************************************************************/
@@ -56,16 +121,267 @@ static void imu_wht101_parse_gyro(imu_wht101_usart_t *self) {
 
 /******************************************************************************/
 
-void Dev_IMU_WHT101_USART_Init(imu_wht101_usart_t *this, const char *name, Platform_UART_Instance uart) {
+void Dev_IMU_WHT101_USART_Init(imu_wht101_usart_t *this, const char *name, usart_base_t *usart) {
+  assert(this && usart);
   Dev_IMU_Base_Init(&this->imu_base, name, &imu_ops_wht101);
-  this->uart      = uart;
-  this->state     = IMU_WHT101_STATE_SYNCING_1;
-  this->frame_idx = 0;
-  this->yaw       = 0;
-  this->gyro_z    = 0;
+  this->usart                   = usart;
+  this->state                   = IMU_WHT101_STATE_SYNCING_1;
+  this->frame_idx               = 0;
+  this->yaw                     = 0;
+  this->gyro_z                  = 0;
+  this->is_started              = false;
+  this->has_yaw                 = false;
+  this->has_gyro_z              = false;
+  this->has_timestamp           = false;
+  this->config_state            = IMU_WHT101_CONFIG_IDLE;
+  this->config_deadline_ms      = 0u;
+  this->last_update_ms          = 0u;
+  this->zero_pending            = false;
+  this->rate_pending            = false;
+  this->config_failed           = false;
+  this->rate_pending_value      = 0u;
+  this->rx_byte                 = 0;
+  this->rx_write                = 0;
+  this->rx_read                 = 0;
+  this->rx_byte_count           = 0;
+  this->rx_overflow_count       = 0;
+  this->rx_error_count          = 0;
+  this->rx_checksum_error_count = 0;
+  this->rx_frame_count          = 0;
+  this->rx_resync_requested     = false;
+
+  for (
+    uint8_t channel = 0u;
+    channel < IMU_CHANNEL_INDEX_COUNT;
+    channel++
+  ) {
+    this->channel_update_ms[channel] = 0u;
+  }
 }
 
-void Dev_IMU_WHT101_USART_FeedByte(imu_wht101_usart_t *this, uint8_t byte) {
+static void imu_wht101_rearm_receive(imu_wht101_usart_t *self) {
+  assert(self);
+  Dev_USART_Status status = Dev_USART_Receive_IT(
+    self->usart,
+    &self->rx_byte,
+    1u
+  );
+  assert(status == DEV_USART_OK);
+  (void)status;
+}
+
+static void imu_wht101_rx_cplt_cb(usart_base_t *usart, void *context) {
+  imu_wht101_usart_t *self = (imu_wht101_usart_t *)context;
+  assert(self && usart == self->usart);
+
+  self->rx_byte_count++;
+
+  uint16_t next_write =
+    (self->rx_write + 1u) & IMU_WHT101_RX_INDEX_MASK;
+
+  if (next_write == self->rx_read) {
+    self->rx_overflow_count++;
+    self->rx_resync_requested = true;
+  } else {
+    self->rx_buffer[self->rx_write] = self->rx_byte;
+    self->rx_write = next_write;
+  }
+
+  imu_wht101_rearm_receive(self);
+}
+
+static void imu_wht101_uart_err_cb(usart_base_t *usart, void *context) {
+  imu_wht101_usart_t *self = (imu_wht101_usart_t *)context;
+  assert(self && usart == self->usart);
+
+  self->rx_error_count++;
+  self->rx_resync_requested = true;
+
+  imu_wht101_rearm_receive(self);
+}
+
+static void imu_wht101_apply_resync(imu_wht101_usart_t *self) {
+  assert(self);
+
+  if (!self->rx_resync_requested) {
+    return;
+  }
+
+  self->state = IMU_WHT101_STATE_SYNCING_1;
+  self->frame_idx = 0;
+  self->rx_resync_requested = false;
+}
+
+static bool imu_wht101_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
+  return (int32_t)(now_ms - deadline_ms) >= 0;
+}
+
+static bool imu_wht101_config_write(
+  imu_wht101_usart_t *self,
+  imu_wht101_reg_t reg,
+  uint16_t value
+) {
+  Dev_USART_Status status = imu_wht101_write_reg(self, reg, value);
+  if (status != DEV_USART_OK) {
+    self->rx_error_count++;
+    self->config_failed = true;
+    return false;
+  }
+  return true;
+}
+
+static void imu_wht101_config_start_next(
+  imu_wht101_usart_t *self,
+  uint32_t now_ms
+) {
+  assert(self);
+
+  if (self->config_state != IMU_WHT101_CONFIG_IDLE) {
+    return;
+  }
+
+  if (self->zero_pending) {
+    self->zero_pending = false;
+
+    if (!imu_wht101_config_write(
+          self,
+          IMU_WHT101_REG_KEY,
+          IMU_WHT101_KEY_UNLOCK)) {
+      return;
+    }
+
+    self->config_state = IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW;
+    self->config_deadline_ms = now_ms + IMU_WHT101_DELAY_UNLOCK_MS;
+    return;
+  }
+
+  if (self->rate_pending) {
+    self->rate_pending = false;
+
+    if (!imu_wht101_config_write(
+          self,
+          IMU_WHT101_REG_KEY,
+          IMU_WHT101_KEY_UNLOCK)) {
+      return;
+    }
+
+    self->config_state = IMU_WHT101_CONFIG_RATE_WAIT_WRITE;
+    self->config_deadline_ms = now_ms + IMU_WHT101_DELAY_UNLOCK_MS;
+  }
+}
+
+static void imu_wht101_config_process(
+  imu_wht101_usart_t *self,
+  uint32_t now_ms
+) {
+  assert(self);
+
+  if (
+    self->config_state == IMU_WHT101_CONFIG_IDLE ||
+    !imu_wht101_time_reached(now_ms, self->config_deadline_ms)
+  ) {
+    imu_wht101_config_start_next(self, now_ms);
+    return;
+  }
+
+  switch (self->config_state) {
+    case IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW:
+      if (!imu_wht101_config_write(
+            self,
+            IMU_WHT101_REG_CALIYAW,
+            IMU_WHT101_CALIYAW_ZERO)) {
+        self->config_state = IMU_WHT101_CONFIG_IDLE;
+        return;
+      }
+      self->config_state = IMU_WHT101_CONFIG_ZERO_WAIT_SAVE;
+      self->config_deadline_ms = now_ms + IMU_WHT101_DELAY_SAVE_MS;
+      break;
+
+    case IMU_WHT101_CONFIG_ZERO_WAIT_SAVE:
+      if (!imu_wht101_config_write(
+            self,
+            IMU_WHT101_REG_SAVE,
+            IMU_WHT101_SAVE_VALUE)) {
+        self->config_state = IMU_WHT101_CONFIG_IDLE;
+        return;
+      }
+      self->config_state = IMU_WHT101_CONFIG_IDLE;
+      self->config_failed = false;
+      break;
+
+    case IMU_WHT101_CONFIG_RATE_WAIT_WRITE:
+      if (!imu_wht101_config_write(
+            self,
+            IMU_WHT101_REG_RRATE,
+            self->rate_pending_value)) {
+        self->config_state = IMU_WHT101_CONFIG_IDLE;
+        return;
+      }
+      self->config_state = IMU_WHT101_CONFIG_RATE_WAIT_SAVE;
+      self->config_deadline_ms = now_ms + IMU_WHT101_DELAY_WRITE_MS;
+      break;
+
+    case IMU_WHT101_CONFIG_RATE_WAIT_SAVE:
+      if (!imu_wht101_config_write(
+            self,
+            IMU_WHT101_REG_SAVE,
+            IMU_WHT101_SAVE_VALUE)) {
+        self->config_state = IMU_WHT101_CONFIG_IDLE;
+        return;
+      }
+      self->config_state = IMU_WHT101_CONFIG_IDLE;
+      self->config_failed = false;
+      break;
+
+    case IMU_WHT101_CONFIG_IDLE:
+    default:
+      assert(0);
+      break;
+  }
+}
+
+static void imu_wht101_start(imu_base_t *this) {
+  assert(this);
+  imu_wht101_usart_t *self = (imu_wht101_usart_t *)this;
+
+  assert(!self->is_started);
+
+  dev_usart_callbacks_t callbacks = {
+    .rx_cplt_cb = imu_wht101_rx_cplt_cb,
+    .err_cb     = imu_wht101_uart_err_cb,
+    .context    = self,
+  };
+
+  Dev_USART_RegisterCallbacks(self->usart, &callbacks);
+  imu_wht101_rearm_receive(self);
+
+  self->is_started = true;
+}
+
+static void imu_wht101_process(imu_base_t *this, uint32_t now_ms) {
+  assert(this);
+  imu_wht101_usart_t *self = (imu_wht101_usart_t *)this;
+
+  while (self->rx_read != self->rx_write) {
+    imu_wht101_apply_resync(self);
+
+    uint8_t byte = self->rx_buffer[self->rx_read];
+    self->rx_read =
+      (self->rx_read + 1u) & IMU_WHT101_RX_INDEX_MASK;
+    Dev_IMU_WHT101_USART_FeedByte(self, byte, now_ms);
+  }
+
+  imu_wht101_apply_resync(self);
+  imu_wht101_config_process(self, now_ms);
+}
+
+void Dev_IMU_WHT101_USART_FeedByte(
+  imu_wht101_usart_t *this,
+  uint8_t byte,
+  uint32_t now_ms
+) {
+  assert(this);
+
   switch (this->state) {
     case IMU_WHT101_STATE_SYNCING_1:
       if (byte == IMU_WHT101_FRAME_HEADER) {
@@ -100,8 +416,21 @@ void Dev_IMU_WHT101_USART_FeedByte(imu_wht101_usart_t *this, uint8_t byte) {
       uint8_t sum = 0;
       for (int i = 0; i < IMU_WHT101_FRAME_LEN - 1; i++) sum += this->frame[i];
       if (sum == this->frame[IMU_WHT101_FRAME_LEN - 1]) {
-        if      (this->frame[1] == IMU_WHT101_TYPE_GYRO)  imu_wht101_parse_gyro(this);
-        else if (this->frame[1] == IMU_WHT101_TYPE_ANGLE) imu_wht101_parse_angle(this);
+        this->rx_frame_count++;
+        this->has_timestamp = true;
+        this->last_update_ms = now_ms;
+
+        if (this->frame[1] == IMU_WHT101_TYPE_GYRO) {
+          imu_wht101_parse_gyro(this);
+          this->has_gyro_z = true;
+          this->channel_update_ms[IMU_CHANNEL_INDEX_GYRO_Z] = now_ms;
+        } else if (this->frame[1] == IMU_WHT101_TYPE_ANGLE) {
+          imu_wht101_parse_angle(this);
+          this->has_yaw = true;
+          this->channel_update_ms[IMU_CHANNEL_INDEX_YAW] = now_ms;
+        }
+      } else {
+        this->rx_checksum_error_count++;
       }
       this->state = IMU_WHT101_STATE_SYNCING_1;
       break;
@@ -110,17 +439,14 @@ void Dev_IMU_WHT101_USART_FeedByte(imu_wht101_usart_t *this, uint8_t byte) {
 }
 
 void Dev_IMU_WHT101_USART_SetZero(imu_wht101_usart_t *this) {
-  imu_wht101_write_reg(this, IMU_WHT101_REG_KEY,     IMU_WHT101_KEY_UNLOCK);
-  Sys_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
-  imu_wht101_write_reg(this, IMU_WHT101_REG_CALIYAW, IMU_WHT101_CALIYAW_ZERO);
-  Sys_Delay_Ms(IMU_WHT101_DELAY_SAVE_MS);
-  imu_wht101_write_reg(this, IMU_WHT101_REG_SAVE,    IMU_WHT101_SAVE_VALUE);
+  assert(this && this->is_started);
+  this->config_failed = false;
+  this->zero_pending = true;
 }
 
 void Dev_IMU_WHT101_USART_SetOutputRate(imu_wht101_usart_t *this, uint8_t rate) {
-  imu_wht101_write_reg(this, IMU_WHT101_REG_KEY,   IMU_WHT101_KEY_UNLOCK);
-  Sys_Delay_Ms(IMU_WHT101_DELAY_UNLOCK_MS);
-  imu_wht101_write_reg(this, IMU_WHT101_REG_RRATE, rate);
-  Sys_Delay_Ms(IMU_WHT101_DELAY_WRITE_MS);
-  imu_wht101_write_reg(this, IMU_WHT101_REG_SAVE,  IMU_WHT101_SAVE_VALUE);
+  assert(this && this->is_started);
+  this->config_failed = false;
+  this->rate_pending_value = rate;
+  this->rate_pending = true;
 }

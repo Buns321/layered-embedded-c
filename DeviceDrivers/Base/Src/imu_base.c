@@ -6,9 +6,31 @@
 #include <assert.h>
 
 void Dev_IMU_Base_Init(imu_base_t *this, const char *name, const imu_ops_t *ops) {
-  assert(this && name &&ops);
+  assert(
+    this         &&
+    name         &&
+    ops          &&
+    ops->start   &&
+    ops->process &&
+    ops->get_status
+  );
   this->name = name;
   this->ops = ops;
+}
+
+void Dev_IMU_Base_Start(imu_base_t *this) {
+  assert(this && this->ops && this->ops->start);
+  this->ops->start(this);
+}
+
+void Dev_IMU_Base_Process(imu_base_t *this, uint32_t now_ms) {
+  assert(this && this->ops && this->ops->process);
+  this->ops->process(this, now_ms);
+}
+
+void Dev_IMU_Base_GetStatus(imu_base_t *this, imu_status_t *status) {
+  assert(this && this->ops && this->ops->get_status && status);
+  this->ops->get_status(this, status);
 }
 
 float Dev_IMU_Base_GetYaw(imu_base_t *this) {

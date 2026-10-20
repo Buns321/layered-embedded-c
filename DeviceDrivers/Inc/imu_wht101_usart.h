@@ -6,7 +6,8 @@
 #define LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
 
 #include "imu_base.h"
-#include "platform_usart.h"
+#include "usart_base.h"
+#include <stdbool.h>
 
 typedef enum {
   IMU_WHT101_STATE_SYNCING_1 = 0U,
@@ -30,6 +31,14 @@ typedef enum {
   IMU_RATE_200HZ = 0x0B,
 } imu_wht101_rate_t;
 
+typedef enum {
+  IMU_WHT101_CONFIG_IDLE = 0U,
+  IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW,
+  IMU_WHT101_CONFIG_ZERO_WAIT_SAVE,
+  IMU_WHT101_CONFIG_RATE_WAIT_WRITE,
+  IMU_WHT101_CONFIG_RATE_WAIT_SAVE,
+} imu_wht101_config_state_t;
+
 #define IMU_WHT101_SCALE      32768.0f
 #define IMU_WHT101_YAW_RANGE  180.0f
 #define IMU_WHT101_GYRO_RANGE 2000.0f
@@ -48,9 +57,13 @@ typedef enum {
 #define IMU_WHT101_SAVE_VALUE      0x0000
 #define IMU_WHT101_CALIYAW_ZERO    0x0000
 
+#define IMU_WHT101_RX_BUFFER_SIZE 256u
+#define IMU_WHT101_RX_INDEX_MASK \
+  ((uint16_t)(IMU_WHT101_RX_BUFFER_SIZE - 1u))
+
 typedef struct {
   imu_base_t imu_base;
-  Platform_UART_Instance uart;
+  usart_base_t *usart;
 
   imu_wht101_state_t state;
   uint8_t frame[IMU_WHT101_FRAME_LEN];
@@ -58,10 +71,36 @@ typedef struct {
 
   volatile float yaw;
   volatile float gyro_z;
+
+  bool is_started;
+  bool has_yaw;
+  bool has_gyro_z;
+  bool has_timestamp;
+
+  imu_wht101_config_state_t config_state;
+  uint32_t config_deadline_ms;
+  volatile uint32_t last_update_ms;
+  volatile uint32_t channel_update_ms[IMU_CHANNEL_INDEX_COUNT];
+  bool zero_pending;
+  bool rate_pending;
+  volatile bool config_failed;
+  uint8_t rate_pending_value;
+
+  uint8_t rx_byte;
+  uint8_t rx_buffer[IMU_WHT101_RX_BUFFER_SIZE];
+  volatile uint16_t rx_write;
+  volatile uint16_t rx_read;
+
+  volatile uint32_t rx_byte_count;
+  volatile uint32_t rx_overflow_count;
+  volatile uint32_t rx_error_count;
+  volatile uint32_t rx_checksum_error_count;
+  volatile uint32_t rx_frame_count;
+  volatile bool rx_resync_requested;
 } imu_wht101_usart_t;
 
-void Dev_IMU_WHT101_USART_Init          (imu_wht101_usart_t *this, const char *name, Platform_UART_Instance uart);
-void Dev_IMU_WHT101_USART_FeedByte      (imu_wht101_usart_t *this, uint8_t byte);
+void Dev_IMU_WHT101_USART_Init          (imu_wht101_usart_t *this, const char *name, usart_base_t *usart);
+void Dev_IMU_WHT101_USART_FeedByte      (imu_wht101_usart_t *this, uint8_t byte, uint32_t now_ms);
 void Dev_IMU_WHT101_USART_SetZero       (imu_wht101_usart_t *this);
 void Dev_IMU_WHT101_USART_SetOutputRate (imu_wht101_usart_t *this, uint8_t rate);
 
