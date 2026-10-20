@@ -5,8 +5,4 @@
 #ifndef LAYERED_EMBEDDED_C_APP_MOTOR_DEMO_H
 #define LAYERED_EMBEDDED_C_APP_MOTOR_DEMO_H
 
-#include "motor_base.h"
-
-void App_Motor_Demo(motor_base_t *this);
-
 #endif //LAYERED_EMBEDDED_C_APP_MOTOR_DEMO_H
