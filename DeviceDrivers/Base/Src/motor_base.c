@@ -42,6 +42,7 @@ void Dev_Motor_Base_Init(
   this->counts_per_meter = counts_per_meter;
   this->control_period   = control_period;
   this->max_duty         = max_duty;
+  this->controller_status = CONTROLLER_STATUS_OK;
 
   Dev_Motor_Base_SetTargetSpeed(this, target_speed);
 }
@@ -59,6 +60,11 @@ float Dev_Motor_Base_ReadTargetSpeed(motor_base_t *this) {
 float Dev_Motor_Base_ReadCurrentSpeed(motor_base_t *this) {
   assert(this);
   return this->current_speed;
+}
+
+controller_status_t Dev_Motor_Base_ReadControllerStatus(motor_base_t *this) {
+  assert(this);
+  return this->controller_status;
 }
 
 void Dev_Motor_Base_SetTargetSpeed(motor_base_t *this, float target_speed) {
@@ -98,6 +104,23 @@ void Dev_Motor_Base_Disable(motor_base_t *this) {
   this->is_motor_enabled = DEV_MOTOR_DISABLE;
   this->current_speed = 0.0f;
   this->target_speed = 0.0f;
+  this->controller_status = CONTROLLER_STATUS_OK;
+}
+
+void Dev_Motor_Base_Brake(motor_base_t *this) {
+  assert(
+    this             &&
+    this->ops        &&
+    this->ops->brake &&
+    this->controller
+  );
+
+  this->target_speed  = 0.0f;
+  this->current_speed = 0.0f;
+  this->controller_status = CONTROLLER_STATUS_OK;
+
+  Ctrl_Base_Reset(this->controller);
+  this->ops->brake(this);
 }
 
 void Dev_Motor_Base_Update(motor_base_t *this) {
@@ -118,29 +141,41 @@ void Dev_Motor_Base_Update(motor_base_t *this) {
   float speed_scale = this->counts_per_meter * this->control_period;
   if (!SYS_ISFINITE(speed_scale) || speed_scale <= 0.0f) {
     this->current_speed = 0.0f;
+    this->controller_status = CONTROLLER_STATUS_ERROR;
     this->ops->set_power(this, 0.0f);
     return;
   }
 
   this->current_speed = (float)delta / speed_scale;
 
-  float power = Ctrl_Base_Update(
+  float power = 0.0f;
+  controller_status_t status = Ctrl_Base_Update(
     this->controller,
     this->target_speed,
-    this->current_speed
+    this->current_speed,
+    this->control_period,
+    &power
   );
 
   if (!SYS_ISFINITE(power)) {
     power = 0.0f;
+    status = CONTROLLER_STATUS_ERROR;
+  } else if (status == CONTROLLER_STATUS_ERROR) {
+    power = 0.0f;
   }
 
-  power = SYS_CLAMP(
+  float clamped_power = SYS_CLAMP(
     power,
     -(float)this->max_duty,
     (float)this->max_duty
   );
 
-  this->ops->set_power(this, power);
+  if (clamped_power != power) {
+    status = CONTROLLER_STATUS_SATURATED;
+  }
+
+  this->controller_status = status;
+  this->ops->set_power(this, clamped_power);
 }
 
 void Dev_Motor_Base_Reset(motor_base_t *this) {
@@ -159,4 +194,5 @@ void Dev_Motor_Base_Reset(motor_base_t *this) {
   Dev_Encoder_Base_Resync(this->encoder);
 
   this->current_speed = 0.0f;
+  this->controller_status = CONTROLLER_STATUS_OK;
 }

@@ -19,6 +19,14 @@
  * |------|------|-----|-----|----------|
  */
 
+/*
+ * 契约：
+ * - power 为 [-motor_base.max_duty, +motor_base.max_duty] 的占空比，符号表示方向；
+ * - 方向切换前先把 PWM 撤到 0，再更新 IN1/IN2；
+ * - STBY 在板级按组共享（m0/m1、m2/m3），单电机停机不能依赖 STBY；
+ * - Init 返回 Platform_StatusTypeDef，PWM 启动失败时保持 STBY 为低。
+ */
+
 static void Dev_Motor_TB6612_Enable(motor_base_t *this) {
   assert(this);
   motor_tb6612_t *self = (motor_tb6612_t *)this;

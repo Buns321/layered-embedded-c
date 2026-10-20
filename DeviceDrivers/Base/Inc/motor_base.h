@@ -6,6 +6,7 @@
 #define LAYERED_EMBEDDED_C_MOTOR_BASE_H
 
 #include <stdint.h>
+#include "controller_base.h"
 
 typedef enum {
   DEV_MOTOR_DISABLE = 0U,
@@ -13,7 +14,6 @@ typedef enum {
 } Dev_Motor_State;
 
 typedef struct motor_base motor_base_t;
-typedef struct controller_base controller_base_t;
 typedef struct encoder_base encoder_base_t;
 
 typedef struct motor_ops {
@@ -36,6 +36,7 @@ typedef struct motor_base {
   float              counts_per_meter; // (counts/m)
   float              control_period;   // (s)
   int32_t            max_duty;         // (duty)
+  controller_status_t controller_status;
 } motor_base_t;
 
 void Dev_Motor_Base_Init(
@@ -52,9 +53,11 @@ void Dev_Motor_Base_Init(
 Dev_Motor_State Dev_Motor_Base_ReadStatus       (motor_base_t *this);
 float           Dev_Motor_Base_ReadTargetSpeed  (motor_base_t *this);
 float           Dev_Motor_Base_ReadCurrentSpeed (motor_base_t *this);
+controller_status_t Dev_Motor_Base_ReadControllerStatus(motor_base_t *this);
 void            Dev_Motor_Base_SetTargetSpeed   (motor_base_t *this, float target_speed);
 void            Dev_Motor_Base_Enable           (motor_base_t *this);
 void            Dev_Motor_Base_Disable          (motor_base_t *this);
+void            Dev_Motor_Base_Brake            (motor_base_t *this);
 void            Dev_Motor_Base_Update           (motor_base_t *this);
 void            Dev_Motor_Base_Reset            (motor_base_t *this);
 
