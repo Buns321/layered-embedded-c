@@ -8,6 +8,8 @@
 #include <stdint.h>
 
 #define FILTER_CHANNEL_CAPACITY 16u
+_Static_assert(FILTER_CHANNEL_CAPACITY > 0u, "FILTER_CHANNEL_CAPACITY must be positive");
+_Static_assert(FILTER_CHANNEL_CAPACITY <= 32u, "FILTER_CHANNEL_CAPACITY must not exceed 32");
 #define FILTER_CHANNEL_MASK \
   ((uint32_t)((1u << FILTER_CHANNEL_CAPACITY) - 1u))
 

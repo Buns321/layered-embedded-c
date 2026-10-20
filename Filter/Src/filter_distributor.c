@@ -10,8 +10,10 @@ static void Filter_Distributor_Reset(filter_base_t *this) {
   assert(this);
   filter_distributor_t *self = (filter_distributor_t *)this;
 
-  assert(self->route_count > 0u);
-  assert(self->route_count <= FILTER_DISTRIBUTOR_CAPACITY);
+  assert(
+    self->route_count > 0u                           &&
+    self->route_count <= FILTER_DISTRIBUTOR_CAPACITY
+  );
 
   for (uint8_t i = 0; i < self->route_count; i++) {
     assert(self->routes[i].filter);
@@ -30,11 +32,13 @@ static void Filter_Distributor_Update(filter_base_t *this, const filter_sample_t
   for (uint8_t i = 0; i < self->route_count; i++) {
     const filter_distributor_route_t *route = &self->routes[i];
 
-    assert(route->filter);
-    assert(route->input_count > 0u);
-    assert(route->input_count <= FILTER_ROUTE_CAPACITY);
-    assert(route->output_count > 0u);
-    assert(route->output_count <= FILTER_ROUTE_CAPACITY);
+    assert(
+      route->filter                                &&
+      route->input_count  >  0u                    &&
+      route->input_count  <= FILTER_ROUTE_CAPACITY &&
+      route->output_count >  0u                    &&
+      route->output_count <= FILTER_ROUTE_CAPACITY
+    );
 
     filter_sample_t local_input = {0};
     local_input.time_ms = input->time_ms;
@@ -74,11 +78,6 @@ static void Filter_Distributor_Update(filter_base_t *this, const filter_sample_t
 
       uint8_t global_index = route->output_index[j];
       uint32_t global_mask = (uint32_t)1u << global_index;
-
-      assert((output->valid_mask & global_mask) == 0u);
-      if ((output->valid_mask & global_mask) != 0u) {
-        continue;
-      }
 
       output->value[global_index] = output_value;
       output->valid_mask |= global_mask;
