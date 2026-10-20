@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/10/18.
 //
 
+/**
+ * @file system_clamp.h
+ * @brief 类型安全的限幅函数与 SYS_CLAMP 宏。
+ * @addtogroup system
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_CLAMP_H
 #define LAYERED_EMBEDDED_C_SYSTEM_CLAMP_H
 
@@ -63,5 +70,7 @@ SYS_MATH_INLINE double Sys_Clamp_F64(double x, double lo, double hi) {
   float:              Sys_Clamp_F32, \
   double:             Sys_Clamp_F64 \
 )(x, lo, hi)
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_SYSTEM_CLAMP_H

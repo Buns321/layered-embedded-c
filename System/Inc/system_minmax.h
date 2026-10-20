@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/10/18.
 //
 
+/**
+ * @file system_minmax.h
+ * @brief 类型安全的最小/最大值与 SYS_MIN / SYS_MAX 宏。
+ * @addtogroup system
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_MINMAX_H
 #define LAYERED_EMBEDDED_C_SYSTEM_MINMAX_H
 
@@ -62,5 +69,7 @@ SYS_MATH_INLINE double Sys_Max_F64(double a, double b) { return (a > b) ? a : b;
   float:              Sys_Max_F32, \
   double:             Sys_Max_F64 \
 )(a, b)
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_SYSTEM_MINMAX_H

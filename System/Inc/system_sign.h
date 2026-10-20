@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/10/18.
 //
 
+/**
+ * @file system_sign.h
+ * @brief 类型安全的符号函数与 SYS_SIGN 宏。
+ * @addtogroup system
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_SIGN_H
 #define LAYERED_EMBEDDED_C_SYSTEM_SIGN_H
 
@@ -33,5 +40,7 @@ SYS_MATH_INLINE double Sys_Sign_F64(double x) { return (double)((x > 0.0) - (x <
   float:              Sys_Sign_F32, \
   double:             Sys_Sign_F64 \
 )(x)
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_SYSTEM_SIGN_H

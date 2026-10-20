@@ -2,9 +2,23 @@
 // Created by Buns_ on 2026/8/31.
 //
 
+/**
+ * @file rtos_monitor.h
+ * @brief 监控任务接口。
+ * @addtogroup rtos
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_RTOS_MONITOR_H
 #define LAYERED_EMBEDDED_C_RTOS_MONITOR_H
 
+/**
+ * @brief 监控任务入口。
+ * @param argument 未使用。
+ * @note 当前是最小占位实现，心跳和故障停机待接入。
+ */
 void StartMonitor_Task(void *argument);
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_RTOS_MONITOR_H

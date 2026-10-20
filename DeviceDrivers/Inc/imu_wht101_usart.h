@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/9/1.
 //
 
+/**
+ * @file imu_wht101_usart.h
+ * @brief WHT101 UART IMU 具体实现。
+ * @addtogroup drivers_concrete
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
 #define LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
 
@@ -9,6 +16,9 @@
 #include "usart_base.h"
 #include <stdbool.h>
 
+/**
+ * @brief 帧解析状态。
+ */
 typedef enum {
   IMU_WHT101_STATE_SYNCING_1 = 0U,
   IMU_WHT101_STATE_SYNCING_2,
@@ -16,6 +26,9 @@ typedef enum {
   IMU_WHT101_STATE_CALCULATING_SUM,
 } imu_wht101_state_t;
 
+/**
+ * @brief WHT101 寄存器地址。
+ */
 typedef enum {
   IMU_WHT101_REG_SAVE    = 0x00,
   IMU_WHT101_REG_RRATE   = 0x03,
@@ -25,12 +38,18 @@ typedef enum {
   IMU_WHT101_REG_MANCALI = 0xA6,
 } imu_wht101_reg_t;
 
+/**
+ * @brief 输出速率配置值。
+ */
 typedef enum {
   IMU_RATE_10HZ  = 0x06,
   IMU_RATE_100HZ = 0x09,
   IMU_RATE_200HZ = 0x0B,
 } imu_wht101_rate_t;
 
+/**
+ * @brief 非阻塞配置状态机状态。
+ */
 typedef enum {
   IMU_WHT101_CONFIG_IDLE = 0U,
   IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW,
@@ -61,6 +80,11 @@ typedef enum {
 #define IMU_WHT101_RX_INDEX_MASK \
   ((uint16_t)(IMU_WHT101_RX_BUFFER_SIZE - 1u))
 
+/**
+ * @brief WHT101 对象。
+ * @note rx_buffer 是单字节中断接收的环形队列；解析在 process 中完成。
+ * @note 置零和输出速率配置通过 zero_pending / rate_pending 非阻塞推进。
+ */
 typedef struct {
   imu_base_t imu_base;
   usart_base_t *usart;
@@ -99,9 +123,34 @@ typedef struct {
   volatile bool rx_resync_requested;
 } imu_wht101_usart_t;
 
+/**
+ * @brief 初始化 WHT101。
+ * @param this 对象。
+ * @param name 名称。
+ * @param usart 已初始化的 usart_base 对象，需支持中断接收。
+ */
 void Dev_IMU_WHT101_USART_Init          (imu_wht101_usart_t *this, const char *name, usart_base_t *usart);
+/**
+ * @brief 解析一个字节。
+ * @param this 对象。
+ * @param byte 输入字节。
+ * @param now_ms 当前毫秒时间戳。
+ * @note 该函数是解析器，不是 ISR 入队接口；应在任务上下文调用。
+ */
 void Dev_IMU_WHT101_USART_FeedByte      (imu_wht101_usart_t *this, uint8_t byte, uint32_t now_ms);
+/**
+ * @brief 请求设置 yaw 零点。
+ * @note 非阻塞；实际写入由 process 状态机推进。
+ */
 void Dev_IMU_WHT101_USART_SetZero       (imu_wht101_usart_t *this);
+/**
+ * @brief 请求设置输出速率。
+ * @param this 对象。
+ * @param rate 速率配置值。
+ * @note 非阻塞；实际写入由 process 状态机推进。
+ */
 void Dev_IMU_WHT101_USART_SetOutputRate (imu_wht101_usart_t *this, uint8_t rate);
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_IMU_WHT101_USART_H

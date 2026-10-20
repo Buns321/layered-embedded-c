@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/10/18.
 //
 
+/**
+ * @file system_check.h
+ * @brief 浮点 NaN / Inf / 有限性检查。
+ * @addtogroup system
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_CHECK_H
 #define LAYERED_EMBEDDED_C_SYSTEM_CHECK_H
 
@@ -60,5 +67,7 @@ SYS_MATH_INLINE bool Sys_IsFinite_F64(double x) {
   float:  Sys_IsFinite_F32, \
   double: Sys_IsFinite_F64 \
 )(x)
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_SYSTEM_CHECK_H

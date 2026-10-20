@@ -2,6 +2,13 @@
 // Created by Buns_ on 2026/8/16.
 //
 
+/**
+ * @file system_abs.h
+ * @brief 类型安全的绝对值，含整数饱和版本。
+ * @addtogroup system
+ * @{
+ */
+
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_ABS_H
 #define LAYERED_EMBEDDED_C_SYSTEM_ABS_H
 
@@ -70,5 +77,7 @@ SYS_MATH_INLINE long long Sys_Abs_LLong_Sat(long long x) {
   float:              Sys_Abs_F32, \
   double:             Sys_Abs_F64 \
 )(x)
+
+/** @} */
 
 #endif //LAYERED_EMBEDDED_C_SYSTEM_ABS_H

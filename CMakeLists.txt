@@ -159,3 +159,20 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 
     # Add user defined libraries
 )
+
+# Optional Doxygen documentation target
+find_package(Doxygen QUIET)
+if(NOT DOXYGEN_FOUND)
+    find_program(DOXYGEN_EXECUTABLE
+        NAMES doxygen
+        HINTS "$ENV{ProgramFiles}/doxygen/bin" "$ENV{ProgramFiles\(x86\)}/doxygen/bin"
+    )
+endif()
+if(DOXYGEN_EXECUTABLE)
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doc/doxygen/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating documentation with Doxygen"
+        VERBATIM
+    )
+endif()

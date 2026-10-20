@@ -53,12 +53,6 @@ static Platform_GPIO_Pin_State hal_to_platform_pinstate(GPIO_PinState state) {
   }
 }
 
-/**
-  * @brief  封装的 HAL_GPIO_ReadPin ，供外部调用
-  * @param  GPIOx
-  * @param  GPIO_Pin
-  * @return 输入端口引脚值。
-  */
 Platform_GPIO_Pin_State Platform_GPIO_ReadPin (Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin) {
   GPIO_TypeDef *g = platform_to_hal_port(GPIOx);
   /* 检查入参 */
@@ -66,12 +60,6 @@ Platform_GPIO_Pin_State Platform_GPIO_ReadPin (Platform_GPIO_Port GPIOx, uint16_
   return  hal_to_platform_pinstate(HAL_GPIO_ReadPin(g, GPIO_Pin));
 }
 
-/**
- * @brief  封装的 HAL_GPIO_WritePin ，供外部调用
- * @param  GPIOx
- * @param  GPIO_Pin
- * @param  PinState
- */
 void Platform_GPIO_WritePin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin, Platform_GPIO_Pin_State PinState) {
   GPIO_TypeDef *g = platform_to_hal_port(GPIOx);
   /* 检查入参 */
@@ -79,11 +67,6 @@ void Platform_GPIO_WritePin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin, Platfor
   HAL_GPIO_WritePin(g, GPIO_Pin, platform_to_hal_pinstate(PinState));
 }
 
-/**
- * @brief 封装的 HAL_GPIO_TogglePin ，供外部调用
- * @param GPIOx
- * @param GPIO_Pin
- */
 void Platform_GPIO_TogglePin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin) {
   GPIO_TypeDef *g = platform_to_hal_port(GPIOx);
   /* 检查入参 */
@@ -91,12 +74,6 @@ void Platform_GPIO_TogglePin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin) {
   HAL_GPIO_TogglePin(g, GPIO_Pin);
 }
 
-/**
- * @brief 封装的 HAL_GPIO_LockPin ，供外部调用
- * @param GPIOx
- * @param GPIO_Pin
- * @return 是否成功
- */
 Platform_StatusTypeDef Platform_GPIO_LockPin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin) {
   GPIO_TypeDef *g = platform_to_hal_port(GPIOx);
   /* 检查入参 */
