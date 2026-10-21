@@ -21,6 +21,9 @@ endif()
 # Set the project name
 set(CMAKE_PROJECT_NAME layered-embedded-c)
 
+# Optional debug services
+option(SYS_LOG_USE_RTT "Enable the SEGGER RTT system log backend" ON)
+
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
@@ -62,6 +65,16 @@ add_executable(${CMAKE_PROJECT_NAME}
         System/Inc/system_sign.h
         System/Inc/system_check.h
         System/Inc/system_math.h
+        System/Inc/system_critical.h
+        System/Src/system_critical.c
+        System/Inc/system_fault.h
+        System/Src/system_fault.c
+        System/Inc/system_watchdog.h
+        System/Src/system_watchdog.c
+        System/Inc/system_log_base.h
+        System/Src/system_log_base.c
+        System/Inc/system_log.h
+        System/Src/system_log.c
         Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
         Platform/Inc/platform_tim.h
@@ -179,6 +192,25 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     PLATFORM_ENABLE_WWDG=1
     # Add user defined symbols
 )
+
+if(SYS_LOG_USE_RTT)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        System/Inc/system_log_rtt.h
+        System/Src/system_log_rtt.c
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT.c
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT.h
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT_ConfDefaults.h
+    )
+
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER_RTT/Config
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER_RTT/RTT
+    )
+
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        SYS_LOG_USE_RTT=1
+    )
+endif()
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)

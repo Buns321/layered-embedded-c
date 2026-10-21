@@ -15,12 +15,18 @@
 #include <stdint.h>
 
 /** @brief 滤波器最大通道数。 */
+#ifndef FILTER_CHANNEL_CAPACITY
 #define FILTER_CHANNEL_CAPACITY 16u
+#endif
 _Static_assert(FILTER_CHANNEL_CAPACITY > 0u, "FILTER_CHANNEL_CAPACITY must be positive");
 _Static_assert(FILTER_CHANNEL_CAPACITY <= 32u, "FILTER_CHANNEL_CAPACITY must not exceed 32");
 /** @brief 通道有效位掩码。 */
+#if FILTER_CHANNEL_CAPACITY == 32u
+#define FILTER_CHANNEL_MASK UINT32_MAX
+#else
 #define FILTER_CHANNEL_MASK \
   ((uint32_t)((1u << FILTER_CHANNEL_CAPACITY) - 1u))
+#endif
 
 /**
  * @brief 一次滤波采样。

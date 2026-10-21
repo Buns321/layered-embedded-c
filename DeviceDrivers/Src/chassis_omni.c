@@ -6,20 +6,40 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Chassis_Omni_Update(chassis_base_t *this) {
+static void Chassis_Omni_Stop(chassis_base_t *this);
+
+static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
   assert(this);
 
   chassis_omni_t *self = (chassis_omni_t *)this;
   assert(self->imu && self->policy);
 
-  float yaw = Dev_IMU_Base_GetYaw(self->imu);
+  imu_status_t imu_status = {0};
+  Dev_IMU_Base_GetStatus(self->imu, &imu_status);
+
+  uint32_t yaw_age_ms =
+    now_ms -
+    imu_status.channel_update_ms[IMU_CHANNEL_INDEX_YAW];
+
+  if (
+    !imu_status.is_started                                  ||
+    !imu_status.has_timestamp                               ||
+    (imu_status.valid_mask & IMU_CHANNEL_YAW) == 0u         ||
+    yaw_age_ms > self->imu_timeout_ms
+  ) {
+    Chassis_Omni_Stop(this);
+    return;
+  }
+
+  const float deg_to_rad = 3.14159265358979323846f / 180.0f;
+  float yaw_rad = Dev_IMU_Base_GetYaw(self->imu) * deg_to_rad;
   float wheel_speed[CHASSIS_OMNI_WHEEL_COUNT] = {0};
 
   Omni_Policy_Base_Solve(
     self->policy,
     self->v,
     self->dir,
-    yaw,
+    yaw_rad,
     self->omega,
     wheel_speed
   );
@@ -70,9 +90,17 @@ void Chassis_Omni_Init(
   const char         *name,
   motor_base_t *const wheel[CHASSIS_OMNI_WHEEL_COUNT],
   imu_base_t         *imu,
-  omni_policy_base_t *policy
+  omni_policy_base_t *policy,
+  uint32_t            imu_timeout_ms
 ) {
-  assert(this && name && wheel && imu && policy);
+  assert(
+    this            &&
+    name            &&
+    wheel           &&
+    imu             &&
+    policy          &&
+    imu_timeout_ms > 0u
+  );
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
     assert(wheel[i]);
@@ -93,6 +121,7 @@ void Chassis_Omni_Init(
   this->v      = 0.0f;
   this->dir    = 0.0f;
   this->omega  = 0.0f;
+  this->imu_timeout_ms = imu_timeout_ms;
 }
 
 void Chassis_Omni_SetMotion(chassis_omni_t *this, float v, float dir, float omega) {

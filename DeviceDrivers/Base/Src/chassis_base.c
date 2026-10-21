@@ -19,9 +19,9 @@ void Chassis_Base_Init(chassis_base_t *this, const char *name, const chassis_ops
   this->ops  = ops;
 }
 
-void Chassis_Base_Update(chassis_base_t *this) {
+void Chassis_Base_Update(chassis_base_t *this, uint32_t now_ms) {
   assert(this && this->ops && this->ops->update);
-  this->ops->update(this);
+  this->ops->update(this, now_ms);
 }
 
 void Chassis_Base_Stop(chassis_base_t *this) {

@@ -33,6 +33,7 @@ typedef struct chassis_omni {
   float v;
   float dir;
   float omega;
+  uint32_t imu_timeout_ms;
 } chassis_omni_t;
 
 /**
@@ -42,6 +43,7 @@ typedef struct chassis_omni {
  * @param wheel 四个电机基类指针。
  * @param imu IMU 基类指针。
  * @param policy Omni 策略基类指针。
+ * @param imu_timeout_ms yaw 数据最大允许年龄（ms），必须大于 0。
  * @note 底盘只保存指针，不复制对象。
  */
 void Chassis_Omni_Init(
@@ -49,7 +51,8 @@ void Chassis_Omni_Init(
   const char         *name,
   motor_base_t *const wheel[CHASSIS_OMNI_WHEEL_COUNT],
   imu_base_t         *imu,
-  omni_policy_base_t *policy
+  omni_policy_base_t *policy,
+  uint32_t            imu_timeout_ms
 );
 /**
  * @brief 设置底盘运动命令。
