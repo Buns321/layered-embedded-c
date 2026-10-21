@@ -59,9 +59,9 @@ typedef struct usart_ops {
   Dev_USART_Status (*receive)      (usart_base_t *this, uint8_t *buf, uint16_t size, uint32_t timeout);
   Dev_USART_Status (*transmit)     (usart_base_t *this, const uint8_t *data, uint16_t size, uint32_t timeout);
   Dev_USART_Status (*receive_it)   (usart_base_t *this, uint8_t *pdata, uint16_t size);
-  Dev_USART_Status (*transmit_it)  (usart_base_t *this, uint8_t *pdata, uint16_t size);
+  Dev_USART_Status (*transmit_it)  (usart_base_t *this, const uint8_t *pdata, uint16_t size);
   Dev_USART_Status (*receive_dma)  (usart_base_t *this, uint8_t *pdata, uint16_t size);
-  Dev_USART_Status (*transmit_dma) (usart_base_t *this, uint8_t *pdata, uint16_t size);
+  Dev_USART_Status (*transmit_dma) (usart_base_t *this, const uint8_t *pdata, uint16_t size);
 } usart_ops_t;
 
 /**
@@ -85,11 +85,11 @@ Dev_USART_Status Dev_USART_Base_Transmit      (usart_base_t *this, const uint8_t
 /** @brief 中断接收。 */
 Dev_USART_Status Dev_USART_Receive_IT         (usart_base_t *this, uint8_t *pdata, uint16_t size);
 /** @brief 中断发送。 */
-Dev_USART_Status Dev_USART_Transmit_IT        (usart_base_t *this, uint8_t *pdata, uint16_t size);
+Dev_USART_Status Dev_USART_Transmit_IT        (usart_base_t *this, const uint8_t *pdata, uint16_t size);
 /** @brief DMA 接收。 */
 Dev_USART_Status Dev_USART_Receive_DMA        (usart_base_t *this, uint8_t *pdata, uint16_t size);
 /** @brief DMA 发送。 */
-Dev_USART_Status Dev_USART_Transmit_DMA       (usart_base_t *this, uint8_t *pdata, uint16_t size);
+Dev_USART_Status Dev_USART_Transmit_DMA       (usart_base_t *this, const uint8_t *pdata, uint16_t size);
 /**
  * @brief 注册回调集合。
  * @param this USART 对象。

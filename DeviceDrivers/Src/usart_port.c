@@ -42,7 +42,7 @@ static Dev_USART_Status Dev_USART_Port_Transmit(
 ) {
   usart_port_t *self = Dev_USART_Port_FromBase(this);
   return Dev_USART_Port_MapStatus(
-    Platform_UART_Transmit(self->instance, (uint8_t *)data, size, timeout)
+    Platform_UART_Transmit(self->instance, data, size, timeout)
   );
 }
 
@@ -59,7 +59,7 @@ static Dev_USART_Status Dev_USART_Port_ReceiveIT(
 
 static Dev_USART_Status Dev_USART_Port_TransmitIT(
   usart_base_t *this,
-  uint8_t *pdata,
+  const uint8_t *pdata,
   uint16_t size
 ) {
   usart_port_t *self = Dev_USART_Port_FromBase(this);
@@ -81,7 +81,7 @@ static Dev_USART_Status Dev_USART_Port_ReceiveDMA(
 
 static Dev_USART_Status Dev_USART_Port_TransmitDMA(
   usart_base_t *this,
-  uint8_t *pdata,
+  const uint8_t *pdata,
   uint16_t size
 ) {
   usart_port_t *self = Dev_USART_Port_FromBase(this);

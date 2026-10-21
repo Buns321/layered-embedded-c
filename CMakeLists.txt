@@ -33,8 +33,18 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
+        Platform/Inc/platform_config.h
+        Platform/Inc/platform_crc.h
         Platform/Inc/platform_def.h
+        Platform/Inc/platform_iwdg.h
+        Platform/Inc/platform_rng.h
+        Platform/Inc/platform_wwdg.h
+        Platform/Src/platform_hal_internal.h
         Platform/Src/stm32f4/platform_gpio.c
+        Platform/Src/stm32f4/platform_crc.c
+        Platform/Src/stm32f4/platform_iwdg.c
+        Platform/Src/stm32f4/platform_rng.c
+        Platform/Src/stm32f4/platform_wwdg.c
         Platform/Inc/platform_gpio.h
         DeviceDrivers/Base/Src/led_base.c
         DeviceDrivers/Base/Inc/led_base.h
@@ -117,6 +127,14 @@ add_executable(${CMAKE_PROJECT_NAME}
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Third-party sources may contain warnings outside this project's ownership.
+if(TARGET STM32_Drivers)
+    target_compile_options(STM32_Drivers PRIVATE -Wno-unused-parameter)
+endif()
+if(TARGET FreeRTOS)
+    target_compile_options(FreeRTOS PRIVATE -Wno-unused-parameter)
+endif()
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -139,6 +157,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Base/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Src
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/System/Inc
 )
@@ -147,6 +166,17 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     USE_FREERTOS
     STM32F4xx
+    PLATFORM_ENABLE_PWM_TIM1=1
+    PLATFORM_ENABLE_ENCODER_TIM2=1
+    PLATFORM_ENABLE_ENCODER_TIM3=1
+    PLATFORM_ENABLE_ENCODER_TIM4=1
+    PLATFORM_ENABLE_ENCODER_TIM5=1
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_UART2=1
+    PLATFORM_ENABLE_CRC=1
+    PLATFORM_ENABLE_RNG=1
+    PLATFORM_ENABLE_IWDG=1
+    PLATFORM_ENABLE_WWDG=1
     # Add user defined symbols
 )
 

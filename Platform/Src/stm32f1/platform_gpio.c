@@ -3,6 +3,7 @@
 //
 
 #include "platform_gpio.h"
+#include "platform_hal_internal.h"
 #include <assert.h>
 #include "stm32f1xx_hal.h"
 
@@ -78,5 +79,5 @@ Platform_StatusTypeDef Platform_GPIO_LockPin(Platform_GPIO_Port GPIOx, uint16_t 
   GPIO_TypeDef *g = platform_to_hal_port(GPIOx);
   /* 检查入参 */
   assert(g != NULL);
-  return  hal_to_platform_statustypedef(HAL_GPIO_LockPin(g, GPIO_Pin));
+  return platform_from_hal_status(HAL_GPIO_LockPin(g, GPIO_Pin));
 }
