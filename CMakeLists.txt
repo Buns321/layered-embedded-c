@@ -102,6 +102,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Src/chassis_base.c
         DeviceDrivers/Inc/chassis_omni.h
         DeviceDrivers/Src/chassis_omni.c
+        DeviceDrivers/Base/Inc/telemetry_base.h
+        DeviceDrivers/Base/Src/telemetry_base.c
+        DeviceDrivers/Inc/firewater_usart.h
+        DeviceDrivers/Src/firewater_usart.c
+        DeviceDrivers/Inc/justfloat_usart.h
+        DeviceDrivers/Src/justfloat_usart.c
         RTOS/Src/rtos_shared.c
         RTOS/Inc/rtos_shared.h
         RTOS/Src/rtos_monitor.c
