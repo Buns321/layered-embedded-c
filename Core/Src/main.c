@@ -23,10 +23,16 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "crc.h"
+#include "rng.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "system_delay.h"
+#if defined(SYS_LOG_USE_RTT)
+#include "system_log.h"
+#include "system_log_rtt.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +53,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+#if defined(SYS_LOG_USE_RTT)
+static system_log_rtt_t s_log_rtt;
+#endif
 
 /* USER CODE END PV */
 
@@ -99,8 +108,16 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM5_Init();
   MX_USART2_UART_Init();
+  MX_CRC_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   Sys_Delay_Init();
+#if defined(SYS_LOG_USE_RTT)
+  Sys_Log_RTT_Init(&s_log_rtt, "rtt", 0u);
+  Sys_Log_Init(&s_log_rtt.base);
+  Sys_Log_SetLevel(SYS_LOG_LEVEL_INFO);
+  SYS_LOG_INFO("BOOT", "RTT log initialized");
+#endif
   /* USER CODE END 2 */
 
   /* Init scheduler */

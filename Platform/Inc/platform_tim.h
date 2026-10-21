@@ -8,6 +8,7 @@
  * @addtogroup platform
  * @{
  * @note 这里只表达“是谁”，具体 PSC/ARR/模式由 CubeMX 或平台实现决定。
+ * @note PWM 与 Encoder 使用各自的功能实例类型，不复用本文件的通用身份。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_TIM_H

@@ -33,7 +33,7 @@ Dev_USART_Status Dev_USART_Receive_IT(usart_base_t *this, uint8_t *pdata, uint16
   return this->ops->receive_it(this, pdata, size);
 }
 
-Dev_USART_Status Dev_USART_Transmit_IT(usart_base_t *this, uint8_t *pdata, uint16_t size){
+Dev_USART_Status Dev_USART_Transmit_IT(usart_base_t *this, const uint8_t *pdata, uint16_t size){
   assert(this && this->ops && this->ops->transmit_it && pdata && size != 0u);
   return this->ops->transmit_it(this, pdata, size);
 }
@@ -43,7 +43,7 @@ Dev_USART_Status Dev_USART_Receive_DMA(usart_base_t *this, uint8_t *pdata, uint1
   return this->ops->receive_dma(this, pdata, size);
 }
 
-Dev_USART_Status Dev_USART_Transmit_DMA(usart_base_t *this, uint8_t *pdata, uint16_t size) {
+Dev_USART_Status Dev_USART_Transmit_DMA(usart_base_t *this, const uint8_t *pdata, uint16_t size) {
   assert(this && this->ops && this->ops->transmit_dma && pdata && size != 0u);
   return this->ops->transmit_dma(this, pdata, size);
 }

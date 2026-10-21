@@ -132,8 +132,8 @@ Platform_StatusTypeDef Dev_Motor_TB6612_Init(
   float                  control_period,
   float                  target_speed,
   int32_t                max_duty,
-  Platform_TIM_Instance  pwm_instance,
-  Platform_TIM_Channel   pwm_channel,
+  Platform_PWM_Instance  pwm_instance,
+  Platform_PWM_Channel   pwm_channel,
   Platform_GPIO_Port     ain1_port, uint16_t ain1_pin,
   Platform_GPIO_Port     ain2_port, uint16_t ain2_pin,
   Platform_GPIO_Port     stby_port, uint16_t stby_pin

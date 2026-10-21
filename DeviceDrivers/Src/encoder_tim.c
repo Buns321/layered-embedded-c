@@ -90,11 +90,14 @@ static const encoder_ops_t encoder_ops_tim = {
   .resync = Dev_Encoder_TIM_Resync,
 };
 
-Platform_StatusTypeDef Dev_Encoder_TIM_Init(encoder_tim_t *this, const char *name, Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
+Platform_StatusTypeDef Dev_Encoder_TIM_Init(
+  encoder_tim_t *this,
+  const char *name,
+  Platform_Encoder_Instance tim
+) {
   assert(this && name);
 
   this->tim = tim;
-  this->channel = channel;
   this->bit_width = Platform_Encoder_GetCounterBits(this->tim);
 
   assert(this->bit_width == 16U || this->bit_width == 32U);
@@ -107,7 +110,7 @@ Platform_StatusTypeDef Dev_Encoder_TIM_Init(encoder_tim_t *this, const char *nam
   this->overflow = false;
   this->max_counts_per_period = 0u;
 
-  return Platform_Encoder_Start(this->tim, this->channel);
+  return Platform_Encoder_Start(this->tim);
 }
 
 void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *this, uint32_t max_counts) {

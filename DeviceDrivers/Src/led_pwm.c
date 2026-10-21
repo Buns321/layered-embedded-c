@@ -39,10 +39,10 @@ static const led_ops_t led_ops_pwm = {
 };
 
 Platform_StatusTypeDef Dev_LED_PWM_Init(
-  led_pwm_t            *this,
-  const char           *name,
-  Platform_TIM_Instance pwm_instance,
-  Platform_TIM_Channel  pwm_channel
+  led_pwm_t             *this,
+  const char            *name,
+  Platform_PWM_Instance  pwm_instance,
+  Platform_PWM_Channel   pwm_channel
 ) {
   assert(this && name);
 
