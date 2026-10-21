@@ -52,6 +52,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         System/Inc/system_sign.h
         System/Inc/system_check.h
         System/Inc/system_math.h
+        System/Inc/system_critical.h
+        System/Src/system_critical.c
+        System/Inc/system_fault.h
+        System/Src/system_fault.c
+        System/Inc/system_watchdog.h
+        System/Src/system_watchdog.c
         Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
         Platform/Inc/platform_tim.h

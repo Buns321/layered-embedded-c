@@ -94,10 +94,11 @@ controller_status_t update(
 - `chassis_omni_t` 持有四个 `motor_base_t *`、`imu_base_t *`、
   `omni_policy_base_t *`。
 - `Chassis_Omni_SetMotion(v, dir, omega)` 只保存命令。
-- `Chassis_Base_Update` 读取 yaw、调用 policy、向四个电机写目标速度；
-  它不运行电机闭环。
+- `Chassis_Base_Update(now_ms)` 检查 yaw 通道是否有效且未超时，将 IMU
+  的角度制 yaw 转为弧度后调用 policy，再向四个电机写目标速度；
+  它不运行电机闭环。IMU 无效或过期时锁存制动。
 - `Chassis_Base_Stop` 清零目标并调用电机制动；
-  `Chassis_Base_EStop` 直接禁用四个电机。
+  制动状态会保持到显式重新使能。`Chassis_Base_EStop` 直接禁用四个电机。
 
 ### Filter
 
@@ -113,6 +114,9 @@ controller_status_t update(
   C11 `_Generic` 宏。
 - `system_delay.h` 用 DWT 做微秒延时；`USE_FREERTOS` 下毫秒延时走 `osDelay`。
 - 通过 `STM32F4xx` / `STM32F1xx` 条件编译选择 CMSIS 设备头；DWT 细节保留在 System 内。
+- `system_critical.h` 提供任务/ISR 临界区，RTOS 与裸机两套实现。
+- `system_fault.h` 捕获 CFSR/HFSR/MMFAR/BFAR 与 MSP/PSP，并提供弱安全钩子。
+- `system_watchdog.h` 提供 IWDG 启动、任务 check-in 与统一喂狗策略。
 
 ## 5. 数据流
 
@@ -136,9 +140,11 @@ Dev_Motor_Base_Update()
 Chassis_Omni_SetMotion(v, dir, omega)
 
 ControlTask:
-    Chassis_Base_Update(&chassis.base)
-        ├── yaw = Dev_IMU_Base_GetYaw(imu)
-        ├── Omni_Policy_Base_Solve(policy, v, dir, yaw, omega, wheel_mps[4])
+    Chassis_Base_Update(&chassis.base, now_ms)
+        ├── status = Dev_IMU_Base_GetStatus(imu)
+        ├── reject invalid/stale yaw, then stop and brake
+        ├── yaw_rad = Dev_IMU_Base_GetYaw(imu) * PI / 180
+        ├── Omni_Policy_Base_Solve(policy, v, dir, yaw_rad, omega, wheel_mps[4])
         └── for i: Dev_Motor_Base_SetTargetSpeed(wheel[i], wheel_mps[i])
 
     for i: Dev_Motor_Base_Update(wheel[i])
@@ -155,7 +161,7 @@ ControlTask:
 5. `Dev_USART_Port_Init`（USART1）
 6. `Dev_IMU_WHT101_USART_Init` + `Dev_IMU_Base_Start`
 7. `Policy_Omni_Kinematics_Init`
-8. `Chassis_Omni_Init`
+8. `Chassis_Omni_Init(..., imu_timeout_ms)`
 
 当前 `main()` 只调用了 `Sys_Delay_Init()`；`App_Init()` 的调用点需要在上层接线时补回。
 
@@ -208,7 +214,8 @@ ControlTask:
 ## 11. 当前状态
 
 已实现：Platform（F4）、LED、电机、编码器、USART、IMU、Controller 契约 + 线性 + compose、
-Policy omni、Chassis omni、Filter 基础设施、System。
+Policy omni、Chassis omni、Filter 基础设施、System（数学/延时/临界区/Fault/看门狗）。
 
 待完成或暂缓：PID、App / RTOS 接线、Board 层、F1 构建目标、参数标定、
-Filter 单测 / 统一时间源 / Kalman。
+Filter 单测 / 统一时间源 / Kalman、Platform 外设扩展、
+MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）。

@@ -21,6 +21,7 @@
 typedef enum {
   DEV_MOTOR_DISABLE = 0U,
   DEV_MOTOR_ENABLE,
+  DEV_MOTOR_BRAKE,
 } Dev_Motor_State;
 
 typedef struct motor_base motor_base_t;
@@ -49,7 +50,7 @@ typedef struct motor_base {
   controller_base_t *controller;
   encoder_base_t    *encoder;
 
-  Dev_Motor_State    is_motor_enabled;
+  Dev_Motor_State    state;            // 禁用 / 闭环使能 / 制动保持
 
   float              target_speed;     // (m/s)
   float              current_speed;    // (m/s)
@@ -71,7 +72,7 @@ void Dev_Motor_Base_Init(
   float              target_speed,
   int32_t            max_duty
 );
-/** @brief 读取使能状态。 */
+/** @brief 读取当前运行状态。 */
 Dev_Motor_State Dev_Motor_Base_ReadStatus       (motor_base_t *this);
 /** @brief 读取目标速度（m/s）。 */
 float           Dev_Motor_Base_ReadTargetSpeed  (motor_base_t *this);
@@ -85,12 +86,15 @@ void            Dev_Motor_Base_SetTargetSpeed   (motor_base_t *this, float targe
 void            Dev_Motor_Base_Enable           (motor_base_t *this);
 /** @brief 禁用电机并清除目标。 */
 void            Dev_Motor_Base_Disable          (motor_base_t *this);
-/** @brief 使用具体驱动的制动能力。 */
+/**
+ * @brief 使用具体驱动的制动能力，并保持制动状态。
+ * @note 制动后 Update 不再输出，必须重新 Enable 才能恢复闭环控制。
+ */
 void            Dev_Motor_Base_Brake            (motor_base_t *this);
 /**
  * @brief 运行一次闭环更新。
  * @note 每个控制周期调用一次；内部读取编码器 delta、运行控制律并下发占空比。
- * @warning 未使能时直接返回，不读取编码器。
+ * @warning 非 ENABLE 状态直接返回，不读取编码器。
  */
 void            Dev_Motor_Base_Update           (motor_base_t *this);
 /**

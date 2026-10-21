@@ -13,7 +13,7 @@
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
 - **Filter**：样本、base、低通、透传、chain、distributor。
-- **System**：数学、检查、限幅、符号、延时。
+- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗。
 - **RTOS**：四个任务骨架已创建，控制任务和串口任务体待实现。
 - **App**：预留空文件，业务逻辑待实现。
 
@@ -25,6 +25,8 @@
 - F1 正式构建目标
 - 参数标定
 - Filter 单元测试、统一单调时间源、Kalman / MPU6050
+- Platform 外设扩展（I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG）
+- MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
 
 ## 构建
 

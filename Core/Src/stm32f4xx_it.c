@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "system_fault.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,7 +91,7 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  Sys_Fault_Handler(SYS_FAULT_HARD);
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -105,7 +106,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  Sys_Fault_Handler(SYS_FAULT_MEMMANAGE);
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -120,7 +121,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  Sys_Fault_Handler(SYS_FAULT_BUS);
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -135,7 +136,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  Sys_Fault_Handler(SYS_FAULT_USAGE);
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {

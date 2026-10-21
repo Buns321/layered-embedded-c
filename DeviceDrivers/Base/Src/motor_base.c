@@ -36,7 +36,7 @@ void Dev_Motor_Base_Init(
   this->name             = name;
   this->controller       = controller;
   this->encoder          = encoder;
-  this->is_motor_enabled = DEV_MOTOR_DISABLE;
+  this->state            = DEV_MOTOR_DISABLE;
   this->current_speed    = 0;
   this->target_speed     = 0.0f;
   this->counts_per_meter = counts_per_meter;
@@ -49,7 +49,7 @@ void Dev_Motor_Base_Init(
 
 Dev_Motor_State Dev_Motor_Base_ReadStatus(motor_base_t *this) {
   assert(this);
-  return this->is_motor_enabled;
+  return this->state;
 }
 
 float Dev_Motor_Base_ReadTargetSpeed(motor_base_t *this) {
@@ -86,7 +86,7 @@ void Dev_Motor_Base_Enable(motor_base_t *this) {
 
   Dev_Motor_Base_Reset(this);
   this->ops->enable(this);
-  this->is_motor_enabled = DEV_MOTOR_ENABLE;
+  this->state            = DEV_MOTOR_ENABLE;
 }
 
 
@@ -101,7 +101,7 @@ void Dev_Motor_Base_Disable(motor_base_t *this) {
   this->ops->set_power(this, 0.0f);
   this->ops->disable(this);
 
-  this->is_motor_enabled = DEV_MOTOR_DISABLE;
+  this->state            = DEV_MOTOR_DISABLE;
   this->current_speed = 0.0f;
   this->target_speed = 0.0f;
   this->controller_status = CONTROLLER_STATUS_OK;
@@ -119,8 +119,13 @@ void Dev_Motor_Base_Brake(motor_base_t *this) {
   this->current_speed = 0.0f;
   this->controller_status = CONTROLLER_STATUS_OK;
 
+  if (this->state == DEV_MOTOR_DISABLE) {
+    return;
+  }
+
   Ctrl_Base_Reset(this->controller);
   this->ops->brake(this);
+  this->state            = DEV_MOTOR_BRAKE;
 }
 
 void Dev_Motor_Base_Update(motor_base_t *this) {
@@ -132,7 +137,7 @@ void Dev_Motor_Base_Update(motor_base_t *this) {
     this->encoder
   );
 
-  if (this->is_motor_enabled == DEV_MOTOR_DISABLE) {
+  if (this->state != DEV_MOTOR_ENABLE) {
     return;
   }
 
