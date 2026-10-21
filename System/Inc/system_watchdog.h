@@ -26,7 +26,7 @@ typedef enum {
 
 /**
  * @brief 启动 IWDG。
- * @param timeout_ms 目标超时（ms），内部夹紧到 1..4095。
+ * @param timeout_ms 目标超时（ms），内部夹紧到 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
  * @note IWDG 一旦启动不能停止；必须在监控任务准备好之后再调用。
  * @note 应在任务启动前调用，避免与 Sys_Watchdog_CheckIn 并发。
  * @note 实际超时受 LSI 频率偏差影响。

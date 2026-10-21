@@ -21,6 +21,9 @@ endif()
 # Set the project name
 set(CMAKE_PROJECT_NAME layered-embedded-c)
 
+# Optional debug services
+option(SYS_LOG_USE_RTT "Enable the SEGGER RTT system log backend" ON)
+
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
@@ -33,8 +36,18 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
+        Platform/Inc/platform_config.h
+        Platform/Inc/platform_crc.h
         Platform/Inc/platform_def.h
+        Platform/Inc/platform_iwdg.h
+        Platform/Inc/platform_rng.h
+        Platform/Inc/platform_wwdg.h
+        Platform/Src/platform_hal_internal.h
         Platform/Src/stm32f4/platform_gpio.c
+        Platform/Src/stm32f4/platform_crc.c
+        Platform/Src/stm32f4/platform_iwdg.c
+        Platform/Src/stm32f4/platform_rng.c
+        Platform/Src/stm32f4/platform_wwdg.c
         Platform/Inc/platform_gpio.h
         DeviceDrivers/Base/Src/led_base.c
         DeviceDrivers/Base/Inc/led_base.h
@@ -58,6 +71,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         System/Src/system_fault.c
         System/Inc/system_watchdog.h
         System/Src/system_watchdog.c
+        System/Inc/system_log_base.h
+        System/Src/system_log_base.c
+        System/Inc/system_log.h
+        System/Src/system_log.c
         Platform/Src/stm32f4/platform_pwm.c
         Platform/Inc/platform_pwm.h
         Platform/Inc/platform_tim.h
@@ -85,6 +102,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Src/chassis_base.c
         DeviceDrivers/Inc/chassis_omni.h
         DeviceDrivers/Src/chassis_omni.c
+        DeviceDrivers/Base/Inc/telemetry_base.h
+        DeviceDrivers/Base/Src/telemetry_base.c
+        DeviceDrivers/Inc/firewater_usart.h
+        DeviceDrivers/Src/firewater_usart.c
+        DeviceDrivers/Inc/justfloat_usart.h
+        DeviceDrivers/Src/justfloat_usart.c
         RTOS/Src/rtos_shared.c
         RTOS/Inc/rtos_shared.h
         RTOS/Src/rtos_monitor.c
@@ -123,6 +146,14 @@ add_executable(${CMAKE_PROJECT_NAME}
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Third-party sources may contain warnings outside this project's ownership.
+if(TARGET STM32_Drivers)
+    target_compile_options(STM32_Drivers PRIVATE -Wno-unused-parameter)
+endif()
+if(TARGET FreeRTOS)
+    target_compile_options(FreeRTOS PRIVATE -Wno-unused-parameter)
+endif()
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -145,6 +176,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Base/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Policy/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Platform/Src
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/System/Inc
 )
@@ -153,8 +185,38 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     USE_FREERTOS
     STM32F4xx
+    PLATFORM_ENABLE_PWM_TIM1=1
+    PLATFORM_ENABLE_ENCODER_TIM2=1
+    PLATFORM_ENABLE_ENCODER_TIM3=1
+    PLATFORM_ENABLE_ENCODER_TIM4=1
+    PLATFORM_ENABLE_ENCODER_TIM5=1
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_UART2=1
+    PLATFORM_ENABLE_CRC=1
+    PLATFORM_ENABLE_RNG=1
+    PLATFORM_ENABLE_IWDG=1
+    PLATFORM_ENABLE_WWDG=1
     # Add user defined symbols
 )
+
+if(SYS_LOG_USE_RTT)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        System/Inc/system_log_rtt.h
+        System/Src/system_log_rtt.c
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT.c
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT.h
+        Middlewares/Third_Party/SEGGER_RTT/RTT/SEGGER_RTT_ConfDefaults.h
+    )
+
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER_RTT/Config
+        ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/SEGGER_RTT/RTT
+    )
+
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        SYS_LOG_USE_RTT=1
+    )
+endif()
 
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)

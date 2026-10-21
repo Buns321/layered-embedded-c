@@ -41,22 +41,29 @@ base 与 Platform；base 只依赖 System 和标准库。
 
 ### Platform
 
-- 用枚举身份（端口、定时器、通道、UART 实例）替代 HAL handle。
-- 每个平台实现内部做 `platform_to_hal_*` 映射，非法枚举直接断言。
-- 对外只暴露 `Platform_*` 类型与 `Platform_StatusTypeDef`。
+- 用功能独立的枚举身份（PWM、Encoder、UART 等）替代 HAL handle。
+- `platform_config.h` 在编译期声明可用实例，未启用实例不进入公共枚举。
+- CubeMX/Core 独占引脚、时钟、DMA、NVIC 和 `MX_*_Init()`。
+- Platform 只做运行期启动、传输、校准、状态读取和回调分发。
+- 每个平台实现内部做私有 handle 映射，非法枚举直接断言。
+- 对外只暴露 HAL-free 类型、`Platform_StatusTypeDef` 和回调契约。
+- UART IT/DMA 缓冲区在完成或错误回调前由调用方保持有效。
 - F4 实现位于 `Platform/Src/stm32f4/`，F1 兼容实现位于 `Platform/Src/stm32f1/`；
   当前构建只选用 F4。
 
 ### DeviceDrivers
 
 - `Base/` 放抽象接口：`led_base_t`、`motor_base_t`、`encoder_base_t`、
-  `usart_base_t`、`imu_base_t`、`chassis_base_t`。
+  `usart_base_t`、`imu_base_t`、`chassis_base_t`、`telemetry_base_t`。
 - `Inc/`、`Src/` 放具体实现：`led_gpio_t`、`led_pwm_t`、`motor_tb6612_t`、
-  `encoder_tim_t`、`usart_port_t`、`imu_wht101_usart_t`、`chassis_omni_t`。
+  `encoder_tim_t`、`usart_port_t`、`imu_wht101_usart_t`、`chassis_omni_t`、
+  `firewater_usart_t`、`justfloat_usart_t`。
 - 电机是闭环设备：目标速度、编码器、控制律、执行器都在 `motor_base` 里汇合。
 - USART 由 `usart_base_t` 抽象，`usart_port_t` 负责桥接 Platform 回调。
 - IMU 的 `start` / `process` / `get_status` 由具体实现提供；WHT101 使用
   单字节中断接收、环形队列和非阻塞配置状态机。
+- `telemetry_base_t` 定义固定多通道样本和非阻塞整帧发送契约；
+  `firewater_usart_t` 与 `justfloat_usart_t` 是具体协议设备，各自持有发送缓冲。
 
 ### Controller
 
@@ -116,7 +123,12 @@ controller_status_t update(
 - 通过 `STM32F4xx` / `STM32F1xx` 条件编译选择 CMSIS 设备头；DWT 细节保留在 System 内。
 - `system_critical.h` 提供任务/ISR 临界区，RTOS 与裸机两套实现。
 - `system_fault.h` 捕获 CFSR/HFSR/MMFAR/BFAR 与 MSP/PSP，并提供弱安全钩子。
-- `system_watchdog.h` 提供 IWDG 启动、任务 check-in 与统一喂狗策略。
+- `system_watchdog.h` 提供任务 check-in 与统一喂狗策略；IWDG 寄存器操作
+  已下沉到 Platform。
+- `system_log_base.h` 提供日志输出后端接口，`system_log.h` 提供非阻塞日志门面，
+  `system_log_rtt.h` 是 SEGGER RTT 具体后端。
+- SEGGER RTT 原始源码位于 `Middlewares/Third_Party/SEGGER_RTT/`，只有
+  `system_log_rtt.c` 可以直接包含其头文件。
 
 ## 5. 数据流
 
@@ -152,6 +164,22 @@ ControlTask:
 
 底盘只负责解算和下发目标；电机闭环仍然在 `motor_base` 内。
 
+### 遥测环
+
+```
+ControlTask / MonitorTask
+    └── 组装 telemetry_sample_t
+
+MonitorTask
+    └── Dev_Telemetry_Base_Send(...)
+          ├── JustFloat: 小端 float 数组 + 固定帧尾
+          ├── FireWater: name:value 文本
+          └── usart_base_t -> USART2 DMA
+```
+
+遥测发送不阻塞控制任务。USART DMA 忙时整帧丢弃，并通过
+`telemetry_status_t` 暴露发送、丢弃和错误计数。
+
 ## 6. 初始化顺序（计划）
 
 1. `Dev_Encoder_TIM_Init` × 4
@@ -162,8 +190,12 @@ ControlTask:
 6. `Dev_IMU_WHT101_USART_Init` + `Dev_IMU_Base_Start`
 7. `Policy_Omni_Kinematics_Init`
 8. `Chassis_Omni_Init(..., imu_timeout_ms)`
+9. `Dev_USART_Port_Init`（USART2）
+10. `Dev_JustFloat_USART_Init` 或 `Dev_FireWater_USART_Init`
+11. `Sys_Log_RTT_Init` + `Sys_Log_Init`
 
-当前 `main()` 只调用了 `Sys_Delay_Init()`；`App_Init()` 的调用点需要在上层接线时补回。
+当前 `main()` 已调用 `Sys_Delay_Init()`，并在启用 `SYS_LOG_USE_RTT` 时初始化
+RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
 ## 7. 任务模型
 
@@ -214,8 +246,10 @@ ControlTask:
 ## 11. 当前状态
 
 已实现：Platform（F4）、LED、电机、编码器、USART、IMU、Controller 契约 + 线性 + compose、
-Policy omni、Chassis omni、Filter 基础设施、System（数学/延时/临界区/Fault/看门狗）。
+Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
+System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
 
 待完成或暂缓：PID、App / RTOS 接线、Board 层、F1 构建目标、参数标定、
 Filter 单测 / 统一时间源 / Kalman、Platform 外设扩展、
-MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）。
+MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
+遥测对象与任务接线、USART2 高波特率配置、RTT 主机侧实测。

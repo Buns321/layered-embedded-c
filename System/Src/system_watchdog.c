@@ -3,23 +3,9 @@
 //
 
 #include "system_watchdog.h"
+#include "platform_iwdg.h"
 #include "system_critical.h"
 #include <assert.h>
-
-#if defined(STM32F4xx)
-#include "stm32f4xx.h"
-#elif defined(STM32F1xx)
-#include "stm32f1xx.h"
-#else
-#error "Unsupported STM32 family"
-#endif
-
-#define SYS_WATCHDOG_KEY_START  0xCCCCu
-#define SYS_WATCHDOG_KEY_UNLOCK 0x5555u
-#define SYS_WATCHDOG_KEY_RELOAD 0xAAAAu
-
-#define SYS_WATCHDOG_PRESCALER_32 3u
-#define SYS_WATCHDOG_RELOAD_MAX   0x0FFFu
 
 static uint32_t s_timeout_ms;
 static uint32_t s_last_checkin[SYS_WATCHDOG_TASK_COUNT];
@@ -32,8 +18,8 @@ void Sys_Watchdog_Init(uint32_t timeout_ms) {
     timeout_ms = 1u;
   }
 
-  if (timeout_ms > SYS_WATCHDOG_RELOAD_MAX) {
-    timeout_ms = SYS_WATCHDOG_RELOAD_MAX;
+  if (timeout_ms > PLATFORM_IWDG_MAX_TIMEOUT_MS) {
+    timeout_ms = PLATFORM_IWDG_MAX_TIMEOUT_MS;
   }
 
   s_timeout_ms = timeout_ms;
@@ -44,15 +30,11 @@ void Sys_Watchdog_Init(uint32_t timeout_ms) {
 
   s_checkin_mask = 0u;
 
-  IWDG->KR = SYS_WATCHDOG_KEY_START;
-  IWDG->KR = SYS_WATCHDOG_KEY_UNLOCK;
-  IWDG->PR = SYS_WATCHDOG_PRESCALER_32;
-  IWDG->RLR = timeout_ms;
-
-  while (IWDG->SR != 0u) {
-  }
-
-  IWDG->KR = SYS_WATCHDOG_KEY_RELOAD;
+  Platform_StatusTypeDef status = Platform_IWDG_Start(
+    PLATFORM_IWDG_1,
+    timeout_ms
+  );
+  assert(status == Platform_OK);
 }
 
 void Sys_Watchdog_CheckIn(Sys_Watchdog_Task task, uint32_t now_ms) {
@@ -90,16 +72,9 @@ bool Sys_Watchdog_Service(uint32_t now_ms) {
     }
   }
 
-  IWDG->KR = SYS_WATCHDOG_KEY_RELOAD;
-  return true;
+  return Platform_IWDG_Refresh(PLATFORM_IWDG_1) == Platform_OK;
 }
 
 bool Sys_Watchdog_WasReset(void) {
-  bool was_reset = (RCC->CSR & RCC_CSR_IWDGRSTF) != 0u;
-
-  if (was_reset) {
-    RCC->CSR |= RCC_CSR_RMVF;
-  }
-
-  return was_reset;
+  return Platform_IWDG_WasReset(PLATFORM_IWDG_1);
 }

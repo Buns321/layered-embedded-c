@@ -22,8 +22,8 @@
  */
 typedef struct led_pwm {
   led_base_t            led_base;
-  Platform_TIM_Instance pwm_instance;
-  Platform_TIM_Channel  pwm_channel;
+  Platform_PWM_Instance pwm_instance;
+  Platform_PWM_Channel  pwm_channel;
 } led_pwm_t;
 
 /**
@@ -37,10 +37,10 @@ typedef struct led_pwm {
  * @note 初始化时先把占空比置 0。
  */
 Platform_StatusTypeDef Dev_LED_PWM_Init(
-  led_pwm_t            *this,
-  const char           *name,
-  Platform_TIM_Instance pwm_instance,
-  Platform_TIM_Channel  pwm_channel
+  led_pwm_t             *this,
+  const char            *name,
+  Platform_PWM_Instance  pwm_instance,
+  Platform_PWM_Channel   pwm_channel
 );
 
 /** @} */

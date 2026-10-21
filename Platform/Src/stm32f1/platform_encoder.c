@@ -3,57 +3,81 @@
 //
 
 #include "platform_encoder.h"
+#include "platform_hal_internal.h"
 #include "stm32f1xx_hal.h"
-#include <assert.h>
 #include "tim.h"
+#include <assert.h>
 
-static TIM_HandleTypeDef *platform_to_hal_htim(Platform_TIM_Instance tim) {
-  switch (tim) {
-    case PLATFORM_TIM_TIM1: return &htim1;
-      // case PLATFORM_TIM_TIM2: return &htim2;
-    case PLATFORM_TIM_TIM3: return &htim3;
-      // case PLATFORM_TIM_TIM4: return &htim4;
-    default:                assert(0); return NULL;
+static TIM_HandleTypeDef *platform_encoder_to_hal(
+  Platform_Encoder_Instance encoder
+) {
+  switch (encoder) {
+#if PLATFORM_ENABLE_ENCODER_TIM1
+    case PLATFORM_ENCODER_TIM1: return &htim1;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM2
+    case PLATFORM_ENCODER_TIM2: return &htim2;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM3
+    case PLATFORM_ENCODER_TIM3: return &htim3;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM4
+    case PLATFORM_ENCODER_TIM4: return &htim4;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM5
+    case PLATFORM_ENCODER_TIM5: return &htim5;
+#endif
+    default: assert(0); return NULL;
   }
 }
 
-static uint32_t platform_to_hal_channel(Platform_TIM_Channel channel) {
-  switch (channel) {
-    case PLATFORM_TIM_CHANNEL_1:    return TIM_CHANNEL_1;
-    case PLATFORM_TIM_CHANNEL_2:    return TIM_CHANNEL_2;
-    case PLATFORM_TIM_CHANNEL_3:    return TIM_CHANNEL_3;
-    case PLATFORM_TIM_CHANNEL_4:    return TIM_CHANNEL_4;
-    case PLATFORM_TIM_CHANNEL_ALL:  return TIM_CHANNEL_ALL;
-    default:                        assert(0); return 0;
-  }
+Platform_StatusTypeDef Platform_Encoder_Start(
+  Platform_Encoder_Instance encoder
+) {
+  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
+  assert(htim != NULL);
+
+  return platform_from_hal_status(
+    HAL_TIM_Encoder_Start(htim, TIM_CHANNEL_ALL)
+  );
 }
 
-Platform_StatusTypeDef Platform_Encoder_Start(Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
-  TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
+uint32_t Platform_Encoder_GetCounter(
+  Platform_Encoder_Instance encoder
+) {
+  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
   assert(htim != NULL);
-  return hal_to_platform_statustypedef(HAL_TIM_Encoder_Start(htim, platform_to_hal_channel(channel)));
-}
-
-uint32_t Platform_Encoder_GetCounter(Platform_TIM_Instance tim) {
-  TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
-  assert(htim != NULL);
-  // return htim->Instance->CNT;
   return __HAL_TIM_GET_COUNTER(htim);
 }
 
-void Platform_Encoder_SetCounter(Platform_TIM_Instance tim, uint32_t counter) {
-  TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
+void Platform_Encoder_SetCounter(
+  Platform_Encoder_Instance encoder,
+  uint32_t counter
+) {
+  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
   assert(htim != NULL);
   __HAL_TIM_SET_COUNTER(htim, counter);
 }
 
-uint8_t Platform_Encoder_GetCounterBits(Platform_TIM_Instance tim){
-  switch (tim) {
-    case PLATFORM_TIM_TIM1:  return 16U;
-    case PLATFORM_TIM_TIM2:  return 16U;
-    case PLATFORM_TIM_TIM3:  return 16U;
-    case PLATFORM_TIM_TIM4:  return 16U;
-    case PLATFORM_TIM_TIM5:  return 16U;
-    default:      assert(0); return 0U;
+uint8_t Platform_Encoder_GetCounterBits(
+  Platform_Encoder_Instance encoder
+) {
+  switch (encoder) {
+#if PLATFORM_ENABLE_ENCODER_TIM1
+    case PLATFORM_ENCODER_TIM1: return 16U;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM2
+    case PLATFORM_ENCODER_TIM2: return 16U;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM3
+    case PLATFORM_ENCODER_TIM3: return 16U;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM4
+    case PLATFORM_ENCODER_TIM4: return 16U;
+#endif
+#if PLATFORM_ENABLE_ENCODER_TIM5
+    case PLATFORM_ENCODER_TIM5: return 16U;
+#endif
+    default: assert(0); return 0U;
   }
 }

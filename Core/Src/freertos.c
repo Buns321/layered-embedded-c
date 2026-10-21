@@ -147,6 +147,7 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
+  (void)argument;
   /* Infinite loop */
   for(;;)
   {
@@ -165,6 +166,7 @@ void StartDefaultTask(void *argument)
 __weak void StartMonitor_Task(void *argument)
 {
   /* USER CODE BEGIN StartMonitor_Task */
+  (void)argument;
   /* Infinite loop */
   for(;;)
   {
@@ -183,6 +185,7 @@ __weak void StartMonitor_Task(void *argument)
 __weak void StartControlTask(void *argument)
 {
   /* USER CODE BEGIN StartControlTask */
+  (void)argument;
   /* Infinite loop */
   for(;;)
   {
@@ -201,6 +204,7 @@ __weak void StartControlTask(void *argument)
 __weak void StartUSARTTask(void *argument)
 {
   /* USER CODE BEGIN StartUSARTTask */
+  (void)argument;
   /* Infinite loop */
   for(;;)
   {

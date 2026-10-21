@@ -3,64 +3,117 @@
 //
 
 #include "platform_pwm.h"
-#include <assert.h>
+#include "platform_hal_internal.h"
 #include "stm32f1xx_hal.h"
 #include "tim.h"
+#include <assert.h>
 
-static TIM_HandleTypeDef *platform_to_hal_htim(Platform_TIM_Instance tim) {
-  switch (tim) {
-    case PLATFORM_TIM_TIM1: return &htim1;
-    // case PLATFORM_TIM_TIM2: return &htim2;
-    case PLATFORM_TIM_TIM3: return &htim3;
-    // case PLATFORM_TIM_TIM4: return &htim4;
-    default:                assert(0); return NULL;
+static TIM_HandleTypeDef *platform_pwm_to_hal(Platform_PWM_Instance pwm) {
+  switch (pwm) {
+#if PLATFORM_ENABLE_PWM_TIM1
+    case PLATFORM_PWM_TIM1: return &htim1;
+#endif
+#if PLATFORM_ENABLE_PWM_TIM3
+    case PLATFORM_PWM_TIM3: return &htim3;
+#endif
+    default: assert(0); return NULL;
   }
 }
 
-static uint32_t platform_to_hal_channel(Platform_TIM_Channel channel) {
+static uint32_t platform_pwm_channel_to_hal(Platform_PWM_Channel channel) {
   switch (channel) {
-    case PLATFORM_TIM_CHANNEL_1:    return TIM_CHANNEL_1;
-    case PLATFORM_TIM_CHANNEL_2:    return TIM_CHANNEL_2;
-    case PLATFORM_TIM_CHANNEL_3:    return TIM_CHANNEL_3;
-    case PLATFORM_TIM_CHANNEL_4:    return TIM_CHANNEL_4;
-    case PLATFORM_TIM_CHANNEL_ALL:  return TIM_CHANNEL_ALL;
-    default:                        assert(0); return 0;
+    case PLATFORM_PWM_CHANNEL_1: return TIM_CHANNEL_1;
+    case PLATFORM_PWM_CHANNEL_2: return TIM_CHANNEL_2;
+    case PLATFORM_PWM_CHANNEL_3: return TIM_CHANNEL_3;
+    case PLATFORM_PWM_CHANNEL_4: return TIM_CHANNEL_4;
+    default:                     assert(0); return 0U;
   }
 }
 
-Platform_StatusTypeDef Platform_PWM_Start(Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
-  TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
+Platform_StatusTypeDef Platform_PWM_Start(
+  Platform_PWM_Instance pwm,
+  Platform_PWM_Channel channel
+) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
   assert(htim != NULL);
-  return  hal_to_platform_statustypedef(HAL_TIM_PWM_Start(htim, platform_to_hal_channel(channel)));
+
+  return platform_from_hal_status(
+    HAL_TIM_PWM_Start(htim, platform_pwm_channel_to_hal(channel))
+  );
 }
 
-Platform_StatusTypeDef Platform_PWM_Stop(Platform_TIM_Instance tim, Platform_TIM_Channel channel) {
-  TIM_HandleTypeDef *htim = platform_to_hal_htim(tim);
+Platform_StatusTypeDef Platform_PWM_StartAll(Platform_PWM_Instance pwm) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
   assert(htim != NULL);
-  return  hal_to_platform_statustypedef(HAL_TIM_PWM_Stop(htim, platform_to_hal_channel(channel)));
+
+  return platform_from_hal_status(
+    HAL_TIM_PWM_Start(htim, TIM_CHANNEL_ALL)
+  );
 }
 
-void Platform_PWM_SetCompare(Platform_TIM_Instance tim, Platform_TIM_Channel channel, uint32_t compare) {
-  TIM_HandleTypeDef *g = platform_to_hal_htim(tim);
-  assert(g != NULL);
-  uint32_t arr = __HAL_TIM_GET_AUTORELOAD(g);
-  if (compare > arr) {
-    compare = arr;
+Platform_StatusTypeDef Platform_PWM_Stop(
+  Platform_PWM_Instance pwm,
+  Platform_PWM_Channel channel
+) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
+  assert(htim != NULL);
+
+  return platform_from_hal_status(
+    HAL_TIM_PWM_Stop(htim, platform_pwm_channel_to_hal(channel))
+  );
+}
+
+Platform_StatusTypeDef Platform_PWM_StopAll(Platform_PWM_Instance pwm) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
+  assert(htim != NULL);
+
+  return platform_from_hal_status(
+    HAL_TIM_PWM_Stop(htim, TIM_CHANNEL_ALL)
+  );
+}
+
+void Platform_PWM_SetCompare(
+  Platform_PWM_Instance pwm,
+  Platform_PWM_Channel channel,
+  uint32_t compare
+) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
+  assert(htim != NULL);
+
+  uint32_t auto_reload = __HAL_TIM_GET_AUTORELOAD(htim);
+  if (compare > auto_reload) {
+    compare = auto_reload;
   }
-  uint32_t cha = platform_to_hal_channel(channel);
-  __HAL_TIM_SET_COMPARE(g, cha, compare);
+
+  __HAL_TIM_SET_COMPARE(
+    htim,
+    platform_pwm_channel_to_hal(channel),
+    compare
+  );
 }
 
-void Platform_PWM_SetDuty(Platform_TIM_Instance tim, Platform_TIM_Channel channel, uint32_t max_duty, uint32_t duty) {
-  TIM_HandleTypeDef *g = platform_to_hal_htim(tim);
-  assert(g != NULL && max_duty != 0u);
-  if (max_duty == 0u) {
+void Platform_PWM_SetDuty(
+  Platform_PWM_Instance pwm,
+  Platform_PWM_Channel channel,
+  uint32_t max_duty,
+  uint32_t duty
+) {
+  TIM_HandleTypeDef *htim = platform_pwm_to_hal(pwm);
+  assert(htim != NULL && max_duty != 0U);
+
+  if (max_duty == 0U) {
     return;
   }
-  uint32_t arr = __HAL_TIM_GET_AUTORELOAD(g);
+
   if (duty > max_duty) {
     duty = max_duty;
   }
-  uint32_t ccr = (uint32_t)(((uint64_t)arr * (uint64_t)duty) / (uint64_t)max_duty);
-  Platform_PWM_SetCompare(tim, channel, ccr);
+
+  uint32_t auto_reload = __HAL_TIM_GET_AUTORELOAD(htim);
+  uint32_t compare = (uint32_t)(
+    ((uint64_t)auto_reload * (uint64_t)duty) /
+    (uint64_t)max_duty
+  );
+
+  Platform_PWM_SetCompare(pwm, channel, compare);
 }

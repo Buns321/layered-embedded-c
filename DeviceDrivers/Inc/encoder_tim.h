@@ -13,8 +13,8 @@
 #define LAYERED_EMBEDDED_C_ENCODER_TIM_H
 
 #include "encoder_base.h"
+#include "platform_encoder.h"
 #include "platform_def.h"
-#include "platform_tim.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -25,8 +25,7 @@
  */
 typedef struct {
   encoder_base_t encoder_base;
-  Platform_TIM_Instance tim;
-  Platform_TIM_Channel channel;
+  Platform_Encoder_Instance tim;
   uint8_t bit_width;
 
   bool has_base_count;
@@ -43,11 +42,14 @@ typedef struct {
  * @param this 对象。
  * @param name 名称。
  * @param tim 定时器身份。
- * @param channel 通道身份（通常为 ALL）。
  * @retval Platform_OK 启动成功。
  * @retval Platform_ERROR 启动失败。
  */
-Platform_StatusTypeDef Dev_Encoder_TIM_Init(encoder_tim_t *this, const char *name, Platform_TIM_Instance tim, Platform_TIM_Channel channel);
+Platform_StatusTypeDef Dev_Encoder_TIM_Init(
+  encoder_tim_t *this,
+  const char *name,
+  Platform_Encoder_Instance tim
+);
 /**
  * @brief 设置单周期增量上限。
  * @param this 编码器对象。
