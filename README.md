@@ -7,15 +7,16 @@
 
 已完成并可通过 F4 工具链构建的是**基础设施层**：
 
-- **Platform**：GPIO / PWM / TIM / Encoder / USART / EXTI 的枚举接口与 STM32F4 实现；F1 兼容源文件保留，但尚未建立构建目标。
-- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（WHT101 UART）。
+- **Platform**：GPIO / PWM / Encoder / USART / EXTI / CRC / RNG / IWDG / WWDG 的 HAL-free 接口与 STM32F4 实现；支持编译期实例开关、CubeMX 初始化边界、UART 错误快照与 IT/DMA 缓冲区契约。F1 兼容源文件保留，但尚未建立构建目标。
+- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（WHT101 UART）、遥测（base + FireWater / JustFloat USART）。
 - **Controller**：轮级 SISO 控制契约、线性控制律、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
 - **Filter**：样本、base、低通、透传、chain、distributor。
-- **System**：数学、检查、限幅、符号、延时。
+- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、日志 base 与 SEGGER RTT。
 - **RTOS**：四个任务骨架已创建，控制任务和串口任务体待实现。
 - **App**：预留空文件，业务逻辑待实现。
+- **Boards**：`boards/f103c8t6/` 已建立 Cortex-M3 / 72 MHz / CMSIS-RTOS2 / RTT 日志目标。
 
 尚未完成或暂缓：
 
@@ -25,6 +26,8 @@
 - F1 正式构建目标
 - 参数标定
 - Filter 单元测试、统一单调时间源、Kalman / MPU6050
+- Platform 外设扩展（I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG）
+- MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
 
 ## 构建
 
@@ -35,6 +38,8 @@
 - Ninja
 
 `arm-none-eabi-` 必须在 `PATH` 中，或在 CLion 工具链里配置。
+工程默认启用 `-Wall -Wextra`；第三方 HAL/FreeRTOS 目标单独关闭其不拥有的
+`unused-parameter` 告警。
 
 ```bash
 cmake --preset Debug
@@ -66,7 +71,9 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - [架构说明](doc/architecture.md)
 - [单位与量纲](doc/units.md)
 - [编码约定](doc/conventions.md)
+- [Platform 契约](doc/platform.md)
 - [板级配置](doc/board.md)
+- [日志与遥测](doc/telemetry.md)
 - [TODO](doc/todo.md)
 - Doxygen：`doxygen doc/doxygen/Doxyfile`，或 `cmake --build build/Debug --target docs`
 
@@ -85,6 +92,7 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 | `Core/` | CubeMX 生成代码 |
 | `Drivers/`、`Middlewares/` | ST HAL / CMSIS、FreeRTOS |
 | `doc/` | 文档 |
+| `boards/` | 各 MCU 板级的 CubeMX、HAL、启动文件和链接脚本 |
 
 ## 设计要点
 

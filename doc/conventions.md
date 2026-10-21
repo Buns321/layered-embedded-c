@@ -11,6 +11,7 @@
 | `Chassis_*` | Chassis API |
 | `Filter_*` | Filter API |
 | `Sys_*` | System 数学/延时 API |
+| `Sys_Log_*` | System 日志 API |
 | `*_t` | 类型 |
 | `*_base_t` | 抽象接口 |
 | `*_ops_t` | 虚表 |
@@ -23,6 +24,8 @@
 - 上层只持有 base 视图，例如 `&motor.motor_base`。
 - 不复制 base 对象；复制会切片。
 - 不使用动态内存，所有对象静态定义。
+- 日志与遥测都遵循 base/ops；具体 RTT、FireWater、JustFloat 对象的 base
+  必须是首成员。
 
 ## 3. 初始化
 
@@ -73,6 +76,13 @@
 
 - 上层依赖 base 接口，不依赖具体驱动。
 - HAL 类型只能出现在 `Platform/Src/`。
+- Platform 公共头只放 HAL-free 的枚举、数据结构、回调和声明。
+- Platform 不调用 `HAL_*_Init()`，外设结构配置归 CubeMX/Core；只有运行期
+  不可逆启动的 IWDG/WWDG 例外。
+- 每个功能使用自己的实例类型，不复用定时器身份表示 PWM 和 Encoder。
+- 未启用实例通过 `platform_config.h` 排除在公共枚举之外。
+- 回调注册只在初始化阶段进行，一个物理实例只有一个回调所有者。
+- IT/DMA 源和目的缓冲区在完成或错误回调前必须保持有效。
 - 使用 CMake 的 `target_include_directories`，不在源码里写大量 `../../`。
 - `Drivers/`、`Middlewares/` 不手改；CubeMX 生成代码只改 USER CODE 区。
 
