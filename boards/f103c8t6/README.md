@@ -1,68 +1,142 @@
-# STM32F103C8T6 Board Target
+# STM32F103C8T6 板级工程
 
-Hardware and demo wiring:
+本目录提供 STM32F103C8T6 集成板的 CubeMX 工程、F1 HAL、Cortex-M3 FreeRTOS
+端口、启动文件、链接脚本和 CMake 构建目标。
 
-- [F103C8T6 Demo hardware map](hardware-map.md)
+完整硬件连接、片上资源分配、电气边界和验证顺序见
+[硬件与接口规范](hardware-map.md)。
 
-## Hardware
+## 硬件基线
 
-- STM32F103C8T6, Cortex-M3, 64 KB FLASH, 20 KB SRAM.
-- External high-speed oscillator, 72 MHz SYSCLK.
-- SWD on PA13 / PA14.
-- HAL timebase: SysTick, shared through the CubeMX CMSIS-RTOS integration.
+| 项目 | 配置 |
+| --- | --- |
+| MCU | STM32F103C8T6 |
+| 内核 | Cortex-M3 |
+| FLASH / SRAM | 64 KB / 20 KB |
+| 外部时钟 | 8 MHz HSE |
+| SYSCLK | 72 MHz |
+| 调试 | SWD，PA13 / PA14 |
+| HAL 时基 | SysTick |
+| RTOS | FreeRTOS CM3，CMSIS-RTOS V2 |
+| 日志 | SEGGER RTT |
 
-## Software
+## 工程结构
 
-- STM32CubeMX generated F1 HAL and CMSIS.
-- FreeRTOS CM3 port with CMSIS-RTOS V2.
-- Shared System, Platform F1, DeviceDrivers, Controller, Policy, Filter and RTOS
-  sources from the repository root.
-- SEGGER RTT logging is integrated manually.
+| 路径 | 内容 |
+| --- | --- |
+| `f103c8t6.ioc` | CubeMX 配置 |
+| `Core/` | CubeMX 生成代码和用户初始化 |
+| `Drivers/` | STM32F1 HAL、CMSIS 和设备头 |
+| `Middlewares/` | FreeRTOS 与 CMSIS-RTOS V2 |
+| `cmake/` | ARM GCC 工具链与 CubeMX 构建描述 |
+| `STM32F103xx_FLASH.ld` | 链接脚本 |
+| `startup_stm32f103xb.s` | 启动文件 |
 
-## Build
+共享工程层的源文件从仓库根目录接入：
 
-```bash
+- System
+- Platform F1
+- DeviceDrivers base 与公共驱动
+- Controller
+- Policy
+- Filter
+- RTOS
+- App 占位入口
+
+## CubeMX 基线
+
+当前 `.ioc` 生成以下基础配置：
+
+- 8 MHz HSE 和 72 MHz PLL。
+- SWD 调试，保留 PA13 / PA14。
+- SysTick 作为 HAL 与 FreeRTOS 时基。
+- CRC 独立外设初始化。
+- FreeRTOS CMSIS-RTOS V2 和默认任务。
+- 独立 `gpio.c` / `gpio.h`、`crc.c` / `crc.h`、`freertos.c` /
+  `freertos.h`。
+
+板级接口的目标资源和引脚分配以
+[硬件与接口规范](hardware-map.md)为准。新增外设时继续由 CubeMX 生成
+独立的 `MX_*_Init()`、引脚、时钟、DMA 和 NVIC 配置。
+
+## 已接入的 Platform 外设
+
+当前构建启用：
+
+- GPIO
+- EXTI
+- CRC
+- IWDG
+- WWDG
+
+F1 PWM、Encoder 和 USART 源文件位于共享 Platform 层。接入具体实例时，
+在 CubeMX 中生成对应初始化文件和 HAL handle，再把源文件、实例开关和
+板级设备对象加入本目标。
+
+## 构建
+
+依赖：
+
+- CMake 3.22 或更高版本
+- Ninja
+- `arm-none-eabi-gcc`
+- `arm-none-eabi-` 位于 `PATH`
+
+在板级目录执行：
+
+```powershell
+cd boards/f103c8t6
 cmake --preset Debug
 cmake --build --preset Debug
 ```
 
-Release:
+Release 构建：
 
-```bash
+```powershell
 cmake --preset Release
 cmake --build --preset Release
 ```
 
-Output:
+关闭 RTT 日志的 Debug 构建：
 
-```text
-build/Debug/f103c8t6.elf
-build/Debug/f103c8t6.map
+```powershell
+cmake --preset Debug -DSYS_LOG_USE_RTT=OFF
+cmake --build --preset Debug
 ```
 
-## Current Peripheral Support
+主要产物：
 
-Enabled:
+```text
+boards/f103c8t6/build/Debug/f103c8t6.elf
+boards/f103c8t6/build/Debug/f103c8t6.map
+boards/f103c8t6/build/Release/f103c8t6.elf
+boards/f103c8t6/build/Release/f103c8t6.map
+```
 
-- GPIO / EXTI
-- CRC
-- IWDG / WWDG
-- FreeRTOS CMSIS-RTOS V2
-- SEGGER RTT log
+## 调试与烧录
 
-Not configured in the current `.ioc`:
+ST-Link 与 OpenOCD 示例：
 
-- USART1/2/3
-- TIM PWM and encoder inputs
-- I2C1/2
-- SPI1/2
-- ADC1/2
-- CAN1
-- RTC
+```powershell
+openocd -f interface/stlink.cfg -f target/stm32f1x.cfg `
+  -c "program build/Debug/f103c8t6.elf verify reset exit"
+```
 
-`DAC` and hardware `RNG` are not available on STM32F103C8T6 and remain disabled.
+RTT 通过 SWD 通道工作。使用 J-Link RTT Viewer 时选择 J-Link GDB Server；
+使用 OpenOCD 时在调试配置中启用 RTT。
 
-## Validation Status
+## 当前验证状态
 
-Build and link verification passed. Board-level validation of clock, RTT,
-FreeRTOS scheduling, CRC, IWDG and WWDG is still required.
+- Debug、Release 和关闭 RTT 的 Debug 配置均已完成编译与链接。
+- F103 目标已接入共享 System、Platform F1、DeviceDrivers base、Controller、
+  Policy、Filter、RTOS 和 App 占位入口。
+- 板上时钟、RTT、FreeRTOS 调度、CRC、IWDG、WWDG 以及硬件接口验证按
+  [硬件与接口规范](hardware-map.md)第 11 节执行。
+
+## 相关文档
+
+- [根工程说明](../../README.md)
+- [架构说明](../../doc/architecture.md)
+- [Platform 契约](../../doc/platform.md)
+- [硬件与接口规范](hardware-map.md)
+- [编码约定](../../doc/conventions.md)

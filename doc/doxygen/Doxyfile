@@ -1,5 +1,5 @@
 PROJECT_NAME           = "layered-embedded-c"
-PROJECT_BRIEF          = "Layered embedded C infrastructure for STM32F407"
+PROJECT_BRIEF          = "Layered embedded C infrastructure for STM32F4 and STM32F1"
 OUTPUT_DIRECTORY       = build/doxygen
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
@@ -17,11 +17,12 @@ INPUT                  = README.md \
                          doc/platform.md \
                          doc/units.md \
                          doc/conventions.md \
-                         doc/board.md \
                          doc/telemetry.md \
                          doc/todo.md \
                          doc/doxygen/mainpage.md \
                          doc/doxygen/groups.dox \
+                         boards/f103c8t6/README.md \
+                         boards/f103c8t6/hardware-map.md \
                          Platform \
                          DeviceDrivers \
                          Controller \

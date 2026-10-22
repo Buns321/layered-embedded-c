@@ -1,7 +1,7 @@
 # layered-embedded-c
 
-面向 STM32F407 的分层嵌入式 C 工程。核心思路是用静态设备模型和 base + 具体实现
-把 HAL、设备驱动、控制律、运动策略和上层任务分开。
+面向 STM32F407 和 STM32F103 的分层嵌入式 C 工程。核心思路是用静态设备模型和
+base + 具体实现把 HAL、设备驱动、控制律、运动策略和上层任务分开。
 
 ## 架构
 
@@ -34,10 +34,11 @@ HAL / CMSIS / FreeRTOS
 
 ## 状态
 
-已完成：Platform（F4）、设备驱动、Controller 契约 + 线性 + compose、
+已完成：Platform（F4 完整接入，F103 基础外设接入）、设备驱动、
+Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、System。
 
-待完成或暂缓：PID、App / RTOS 接线、Board 层、F1 构建目标、参数标定、
+待完成或暂缓：PID、App / RTOS 接线、Board 层、F103 板级外设接线与验证、参数标定、
 Filter 单测 / 统一时间源 / Kalman。
 
 ## 文档
@@ -45,5 +46,6 @@ Filter 单测 / 统一时间源 / Kalman。
 - [架构说明](../architecture.md)
 - [单位与量纲](../units.md)
 - [编码约定](../conventions.md)
-- [板级配置](../board.md)
+- [F103 板级工程](../../boards/f103c8t6/README.md)
+- [F103 硬件与接口规范](../../boards/f103c8t6/hardware-map.md)
 - [TODO](../todo.md)

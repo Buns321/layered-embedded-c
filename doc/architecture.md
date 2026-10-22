@@ -48,8 +48,10 @@ base 与 Platform；base 只依赖 System 和标准库。
 - 每个平台实现内部做私有 handle 映射，非法枚举直接断言。
 - 对外只暴露 HAL-free 类型、`Platform_StatusTypeDef` 和回调契约。
 - UART IT/DMA 缓冲区在完成或错误回调前由调用方保持有效。
-- F4 实现位于 `Platform/Src/stm32f4/`，F1 兼容实现位于 `Platform/Src/stm32f1/`；
-  当前构建只选用 F4。
+- F4 实现位于 `Platform/Src/stm32f4/`，F1 实现位于 `Platform/Src/stm32f1/`；
+  根目标选用 F4，`boards/f103c8t6/` 独立目标选用 F1。
+- F103 已接入 GPIO、EXTI、CRC、IWDG、WWDG；PWM、Encoder 和 USART
+  按板级外设实例接入对应 F1 源文件。
 
 ### DeviceDrivers
 
@@ -180,7 +182,7 @@ MonitorTask
 遥测发送不阻塞控制任务。USART DMA 忙时整帧丢弃，并通过
 `telemetry_status_t` 暴露发送、丢弃和错误计数。
 
-## 6. 初始化顺序（计划）
+## 6. F407 初始化顺序（计划）
 
 1. `Dev_Encoder_TIM_Init` × 4
 2. 控制律初始化（当前用 `Ctrl_Linear_Init`）
@@ -197,7 +199,7 @@ MonitorTask
 当前 `main()` 已调用 `Sys_Delay_Init()`，并在启用 `SYS_LOG_USE_RTT` 时初始化
 RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
-## 7. 任务模型
+## 7. F407 任务模型
 
 `Core/Src/freertos.c` 已创建四个 CMSIS-RTOS2 任务：
 
@@ -245,11 +247,12 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
 ## 11. 当前状态
 
-已实现：Platform（F4）、LED、电机、编码器、USART、IMU、Controller 契约 + 线性 + compose、
+已实现：Platform（F4 完整接入，F103 基础外设接入）、LED、电机、编码器、USART、IMU、
+Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
 System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
 
-待完成或暂缓：PID、App / RTOS 接线、Board 层、F1 构建目标、参数标定、
+待完成或暂缓：PID、App / RTOS 接线、Board 层、F103 板级外设接线与验证、参数标定、
 Filter 单测 / 统一时间源 / Kalman、Platform 外设扩展、
 MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
 遥测对象与任务接线、USART2 高波特率配置、RTT 主机侧实测。

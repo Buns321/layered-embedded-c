@@ -88,7 +88,8 @@
 
 ## 10. 构建要求
 
-- 提交前至少完成一次 F4 的 Debug 构建。
+- 提交前至少完成受影响目标的 Debug 构建；修改共享 Platform 或 System 代码时，
+  同时验证 F4 与 F103 目标。
 - 不引入动态内存。
 - 新增源文件同步加入 `CMakeLists.txt`。
 - 新增公共头文件同步加入 Doxygen 的 `INPUT`。

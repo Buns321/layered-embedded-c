@@ -1,9 +1,9 @@
 # TODO
 
 ## 当前里程碑
-**状态**：核心分层、F4 Platform、设备驱动、控制/策略、Filter、System 基础服务、
-RTT 日志和两种 USART 遥测协议均已实现并通过构建。
-- [x] Debug、Release、无 RTT 三种配置构建通过
+**状态**：核心分层、F4 Platform、F103 基础目标、设备驱动、控制/策略、Filter、
+System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通过构建。
+- [x] F4 与 F103 的 Debug、Release、无 RTT 三种配置构建通过
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
 - [x] FireWater / JustFloat 遥测设备与 USART DMA 发送
@@ -71,7 +71,7 @@ RTT 日志和两种 USART 遥测协议均已实现并通过构建。
 **F1 与构建**
 - [x] F103 目标接入共享 App / Controller / Policy / Filter / DeviceDrivers base / RTOS
 - [x] F1 GPIO、EXTI、CRC、IWDG、WWDG 实现
-- [ ] F103 CubeMX 配置 USART1/2/3、TIM PWM/Encoder 和 DMA/NVIC
+- [ ] F103 CubeMX 配置 USART2/3、TIM1/2/3/4、I2C1、ADC1 和 DMA/NVIC
 - [ ] 为新增外设补 `stm32f1/platform_xxx.c`（按需，暂缓）
 - [ ] 每个新增外设同步 CubeMX 初始化与 HAL 源文件注册
 - [ ] 评估 I2S / USB / SDIO / ETH / DCMI / FSMC，按项目需要启用

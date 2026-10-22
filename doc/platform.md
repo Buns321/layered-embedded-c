@@ -128,6 +128,6 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 3. 在 `platform_config.h` 中声明可用实例。
 4. 在 CMake 中启用对应实例和 HAL 源文件。
 5. 增加 HAL-free 公共头。
-6. 在 F4 私有实现中把实例映射到 handle。
+6. 在对应 MCU 的私有实现中把实例映射到 handle。
 7. 补齐回调、DMA 生命周期、超时和错误契约。
 8. 完成 Debug、Release 和硬件验证。
