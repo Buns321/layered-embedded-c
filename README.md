@@ -7,7 +7,7 @@
 
 已完成并通过工具链构建的是**基础设施层**：
 
-- **Platform**：GPIO / PWM / Encoder / USART / EXTI / CRC / RNG / IWDG / WWDG 的 HAL-free 接口，F4 实现已完整接入；F103 目标当前接入 GPIO / EXTI / CRC / IWDG / WWDG，PWM / Encoder / USART 按板级实例继续接线。两层都遵循编译期实例开关、CubeMX 初始化边界、UART 错误快照与 IT/DMA 缓冲区契约。
+- **Platform**：GPIO / PWM / Encoder / USART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的 HAL-free 接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
 - **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（WHT101 UART）、遥测（base + FireWater / JustFloat USART）。
 - **Controller**：轮级 SISO 控制契约、线性控制律、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
@@ -25,7 +25,7 @@
 - Board 层（四轮编号、引脚拓扑、STBY 分组、统一初始化、故障切电机）
 - 参数标定
 - Filter 单元测试、统一单调时间源、Kalman / MPU6050
-- Platform 外设扩展（I2C / SPI / ADC / DAC / CAN / RTC / Flash）
+- Platform 新增外设的板上电气与时序验证
 - MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
 
 ## 构建
@@ -53,6 +53,18 @@ Release 构建：
 cmake --preset Release
 cmake --build --preset Release
 ```
+
+F4 与 F1 的全实例 Platform 独立检查：
+
+```powershell
+cd cmake/platform-check
+cmake --preset f4-debug
+cmake --build --preset f4-debug
+cmake --preset f1-debug
+cmake --build --preset f1-debug
+```
+
+Release 检查和详细能力矩阵见 [Platform 契约](doc/platform.md)。
 
 F103 使用板级目录中的独立 presets：
 
@@ -82,7 +94,8 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - [架构说明](doc/architecture.md)
 - [单位与量纲](doc/units.md)
 - [编码约定](doc/conventions.md)
-- [Platform 契约](doc/platform.md)
+- [Platform 契约与能力矩阵](doc/platform.md)
+- Platform 全实例编译检查：`cmake/platform-check/README.md`
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [TODO](doc/todo.md)

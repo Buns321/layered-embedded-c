@@ -23,6 +23,12 @@ set(CMAKE_PROJECT_NAME f103c8t6)
 
 # Optional debug services
 option(SYS_LOG_USE_RTT "Enable the SEGGER RTT system log backend" ON)
+option(PLATFORM_BUILD_I2C "Compile the Platform I2C implementation" OFF)
+option(PLATFORM_BUILD_SPI "Compile the Platform SPI implementation" OFF)
+option(PLATFORM_BUILD_ADC "Compile the Platform ADC implementation" OFF)
+option(PLATFORM_BUILD_CAN "Compile the Platform CAN implementation" OFF)
+option(PLATFORM_BUILD_RTC "Compile the Platform RTC implementation" OFF)
+option(PLATFORM_BUILD_FLASH "Compile the Platform flash implementation" OFF)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -96,6 +102,37 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/System/Src/system_log.c
     ${REPO_ROOT}/System/Src/system_watchdog.c
 )
+
+if(PLATFORM_BUILD_I2C)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_i2c.c
+    )
+endif()
+if(PLATFORM_BUILD_SPI)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_spi.c
+    )
+endif()
+if(PLATFORM_BUILD_ADC)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
+    )
+endif()
+if(PLATFORM_BUILD_CAN)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_can.c
+    )
+endif()
+if(PLATFORM_BUILD_RTC)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_rtc.c
+    )
+endif()
+if(PLATFORM_BUILD_FLASH)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_flash.c
+    )
+endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE

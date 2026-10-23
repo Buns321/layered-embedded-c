@@ -59,9 +59,9 @@
 [硬件与接口规范](hardware-map.md)为准。新增外设时继续由 CubeMX 生成
 独立的 `MX_*_Init()`、引脚、时钟、DMA 和 NVIC 配置。
 
-## 已接入的 Platform 外设
+## Platform 外设状态
 
-当前构建启用：
+正式板级构建当前启用：
 
 - GPIO
 - EXTI
@@ -69,9 +69,14 @@
 - IWDG
 - WWDG
 
-F1 PWM、Encoder 和 USART 源文件位于共享 Platform 层。接入具体实例时，
-在 CubeMX 中生成对应初始化文件和 HAL handle，再把源文件、实例开关和
-板级设备对象加入本目标。
+F1 的 PWM、Encoder、USART1–3、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC
+和 Flash 实现已位于共享 Platform 层。I2C、SPI、ADC、CAN、RTC、UART
+和 TIM 的 HAL 头文件与源文件也已补入本板级驱动目录。
+
+这些实现通过 `cmake/platform-check/` 的 F1 全实例目标编译验证。正式板上
+启用某个实例时，仍需由 CubeMX 在 `.ioc` 中生成引脚、时钟、DMA、NVIC、
+`MX_*_Init()` 和 HAL handle，并在板级 CMake 中选择对应实例与
+`PLATFORM_BUILD_*` 开关。未配置实例不会出现在正式目标的公共枚举中。
 
 ## 构建
 
@@ -95,6 +100,16 @@ Release 构建：
 ```powershell
 cmake --preset Release
 cmake --build --preset Release
+```
+
+F1 全实例 Platform 编译检查：
+
+```powershell
+cd ../../cmake/platform-check
+cmake --preset f1-debug
+cmake --build --preset f1-debug
+cmake --preset f1-release
+cmake --build --preset f1-release
 ```
 
 关闭 RTT 日志的 Debug 构建：
@@ -130,6 +145,7 @@ RTT 通过 SWD 通道工作。使用 J-Link RTT Viewer 时选择 J-Link GDB Serv
 - Debug、Release 和关闭 RTT 的 Debug 配置均已完成编译与链接。
 - F103 目标已接入共享 System、Platform F1、DeviceDrivers base、Controller、
   Policy、Filter、RTOS 和 App 占位入口。
+- F1 支持的全部 Platform 外设已通过 Debug、Release 独立编译检查。
 - 板上时钟、RTT、FreeRTOS 调度、CRC、IWDG、WWDG 以及硬件接口验证按
   [硬件与接口规范](hardware-map.md)第 11 节执行。
 

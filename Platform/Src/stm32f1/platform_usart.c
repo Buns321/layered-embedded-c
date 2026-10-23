@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 static platform_uart_callbacks_t uart_cb[PLATFORM_UART_INSTANCE_COUNT] = {{0}};
+static bool uart_cb_registered[PLATFORM_UART_INSTANCE_COUNT];
 
 static UART_HandleTypeDef *platform_uart_to_hal(
   Platform_UART_Instance uart
@@ -292,10 +293,12 @@ void Platform_UART_RegisterCallbacks(
   assert(
     (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT &&
     cb != NULL &&
+    !uart_cb_registered[uart] &&
     platform_uart_to_hal(uart) != NULL
   );
 
   uart_cb[uart] = *cb;
+  uart_cb_registered[uart] = true;
 }
 
 typedef enum {

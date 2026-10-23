@@ -1,8 +1,8 @@
 # TODO
 
 ## 当前里程碑
-**状态**：核心分层、F4 Platform、F103 基础目标、设备驱动、控制/策略、Filter、
-System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通过构建。
+**状态**：核心分层、F4/F1 Platform 全部支持外设、F103 基础目标、设备驱动、
+控制/策略、Filter、System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通过构建。
 - [x] F4 与 F103 的 Debug、Release、无 RTT 三种配置构建通过
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
@@ -42,13 +42,13 @@ System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通�
 - [x] `platform_iwdg.h`：按毫秒启动、刷新与复位标志
 - [x] `platform_wwdg.h`：窗口 watchdog 启动、刷新与复位标志
 - [x] `system_watchdog` 改为通过 Platform IWDG 启动、刷新和读取复位标志
-- [ ] `platform_i2c.h`：I2C1–3 的阻塞/IT/DMA API、回调与超时
-- [ ] `platform_spi.h`：SPI1–3 的主机 API、IT/DMA 路径
-- [ ] `platform_adc.h`：ADC1–3 的通道、单次/连续/扫描 API
-- [ ] `platform_dac.h`：DAC1–2 输出 API
-- [ ] `platform_can.h`：CAN1–2 收发、过滤器与回调
-- [ ] `platform_rtc.h`：时间读写、闹钟/唤醒
-- [ ] `platform_flash.h`：读/写/擦除与参数区原语
+- [x] `platform_i2c.h`：7 位地址主机阻塞/IT/DMA、内存传输、abort 与错误快照
+- [x] `platform_spi.h`：主机 8/16 位传输、阻塞/IT/DMA 路径与 abort
+- [x] `platform_adc.h`：轮询、IT、DMA 与单通道阻塞读取
+- [x] `platform_dac.h`：F4 DAC CH1–2 输出、DMA 与 underrun 错误
+- [x] `platform_can.h`：经典 CAN、32 位过滤器、收发超时与中断事件
+- [x] `platform_rtc.h`：日期时间、每日闹钟；F4 额外支持唤醒定时器
+- [x] `platform_flash.h`：读取、4 字节写入与跨系列擦除范围原语
 
 **F4 实现**
 - [x] `stm32f4/platform_crc.c`
@@ -59,21 +59,24 @@ System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通�
 - [ ] 板上验证 RNG 启动、超时和错误状态
 - [ ] 板上验证 IWDG 目标超时与复位标志
 - [ ] 板上验证 WWDG 刷新窗口和复位标志
-- [ ] `stm32f4/platform_i2c.c`
-- [ ] `stm32f4/platform_spi.c`
-- [ ] `stm32f4/platform_adc.c`
-- [ ] `stm32f4/platform_dac.c`
-- [ ] `stm32f4/platform_can.c`
-- [ ] `stm32f4/platform_rtc.c`
-- [ ] `stm32f4/platform_flash.c`
-- [ ] `stm32f4/platform_usart.c` 补齐 USART3 / UART4 / UART5 / USART6 映射
+- [x] `stm32f4/platform_i2c.c`
+- [x] `stm32f4/platform_spi.c`
+- [x] `stm32f4/platform_adc.c`
+- [x] `stm32f4/platform_dac.c`
+- [x] `stm32f4/platform_can.c`
+- [x] `stm32f4/platform_rtc.c`
+- [x] `stm32f4/platform_flash.c`
+- [x] `stm32f4/platform_usart.c` 补齐 USART3 / UART4 / UART5 / USART6 映射
 
 **F1 与构建**
 - [x] F103 目标接入共享 App / Controller / Policy / Filter / DeviceDrivers base / RTOS
 - [x] F1 GPIO、EXTI、CRC、IWDG、WWDG 实现
-- [ ] F103 CubeMX 配置 USART2/3、TIM1/2/3/4、I2C1、ADC1 和 DMA/NVIC
-- [ ] 为新增外设补 `stm32f1/platform_xxx.c`（按需，暂缓）
-- [ ] 每个新增外设同步 CubeMX 初始化与 HAL 源文件注册
+- [x] F1 USART1–3、PWM TIM1、Encoder TIM2–4、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC、Flash 实现
+- [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
+- [x] F4/F1 独立 Platform 全实例 Debug、Release 构建通过 `-Wall -Wextra`
+- [ ] F103 CubeMX 配置实际 USART/TIM/I2C/SPI/ADC/CAN/RTC 实例、DMA 和 NVIC
+- [ ] 每个实际启用的 F103 实例同步 CubeMX handle、初始化和板级 CMake 开关
+- [ ] 板上验证新增 I2C / SPI / ADC / DAC / CAN / RTC / Flash 的电气与时序行为
 - [ ] 评估 I2S / USB / SDIO / ETH / DCMI / FSMC，按项目需要启用
 
 ## DeviceDrivers · 编码器

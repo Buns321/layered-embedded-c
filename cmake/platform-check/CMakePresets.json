@@ -1,0 +1,63 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "f4-debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../../build/platform-check-f4",
+      "toolchainFile": "${sourceDir}/../gcc-arm-none-eabi.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PLATFORM_CHECK_FAMILY": "F4"
+      }
+    },
+    {
+      "name": "f1-debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../../build/platform-check-f1",
+      "toolchainFile": "${sourceDir}/../../boards/f103c8t6/cmake/gcc-arm-none-eabi.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PLATFORM_CHECK_FAMILY": "F1"
+      }
+    },
+    {
+      "name": "f4-release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../../build/platform-check-f4-release",
+      "toolchainFile": "${sourceDir}/../gcc-arm-none-eabi.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "PLATFORM_CHECK_FAMILY": "F4"
+      }
+    },
+    {
+      "name": "f1-release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../../build/platform-check-f1-release",
+      "toolchainFile": "${sourceDir}/../../boards/f103c8t6/cmake/gcc-arm-none-eabi.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "PLATFORM_CHECK_FAMILY": "F1"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "f4-debug",
+      "configurePreset": "f4-debug"
+    },
+    {
+      "name": "f1-debug",
+      "configurePreset": "f1-debug"
+    },
+    {
+      "name": "f4-release",
+      "configurePreset": "f4-release"
+    },
+    {
+      "name": "f1-release",
+      "configurePreset": "f1-release"
+    }
+  ]
+}

@@ -23,6 +23,13 @@ set(CMAKE_PROJECT_NAME layered-embedded-c)
 
 # Optional debug services
 option(SYS_LOG_USE_RTT "Enable the SEGGER RTT system log backend" ON)
+option(PLATFORM_BUILD_I2C "Compile the Platform I2C implementation" OFF)
+option(PLATFORM_BUILD_SPI "Compile the Platform SPI implementation" OFF)
+option(PLATFORM_BUILD_ADC "Compile the Platform ADC implementation" OFF)
+option(PLATFORM_BUILD_DAC "Compile the Platform DAC implementation" OFF)
+option(PLATFORM_BUILD_CAN "Compile the Platform CAN implementation" OFF)
+option(PLATFORM_BUILD_RTC "Compile the Platform RTC implementation" OFF)
+option(PLATFORM_BUILD_FLASH "Compile the Platform flash implementation" OFF)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -38,9 +45,16 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_config.h
         Platform/Inc/platform_crc.h
+        Platform/Inc/platform_adc.h
+        Platform/Inc/platform_can.h
+        Platform/Inc/platform_dac.h
         Platform/Inc/platform_def.h
+        Platform/Inc/platform_flash.h
+        Platform/Inc/platform_i2c.h
         Platform/Inc/platform_iwdg.h
         Platform/Inc/platform_rng.h
+        Platform/Inc/platform_rtc.h
+        Platform/Inc/platform_spi.h
         Platform/Inc/platform_wwdg.h
         Platform/Src/platform_hal_internal.h
         Platform/Src/stm32f4/platform_gpio.c
@@ -142,6 +156,42 @@ add_executable(${CMAKE_PROJECT_NAME}
         Filter/Inc/filter_passthrough.h
         Filter/Src/filter_passthrough.c
 )
+
+if(PLATFORM_BUILD_I2C)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_i2c.c
+    )
+endif()
+if(PLATFORM_BUILD_SPI)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_spi.c
+    )
+endif()
+if(PLATFORM_BUILD_ADC)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_adc.c
+    )
+endif()
+if(PLATFORM_BUILD_DAC)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_dac.c
+    )
+endif()
+if(PLATFORM_BUILD_CAN)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_can.c
+    )
+endif()
+if(PLATFORM_BUILD_RTC)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_rtc.c
+    )
+endif()
+if(PLATFORM_BUILD_FLASH)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/stm32f4/platform_flash.c
+    )
+endif()
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)

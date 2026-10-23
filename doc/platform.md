@@ -44,6 +44,13 @@ Controller、Policy、Filter、RTOS 或 App 包含。
 - `Platform_PWM_Channel`
 - `Platform_Encoder_Instance`
 - `Platform_UART_Instance`
+- `Platform_I2C_Instance`
+- `Platform_SPI_Instance`
+- `Platform_ADC_Instance`
+- `Platform_DAC_Instance`
+- `Platform_CAN_Instance`
+- `Platform_RTC_Instance`
+- `Platform_FLASH_Instance`
 
 未启用的实例不会进入公共枚举。当前板级通过 CMake 定义启用：
 
@@ -55,6 +62,12 @@ PLATFORM_ENABLE_ENCODER_TIM4=1
 PLATFORM_ENABLE_ENCODER_TIM5=1
 PLATFORM_ENABLE_UART1=1
 PLATFORM_ENABLE_UART2=1
+PLATFORM_ENABLE_I2C1=1
+PLATFORM_ENABLE_SPI1=1
+PLATFORM_ENABLE_ADC1=1
+PLATFORM_ENABLE_CAN1=1
+PLATFORM_ENABLE_RTC=1
+PLATFORM_ENABLE_FLASH=1
 PLATFORM_ENABLE_CRC=1
 PLATFORM_ENABLE_RNG=1
 PLATFORM_ENABLE_IWDG=1
@@ -131,3 +144,103 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 6. 在对应 MCU 的私有实现中把实例映射到 handle。
 7. 补齐回调、DMA 生命周期、超时和错误契约。
 8. 完成 Debug、Release 和硬件验证。
+
+## 11. 外设能力矩阵
+
+| 外设 | F407VET6 | F103C8T6 | 说明 |
+| --- | --- | --- | --- |
+| I2C | I2C1–3 | I2C1–2 | 7 位地址主机传输 |
+| SPI | SPI1–3 | SPI1–2 | 主机模式，CS 归 Board/设备驱动 |
+| ADC | ADC1–3 | ADC1–2 | 转换模式由 CubeMX 配置 |
+| DAC | DAC CH1–2 | 不支持 | F1 不提供虚实现 |
+| CAN | CAN1–2 | CAN1 | 仅经典 CAN |
+| RTC | RTC | RTC | F1 无唤醒定时器，仅有每日闹钟 |
+| Flash | 内部 Flash | 内部 Flash | 仅底层原语，不含参数策略 |
+| USART/UART | USART1–6 | USART1–3 | UART HAL handle 统一映射 |
+
+未列出的实例不会出现在公共枚举中。F1 的 DAC、I2C3、CAN2、ADC3、SPI3
+和 USART4–6 不伪造实现。
+
+## 12. 传输类外设契约
+
+### I2C
+
+- 只提供主机模式，公共地址为 7 位 `0x00..0x7F`，实现内部左移一位。
+- 阻塞接口超时单位为毫秒；IT/DMA 传输没有内部超时。
+- 一次只允许一个活动传输，一个实例只有一个回调所有者。
+- 缓冲区在完成、错误或 abort 前必须保持有效。
+- 错误通过 `Platform_I2C_GetLastError()` 返回 BERR/ARLO/AF/OVR/DMA/TIMEOUT
+  等位，恢复使用显式 `Platform_I2C_Abort_IT()`。
+
+### SPI
+
+- 只提供主机模式，不操作片选。片选时序属于 Board 或具体设备驱动。
+- 缓冲区大小统一按字节描述。16 位模式下，实现把字节数换算为 HAL 帧数，
+  并要求长度为偶数、地址对齐。
+- IT/DMA 缓冲区在完成、错误或 abort 前必须保持有效。
+- `Platform_SPI_Abort()` 用于任务上下文同步恢复，
+  `Platform_SPI_Abort_IT()` 用于中断完成路径。
+
+### CAN
+
+- 只支持经典 CAN，不扩展 CAN FD。
+- 过滤器使用 32 位掩码/列表模式，所有标识符和掩码都是 CAN 标识符位，
+  不是 HAL 原始寄存器值。掩码模式使用 `id/mask`，列表模式使用 `id/id2`；
+  列表中的两个标识符共享 `id_type` 和 `remote`。
+- `Platform_CAN_Transmit/Receive` 接收毫秒超时，调用方必须在任务上下文使用。
+  实现不调用延时 API，只轮询 HAL mailbox/FIFO 状态。
+- 中断接收事件携带完整帧，事件指针只在回调期间有效。
+- bus-off 后由调用方显式 `Stop`、重新配置并 `Start`，Platform 不静默恢复。
+
+## 13. 采样、时钟与存储契约
+
+### ADC 与 DAC
+
+- 单次、连续、扫描、通道顺序、触发源和 DMA 模式由 CubeMX 决定。
+- `Platform_ADC_Read()` 只适用于单通道、单次转换配置。
+- 多通道扫描必须使用 DMA；常规组中断只会在序列结束时报告最后一次转换。
+- STM32F1 的独立 DMA 请求仅属于 ADC1，ADC2 的 DMA 启动请求返回
+  `Platform_ERROR`。
+- ADC DMA 的 `length` 是转换次数，不是字节数。
+- DAC DMA 的 `length` 是样本数，样本对齐方式必须与传入的
+  `Platform_DAC_Alignment` 一致。
+- ADC/DAC 的 DMA 缓冲区在完成、错误或 stop 前必须保持有效。
+
+### RTC
+
+- 日期时间使用二进制字段，不向调用方暴露 BCD。
+- 年份范围为 2000..2099，weekday 为 1..7。
+- 跨系列闹钟契约是每日闹钟，只比较时、分、秒。
+- F4 唤醒定时器使用 RTC 唤醒时钟和计数值，具体周期由所选时钟决定。
+- RTC 时钟源、备份域访问和 `MX_RTC_Init()` 由 CubeMX/Core 负责。
+
+### Flash
+
+- 只提供读取、4 字节对齐写入和擦除范围原语。
+- F4 按扇区、F1 按页擦除。调用方先用
+  `Platform_FLASH_GetEraseUnitSize(PLATFORM_FLASH_1, address)` 查询粒度。
+- 写入前必须由调用方完成擦除。
+- 参数区布局、CRC 校验、默认值回退和磨损策略属于 System 参数存储层，
+  不得下沉到 Platform Flash。
+- Flash 操作使用 System 临界区保护忙状态，只允许任务上下文调用。
+
+## 14. 构建与验证
+
+F4 与 F1 的全实例 Platform 检查位于 `cmake/platform-check/`：
+
+```powershell
+cd cmake/platform-check
+cmake --preset f4-debug
+cmake --build --preset f4-debug
+cmake --preset f1-debug
+cmake --build --preset f1-debug
+```
+
+`f4-release` 和 `f1-release` 使用独立构建目录验证优化构建。正式目标通过
+`PLATFORM_BUILD_I2C`、`PLATFORM_BUILD_SPI`、`PLATFORM_BUILD_ADC`、
+`PLATFORM_BUILD_DAC`、`PLATFORM_BUILD_CAN`、`PLATFORM_BUILD_RTC` 和
+`PLATFORM_BUILD_FLASH` 选择是否加入实现源文件。启用模块后还必须同时声明
+目标实际拥有的实例宏，否则编译期检查会失败。
+
+F103 新增 HAL 来自本机安装的 `STM32Cube FW_F1 V1.8.7` 固件包。实际板级
+`.ioc` 尚未启用的实例只参与独立 Platform 检查，不应在正式目标中声明可用。
