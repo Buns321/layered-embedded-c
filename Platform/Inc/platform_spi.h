@@ -79,6 +79,8 @@ typedef struct {
  * @brief Read the data width configured by CubeMX.
  * @param spi SPI instance.
  * @note Byte counts in transfer functions refer to bytes even in 16-bit mode.
+ * @note Null data, zero length, odd 16-bit length, unaligned 16-bit data, and
+ *       invalid instances are rejected with Platform_ERROR.
  */
 Platform_SPI_DataWidth Platform_SPI_GetDataWidth(
   Platform_SPI_Instance spi

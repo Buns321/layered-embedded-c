@@ -124,6 +124,8 @@ Platform_StatusTypeDef Platform_RTC_GetDateTime(
  * @param alarm Daily alarm time.
  * @note The alarm compares hour, minute, and second. Calendar-date matching is
  *       not part of the cross-family Platform contract.
+ * @note STM32F1 re-arms the counter alarm for the following day from the
+ *       interrupt callback. RTC APIs must not be called from that callback.
  */
 Platform_StatusTypeDef Platform_RTC_SetAlarm(
   Platform_RTC_Instance rtc,

@@ -32,3 +32,17 @@ IWDG, and WWDG. It does not expose DAC, I2C3, CAN2, ADC3, SPI3, or USART4-6.
 Both profiles are compiled with `-Wall -Wextra`. F4 and F1 use separate
 toolchains and build directories so Cortex-M4 floating-point flags never leak
 into the Cortex-M3 build.
+
+The build also enables `-Werror` and compiles the alternative PWM TIM3,
+encoder TIM1, CAN1-only, and CAN2-only branches in separate object targets.
+
+## Native tests
+
+The HAL-free validation helpers are exercised by a native C test:
+
+```powershell
+cmake -S cmake/platform-test -B build/platform-test -G Ninja `
+  -DCMAKE_C_COMPILER='C:/Users/surface/AppData/Local/Programs/CLion 2026.2.3.1/bin/mingw/bin/gcc.exe'
+cmake --build build/platform-test
+ctest --test-dir build/platform-test --output-on-failure
+```

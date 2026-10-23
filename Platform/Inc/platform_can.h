@@ -149,6 +149,7 @@ typedef void (*Platform_CAN_Callback)(
  * @param config Filter configuration.
  * @pre Call before Platform_CAN_Start().
  * @note id and mask are CAN identifier bits, not raw hardware registers.
+ * @retval Platform_ERROR Invalid instance, bank, mode, FIFO, or identifier.
  */
 Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
   Platform_CAN_Instance can,

@@ -4,6 +4,7 @@
 
 #include "platform_spi.h"
 #include "platform_hal_internal.h"
+#include "platform_validation_internal.h"
 #include "spi.h"
 #include "stm32f4xx_hal.h"
 #include <assert.h>
@@ -55,28 +56,32 @@ static bool platform_hal_to_spi(
   return false;
 }
 
-static void platform_spi_validate(
+static Platform_StatusTypeDef platform_spi_validate(
   Platform_SPI_Instance spi,
   const void *data,
   uint16_t size
 ) {
-  assert(
-    (uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT &&
-    data != NULL &&
-    size != 0U
-  );
-  (void)data;
-  (void)size;
+  if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
+    return Platform_ERROR;
+  }
 
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
-  assert(hspi != NULL);
-
-  if (hspi->Init.DataSize == SPI_DATASIZE_16BIT) {
-    assert((size & 1U) == 0U);
-    assert(((uintptr_t)data & 1U) == 0U);
-  } else {
-    assert(hspi->Init.DataSize == SPI_DATASIZE_8BIT);
+  if (hspi == NULL) {
+    return Platform_ERROR;
   }
+
+  bool data_width_16;
+  if (hspi->Init.DataSize == SPI_DATASIZE_16BIT) {
+    data_width_16 = true;
+  } else if (hspi->Init.DataSize == SPI_DATASIZE_8BIT) {
+    data_width_16 = false;
+  } else {
+    return Platform_ERROR;
+  }
+  if (!platform_spi_transfer_values_are_valid(data, size, data_width_16)) {
+    return Platform_ERROR;
+  }
+  return Platform_OK;
 }
 
 static uint16_t platform_spi_hal_size(
@@ -93,14 +98,17 @@ static uint16_t platform_spi_hal_size(
 Platform_SPI_DataWidth Platform_SPI_GetDataWidth(
   Platform_SPI_Instance spi
 ) {
-  assert((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT);
+  if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
+    return PLATFORM_SPI_DATA_WIDTH_8_BIT;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
-  assert(hspi != NULL);
+  if (hspi == NULL) {
+    return PLATFORM_SPI_DATA_WIDTH_8_BIT;
+  }
 
   if (hspi->Init.DataSize == SPI_DATASIZE_16BIT) {
     return PLATFORM_SPI_DATA_WIDTH_16_BIT;
   }
-  assert(hspi->Init.DataSize == SPI_DATASIZE_8BIT);
   return PLATFORM_SPI_DATA_WIDTH_8_BIT;
 }
 
@@ -154,7 +162,10 @@ Platform_StatusTypeDef Platform_SPI_Transmit(
   uint16_t size,
   uint32_t timeout
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Transmit(
     hspi,
@@ -170,7 +181,10 @@ Platform_StatusTypeDef Platform_SPI_Receive(
   uint16_t size,
   uint32_t timeout
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Receive(
     hspi,
@@ -187,8 +201,14 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive(
   uint16_t size,
   uint32_t timeout
 ) {
-  platform_spi_validate(spi, tx_data, size);
-  platform_spi_validate(spi, rx_data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, tx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
+  status = platform_spi_validate(spi, rx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_TransmitReceive(
     hspi,
@@ -204,7 +224,10 @@ Platform_StatusTypeDef Platform_SPI_Transmit_IT(
   const uint8_t *data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Transmit_IT(
     hspi,
@@ -218,7 +241,10 @@ Platform_StatusTypeDef Platform_SPI_Receive_IT(
   uint8_t *data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Receive_IT(
     hspi,
@@ -233,8 +259,14 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
   uint8_t *rx_data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, tx_data, size);
-  platform_spi_validate(spi, rx_data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, tx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
+  status = platform_spi_validate(spi, rx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_TransmitReceive_IT(
     hspi,
@@ -249,7 +281,10 @@ Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
   const uint8_t *data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Transmit_DMA(
     hspi,
@@ -263,7 +298,10 @@ Platform_StatusTypeDef Platform_SPI_Receive_DMA(
   uint8_t *data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_Receive_DMA(
     hspi,
@@ -278,8 +316,14 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
   uint8_t *rx_data,
   uint16_t size
 ) {
-  platform_spi_validate(spi, tx_data, size);
-  platform_spi_validate(spi, rx_data, size);
+  Platform_StatusTypeDef status = platform_spi_validate(spi, tx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
+  status = platform_spi_validate(spi, rx_data, size);
+  if (status != Platform_OK) {
+    return status;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
   return platform_from_hal_status(HAL_SPI_TransmitReceive_DMA(
     hspi,
@@ -290,9 +334,13 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
 }
 
 Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi) {
-  assert((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT);
+  if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
+    return Platform_ERROR;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
-  assert(hspi != NULL);
+  if (hspi == NULL) {
+    return Platform_ERROR;
+  }
 
   HAL_StatusTypeDef status = HAL_SPI_Abort(hspi);
   if (status == HAL_OK) {
@@ -302,16 +350,24 @@ Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi) {
 }
 
 Platform_StatusTypeDef Platform_SPI_Abort_IT(Platform_SPI_Instance spi) {
-  assert((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT);
+  if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
+    return Platform_ERROR;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
-  assert(hspi != NULL);
+  if (hspi == NULL) {
+    return Platform_ERROR;
+  }
   return platform_from_hal_status(HAL_SPI_Abort_IT(hspi));
 }
 
 uint32_t Platform_SPI_GetLastError(Platform_SPI_Instance spi) {
-  assert((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT);
+  if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
+    return PLATFORM_SPI_ERROR_UNKNOWN;
+  }
   SPI_HandleTypeDef *hspi = platform_spi_to_hal(spi);
-  assert(hspi != NULL);
+  if (hspi == NULL) {
+    return PLATFORM_SPI_ERROR_UNKNOWN;
+  }
   return platform_spi_map_error(HAL_SPI_GetError(hspi));
 }
 

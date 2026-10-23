@@ -96,6 +96,7 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - [编码约定](doc/conventions.md)
 - [Platform 契约与能力矩阵](doc/platform.md)
 - Platform 全实例编译检查：`cmake/platform-check/README.md`
+- Platform 原生测试：`cmake/platform-test/README.md`
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [TODO](doc/todo.md)

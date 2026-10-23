@@ -4,11 +4,16 @@
 
 #include "platform_can.h"
 #include "platform_hal_internal.h"
+#include "platform_validation_internal.h"
 #include "can.h"
 #include "stm32f1xx_hal.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
+
+#if !PLATFORM_ENABLE_CAN1
+#error "STM32F1 Platform CAN requires CAN1"
+#endif
 
 typedef struct {
   Platform_CAN_Callback callback;
@@ -162,6 +167,11 @@ static uint32_t platform_can_map_error(uint32_t hal_error) {
     error |= PLATFORM_CAN_ERROR_INTERNAL;
   }
 #endif
+#ifdef HAL_CAN_ERROR_INVALID_CALLBACK
+  if ((hal_error & HAL_CAN_ERROR_INVALID_CALLBACK) != 0U) {
+    error |= PLATFORM_CAN_ERROR_PARAMETER;
+  }
+#endif
 
   uint32_t known_errors =
     HAL_CAN_ERROR_EWG |
@@ -197,21 +207,61 @@ static uint32_t platform_can_map_error(uint32_t hal_error) {
 #ifdef HAL_CAN_ERROR_INTERNAL
   known_errors |= HAL_CAN_ERROR_INTERNAL;
 #endif
+#ifdef HAL_CAN_ERROR_INVALID_CALLBACK
+  known_errors |= HAL_CAN_ERROR_INVALID_CALLBACK;
+#endif
   if ((hal_error & ~known_errors) != 0U) {
     error |= PLATFORM_CAN_ERROR_UNKNOWN;
   }
   return error;
 }
 
-static void platform_can_validate_frame(const Platform_CAN_Frame *frame) {
-  assert(frame != NULL);
-  assert(frame->dlc <= 8U);
-  if (frame->id_type == PLATFORM_CAN_ID_EXTENDED) {
-    assert(frame->id <= 0x1FFFFFFFUL);
-  } else {
-    assert(frame->id_type == PLATFORM_CAN_ID_STANDARD);
-    assert(frame->id <= 0x7FFUL);
+static bool platform_can_frame_is_valid(const Platform_CAN_Frame *frame) {
+  if (frame == NULL ||
+      (frame->id_type != PLATFORM_CAN_ID_STANDARD &&
+       frame->id_type != PLATFORM_CAN_ID_EXTENDED)) {
+    return false;
   }
+  return platform_can_frame_values_are_valid(
+    frame->id_type == PLATFORM_CAN_ID_EXTENDED,
+    frame->id,
+    frame->dlc
+  );
+}
+
+static bool platform_can_filter_is_valid(
+  const Platform_CAN_FilterConfig *config
+) {
+  if (config == NULL ||
+      (config->mode != PLATFORM_CAN_FILTER_MASK &&
+       config->mode != PLATFORM_CAN_FILTER_LIST) ||
+      (config->fifo != PLATFORM_CAN_FIFO_0 &&
+       config->fifo != PLATFORM_CAN_FIFO_1) ||
+      (config->id_type != PLATFORM_CAN_ID_STANDARD &&
+       config->id_type != PLATFORM_CAN_ID_EXTENDED)) {
+    return false;
+  }
+
+  const bool extended = config->id_type == PLATFORM_CAN_ID_EXTENDED;
+  if (!platform_can_identifier_is_valid(extended, config->id)) {
+    return false;
+  }
+  if (config->mode == PLATFORM_CAN_FILTER_LIST) {
+    return platform_can_identifier_is_valid(extended, config->id2);
+  }
+  return platform_can_identifier_is_valid(extended, config->mask);
+}
+
+static bool platform_can_notifications_are_valid(uint32_t notifications) {
+  const uint32_t all_notifications =
+    PLATFORM_CAN_NOTIFY_RX_FIFO0_PENDING |
+    PLATFORM_CAN_NOTIFY_RX_FIFO1_PENDING |
+    PLATFORM_CAN_NOTIFY_RX_FIFO0_FULL |
+    PLATFORM_CAN_NOTIFY_RX_FIFO1_FULL |
+    PLATFORM_CAN_NOTIFY_TX_MAILBOX_EMPTY |
+    PLATFORM_CAN_NOTIFY_ERROR;
+  return notifications != 0U &&
+         (notifications & ~all_notifications) == 0U;
 }
 
 static void platform_can_to_hal_header(
@@ -279,20 +329,17 @@ Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
   Platform_CAN_Instance can,
   const Platform_CAN_FilterConfig *config
 ) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
-  assert(config != NULL);
-  assert(can == PLATFORM_CAN_1 && config->bank <= 13U);
-  assert(
-    config->mode == PLATFORM_CAN_FILTER_MASK ||
-    config->mode == PLATFORM_CAN_FILTER_LIST
-  );
-  assert(
-    config->fifo == PLATFORM_CAN_FIFO_0 ||
-    config->fifo == PLATFORM_CAN_FIFO_1
-  );
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
+      !platform_can_filter_is_valid(config) ||
+      can != PLATFORM_CAN_1 ||
+      config->bank > 13U) {
+    return Platform_ERROR;
+  }
 
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
   uint32_t id = platform_can_filter_identifier(config, config->id);
   uint32_t secondary = config->mode == PLATFORM_CAN_FILTER_LIST
                          ? platform_can_filter_identifier(config, config->id2)
@@ -317,16 +364,24 @@ Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
 }
 
 Platform_StatusTypeDef Platform_CAN_Start(Platform_CAN_Instance can) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
   return platform_from_hal_status(HAL_CAN_Start(hcan));
 }
 
 Platform_StatusTypeDef Platform_CAN_Stop(Platform_CAN_Instance can) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
   return platform_from_hal_status(HAL_CAN_Stop(hcan));
 }
 
@@ -335,10 +390,14 @@ Platform_StatusTypeDef Platform_CAN_Transmit(
   const Platform_CAN_Frame *frame,
   uint32_t timeout
 ) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
-  platform_can_validate_frame(frame);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
+      !platform_can_frame_is_valid(frame)) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
 
   Platform_StatusTypeDef status =
     platform_can_wait_tx_mailbox(hcan, timeout);
@@ -362,11 +421,15 @@ Platform_StatusTypeDef Platform_CAN_Receive(
   Platform_CAN_Frame *frame,
   uint32_t timeout
 ) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
-  assert(fifo == PLATFORM_CAN_FIFO_0 || fifo == PLATFORM_CAN_FIFO_1);
-  assert(frame != NULL);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
+      (fifo != PLATFORM_CAN_FIFO_0 && fifo != PLATFORM_CAN_FIFO_1) ||
+      frame == NULL) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
 
   uint32_t hal_fifo = fifo == PLATFORM_CAN_FIFO_0
                         ? CAN_RX_FIFO0
@@ -394,9 +457,14 @@ Platform_StatusTypeDef Platform_CAN_ActivateNotification(
   Platform_CAN_Instance can,
   uint32_t notifications
 ) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
+      !platform_can_notifications_are_valid(notifications)) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
   return platform_from_hal_status(HAL_CAN_ActivateNotification(
     hcan,
     platform_can_notifications(notifications)
@@ -407,9 +475,14 @@ Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
   Platform_CAN_Instance can,
   uint32_t notifications
 ) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
+      !platform_can_notifications_are_valid(notifications)) {
+    return Platform_ERROR;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return Platform_ERROR;
+  }
   return platform_from_hal_status(HAL_CAN_DeactivateNotification(
     hcan,
     platform_can_notifications(notifications)
@@ -417,9 +490,13 @@ Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
 }
 
 uint32_t Platform_CAN_GetLastError(Platform_CAN_Instance can) {
-  assert((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT);
+  if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT) {
+    return PLATFORM_CAN_ERROR_PARAMETER;
+  }
   CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  assert(hcan != NULL);
+  if (hcan == NULL) {
+    return PLATFORM_CAN_ERROR_PARAMETER;
+  }
   return platform_can_map_error(HAL_CAN_GetError(hcan));
 }
 

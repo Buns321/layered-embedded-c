@@ -28,11 +28,13 @@ typedef enum {
 /**
  * @brief 定时器实例身份。
  */
+/* TIM5-TIM14 are omitted for STM32F1 builds. */
 typedef enum {
   PLATFORM_TIM_TIM1 = 0U,
   PLATFORM_TIM_TIM2,
   PLATFORM_TIM_TIM3,
   PLATFORM_TIM_TIM4,
+#if defined(STM32F4xx)
   PLATFORM_TIM_TIM5,
   PLATFORM_TIM_TIM6,
   PLATFORM_TIM_TIM7,
@@ -43,6 +45,7 @@ typedef enum {
   PLATFORM_TIM_TIM12,
   PLATFORM_TIM_TIM13,
   PLATFORM_TIM_TIM14,
+#endif
 } Platform_TIM_Instance;
 
 /** @} */

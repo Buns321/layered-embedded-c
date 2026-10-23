@@ -87,7 +87,69 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       HAL_SPI_MODULE_ENABLED=1
   )
 
-  target_compile_options(platform_f4_check PRIVATE -Wall -Wextra)
+  target_compile_options(platform_f4_check PRIVATE -Wall -Wextra -Werror)
+
+  get_target_property(PLATFORM_F4_INCLUDE_DIRS
+      platform_f4_check INCLUDE_DIRECTORIES)
+  get_target_property(PLATFORM_F4_DEFINITIONS
+      platform_f4_check COMPILE_DEFINITIONS)
+  set(PLATFORM_F4_ALT_TIM_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F4_ALT_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM1=1
+      PLATFORM_ENABLE_ENCODER_TIM3=1
+  )
+  list(APPEND PLATFORM_F4_ALT_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM3=1
+      PLATFORM_ENABLE_ENCODER_TIM1=1
+  )
+
+  add_library(platform_f4_alt_tim_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_encoder.c
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_pwm.c
+  )
+  target_include_directories(platform_f4_alt_tim_check PRIVATE
+      ${PLATFORM_F4_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f4_alt_tim_check PRIVATE
+      ${PLATFORM_F4_ALT_TIM_DEFINITIONS}
+  )
+  target_compile_options(platform_f4_alt_tim_check PRIVATE
+      -Wall -Wextra -Werror
+  )
+
+  set(PLATFORM_F4_CAN1_ONLY_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F4_CAN1_ONLY_DEFINITIONS
+      PLATFORM_ENABLE_CAN2=1
+  )
+  add_library(platform_f4_can1_only_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_can.c
+  )
+  target_include_directories(platform_f4_can1_only_check PRIVATE
+      ${PLATFORM_F4_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f4_can1_only_check PRIVATE
+      ${PLATFORM_F4_CAN1_ONLY_DEFINITIONS}
+  )
+  target_compile_options(platform_f4_can1_only_check PRIVATE
+      -Wall -Wextra -Werror
+  )
+
+  set(PLATFORM_F4_CAN2_ONLY_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F4_CAN2_ONLY_DEFINITIONS
+      PLATFORM_ENABLE_CAN1=1
+  )
+  add_library(platform_f4_can2_only_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_can.c
+  )
+  target_include_directories(platform_f4_can2_only_check PRIVATE
+      ${PLATFORM_F4_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f4_can2_only_check PRIVATE
+      ${PLATFORM_F4_CAN2_ONLY_DEFINITIONS}
+  )
+  target_compile_options(platform_f4_can2_only_check PRIVATE
+      -Wall -Wextra -Werror
+  )
 elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
   add_library(platform_f1_check OBJECT
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
@@ -121,6 +183,8 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       USE_HAL_DRIVER
       STM32F103xB
       STM32F1xx
+      PLATFORM_ENABLE_GPIO_D=1
+      PLATFORM_ENABLE_GPIO_E=0
       PLATFORM_ENABLE_PWM_TIM1=1
       PLATFORM_ENABLE_CRC=1
       PLATFORM_ENABLE_ADC1=1
@@ -149,7 +213,35 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       HAL_UART_MODULE_ENABLED=1
   )
 
-  target_compile_options(platform_f1_check PRIVATE -Wall -Wextra)
+  target_compile_options(platform_f1_check PRIVATE -Wall -Wextra -Werror)
+
+  get_target_property(PLATFORM_F1_INCLUDE_DIRS
+      platform_f1_check INCLUDE_DIRECTORIES)
+  get_target_property(PLATFORM_F1_DEFINITIONS
+      platform_f1_check COMPILE_DEFINITIONS)
+  set(PLATFORM_F1_ALT_TIM_DEFINITIONS ${PLATFORM_F1_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F1_ALT_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM1=1
+      PLATFORM_ENABLE_ENCODER_TIM3=1
+  )
+  list(APPEND PLATFORM_F1_ALT_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM3=1
+      PLATFORM_ENABLE_ENCODER_TIM1=1
+  )
+
+  add_library(platform_f1_alt_tim_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f1/platform_encoder.c
+      ${REPO_ROOT}/Platform/Src/stm32f1/platform_pwm.c
+  )
+  target_include_directories(platform_f1_alt_tim_check PRIVATE
+      ${PLATFORM_F1_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f1_alt_tim_check PRIVATE
+      ${PLATFORM_F1_ALT_TIM_DEFINITIONS}
+  )
+  target_compile_options(platform_f1_alt_tim_check PRIVATE
+      -Wall -Wextra -Werror
+  )
 else()
   message(FATAL_ERROR "Set PLATFORM_CHECK_FAMILY to F4 or F1")
 endif()

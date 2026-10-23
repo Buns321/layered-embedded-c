@@ -18,8 +18,12 @@ static GPIO_TypeDef *platform_to_hal_port(Platform_GPIO_Port port) {
     case PLATFORM_GPIO_PORT_A:  return GPIOA;
     case PLATFORM_GPIO_PORT_B:  return GPIOB;
     case PLATFORM_GPIO_PORT_C:  return GPIOC;
+#if PLATFORM_ENABLE_GPIO_D
     case PLATFORM_GPIO_PORT_D:  return GPIOD;
+#endif
+#if PLATFORM_ENABLE_GPIO_E
     case PLATFORM_GPIO_PORT_E:  return GPIOE;
+#endif
     // case PLATFORM_GPIO_PORT_F:  return GPIOF;
     // case PLATFORM_GPIO_PORT_G:  return GPIOG;
     default:                    assert(0); return NULL;

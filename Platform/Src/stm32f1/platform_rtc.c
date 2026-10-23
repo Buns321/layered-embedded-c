@@ -4,14 +4,18 @@
 
 #include "platform_rtc.h"
 #include "platform_hal_internal.h"
+#include "platform_validation_internal.h"
 #include "rtc.h"
 #include "stm32f1xx_hal.h"
 #include <assert.h>
 #include <stdbool.h>
 
-static uint32_t rtc_error = PLATFORM_RTC_ERROR_NONE;
+static volatile uint32_t rtc_error = PLATFORM_RTC_ERROR_NONE;
 static bool rtc_cb_registered;
+static volatile bool rtc_alarm_enabled;
 static platform_rtc_callbacks_t rtc_cb;
+
+#define PLATFORM_RTC_RTOFF_SPIN_LIMIT 100000UL
 
 static bool platform_rtc_is_leap_year(uint16_t year) {
   return ((year % 4U) == 0U &&
@@ -63,14 +67,41 @@ static Platform_StatusTypeDef platform_rtc_status(
   return platform_from_hal_status(hal_status);
 }
 
+static bool platform_rtc_wait_for_ready(void) {
+  /* Avoid HAL_GetTick timeout handling inside the RTC alarm ISR. */
+  for (uint32_t spin = 0U; spin < PLATFORM_RTC_RTOFF_SPIN_LIMIT; ++spin) {
+    if ((hrtc.Instance->CRL & RTC_CRL_RTOFF) != 0U) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool platform_rtc_rearm_daily_alarm(void) {
+  const uint32_t current_alarm =
+    ((uint32_t)hrtc.Instance->ALRH << 16U) |
+    (hrtc.Instance->ALRL & 0xFFFFUL);
+  const uint32_t next_alarm =
+    platform_rtc_next_daily_alarm(current_alarm);
+
+  if (!platform_rtc_wait_for_ready()) {
+    return false;
+  }
+
+  __HAL_RTC_WRITEPROTECTION_DISABLE(&hrtc);
+  WRITE_REG(hrtc.Instance->ALRH, next_alarm >> 16U);
+  WRITE_REG(hrtc.Instance->ALRL, next_alarm & 0xFFFFUL);
+  __HAL_RTC_WRITEPROTECTION_ENABLE(&hrtc);
+
+  return platform_rtc_wait_for_ready();
+}
+
 Platform_StatusTypeDef Platform_RTC_SetDateTime(
   Platform_RTC_Instance rtc,
   const Platform_RTC_DateTime *date_time
 ) {
-  assert(rtc == PLATFORM_RTC_1);
-  (void)rtc;
   rtc_error = PLATFORM_RTC_ERROR_NONE;
-  if (!platform_rtc_datetime_valid(date_time)) {
+  if (rtc != PLATFORM_RTC_1 || !platform_rtc_datetime_valid(date_time)) {
     rtc_error = PLATFORM_RTC_ERROR_INVALID;
     return Platform_ERROR;
   }
@@ -99,10 +130,11 @@ Platform_StatusTypeDef Platform_RTC_GetDateTime(
   Platform_RTC_Instance rtc,
   Platform_RTC_DateTime *date_time
 ) {
-  assert(rtc == PLATFORM_RTC_1);
-  (void)rtc;
-  assert(date_time != NULL);
   rtc_error = PLATFORM_RTC_ERROR_NONE;
+  if (rtc != PLATFORM_RTC_1 || date_time == NULL) {
+    rtc_error = PLATFORM_RTC_ERROR_INVALID;
+    return Platform_ERROR;
+  }
 
   RTC_TimeTypeDef time;
   RTC_DateTypeDef date;
@@ -133,10 +165,8 @@ Platform_StatusTypeDef Platform_RTC_SetAlarm(
   Platform_RTC_Instance rtc,
   const Platform_RTC_AlarmConfig *alarm
 ) {
-  assert(rtc == PLATFORM_RTC_1);
-  (void)rtc;
   rtc_error = PLATFORM_RTC_ERROR_NONE;
-  if (!platform_rtc_time_valid(alarm)) {
+  if (rtc != PLATFORM_RTC_1 || !platform_rtc_time_valid(alarm)) {
     rtc_error = PLATFORM_RTC_ERROR_INVALID;
     return Platform_ERROR;
   }
@@ -149,28 +179,39 @@ Platform_StatusTypeDef Platform_RTC_SetAlarm(
     },
     .Alarm = RTC_ALARM_A,
   };
-  return platform_rtc_status(
+  rtc_alarm_enabled = true;
+  Platform_StatusTypeDef status = platform_rtc_status(
     HAL_RTC_SetAlarm_IT(&hrtc, &hal_alarm, RTC_FORMAT_BIN),
     PLATFORM_RTC_ERROR_ALARM
   );
+  if (status != Platform_OK) {
+    rtc_alarm_enabled = false;
+  }
+  return status;
 }
 
 Platform_StatusTypeDef Platform_RTC_DisableAlarm(
   Platform_RTC_Instance rtc
 ) {
-  assert(rtc == PLATFORM_RTC_1);
-  (void)rtc;
   rtc_error = PLATFORM_RTC_ERROR_NONE;
-  return platform_rtc_status(
+  if (rtc != PLATFORM_RTC_1) {
+    rtc_error = PLATFORM_RTC_ERROR_INVALID;
+    return Platform_ERROR;
+  }
+  Platform_StatusTypeDef status = platform_rtc_status(
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A),
     PLATFORM_RTC_ERROR_ALARM
   );
+  if (status == Platform_OK) {
+    rtc_alarm_enabled = false;
+  }
+  return status;
 }
 
 uint32_t Platform_RTC_GetLastError(Platform_RTC_Instance rtc) {
-  assert(rtc == PLATFORM_RTC_1);
-  (void)rtc;
-  return rtc_error;
+  return rtc == PLATFORM_RTC_1
+           ? rtc_error
+           : PLATFORM_RTC_ERROR_UNKNOWN;
 }
 
 void Platform_RTC_RegisterCallbacks(
@@ -188,6 +229,9 @@ void Platform_RTC_RegisterCallbacks(
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc_handle) {
   assert(hrtc_handle == &hrtc);
   (void)hrtc_handle;
+  if (rtc_alarm_enabled && !platform_rtc_rearm_daily_alarm()) {
+    rtc_error |= PLATFORM_RTC_ERROR_ALARM;
+  }
   if (rtc_cb.alarm_cb != NULL) {
     rtc_cb.alarm_cb(PLATFORM_RTC_1, PLATFORM_RTC_EVENT_ALARM, rtc_cb.context);
   }
