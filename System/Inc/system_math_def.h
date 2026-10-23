@@ -20,8 +20,8 @@
 #  define SYS_MATH_INLINE static inline
 #endif
 
-typedef union { float  f; uint32_t u; } Sys_Math_F32_Bits;
-typedef union { double f; uint64_t u; } Sys_Math_F64_Bits;
+typedef union sys_math_f32_bits_u { float  f; uint32_t u; } sys_math_f32_bits_t;
+typedef union sys_math_f64_bits_u { double f; uint64_t u; } sys_math_f64_bits_t;
 
 /** @} */
 

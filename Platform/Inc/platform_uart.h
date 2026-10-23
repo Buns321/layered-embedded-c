@@ -3,14 +3,14 @@
 //
 
 /**
- * @file platform_usart.h
- * @brief USART 抽象：收发、IT/DMA、回调注册与错误清理。
+ * @file platform_uart.h
+ * @brief UART 抽象：收发、IT/DMA、回调注册与错误清理。
  * @addtogroup platform
  * @{
  */
 
-#ifndef LAYERED_EMBEDDED_C_PLATFORM_USART_H
-#define LAYERED_EMBEDDED_C_PLATFORM_USART_H
+#ifndef LAYERED_EMBEDDED_C_PLATFORM_UART_H
+#define LAYERED_EMBEDDED_C_PLATFORM_UART_H
 
 #include "platform_config.h"
 #include "platform_def.h"
@@ -20,15 +20,15 @@
  * @brief UART 实例身份。
  * @note 未启用的实例不会进入该枚举。
  */
-typedef enum {
+typedef enum platform_uart_instance_e {
 #if PLATFORM_ENABLE_UART1
-  PLATFORM_USART_1 = 0U,
+  PLATFORM_UART_1 = 0U,
 #endif
 #if PLATFORM_ENABLE_UART2
-  PLATFORM_USART_2 = 1U,
+  PLATFORM_UART_2 = 1U,
 #endif
 #if PLATFORM_ENABLE_UART3
-  PLATFORM_USART_3 = 2U,
+  PLATFORM_UART_3 = 2U,
 #endif
 #if PLATFORM_ENABLE_UART4
   PLATFORM_UART_4 = 3U,
@@ -37,9 +37,9 @@ typedef enum {
   PLATFORM_UART_5 = 4U,
 #endif
 #if PLATFORM_ENABLE_UART6
-  PLATFORM_USART_6 = 5U,
+  PLATFORM_UART_6 = 5U,
 #endif
-} Platform_UART_Instance;
+} platform_uart_instance_t;
 
 #if !PLATFORM_ENABLE_UART1 && !PLATFORM_ENABLE_UART2 && \
     !PLATFORM_ENABLE_UART3 && !PLATFORM_ENABLE_UART4 && \
@@ -51,7 +51,7 @@ typedef enum {
  * @brief UART 错误位。
  * @note 多个位可以同时置位。
  */
-typedef enum {
+typedef enum platform_uart_error_e {
   PLATFORM_UART_ERROR_NONE    = 0u,
   PLATFORM_UART_ERROR_PARITY  = (1u << 0),
   PLATFORM_UART_ERROR_NOISE   = (1u << 1),
@@ -59,29 +59,29 @@ typedef enum {
   PLATFORM_UART_ERROR_OVERRUN = (1u << 3),
   PLATFORM_UART_ERROR_DMA     = (1u << 5),
   PLATFORM_UART_ERROR_UNKNOWN = (1u << 7),
-} Platform_UART_Error;
+} platform_uart_error_t;
 
 /** @brief UART 异步事件。 */
-typedef enum {
-  PLATFORM_UART_EVENT_TX_CPLT = 0U,
-  PLATFORM_UART_EVENT_TX_HALF,
-  PLATFORM_UART_EVENT_RX_CPLT,
-  PLATFORM_UART_EVENT_RX_HALF,
+typedef enum platform_uart_event_type_e {
+  PLATFORM_UART_EVENT_TX_COMPLETE = 0U,
+  PLATFORM_UART_EVENT_TX_HALF_COMPLETE,
+  PLATFORM_UART_EVENT_RX_COMPLETE,
+  PLATFORM_UART_EVENT_RX_HALF_COMPLETE,
   PLATFORM_UART_EVENT_ERROR,
-  PLATFORM_UART_EVENT_ABORT_CPLT,
-  PLATFORM_UART_EVENT_ABORT_TX_CPLT,
-  PLATFORM_UART_EVENT_ABORT_RX_CPLT,
-} Platform_UART_EventType;
+  PLATFORM_UART_EVENT_ABORT_COMPLETE,
+  PLATFORM_UART_EVENT_ABORT_TX_COMPLETE,
+  PLATFORM_UART_EVENT_ABORT_RX_COMPLETE,
+} platform_uart_event_type_t;
 
 /** @brief UART 事件数据，只在回调期间有效。 */
-typedef struct {
-  Platform_UART_EventType type;
+typedef struct platform_uart_event_s {
+  platform_uart_event_type_t type;
   uint32_t error;
-} Platform_UART_Event;
+} platform_uart_event_t;
 
-typedef void (*Platform_UART_Callback)(
-  Platform_UART_Instance uart,
-  const Platform_UART_Event *event,
+typedef void (*platform_uart_callback_t)(
+  platform_uart_instance_t uart,
+  const platform_uart_event_t *event,
   void *context
 );
 
@@ -91,10 +91,10 @@ typedef void (*Platform_UART_Callback)(
  * @note 注册时结构体内容会被复制。
  * @note 一个物理 UART 只有一个回调所有者。
  */
-typedef struct {
-  Platform_UART_Callback callback;
+typedef struct platform_uart_callback_binding_s {
+  platform_uart_callback_t callback;
   void *context;
-} platform_uart_callbacks_t;
+} platform_uart_callback_binding_t;
 
 /**
  * @brief 阻塞接收。
@@ -105,8 +105,8 @@ typedef struct {
  * @pre 对应 UART 的 MX_USARTx_UART_Init() 已完成。
  * @return Platform 状态码。
  */
-Platform_StatusTypeDef Platform_UART_Receive(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_Receive(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size,
   uint32_t timeout
@@ -121,8 +121,8 @@ Platform_StatusTypeDef Platform_UART_Receive(
  * @pre 对应 UART 的 MX_USARTx_UART_Init() 已完成。
  * @return Platform 状态码。
  */
-Platform_StatusTypeDef Platform_UART_Transmit(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_Transmit(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size,
   uint32_t timeout
@@ -133,8 +133,8 @@ Platform_StatusTypeDef Platform_UART_Transmit(
  * @note pdata 必须保持有效，直到 RX 完成或错误回调。
  * @note 重新挂接收由设备驱动负责，Platform 不自动重挂。
  */
-Platform_StatusTypeDef Platform_UART_Receive_IT(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_ReceiveIT(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size
 );
@@ -143,8 +143,8 @@ Platform_StatusTypeDef Platform_UART_Receive_IT(
  * @brief 中断发送。
  * @note pdata 必须保持有效，直到 TX 完成或错误回调。
  */
-Platform_StatusTypeDef Platform_UART_Transmit_IT(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_TransmitIT(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size
 );
@@ -154,8 +154,8 @@ Platform_StatusTypeDef Platform_UART_Transmit_IT(
  * @note pdata 必须保持有效，直到 RX 完成或错误回调。
  * @note 半完成回调时只能访问已经完成的那一半数据。
  */
-Platform_StatusTypeDef Platform_UART_Receive_DMA(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_ReceiveDMA(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size
 );
@@ -164,8 +164,8 @@ Platform_StatusTypeDef Platform_UART_Receive_DMA(
  * @brief DMA 发送。
  * @note pdata 必须保持有效，直到 TX 完成或错误回调。
  */
-Platform_StatusTypeDef Platform_UART_Transmit_DMA(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_TransmitDMA(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size
 );
@@ -173,47 +173,47 @@ Platform_StatusTypeDef Platform_UART_Transmit_DMA(
 /**
  * @brief 中止接收，清除 UART 硬件错误标志和 HAL 错误码。
  * @param uart UART 实例。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
  */
-Platform_StatusTypeDef Platform_UART_AbortReceive(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_AbortReceive(
+  platform_uart_instance_t uart
 );
 
 /**
  * @brief 中止发送并清除 HAL 错误码。
  * @param uart UART 实例。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
  */
-Platform_StatusTypeDef Platform_UART_AbortTransmit(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_AbortTransmit(
+  platform_uart_instance_t uart
 );
 
 /**
  * @brief 中止发送和接收，并清除 UART 错误状态。
  * @param uart UART 实例。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
  */
-Platform_StatusTypeDef Platform_UART_Abort(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_Abort(
+  platform_uart_instance_t uart
 );
 
 /**
  * @brief 兼容旧接口：中止接收并清除错误状态。
  * @deprecated 新代码应使用 Platform_UART_AbortReceive()。
  */
-Platform_StatusTypeDef Platform_UART_ClearBuffer(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_ClearBuffer(
+  platform_uart_instance_t uart
 );
 
 /**
  * @brief 读取最近一次 HAL UART 错误快照。
- * @return Platform_UART_Error 位掩码。
+ * @return platform_uart_error_t 位掩码。
  */
 uint32_t Platform_UART_GetLastError(
-  Platform_UART_Instance uart
+  platform_uart_instance_t uart
 );
 
 /**
@@ -221,15 +221,15 @@ uint32_t Platform_UART_GetLastError(
  * @param uart UART 实例。
  * @param cb 回调集合，内容会被复制。
  * @pre 必须在启动 IT/DMA 传输前调用，且一个实例只能有一个回调所有者。
- * @retval Platform_OK 注册成功。
- * @retval Platform_BUSY 该实例已注册回调。
- * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
+ * @retval PLATFORM_STATUS_OK 注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或回调集合非法。
  */
-Platform_StatusTypeDef Platform_UART_RegisterCallbacks(
-  Platform_UART_Instance uart,
-  const platform_uart_callbacks_t *cb
+platform_status_t Platform_UART_RegisterCallback(
+  platform_uart_instance_t uart,
+  const platform_uart_callback_binding_t *cb
 );
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_PLATFORM_USART_H
+#endif //LAYERED_EMBEDDED_C_PLATFORM_UART_H

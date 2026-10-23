@@ -9,7 +9,7 @@
 #include "tim.h"
 
 static TIM_HandleTypeDef *platform_encoder_to_hal(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 ) {
   switch (encoder) {
 #if PLATFORM_ENABLE_ENCODER_TIM1
@@ -29,75 +29,75 @@ static TIM_HandleTypeDef *platform_encoder_to_hal(
 }
 
 bool platform_encoder_backend_is_valid(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 ) {
   return platform_encoder_to_hal(encoder) != NULL;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_start(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_start(
+  platform_encoder_instance_t encoder
 ) {
-  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  TIM_HandleTypeDef *encoder_h = platform_encoder_to_hal(encoder);
+  return encoder_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(
-                       HAL_TIM_Encoder_Start(h, TIM_CHANNEL_ALL)
+                       HAL_TIM_Encoder_Start(encoder_h, TIM_CHANNEL_ALL)
                      );
 }
 
-Platform_StatusTypeDef platform_encoder_backend_stop(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_stop(
+  platform_encoder_instance_t encoder
 ) {
-  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  TIM_HandleTypeDef *encoder_h = platform_encoder_to_hal(encoder);
+  return encoder_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(
-                       HAL_TIM_Encoder_Stop(h, TIM_CHANNEL_ALL)
+                       HAL_TIM_Encoder_Stop(encoder_h, TIM_CHANNEL_ALL)
                      );
 }
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter(
+  platform_encoder_instance_t encoder,
   uint32_t *counter
 ) {
-  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
-  if (h == NULL || counter == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  TIM_HandleTypeDef *encoder_h = platform_encoder_to_hal(encoder);
+  if (encoder_h == NULL || counter == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  *counter = __HAL_TIM_GET_COUNTER(h);
-  return Platform_OK;
+  *counter = __HAL_TIM_GET_COUNTER(encoder_h);
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_set_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_set_counter(
+  platform_encoder_instance_t encoder,
   uint32_t counter
 ) {
-  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
-  if (h == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  TIM_HandleTypeDef *encoder_h = platform_encoder_to_hal(encoder);
+  if (encoder_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  __HAL_TIM_SET_COUNTER(h, counter);
-  return Platform_OK;
+  __HAL_TIM_SET_COUNTER(encoder_h, counter);
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter_bits(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter_bits(
+  platform_encoder_instance_t encoder,
   uint8_t *counter_bits
 ) {
   if (counter_bits == NULL) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   switch (encoder) {
 #if PLATFORM_ENABLE_ENCODER_TIM1
-    case PLATFORM_ENCODER_TIM1: *counter_bits = 16U; return Platform_OK;
+    case PLATFORM_ENCODER_TIM1: *counter_bits = 16U; return PLATFORM_STATUS_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM2
-    case PLATFORM_ENCODER_TIM2: *counter_bits = 16U; return Platform_OK;
+    case PLATFORM_ENCODER_TIM2: *counter_bits = 16U; return PLATFORM_STATUS_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM3
-    case PLATFORM_ENCODER_TIM3: *counter_bits = 16U; return Platform_OK;
+    case PLATFORM_ENCODER_TIM3: *counter_bits = 16U; return PLATFORM_STATUS_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM4
-    case PLATFORM_ENCODER_TIM4: *counter_bits = 16U; return Platform_OK;
+    case PLATFORM_ENCODER_TIM4: *counter_bits = 16U; return PLATFORM_STATUS_OK;
 #endif
-    default: return Platform_INVALID_ARGUMENT;
+    default: return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 }

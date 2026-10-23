@@ -10,43 +10,43 @@
 #include "platform_def.h"
 #include <stdbool.h>
 
-bool platform_dac_backend_is_valid(Platform_DAC_Instance dac);
+bool platform_dac_backend_is_valid(platform_dac_instance_t dac);
 
-Platform_StatusTypeDef platform_dac_backend_set_value(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t platform_dac_backend_set_value(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   uint32_t value
 );
 
-Platform_StatusTypeDef platform_dac_backend_start(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_start(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 );
 
-Platform_StatusTypeDef platform_dac_backend_stop(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_stop(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 );
 
-Platform_StatusTypeDef platform_dac_backend_start_dma(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t platform_dac_backend_start_dma(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   const uint32_t *data,
   uint32_t length
 );
 
-Platform_StatusTypeDef platform_dac_backend_stop_dma(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_stop_dma(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 );
 
-uint32_t platform_dac_backend_get_error(Platform_DAC_Instance dac);
+uint32_t platform_dac_backend_get_error(platform_dac_instance_t dac);
 
 void platform_dac_dispatch_event(
-  Platform_DAC_Instance dac,
-  const Platform_DAC_Event *event
+  platform_dac_instance_t dac,
+  const platform_dac_event_t *event
 );
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_DAC_BACKEND_H

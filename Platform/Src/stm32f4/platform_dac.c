@@ -8,27 +8,27 @@
 #include "platform_hal_internal.h"
 #include "stm32f4xx_hal.h"
 
-static DAC_HandleTypeDef *platform_dac_to_hal(Platform_DAC_Instance dac) {
+static DAC_HandleTypeDef *platform_dac_to_hal(platform_dac_instance_t dac) {
   return dac == PLATFORM_DAC_1 ? &hdac : NULL;
 }
 
 static bool platform_hal_to_dac(
-  DAC_HandleTypeDef *handle,
-  Platform_DAC_Instance *dac
+  DAC_HandleTypeDef *dac_h,
+  platform_dac_instance_t *dac
 ) {
-  if (handle == &hdac && dac != NULL) {
+  if (dac_h == &hdac && dac != NULL) {
     *dac = PLATFORM_DAC_1;
     return true;
   }
   return false;
 }
 
-static uint32_t platform_dac_hal_channel(Platform_DAC_Channel channel) {
+static uint32_t platform_dac_hal_channel(platform_dac_channel_t channel) {
   return channel == PLATFORM_DAC_CHANNEL_1 ? DAC_CHANNEL_1 : DAC_CHANNEL_2;
 }
 
 static uint32_t platform_dac_hal_alignment(
-  Platform_DAC_Alignment alignment
+  platform_dac_alignment_t alignment
 ) {
   switch (alignment) {
     case PLATFORM_DAC_ALIGN_8_BIT_RIGHT: return DAC_ALIGN_8B_R;
@@ -61,61 +61,61 @@ static uint32_t platform_dac_map_error(uint32_t hal_error) {
   return error;
 }
 
-bool platform_dac_backend_is_valid(Platform_DAC_Instance dac) {
+bool platform_dac_backend_is_valid(platform_dac_instance_t dac) {
   return platform_dac_to_hal(dac) != NULL;
 }
 
-Platform_StatusTypeDef platform_dac_backend_set_value(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t platform_dac_backend_set_value(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   uint32_t value
 ) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_DAC_SetValue(
-                       h,
+                       dac_h,
                        platform_dac_hal_channel(channel),
                        platform_dac_hal_alignment(alignment),
                        value
                      ));
 }
 
-Platform_StatusTypeDef platform_dac_backend_start(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_start(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_DAC_Start(
-                       h,
+                       dac_h,
                        platform_dac_hal_channel(channel)
                      ));
 }
 
-Platform_StatusTypeDef platform_dac_backend_stop(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_stop(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_DAC_Stop(
-                       h,
+                       dac_h,
                        platform_dac_hal_channel(channel)
                      ));
 }
 
-Platform_StatusTypeDef platform_dac_backend_start_dma(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t platform_dac_backend_start_dma(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   const uint32_t *data,
   uint32_t length
 ) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_DAC_Start_DMA(
-                       h,
+                       dac_h,
                        platform_dac_hal_channel(channel),
                        (uint32_t *)data,
                        length,
@@ -123,34 +123,34 @@ Platform_StatusTypeDef platform_dac_backend_start_dma(
                      ));
 }
 
-Platform_StatusTypeDef platform_dac_backend_stop_dma(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t platform_dac_backend_stop_dma(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_DAC_Stop_DMA(
-                       h,
+                       dac_h,
                        platform_dac_hal_channel(channel)
                      ));
 }
 
-uint32_t platform_dac_backend_get_error(Platform_DAC_Instance dac) {
-  DAC_HandleTypeDef *h = platform_dac_to_hal(dac);
-  return h == NULL ? PLATFORM_DAC_ERROR_UNKNOWN
-                   : platform_dac_map_error(HAL_DAC_GetError(h));
+uint32_t platform_dac_backend_get_error(platform_dac_instance_t dac) {
+  DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
+  return dac_h == NULL ? PLATFORM_DAC_ERROR_UNKNOWN
+                   : platform_dac_map_error(HAL_DAC_GetError(dac_h));
 }
 
 static void platform_dac_dispatch_hal_event(
-  DAC_HandleTypeDef *hdac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_EventType type
+  DAC_HandleTypeDef *dac_h,
+  platform_dac_channel_t channel,
+  platform_dac_event_type_t type
 ) {
-  Platform_DAC_Instance dac;
-  if (!platform_hal_to_dac(hdac, &dac)) {
+  platform_dac_instance_t dac;
+  if (!platform_hal_to_dac(dac_h, &dac)) {
     return;
   }
-  const Platform_DAC_Event event = {
+  const platform_dac_event_t event = {
     .type = type,
     .channel = channel,
     .error = type == PLATFORM_DAC_EVENT_ERROR ||
@@ -161,65 +161,65 @@ static void platform_dac_dispatch_hal_event(
   platform_dac_dispatch_event(dac, &event);
 }
 
-void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_1,
-    PLATFORM_DAC_EVENT_CONV_CPLT
+    PLATFORM_DAC_EVENT_CONV_COMPLETE
   );
 }
 
-void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_1,
-    PLATFORM_DAC_EVENT_CONV_HALF
+    PLATFORM_DAC_EVENT_CONV_HALF_COMPLETE
   );
 }
 
-void HAL_DAC_ErrorCallbackCh1(DAC_HandleTypeDef *hdac) {
+void HAL_DAC_ErrorCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_1,
     PLATFORM_DAC_EVENT_ERROR
   );
 }
 
-void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *hdac) {
+void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_1,
     PLATFORM_DAC_EVENT_UNDERRUN
   );
 }
 
-void HAL_DACEx_ConvCpltCallbackCh2(DAC_HandleTypeDef *hdac) {
+void HAL_DACEx_ConvCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_2,
-    PLATFORM_DAC_EVENT_CONV_CPLT
+    PLATFORM_DAC_EVENT_CONV_COMPLETE
   );
 }
 
-void HAL_DACEx_ConvHalfCpltCallbackCh2(DAC_HandleTypeDef *hdac) {
+void HAL_DACEx_ConvHalfCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_2,
-    PLATFORM_DAC_EVENT_CONV_HALF
+    PLATFORM_DAC_EVENT_CONV_HALF_COMPLETE
   );
 }
 
-void HAL_DACEx_ErrorCallbackCh2(DAC_HandleTypeDef *hdac) {
+void HAL_DACEx_ErrorCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_2,
     PLATFORM_DAC_EVENT_ERROR
   );
 }
 
-void HAL_DACEx_DMAUnderrunCallbackCh2(DAC_HandleTypeDef *hdac) {
+void HAL_DACEx_DMAUnderrunCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
-    hdac,
+    dac_h,
     PLATFORM_DAC_CHANNEL_2,
     PLATFORM_DAC_EVENT_UNDERRUN
   );

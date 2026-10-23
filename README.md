@@ -7,8 +7,8 @@
 
 已完成并通过工具链构建的是**基础设施层**：
 
-- **Platform**：GPIO / PWM / Encoder / USART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
-- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、遥测（base + FireWater / JustFloat USART）。
+- **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
+- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、UART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、遥测（base + FireWater / JustFloat UART）。
 - **Controller**：轮级 SISO 控制契约、线性控制律、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。

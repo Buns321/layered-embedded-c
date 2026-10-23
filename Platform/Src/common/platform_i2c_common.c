@@ -8,14 +8,14 @@
 #include <stddef.h>
 
 static volatile uint32_t i2c_error[PLATFORM_I2C_INSTANCE_COUNT];
-static platform_i2c_callbacks_t i2c_cb[PLATFORM_I2C_INSTANCE_COUNT];
+static platform_i2c_callback_binding_t i2c_cb[PLATFORM_I2C_INSTANCE_COUNT];
 static bool i2c_cb_registered[PLATFORM_I2C_INSTANCE_COUNT];
 
-static Platform_StatusTypeDef platform_i2c_finish(
-  Platform_I2C_Instance i2c,
-  Platform_StatusTypeDef status
+static platform_status_t platform_i2c_finish(
+  platform_i2c_instance_t i2c,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &i2c_error[i2c],
       platform_error_from_status(status)
@@ -24,20 +24,20 @@ static Platform_StatusTypeDef platform_i2c_finish(
   return status;
 }
 
-static Platform_StatusTypeDef platform_i2c_invalid(
-  Platform_I2C_Instance i2c
+static platform_status_t platform_i2c_invalid(
+  platform_i2c_instance_t i2c
 ) {
   if ((uint32_t)i2c < PLATFORM_I2C_INSTANCE_COUNT) {
     platform_error_record(
       &i2c_error[i2c],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
 static bool platform_i2c_validate(
-  Platform_I2C_Instance i2c,
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const void *data,
   uint16_t size
@@ -54,8 +54,8 @@ static bool platform_i2c_mem_size_valid(uint8_t mem_address_size) {
 }
 
 void platform_i2c_dispatch_event(
-  Platform_I2C_Instance i2c,
-  Platform_I2C_EventType type
+  platform_i2c_instance_t i2c,
+  platform_i2c_event_type_t type
 ) {
   if (
     (uint32_t)i2c >= PLATFORM_I2C_INSTANCE_COUNT ||
@@ -64,7 +64,7 @@ void platform_i2c_dispatch_event(
     return;
   }
 
-  Platform_I2C_Event event = {
+  platform_i2c_event_t event = {
     .type = type,
     .error = type == PLATFORM_I2C_EVENT_ERROR
                ? platform_i2c_backend_get_error(i2c)
@@ -75,8 +75,8 @@ void platform_i2c_dispatch_event(
   }
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterTransmit(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmit(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size,
@@ -100,8 +100,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterReceive(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceive(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size,
@@ -125,8 +125,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemWrite(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWrite(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -157,8 +157,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemRead(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemRead(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -189,8 +189,8 @@ Platform_StatusTypeDef Platform_I2C_MemRead(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmitIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
@@ -207,8 +207,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceiveIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
@@ -225,8 +225,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWriteIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -255,8 +255,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemRead_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemReadIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -285,8 +285,8 @@ Platform_StatusTypeDef Platform_I2C_MemRead_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmitDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
@@ -303,8 +303,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceiveDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
@@ -321,8 +321,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWriteDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -351,8 +351,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemReadDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -381,8 +381,8 @@ Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_I2C_Abort_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_AbortIT(
+  platform_i2c_instance_t i2c,
   uint16_t address
 ) {
   if ((uint32_t)i2c < PLATFORM_I2C_INSTANCE_COUNT) {
@@ -401,29 +401,29 @@ Platform_StatusTypeDef Platform_I2C_Abort_IT(
   );
 }
 
-uint32_t Platform_I2C_GetLastError(Platform_I2C_Instance i2c) {
+uint32_t Platform_I2C_GetLastError(platform_i2c_instance_t i2c) {
   if ((uint32_t)i2c >= PLATFORM_I2C_INSTANCE_COUNT) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return i2c_error[i2c] | platform_i2c_backend_get_error(i2c);
 }
 
-Platform_StatusTypeDef Platform_I2C_RegisterCallbacks(
-  Platform_I2C_Instance i2c,
-  const platform_i2c_callbacks_t *callbacks
+platform_status_t Platform_I2C_RegisterCallback(
+  platform_i2c_instance_t i2c,
+  const platform_i2c_callback_binding_t *callbacks
 ) {
   if (
     (uint32_t)i2c >= PLATFORM_I2C_INSTANCE_COUNT ||
     callbacks == NULL ||
     !platform_i2c_backend_is_valid(i2c)
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (i2c_cb_registered[i2c]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   i2c_cb[i2c] = *callbacks;
   i2c_cb_registered[i2c] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }

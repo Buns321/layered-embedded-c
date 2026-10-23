@@ -35,13 +35,13 @@ uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
            : 0U;
 }
 
-Platform_StatusTypeDef platform_flash_backend_read(
+platform_status_t platform_flash_backend_read(
   uint32_t address,
   void *data,
   uint32_t size
 ) {
   (void)memcpy(data, (const void *)address, size);
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 static uint32_t platform_flash_map_hal_error(uint32_t hal_error) {
@@ -67,7 +67,7 @@ static void platform_flash_capture_error(uint32_t operation_error) {
   flash_backend_error = operation_error | error;
 }
 
-Platform_StatusTypeDef platform_flash_backend_write(
+platform_status_t platform_flash_backend_write(
   uint32_t address,
   const void *data,
   uint32_t size
@@ -98,7 +98,7 @@ Platform_StatusTypeDef platform_flash_backend_write(
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef platform_flash_backend_erase(
+platform_status_t platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
 ) {

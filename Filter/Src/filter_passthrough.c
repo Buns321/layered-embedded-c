@@ -6,21 +6,21 @@
 #include <assert.h>
 
 static void Filter_Passthrough_Update(
-  filter_base_t *this,
+  filter_base_t *filter_h,
   const filter_sample_t *input,
   filter_sample_t *output
 ) {
-  assert(this && input && output);
+  assert(filter_h && input && output);
 
-  (void)this;
+  (void)filter_h;
   (void)input;
   (void)output;
 }
 
-static void Filter_Passthrough_Reset(filter_base_t *this) {
-  assert(this);
+static void Filter_Passthrough_Reset(filter_base_t *filter_h) {
+  assert(filter_h);
 
-  (void)this;
+  (void)filter_h;
 }
 
 static const filter_ops_t filter_ops_passthrough = {
@@ -29,10 +29,10 @@ static const filter_ops_t filter_ops_passthrough = {
 };
 
 void Filter_Passthrough_Init(
-  filter_passthrough_t *this,
+  filter_passthrough_t *filter_h,
   const char *name
 ) {
-  assert(this && name);
+  assert(filter_h && name);
 
-  Filter_Base_Init(&this->filter_base, name, &filter_ops_passthrough);
+  Filter_Base_Init(&filter_h->filter_base, name, &filter_ops_passthrough);
 }

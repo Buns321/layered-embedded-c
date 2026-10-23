@@ -7,7 +7,7 @@
  * @brief 控制任务接口（任务体待实现）。
  * @addtogroup rtos
  * @{
- * @note StartControlTask 声明位于 Core/Src/freertos.c。
+ * @note RTOS_Control_StartTask 声明位于 Core/Src/freertos.c。
  */
 
 #ifndef LAYERED_EMBEDDED_C_RTOS_CONTROL_H

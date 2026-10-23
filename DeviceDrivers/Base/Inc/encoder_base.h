@@ -14,44 +14,44 @@
 
 #include <stdint.h>
 
-typedef struct encoder_base encoder_base_t;
+typedef struct encoder_base_s encoder_base_t;
 
 /**
  * @brief 编码器具体实现的操作表。
  */
-typedef struct encoder_ops {
-  void    (*set_zero)     (encoder_base_t *this); // 设当前位置为零点
-  int64_t (*get_position) (encoder_base_t *this); // 获取累计位置                   (count)
-  int32_t (*get_delta)    (encoder_base_t *this); // 获取自上次采样的编码器的变化值 (count)
-  void    (*resync)       (encoder_base_t *this); // 
+typedef struct encoder_ops_s {
+  void    (*set_zero)     (encoder_base_t *encoder_h); // 设当前位置为零点
+  int64_t (*get_position) (encoder_base_t *encoder_h); // 获取累计位置                   (count)
+  int32_t (*get_delta)    (encoder_base_t *encoder_h); // 获取自上次采样的编码器的变化值 (count)
+  void    (*resync)       (encoder_base_t *encoder_h);
 } encoder_ops_t;
 
 /**
  * @brief 编码器抽象对象。
  */
-typedef struct encoder_base {
+typedef struct encoder_base_s {
   const encoder_ops_t *ops;
   const char *name;
 } encoder_base_t;
 
 /** @brief 初始化编码器抽象层并绑定操作表。 */
-void Dev_Encoder_Base_Init(encoder_base_t *this, const char *name, const encoder_ops_t *ops);
+void Dev_Encoder_Base_Init(encoder_base_t *encoder_h, const char *name, const encoder_ops_t *ops);
 /**
  * @brief 把当前位置设为零点。
  * @note 会改变累计位置。
  */
-void Dev_Encoder_Base_SetZero(encoder_base_t *this);
+void Dev_Encoder_Base_SetZero(encoder_base_t *encoder_h);
 /** @brief 读取累计位置（counts）。 */
-int64_t Dev_Encoder_Base_GetPosition(encoder_base_t *this);
+int64_t Dev_Encoder_Base_GetPosition(encoder_base_t *encoder_h);
 /**
  * @brief 读取自上次调用以来的增量（counts）。
  * @warning 该接口会消费增量；每个控制周期只调用一次。
  */
-int32_t Dev_Encoder_Base_GetDelta(encoder_base_t *this);
+int32_t Dev_Encoder_Base_GetDelta(encoder_base_t *encoder_h);
 /**
  * @brief 重新对齐速度基线，不改变累计位置。
  */
-void Dev_Encoder_Base_Resync(encoder_base_t *this);
+void Dev_Encoder_Base_Resync(encoder_base_t *encoder_h);
 
 /** @} */
 

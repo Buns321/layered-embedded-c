@@ -18,11 +18,11 @@ void Sys_Critical_Exit(void) {
   taskEXIT_CRITICAL();
 }
 
-Sys_Critical_State Sys_Critical_EnterFromISR(void) {
-  return (Sys_Critical_State)taskENTER_CRITICAL_FROM_ISR();
+sys_critical_state_t Sys_Critical_EnterFromISR(void) {
+  return (sys_critical_state_t)taskENTER_CRITICAL_FROM_ISR();
 }
 
-void Sys_Critical_ExitFromISR(Sys_Critical_State state) {
+void Sys_Critical_ExitFromISR(sys_critical_state_t state) {
   taskEXIT_CRITICAL_FROM_ISR((UBaseType_t)state);
 }
 
@@ -64,13 +64,13 @@ void Sys_Critical_Exit(void) {
   }
 }
 
-Sys_Critical_State Sys_Critical_EnterFromISR(void) {
+sys_critical_state_t Sys_Critical_EnterFromISR(void) {
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
-  return (Sys_Critical_State)primask;
+  return (sys_critical_state_t)primask;
 }
 
-void Sys_Critical_ExitFromISR(Sys_Critical_State state) {
+void Sys_Critical_ExitFromISR(sys_critical_state_t state) {
   __set_PRIMASK((uint32_t)state);
 }
 

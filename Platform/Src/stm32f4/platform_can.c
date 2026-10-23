@@ -9,7 +9,7 @@
 #include "stm32f4xx_hal.h"
 #include <string.h>
 
-static CAN_HandleTypeDef *platform_can_to_hal(Platform_CAN_Instance can) {
+static CAN_HandleTypeDef *platform_can_to_hal(platform_can_instance_t can) {
   switch (can) {
 #if PLATFORM_ENABLE_CAN1
     case PLATFORM_CAN_1: return &hcan1;
@@ -22,20 +22,20 @@ static CAN_HandleTypeDef *platform_can_to_hal(Platform_CAN_Instance can) {
 }
 
 static bool platform_hal_to_can(
-  CAN_HandleTypeDef *hcan,
-  Platform_CAN_Instance *can
+  CAN_HandleTypeDef *can_h,
+  platform_can_instance_t *can
 ) {
-  if (hcan == NULL || can == NULL) {
+  if (can_h == NULL || can == NULL) {
     return false;
   }
 #if PLATFORM_ENABLE_CAN1
-  if (hcan == &hcan1) {
+  if (can_h == &hcan1) {
     *can = PLATFORM_CAN_1;
     return true;
   }
 #endif
 #if PLATFORM_ENABLE_CAN2
-  if (hcan == &hcan2) {
+  if (can_h == &hcan2) {
     *can = PLATFORM_CAN_2;
     return true;
   }
@@ -44,7 +44,7 @@ static bool platform_hal_to_can(
 }
 
 static uint32_t platform_can_filter_identifier(
-  const Platform_CAN_FilterConfig *config,
+  const platform_can_filter_config_t *config,
   uint32_t identifier
 ) {
   if (config->id_type == PLATFORM_CAN_ID_EXTENDED) {
@@ -56,7 +56,7 @@ static uint32_t platform_can_filter_identifier(
 }
 
 static uint32_t platform_can_filter_mask(
-  const Platform_CAN_FilterConfig *config
+  const platform_can_filter_config_t *config
 ) {
   if (config->id_type == PLATFORM_CAN_ID_EXTENDED) {
     return (config->mask << 3U) | 0x00000006UL;
@@ -210,7 +210,7 @@ static uint32_t platform_can_map_error(uint32_t hal_error) {
 }
 
 static void platform_can_to_hal_header(
-  const Platform_CAN_Frame *frame,
+  const platform_can_frame_t *frame,
   CAN_TxHeaderTypeDef *header
 ) {
   memset(header, 0, sizeof(*header));
@@ -229,7 +229,7 @@ static void platform_can_to_hal_header(
 
 static void platform_can_from_hal_header(
   const CAN_RxHeaderTypeDef *header,
-  Platform_CAN_Frame *frame
+  platform_can_frame_t *frame
 ) {
   frame->dlc = (uint8_t)header->DLC;
   frame->id_type = header->IDE == CAN_ID_EXT
@@ -241,47 +241,47 @@ static void platform_can_from_hal_header(
                 : header->StdId;
 }
 
-static Platform_StatusTypeDef platform_can_wait_tx_mailbox(
-  CAN_HandleTypeDef *hcan,
+static platform_status_t platform_can_wait_tx_mailbox(
+  CAN_HandleTypeDef *can_h,
   uint32_t timeout
 ) {
   const uint32_t start = HAL_GetTick();
-  while (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0U) {
+  while (HAL_CAN_GetTxMailboxesFreeLevel(can_h) == 0U) {
     if (
       timeout != PLATFORM_TIMEOUT_INFINITE &&
       (HAL_GetTick() - start) >= timeout
     ) {
-      return Platform_TIMEOUT;
+      return PLATFORM_STATUS_TIMEOUT;
     }
   }
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-static Platform_StatusTypeDef platform_can_wait_rx(
-  CAN_HandleTypeDef *hcan,
+static platform_status_t platform_can_wait_rx(
+  CAN_HandleTypeDef *can_h,
   uint32_t fifo,
   uint32_t timeout
 ) {
   const uint32_t start = HAL_GetTick();
-  while (HAL_CAN_GetRxFifoFillLevel(hcan, fifo) == 0U) {
+  while (HAL_CAN_GetRxFifoFillLevel(can_h, fifo) == 0U) {
     if (
       timeout != PLATFORM_TIMEOUT_INFINITE &&
       (HAL_GetTick() - start) >= timeout
     ) {
-      return Platform_TIMEOUT;
+      return PLATFORM_STATUS_TIMEOUT;
     }
   }
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-bool platform_can_backend_is_valid(Platform_CAN_Instance can) {
+bool platform_can_backend_is_valid(platform_can_instance_t can) {
   return (uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT &&
          platform_can_to_hal(can) != NULL;
 }
 
-Platform_StatusTypeDef platform_can_backend_configure_filter(
-  Platform_CAN_Instance can,
-  const Platform_CAN_FilterConfig *config
+platform_status_t platform_can_backend_configure_filter(
+  platform_can_instance_t can,
+  const platform_can_filter_config_t *config
 ) {
 #if PLATFORM_ENABLE_CAN1 && PLATFORM_ENABLE_CAN2
   const bool bank_is_valid =
@@ -297,12 +297,12 @@ Platform_StatusTypeDef platform_can_backend_configure_filter(
   const bool bank_is_valid = false;
 #endif
   if (!bank_is_valid) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
-  CAN_HandleTypeDef *hcan = platform_can_to_hal(can);
-  if (hcan == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  if (can_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   const uint32_t id = platform_can_filter_identifier(config, config->id);
   const uint32_t secondary =
@@ -325,115 +325,115 @@ Platform_StatusTypeDef platform_can_backend_configure_filter(
   filter.FilterScale = CAN_FILTERSCALE_32BIT;
   filter.FilterActivation = config->enabled ? ENABLE : DISABLE;
   filter.SlaveStartFilterBank = 14U;
-  return platform_from_hal_status(HAL_CAN_ConfigFilter(hcan, &filter));
+  return platform_from_hal_status(HAL_CAN_ConfigFilter(can_h, &filter));
 }
 
-Platform_StatusTypeDef platform_can_backend_start(
-  Platform_CAN_Instance can
+platform_status_t platform_can_backend_start(
+  platform_can_instance_t can
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_CAN_Start(h));
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  return can_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_CAN_Start(can_h));
 }
 
-Platform_StatusTypeDef platform_can_backend_stop(
-  Platform_CAN_Instance can
+platform_status_t platform_can_backend_stop(
+  platform_can_instance_t can
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_CAN_Stop(h));
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  return can_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_CAN_Stop(can_h));
 }
 
-Platform_StatusTypeDef platform_can_backend_transmit(
-  Platform_CAN_Instance can,
-  const Platform_CAN_Frame *frame,
+platform_status_t platform_can_backend_transmit(
+  platform_can_instance_t can,
+  const platform_can_frame_t *frame,
   uint32_t timeout
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  if (h == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  if (can_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  Platform_StatusTypeDef status =
-    platform_can_wait_tx_mailbox(h, timeout);
-  if (status != Platform_OK) {
+  platform_status_t status =
+    platform_can_wait_tx_mailbox(can_h, timeout);
+  if (status != PLATFORM_STATUS_OK) {
     return status;
   }
   CAN_TxHeaderTypeDef header;
   platform_can_to_hal_header(frame, &header);
   uint32_t mailbox = 0U;
   return platform_from_hal_status(
-    HAL_CAN_AddTxMessage(h, &header, frame->data, &mailbox)
+    HAL_CAN_AddTxMessage(can_h, &header, frame->data, &mailbox)
   );
 }
 
-Platform_StatusTypeDef platform_can_backend_receive(
-  Platform_CAN_Instance can,
-  Platform_CAN_FIFO fifo,
-  Platform_CAN_Frame *frame,
+platform_status_t platform_can_backend_receive(
+  platform_can_instance_t can,
+  platform_can_fifo_t fifo,
+  platform_can_frame_t *frame,
   uint32_t timeout
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  if (h == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  if (can_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   const uint32_t hal_fifo = fifo == PLATFORM_CAN_FIFO_0
                               ? CAN_RX_FIFO0
                               : CAN_RX_FIFO1;
-  Platform_StatusTypeDef status = platform_can_wait_rx(h, hal_fifo, timeout);
-  if (status != Platform_OK) {
+  platform_status_t status = platform_can_wait_rx(can_h, hal_fifo, timeout);
+  if (status != PLATFORM_STATUS_OK) {
     return status;
   }
   CAN_RxHeaderTypeDef header;
   memset(frame, 0, sizeof(*frame));
   status = platform_from_hal_status(
-    HAL_CAN_GetRxMessage(h, hal_fifo, &header, frame->data)
+    HAL_CAN_GetRxMessage(can_h, hal_fifo, &header, frame->data)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     platform_can_from_hal_header(&header, frame);
   }
   return status;
 }
 
-Platform_StatusTypeDef platform_can_backend_activate_notification(
-  Platform_CAN_Instance can,
+platform_status_t platform_can_backend_activate_notification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  return can_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_CAN_ActivateNotification(
-                       h,
+                       can_h,
                        platform_can_notifications(notifications)
                      ));
 }
 
-Platform_StatusTypeDef platform_can_backend_deactivate_notification(
-  Platform_CAN_Instance can,
+platform_status_t platform_can_backend_deactivate_notification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  return can_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_CAN_DeactivateNotification(
-                       h,
+                       can_h,
                        platform_can_notifications(notifications)
                      ));
 }
 
-uint32_t platform_can_backend_get_error(Platform_CAN_Instance can) {
-  CAN_HandleTypeDef *h = platform_can_to_hal(can);
-  return h == NULL ? PLATFORM_CAN_ERROR_PARAMETER
-                   : platform_can_map_error(HAL_CAN_GetError(h));
+uint32_t platform_can_backend_get_error(platform_can_instance_t can) {
+  CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
+  return can_h == NULL ? PLATFORM_CAN_ERROR_PARAMETER
+                   : platform_can_map_error(HAL_CAN_GetError(can_h));
 }
 
 static void platform_can_dispatch_tx(
-  CAN_HandleTypeDef *hcan,
+  CAN_HandleTypeDef *can_h,
   uint8_t mailbox,
-  Platform_CAN_EventType type
+  platform_can_event_type_t type
 ) {
-  Platform_CAN_Instance can;
-  if (!platform_hal_to_can(hcan, &can)) {
+  platform_can_instance_t can;
+  if (!platform_hal_to_can(can_h, &can)) {
     return;
   }
-  const Platform_CAN_Event event = {
+  const platform_can_event_t event = {
     .type = type,
     .mailbox = mailbox,
   };
@@ -441,24 +441,24 @@ static void platform_can_dispatch_tx(
 }
 
 static void platform_can_dispatch_rx(
-  CAN_HandleTypeDef *hcan,
-  Platform_CAN_FIFO fifo,
-  Platform_CAN_EventType type
+  CAN_HandleTypeDef *can_h,
+  platform_can_fifo_t fifo,
+  platform_can_event_type_t type
 ) {
-  Platform_CAN_Instance can;
-  if (!platform_hal_to_can(hcan, &can)) {
+  platform_can_instance_t can;
+  if (!platform_hal_to_can(can_h, &can)) {
     return;
   }
   const uint32_t hal_fifo = fifo == PLATFORM_CAN_FIFO_0
                               ? CAN_RX_FIFO0
                               : CAN_RX_FIFO1;
   CAN_RxHeaderTypeDef header;
-  Platform_CAN_Event event = {
+  platform_can_event_t event = {
     .type = type,
     .fifo = fifo,
   };
   if (
-    HAL_CAN_GetRxMessage(hcan, hal_fifo, &header, event.frame.data) == HAL_OK
+    HAL_CAN_GetRxMessage(can_h, hal_fifo, &header, event.frame.data) == HAL_OK
   ) {
     platform_can_from_hal_header(&header, &event.frame);
   } else {
@@ -468,68 +468,68 @@ static void platform_can_dispatch_rx(
   platform_can_dispatch_event(can, &event);
 }
 
-void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 0U, PLATFORM_CAN_EVENT_TX_COMPLETE);
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 0U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
-void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 1U, PLATFORM_CAN_EVENT_TX_COMPLETE);
+void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 1U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
-void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 2U, PLATFORM_CAN_EVENT_TX_COMPLETE);
+void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 2U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
-void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 0U, PLATFORM_CAN_EVENT_TX_ABORT);
+void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 0U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
-void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 1U, PLATFORM_CAN_EVENT_TX_ABORT);
+void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 1U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
-void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *hcan) {
-  platform_can_dispatch_tx(hcan, 2U, PLATFORM_CAN_EVENT_TX_ABORT);
+void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_dispatch_tx(can_h, 2U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
-    hcan,
+    can_h,
     PLATFORM_CAN_FIFO_0,
     PLATFORM_CAN_EVENT_RX_PENDING
   );
 }
 
-void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
-    hcan,
+    can_h,
     PLATFORM_CAN_FIFO_1,
     PLATFORM_CAN_EVENT_RX_PENDING
   );
 }
 
-void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan) {
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
-    hcan,
+    can_h,
     PLATFORM_CAN_FIFO_0,
     PLATFORM_CAN_EVENT_RX_FULL
   );
 }
 
-void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *hcan) {
+void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
-    hcan,
+    can_h,
     PLATFORM_CAN_FIFO_1,
     PLATFORM_CAN_EVENT_RX_FULL
   );
 }
 
-void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
-  Platform_CAN_Instance can;
-  if (!platform_hal_to_can(hcan, &can)) {
+void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *can_h) {
+  platform_can_instance_t can;
+  if (!platform_hal_to_can(can_h, &can)) {
     return;
   }
-  const Platform_CAN_Event event = {
+  const platform_can_event_t event = {
     .type = PLATFORM_CAN_EVENT_ERROR,
     .error = platform_can_backend_get_error(can),
   };

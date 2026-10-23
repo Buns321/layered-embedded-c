@@ -8,14 +8,14 @@
 #include <stddef.h>
 
 static volatile uint32_t uart_error[PLATFORM_UART_INSTANCE_COUNT];
-static platform_uart_callbacks_t uart_cb[PLATFORM_UART_INSTANCE_COUNT];
+static platform_uart_callback_binding_t uart_cb[PLATFORM_UART_INSTANCE_COUNT];
 static bool uart_cb_registered[PLATFORM_UART_INSTANCE_COUNT];
 
-static Platform_StatusTypeDef platform_uart_finish(
-  Platform_UART_Instance uart,
-  Platform_StatusTypeDef status
+static platform_status_t platform_uart_finish(
+  platform_uart_instance_t uart,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &uart_error[uart],
       platform_error_from_status(status)
@@ -25,7 +25,7 @@ static Platform_StatusTypeDef platform_uart_finish(
 }
 
 static bool platform_uart_validate(
-  Platform_UART_Instance uart,
+  platform_uart_instance_t uart,
   const void *data,
   uint16_t size
 ) {
@@ -35,21 +35,21 @@ static bool platform_uart_validate(
          size != 0U;
 }
 
-static Platform_StatusTypeDef platform_uart_invalid(
-  Platform_UART_Instance uart
+static platform_status_t platform_uart_invalid(
+  platform_uart_instance_t uart
 ) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_record(
       &uart_error[uart],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
 void platform_uart_dispatch_event(
-  Platform_UART_Instance uart,
-  Platform_UART_EventType type
+  platform_uart_instance_t uart,
+  platform_uart_event_type_t type
 ) {
   if (
     (uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT ||
@@ -58,7 +58,7 @@ void platform_uart_dispatch_event(
     return;
   }
 
-  Platform_UART_Event event = {
+  platform_uart_event_t event = {
     .type = type,
     .error = type == PLATFORM_UART_EVENT_ERROR
                ? platform_uart_backend_get_error(uart)
@@ -69,8 +69,8 @@ void platform_uart_dispatch_event(
   }
 }
 
-Platform_StatusTypeDef Platform_UART_Receive(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_Receive(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size,
   uint32_t timeout
@@ -87,8 +87,8 @@ Platform_StatusTypeDef Platform_UART_Receive(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_Transmit(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size,
   uint32_t timeout
@@ -105,8 +105,8 @@ Platform_StatusTypeDef Platform_UART_Transmit(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Receive_IT(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_ReceiveIT(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size
 ) {
@@ -122,8 +122,8 @@ Platform_StatusTypeDef Platform_UART_Receive_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit_IT(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_TransmitIT(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size
 ) {
@@ -139,8 +139,8 @@ Platform_StatusTypeDef Platform_UART_Transmit_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Receive_DMA(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_ReceiveDMA(
+  platform_uart_instance_t uart,
   uint8_t *pdata,
   uint16_t size
 ) {
@@ -156,8 +156,8 @@ Platform_StatusTypeDef Platform_UART_Receive_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit_DMA(
-  Platform_UART_Instance uart,
+platform_status_t Platform_UART_TransmitDMA(
+  platform_uart_instance_t uart,
   const uint8_t *pdata,
   uint16_t size
 ) {
@@ -173,8 +173,8 @@ Platform_StatusTypeDef Platform_UART_Transmit_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_AbortReceive(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_AbortReceive(
+  platform_uart_instance_t uart
 ) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
@@ -188,8 +188,8 @@ Platform_StatusTypeDef Platform_UART_AbortReceive(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_AbortTransmit(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_AbortTransmit(
+  platform_uart_instance_t uart
 ) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
@@ -203,7 +203,7 @@ Platform_StatusTypeDef Platform_UART_AbortTransmit(
   );
 }
 
-Platform_StatusTypeDef Platform_UART_Abort(Platform_UART_Instance uart) {
+platform_status_t Platform_UART_Abort(platform_uart_instance_t uart) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
@@ -213,35 +213,35 @@ Platform_StatusTypeDef Platform_UART_Abort(Platform_UART_Instance uart) {
   return platform_uart_finish(uart, platform_uart_backend_abort(uart));
 }
 
-Platform_StatusTypeDef Platform_UART_ClearBuffer(
-  Platform_UART_Instance uart
+platform_status_t Platform_UART_ClearBuffer(
+  platform_uart_instance_t uart
 ) {
   return Platform_UART_AbortReceive(uart);
 }
 
-uint32_t Platform_UART_GetLastError(Platform_UART_Instance uart) {
+uint32_t Platform_UART_GetLastError(platform_uart_instance_t uart) {
   if ((uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return uart_error[uart] | platform_uart_backend_get_error(uart);
 }
 
-Platform_StatusTypeDef Platform_UART_RegisterCallbacks(
-  Platform_UART_Instance uart,
-  const platform_uart_callbacks_t *callbacks
+platform_status_t Platform_UART_RegisterCallback(
+  platform_uart_instance_t uart,
+  const platform_uart_callback_binding_t *callbacks
 ) {
   if (
     (uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT ||
     callbacks == NULL ||
     !platform_uart_backend_is_valid(uart)
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (uart_cb_registered[uart]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   uart_cb[uart] = *callbacks;
   uart_cb_registered[uart] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }

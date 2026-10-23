@@ -7,55 +7,55 @@
 #include "platform_crc_backend.h"
 #include "stm32f4xx_hal.h"
 
-static CRC_HandleTypeDef *platform_crc_to_hal(Platform_CRC_Instance crc) {
+static CRC_HandleTypeDef *platform_crc_to_hal(platform_crc_instance_t crc) {
   return crc == PLATFORM_CRC_1 ? &hcrc : NULL;
 }
 
-bool platform_crc_backend_is_valid(Platform_CRC_Instance crc) {
+bool platform_crc_backend_is_valid(platform_crc_instance_t crc) {
   return platform_crc_to_hal(crc) != NULL;
 }
 
-Platform_StatusTypeDef platform_crc_backend_reset(
-  Platform_CRC_Instance crc
+platform_status_t platform_crc_backend_reset(
+  platform_crc_instance_t crc
 ) {
-  CRC_HandleTypeDef *h = platform_crc_to_hal(crc);
-  if (h == NULL || h->State != HAL_CRC_STATE_READY) {
-    return h == NULL ? Platform_INVALID_ARGUMENT : Platform_ERROR;
+  CRC_HandleTypeDef *crc_h = platform_crc_to_hal(crc);
+  if (crc_h == NULL || crc_h->State != HAL_CRC_STATE_READY) {
+    return crc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT : PLATFORM_STATUS_ERROR;
   }
-  __HAL_CRC_DR_RESET(h);
-  return Platform_OK;
+  __HAL_CRC_DR_RESET(crc_h);
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_crc_backend_accumulate(
-  Platform_CRC_Instance crc,
+platform_status_t platform_crc_backend_accumulate(
+  platform_crc_instance_t crc,
   const uint32_t *words,
   uint32_t word_count,
   uint32_t *result
 ) {
-  CRC_HandleTypeDef *h = platform_crc_to_hal(crc);
-  if (h == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  CRC_HandleTypeDef *crc_h = platform_crc_to_hal(crc);
+  if (crc_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  if (h->State != HAL_CRC_STATE_READY) {
-    return Platform_ERROR;
+  if (crc_h->State != HAL_CRC_STATE_READY) {
+    return PLATFORM_STATUS_ERROR;
   }
-  *result = HAL_CRC_Accumulate(h, (uint32_t *)words, word_count);
-  return Platform_OK;
+  *result = HAL_CRC_Accumulate(crc_h, (uint32_t *)words, word_count);
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_crc_backend_calculate(
-  Platform_CRC_Instance crc,
+platform_status_t platform_crc_backend_calculate(
+  platform_crc_instance_t crc,
   const uint32_t *words,
   uint32_t word_count,
   uint32_t *result
 ) {
-  CRC_HandleTypeDef *h = platform_crc_to_hal(crc);
-  if (h == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  CRC_HandleTypeDef *crc_h = platform_crc_to_hal(crc);
+  if (crc_h == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  if (h->State != HAL_CRC_STATE_READY) {
-    return Platform_ERROR;
+  if (crc_h->State != HAL_CRC_STATE_READY) {
+    return PLATFORM_STATUS_ERROR;
   }
-  *result = HAL_CRC_Calculate(h, (uint32_t *)words, word_count);
-  return Platform_OK;
+  *result = HAL_CRC_Calculate(crc_h, (uint32_t *)words, word_count);
+  return PLATFORM_STATUS_OK;
 }

@@ -6,34 +6,34 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Filter_Distributor_Reset(filter_base_t *this) {
-  assert(this);
-  filter_distributor_t *self = (filter_distributor_t *)this;
+static void Filter_Distributor_Reset(filter_base_t *filter_h) {
+  assert(filter_h);
+  filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
 
   assert(
-    self->route_count > 0u                           &&
-    self->route_count <= FILTER_DISTRIBUTOR_CAPACITY
+    filter_distributor_h->route_count > 0u                           &&
+    filter_distributor_h->route_count <= FILTER_DISTRIBUTOR_CAPACITY
   );
 
-  for (uint8_t i = 0; i < self->route_count; i++) {
-    assert(self->routes[i].filter);
-    Filter_Base_Reset(self->routes[i].filter);
+  for (uint8_t i = 0; i < filter_distributor_h->route_count; i++) {
+    assert(filter_distributor_h->routes[i].filter_h);
+    Filter_Base_Reset(filter_distributor_h->routes[i].filter_h);
   }
 }
 
-static void Filter_Distributor_Update(filter_base_t *this, const filter_sample_t *input, filter_sample_t *output
+static void Filter_Distributor_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output
 ) {
-  assert(this && input && output);
-  filter_distributor_t *self = (filter_distributor_t *)this;
+  assert(filter_h && input && output);
+  filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
 
-  assert(self->route_count > 0u);
-  assert(self->route_count <= FILTER_DISTRIBUTOR_CAPACITY);
+  assert(filter_distributor_h->route_count > 0u);
+  assert(filter_distributor_h->route_count <= FILTER_DISTRIBUTOR_CAPACITY);
 
-  for (uint8_t i = 0; i < self->route_count; i++) {
-    const filter_distributor_route_t *route = &self->routes[i];
+  for (uint8_t i = 0; i < filter_distributor_h->route_count; i++) {
+    const filter_distributor_route_t *route = &filter_distributor_h->routes[i];
 
     assert(
-      route->filter                                &&
+      route->filter_h                                &&
       route->input_count  >  0u                    &&
       route->input_count  <= FILTER_ROUTE_CAPACITY &&
       route->output_count >  0u                    &&
@@ -59,7 +59,7 @@ static void Filter_Distributor_Update(filter_base_t *this, const filter_sample_t
 
     filter_sample_t local_output;
     Filter_Base_Update(
-      route->filter,
+      route->filter_h,
       &local_input,
       &local_output
     );
@@ -90,10 +90,10 @@ static const filter_ops_t filter_ops_distributor = {
   .reset  = Filter_Distributor_Reset,
 };
 
-void Filter_Distributor_Init(filter_distributor_t *this, const char *name, const filter_distributor_route_t *routes, uint8_t route_count
+void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count
 ) {
   assert(
-    this                                       &&
+    filter_h                                       &&
     name                                       &&
     routes                                     &&
     route_count > 0u                           &&
@@ -104,11 +104,11 @@ void Filter_Distributor_Init(filter_distributor_t *this, const char *name, const
     const filter_distributor_route_t *route = &routes[i];
 
     assert(
-      route->filter              &&
-      route->filter != &this->filter_base &&
-      route->filter->ops         &&
-      route->filter->ops->update &&
-      route->filter->ops->reset
+      route->filter_h              &&
+      route->filter_h != &filter_h->filter_base &&
+      route->filter_h->ops         &&
+      route->filter_h->ops->update &&
+      route->filter_h->ops->reset
     );
     assert(route->input_count > 0u);
     assert(route->input_count <= FILTER_ROUTE_CAPACITY);
@@ -134,7 +134,7 @@ void Filter_Distributor_Init(filter_distributor_t *this, const char *name, const
     for (uint8_t previous = 0; previous < i; previous++) {
       const filter_distributor_route_t *previous_route = &routes[previous];
 
-      assert(route->filter != previous_route->filter);
+      assert(route->filter_h != previous_route->filter_h);
 
       for (uint8_t j = 0; j < route->output_count; j++) {
         for (
@@ -151,17 +151,17 @@ void Filter_Distributor_Init(filter_distributor_t *this, const char *name, const
     }
   }
 
-  Filter_Base_Init(&this->filter_base, name, &filter_ops_distributor);
+  Filter_Base_Init(&filter_h->filter_base, name, &filter_ops_distributor);
 
   for (uint8_t i = 0; i < FILTER_DISTRIBUTOR_CAPACITY; i++) {
-    this->routes[i] = (filter_distributor_route_t){0};
+    filter_h->routes[i] = (filter_distributor_route_t){0};
   }
 
   for (uint8_t i = 0; i < route_count; i++) {
-    this->routes[i] = routes[i];
+    filter_h->routes[i] = routes[i];
   }
 
-  this->route_count = route_count;
+  filter_h->route_count = route_count;
 
-  Filter_Base_Reset(&this->filter_base);
+  Filter_Base_Reset(&filter_h->filter_base);
 }

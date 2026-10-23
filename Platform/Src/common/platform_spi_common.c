@@ -9,14 +9,14 @@
 #include <stddef.h>
 
 static volatile uint32_t spi_error[PLATFORM_SPI_INSTANCE_COUNT];
-static platform_spi_callbacks_t spi_cb[PLATFORM_SPI_INSTANCE_COUNT];
+static platform_spi_callback_binding_t spi_cb[PLATFORM_SPI_INSTANCE_COUNT];
 static bool spi_cb_registered[PLATFORM_SPI_INSTANCE_COUNT];
 
-static Platform_StatusTypeDef platform_spi_finish(
-  Platform_SPI_Instance spi,
-  Platform_StatusTypeDef status
+static platform_status_t platform_spi_finish(
+  platform_spi_instance_t spi,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &spi_error[spi],
       platform_error_from_status(status)
@@ -25,18 +25,18 @@ static Platform_StatusTypeDef platform_spi_finish(
   return status;
 }
 
-static Platform_StatusTypeDef platform_spi_invalid(Platform_SPI_Instance spi) {
+static platform_status_t platform_spi_invalid(platform_spi_instance_t spi) {
   if ((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT) {
     platform_error_record(
       &spi_error[spi],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
 static bool platform_spi_validate(
-  Platform_SPI_Instance spi,
+  platform_spi_instance_t spi,
   const void *data,
   uint16_t size
 ) {
@@ -47,9 +47,9 @@ static bool platform_spi_validate(
     return false;
   }
 
-  Platform_SPI_DataWidth data_width;
+  platform_spi_data_width_t data_width;
   if (
-    platform_spi_backend_get_data_width(spi, &data_width) != Platform_OK
+    platform_spi_backend_get_data_width(spi, &data_width) != PLATFORM_STATUS_OK
   ) {
     return false;
   }
@@ -61,8 +61,8 @@ static bool platform_spi_validate(
 }
 
 void platform_spi_dispatch_event(
-  Platform_SPI_Instance spi,
-  Platform_SPI_EventType type
+  platform_spi_instance_t spi,
+  platform_spi_event_type_t type
 ) {
   if (
     (uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT ||
@@ -71,7 +71,7 @@ void platform_spi_dispatch_event(
     return;
   }
 
-  Platform_SPI_Event event = {
+  platform_spi_event_t event = {
     .type = type,
     .error = type == PLATFORM_SPI_EVENT_ERROR
                ? platform_spi_backend_get_error(spi)
@@ -82,9 +82,9 @@ void platform_spi_dispatch_event(
   }
 }
 
-Platform_StatusTypeDef Platform_SPI_GetDataWidth(
-  Platform_SPI_Instance spi,
-  Platform_SPI_DataWidth *data_width
+platform_status_t Platform_SPI_GetDataWidth(
+  platform_spi_instance_t spi,
+  platform_spi_data_width_t *data_width
 ) {
   if ((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT) {
     platform_error_reset(&spi_error[spi]);
@@ -102,8 +102,8 @@ Platform_StatusTypeDef Platform_SPI_GetDataWidth(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Transmit(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_Transmit(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -120,8 +120,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Receive(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_Receive(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -138,8 +138,8 @@ Platform_StatusTypeDef Platform_SPI_Receive(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_TransmitReceive(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceive(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size,
@@ -166,8 +166,8 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Transmit_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitIT(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 ) {
@@ -183,8 +183,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Receive_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_ReceiveIT(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 ) {
@@ -200,8 +200,8 @@ Platform_StatusTypeDef Platform_SPI_Receive_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceiveIT(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -226,8 +226,8 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitDMA(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 ) {
@@ -243,8 +243,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Receive_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_ReceiveDMA(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 ) {
@@ -260,8 +260,8 @@ Platform_StatusTypeDef Platform_SPI_Receive_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceiveDMA(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -286,7 +286,7 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi) {
+platform_status_t Platform_SPI_Abort(platform_spi_instance_t spi) {
   if ((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT) {
     platform_error_reset(&spi_error[spi]);
   }
@@ -296,7 +296,7 @@ Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi) {
   return platform_spi_finish(spi, platform_spi_backend_abort(spi));
 }
 
-Platform_StatusTypeDef Platform_SPI_Abort_IT(Platform_SPI_Instance spi) {
+platform_status_t Platform_SPI_AbortIT(platform_spi_instance_t spi) {
   if ((uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT) {
     platform_error_reset(&spi_error[spi]);
   }
@@ -306,29 +306,29 @@ Platform_StatusTypeDef Platform_SPI_Abort_IT(Platform_SPI_Instance spi) {
   return platform_spi_finish(spi, platform_spi_backend_abort_it(spi));
 }
 
-uint32_t Platform_SPI_GetLastError(Platform_SPI_Instance spi) {
+uint32_t Platform_SPI_GetLastError(platform_spi_instance_t spi) {
   if ((uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return spi_error[spi] | platform_spi_backend_get_error(spi);
 }
 
-Platform_StatusTypeDef Platform_SPI_RegisterCallbacks(
-  Platform_SPI_Instance spi,
-  const platform_spi_callbacks_t *callbacks
+platform_status_t Platform_SPI_RegisterCallback(
+  platform_spi_instance_t spi,
+  const platform_spi_callback_binding_t *callbacks
 ) {
   if (
     (uint32_t)spi >= PLATFORM_SPI_INSTANCE_COUNT ||
     callbacks == NULL ||
     !platform_spi_backend_is_valid(spi)
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (spi_cb_registered[spi]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   spi_cb[spi] = *callbacks;
   spi_cb_registered[spi] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }

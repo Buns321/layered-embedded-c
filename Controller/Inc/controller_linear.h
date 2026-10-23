@@ -20,7 +20,7 @@
  * @note 该控制律是开环映射，忽略 measure 和 dt。
  * @note deadzone 是围绕上次输出的保持带，不是零附近的死区。
  */
-typedef struct controller_linear {
+typedef struct controller_linear_s {
   controller_base_t controller_base;
 
   float k;                     // 斜率
@@ -44,7 +44,7 @@ typedef struct controller_linear {
 
 /**
  * @brief 初始化线性控制律。
- * @param controller_linear 对象。
+ * @param controller_h 对象。
  * @param name 名称。
  * @param k 斜率（duty / (m/s)）。
  * @param b 截距或摩擦补偿幅值（duty）。
@@ -59,7 +59,7 @@ typedef struct controller_linear {
  * @note 初始化会校验参数范围与有限性。
  */
 void Ctrl_Linear_Init(
-  controller_linear_t *controller_linear,
+  controller_linear_t *controller_h,
   const char *name,
   float k,                     // 斜率
   float b,                     // 截距

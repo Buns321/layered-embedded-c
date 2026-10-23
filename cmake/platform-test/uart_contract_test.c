@@ -1,21 +1,21 @@
 #include "platform_uart_backend.h"
-#include "platform_usart.h"
+#include "platform_uart.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-static Platform_StatusTypeDef s_transmit_status;
+static platform_status_t s_transmit_status;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
-static Platform_UART_Event s_last_event;
+static platform_uart_event_t s_last_event;
 
-bool platform_uart_backend_is_valid(Platform_UART_Instance uart) {
-  return uart == PLATFORM_USART_1;
+bool platform_uart_backend_is_valid(platform_uart_instance_t uart) {
+  return uart == PLATFORM_UART_1;
 }
 
-Platform_StatusTypeDef platform_uart_backend_receive(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_receive(
+  platform_uart_instance_t uart,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -24,11 +24,11 @@ Platform_StatusTypeDef platform_uart_backend_receive(
   (void)data;
   (void)size;
   (void)timeout;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_transmit(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_transmit(
+  platform_uart_instance_t uart,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -40,132 +40,132 @@ Platform_StatusTypeDef platform_uart_backend_transmit(
   return s_transmit_status;
 }
 
-Platform_StatusTypeDef platform_uart_backend_receive_it(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_receive_it(
+  platform_uart_instance_t uart,
   uint8_t *data,
   uint16_t size
 ) {
   (void)uart;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_transmit_it(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_transmit_it(
+  platform_uart_instance_t uart,
   const uint8_t *data,
   uint16_t size
 ) {
   (void)uart;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_receive_dma(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_receive_dma(
+  platform_uart_instance_t uart,
   uint8_t *data,
   uint16_t size
 ) {
   (void)uart;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_transmit_dma(
-  Platform_UART_Instance uart,
+platform_status_t platform_uart_backend_transmit_dma(
+  platform_uart_instance_t uart,
   const uint8_t *data,
   uint16_t size
 ) {
   (void)uart;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_abort_receive(
-  Platform_UART_Instance uart
+platform_status_t platform_uart_backend_abort_receive(
+  platform_uart_instance_t uart
 ) {
   (void)uart;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_abort_transmit(
-  Platform_UART_Instance uart
+platform_status_t platform_uart_backend_abort_transmit(
+  platform_uart_instance_t uart
 ) {
   (void)uart;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_uart_backend_abort(
-  Platform_UART_Instance uart
+platform_status_t platform_uart_backend_abort(
+  platform_uart_instance_t uart
 ) {
   (void)uart;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-uint32_t platform_uart_backend_get_error(Platform_UART_Instance uart) {
+uint32_t platform_uart_backend_get_error(platform_uart_instance_t uart) {
   (void)uart;
   return s_backend_error;
 }
 
 static void uart_callback(
-  Platform_UART_Instance uart,
-  const Platform_UART_Event *event,
+  platform_uart_instance_t uart,
+  const platform_uart_event_t *event,
   void *context
 ) {
-  assert(uart == PLATFORM_USART_1);
+  assert(uart == PLATFORM_UART_1);
   assert(context == &s_event_count);
   s_event_count++;
   s_last_event = *event;
 }
 
 static void test_uart_contract(void) {
-  s_transmit_status = Platform_OK;
+  s_transmit_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_UART_ERROR_NONE;
   s_event_count = 0U;
 
   uint8_t byte = 0U;
-  assert(Platform_UART_Transmit(PLATFORM_USART_1, NULL, 1U, 10U) ==
-         Platform_INVALID_ARGUMENT);
-  assert((Platform_UART_GetLastError(PLATFORM_USART_1) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+  assert(Platform_UART_Transmit(PLATFORM_UART_1, NULL, 1U, 10U) ==
+         PLATFORM_STATUS_INVALID_ARGUMENT);
+  assert((Platform_UART_GetLastError(PLATFORM_UART_1) &
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 
-  s_transmit_status = Platform_ERROR;
-  assert(Platform_UART_Transmit(PLATFORM_USART_1, &byte, 1U, 10U) ==
-         Platform_ERROR);
-  assert((Platform_UART_GetLastError(PLATFORM_USART_1) &
-          PLATFORM_COMMON_ERROR_HAL) != 0U);
+  s_transmit_status = PLATFORM_STATUS_ERROR;
+  assert(Platform_UART_Transmit(PLATFORM_UART_1, &byte, 1U, 10U) ==
+         PLATFORM_STATUS_ERROR);
+  assert((Platform_UART_GetLastError(PLATFORM_UART_1) &
+          PLATFORM_ERROR_HAL) != 0U);
 
-  s_transmit_status = Platform_OK;
-  assert(Platform_UART_Transmit(PLATFORM_USART_1, &byte, 1U, 10U) ==
-         Platform_OK);
-  assert(Platform_UART_GetLastError(PLATFORM_USART_1) ==
-         PLATFORM_COMMON_ERROR_NONE);
+  s_transmit_status = PLATFORM_STATUS_OK;
+  assert(Platform_UART_Transmit(PLATFORM_UART_1, &byte, 1U, 10U) ==
+         PLATFORM_STATUS_OK);
+  assert(Platform_UART_GetLastError(PLATFORM_UART_1) ==
+         PLATFORM_ERROR_NONE);
 
-  const platform_uart_callbacks_t callbacks = {
+  const platform_uart_callback_binding_t callbacks = {
     .callback = uart_callback,
     .context = &s_event_count,
   };
-  assert(Platform_UART_RegisterCallbacks(PLATFORM_USART_1, &callbacks) ==
-         Platform_OK);
-  assert(Platform_UART_RegisterCallbacks(PLATFORM_USART_1, &callbacks) ==
-         Platform_BUSY);
+  assert(Platform_UART_RegisterCallback(PLATFORM_UART_1, &callbacks) ==
+         PLATFORM_STATUS_OK);
+  assert(Platform_UART_RegisterCallback(PLATFORM_UART_1, &callbacks) ==
+         PLATFORM_STATUS_BUSY);
 
   s_backend_error = PLATFORM_UART_ERROR_OVERRUN;
-  platform_uart_dispatch_event(PLATFORM_USART_1, PLATFORM_UART_EVENT_ERROR);
+  platform_uart_dispatch_event(PLATFORM_UART_1, PLATFORM_UART_EVENT_ERROR);
   assert(s_event_count == 1U);
   assert(s_last_event.type == PLATFORM_UART_EVENT_ERROR);
   assert(s_last_event.error == PLATFORM_UART_ERROR_OVERRUN);
 
-  platform_uart_dispatch_event(PLATFORM_USART_1, PLATFORM_UART_EVENT_TX_CPLT);
+  platform_uart_dispatch_event(PLATFORM_UART_1, PLATFORM_UART_EVENT_TX_COMPLETE);
   assert(s_event_count == 2U);
-  assert(s_last_event.type == PLATFORM_UART_EVENT_TX_CPLT);
+  assert(s_last_event.type == PLATFORM_UART_EVENT_TX_COMPLETE);
   assert(s_last_event.error == PLATFORM_UART_ERROR_NONE);
 
-  assert((Platform_UART_GetLastError((Platform_UART_Instance)99U) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+  assert((Platform_UART_GetLastError((platform_uart_instance_t)99U) &
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
 int main(void) {

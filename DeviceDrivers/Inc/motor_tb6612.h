@@ -19,7 +19,7 @@
 /**
  * @brief TB6612 方向状态。
  */
-typedef enum {
+typedef enum motor_tb6612_direction_e {
   DEV_TB6612_DIRECTION_REVERSE = -1,
   DEV_TB6612_DIRECTION_COAST   = 0,
   DEV_TB6612_DIRECTION_FORWARD = 1,
@@ -30,21 +30,21 @@ typedef enum {
  * @brief TB6612 电机对象。
  * @note STBY 可能在板级按组共享；单电机停机不能只依赖 STBY。
  */
-typedef struct {
+typedef struct motor_tb6612_s {
   motor_base_t          motor_base;
   motor_tb6612_direction_t last_direction;
-  Platform_PWM_Instance pwm_instance;  Platform_PWM_Channel pwm_channel;
-  Platform_GPIO_Port    ain1_port;     uint16_t             ain1_pin;
-  Platform_GPIO_Port    ain2_port;     uint16_t             ain2_pin;
-  Platform_GPIO_Port    stby_port;     uint16_t             stby_pin;
+  platform_pwm_instance_t pwm_instance;  platform_pwm_channel_t pwm_channel;
+  platform_gpio_port_t    ain1_port;     uint16_t             ain1_pin;
+  platform_gpio_port_t    ain2_port;     uint16_t             ain2_pin;
+  platform_gpio_port_t    stby_port;     uint16_t             stby_pin;
 } motor_tb6612_t;
 
 /**
  * @brief 初始化 TB6612 电机。
- * @param this 对象。
+ * @param motor_h 对象。
  * @param name 名称。
- * @param controller 控制律句柄。
- * @param encoder 编码器句柄。
+ * @param controller_h 控制律句柄。
+ * @param encoder_h 编码器句柄。
  * @param counts_per_meter 编码器每米计数。
  * @param control_period 控制周期（s）。
  * @param target_speed 初始目标速度（m/s）。
@@ -57,24 +57,24 @@ typedef struct {
  * @param ain2_pin AIN2 引脚。
  * @param stby_port STBY 端口。
  * @param stby_pin STBY 引脚。
- * @retval Platform_OK 初始化成功。
- * @retval Platform_ERROR PWM 启动失败。
+ * @retval PLATFORM_STATUS_OK 初始化成功。
+ * @retval PLATFORM_STATUS_ERROR PWM 启动失败。
  * @note power 的符号表示方向，绝对值范围由 max_duty 约束。
  */
-Platform_StatusTypeDef Dev_Motor_TB6612_Init(
-  motor_tb6612_t        *this,
+platform_status_t Dev_Motor_TB6612_Init(
+  motor_tb6612_t        *motor_h,
   const char            *name,
-  controller_base_t     *controller,
-  encoder_base_t        *encoder,
+  controller_base_t     *controller_h,
+  encoder_base_t        *encoder_h,
   float                  counts_per_meter,
   float                  control_period,
   float                  target_speed,
   int32_t                max_duty,
-  Platform_PWM_Instance  pwm_instance,
-  Platform_PWM_Channel   pwm_channel,
-  Platform_GPIO_Port     ain1_port, uint16_t ain1_pin,
-  Platform_GPIO_Port     ain2_port, uint16_t ain2_pin,
-  Platform_GPIO_Port     stby_port, uint16_t stby_pin
+  platform_pwm_instance_t  pwm_instance,
+  platform_pwm_channel_t   pwm_channel,
+  platform_gpio_port_t     ain1_port, uint16_t ain1_pin,
+  platform_gpio_port_t     ain2_port, uint16_t ain2_pin,
+  platform_gpio_port_t     stby_port, uint16_t stby_pin
 );
 
 /** @} */

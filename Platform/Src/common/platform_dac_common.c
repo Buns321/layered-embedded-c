@@ -8,14 +8,14 @@
 #include <stddef.h>
 
 static volatile uint32_t dac_error[PLATFORM_DAC_INSTANCE_COUNT];
-static platform_dac_callbacks_t dac_cb[PLATFORM_DAC_INSTANCE_COUNT];
+static platform_dac_callback_binding_t dac_cb[PLATFORM_DAC_INSTANCE_COUNT];
 static bool dac_cb_registered[PLATFORM_DAC_INSTANCE_COUNT];
 
-static Platform_StatusTypeDef platform_dac_finish(
-  Platform_DAC_Instance dac,
-  Platform_StatusTypeDef status
+static platform_status_t platform_dac_finish(
+  platform_dac_instance_t dac,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &dac_error[dac],
       platform_error_from_status(status)
@@ -24,29 +24,29 @@ static Platform_StatusTypeDef platform_dac_finish(
   return status;
 }
 
-static Platform_StatusTypeDef platform_dac_invalid(Platform_DAC_Instance dac) {
+static platform_status_t platform_dac_invalid(platform_dac_instance_t dac) {
   if ((uint32_t)dac < PLATFORM_DAC_INSTANCE_COUNT) {
     platform_error_record(
       &dac_error[dac],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
-static bool platform_dac_channel_valid(Platform_DAC_Channel channel) {
+static bool platform_dac_channel_valid(platform_dac_channel_t channel) {
   return channel == PLATFORM_DAC_CHANNEL_1 ||
          channel == PLATFORM_DAC_CHANNEL_2;
 }
 
-static bool platform_dac_alignment_valid(Platform_DAC_Alignment alignment) {
+static bool platform_dac_alignment_valid(platform_dac_alignment_t alignment) {
   return alignment == PLATFORM_DAC_ALIGN_8_BIT_RIGHT ||
          alignment == PLATFORM_DAC_ALIGN_12_BIT_RIGHT ||
          alignment == PLATFORM_DAC_ALIGN_12_BIT_LEFT;
 }
 
 static bool platform_dac_value_valid(
-  Platform_DAC_Alignment alignment,
+  platform_dac_alignment_t alignment,
   uint32_t value
 ) {
   return alignment == PLATFORM_DAC_ALIGN_8_BIT_RIGHT
@@ -55,8 +55,8 @@ static bool platform_dac_value_valid(
 }
 
 void platform_dac_dispatch_event(
-  Platform_DAC_Instance dac,
-  const Platform_DAC_Event *event
+  platform_dac_instance_t dac,
+  const platform_dac_event_t *event
 ) {
   if (
     (uint32_t)dac >= PLATFORM_DAC_INSTANCE_COUNT ||
@@ -70,10 +70,10 @@ void platform_dac_dispatch_event(
   }
 }
 
-Platform_StatusTypeDef Platform_DAC_SetValue(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t Platform_DAC_SetValue(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   uint32_t value
 ) {
   if ((uint32_t)dac < PLATFORM_DAC_INSTANCE_COUNT) {
@@ -93,9 +93,9 @@ Platform_StatusTypeDef Platform_DAC_SetValue(
   );
 }
 
-Platform_StatusTypeDef Platform_DAC_Start(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t Platform_DAC_Start(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
   if ((uint32_t)dac < PLATFORM_DAC_INSTANCE_COUNT) {
     platform_error_reset(&dac_error[dac]);
@@ -112,9 +112,9 @@ Platform_StatusTypeDef Platform_DAC_Start(
   );
 }
 
-Platform_StatusTypeDef Platform_DAC_Stop(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t Platform_DAC_Stop(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
   if ((uint32_t)dac < PLATFORM_DAC_INSTANCE_COUNT) {
     platform_error_reset(&dac_error[dac]);
@@ -131,10 +131,10 @@ Platform_StatusTypeDef Platform_DAC_Stop(
   );
 }
 
-Platform_StatusTypeDef Platform_DAC_Start_DMA(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
-  Platform_DAC_Alignment alignment,
+platform_status_t Platform_DAC_StartDMA(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel,
+  platform_dac_alignment_t alignment,
   const uint32_t *data,
   uint32_t length
 ) {
@@ -162,9 +162,9 @@ Platform_StatusTypeDef Platform_DAC_Start_DMA(
   );
 }
 
-Platform_StatusTypeDef Platform_DAC_Stop_DMA(
-  Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel
+platform_status_t Platform_DAC_StopDMA(
+  platform_dac_instance_t dac,
+  platform_dac_channel_t channel
 ) {
   if ((uint32_t)dac < PLATFORM_DAC_INSTANCE_COUNT) {
     platform_error_reset(&dac_error[dac]);
@@ -181,29 +181,29 @@ Platform_StatusTypeDef Platform_DAC_Stop_DMA(
   );
 }
 
-uint32_t Platform_DAC_GetLastError(Platform_DAC_Instance dac) {
+uint32_t Platform_DAC_GetLastError(platform_dac_instance_t dac) {
   if ((uint32_t)dac >= PLATFORM_DAC_INSTANCE_COUNT) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return dac_error[dac] | platform_dac_backend_get_error(dac);
 }
 
-Platform_StatusTypeDef Platform_DAC_RegisterCallbacks(
-  Platform_DAC_Instance dac,
-  const platform_dac_callbacks_t *callbacks
+platform_status_t Platform_DAC_RegisterCallback(
+  platform_dac_instance_t dac,
+  const platform_dac_callback_binding_t *callbacks
 ) {
   if (
     (uint32_t)dac >= PLATFORM_DAC_INSTANCE_COUNT ||
     callbacks == NULL ||
     !platform_dac_backend_is_valid(dac)
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (dac_cb_registered[dac]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   dac_cb[dac] = *callbacks;
   dac_cb_registered[dac] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }

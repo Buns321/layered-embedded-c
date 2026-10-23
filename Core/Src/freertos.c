@@ -68,10 +68,10 @@ const osThreadAttr_t ControlTask_attributes = {
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityRealtime,
 };
-/* Definitions for USARTTask */
-osThreadId_t USARTTaskHandle;
-const osThreadAttr_t USARTTask_attributes = {
-  .name = "USARTTask",
+/* Definitions for UARTTask */
+osThreadId_t UARTTaskHandle;
+const osThreadAttr_t UARTTask_attributes = {
+  .name = "UARTTask",
   .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -82,9 +82,9 @@ const osThreadAttr_t USARTTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
-void StartMonitor_Task(void *argument);
-void StartControlTask(void *argument);
-void StartUSARTTask(void *argument);
+void RTOS_Monitor_StartTask(void *argument);
+void RTOS_Control_StartTask(void *argument);
+void RTOS_UART_StartTask(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -119,13 +119,13 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of MonitorTask */
-  MonitorTaskHandle = osThreadNew(StartMonitor_Task, NULL, &MonitorTask_attributes);
+  MonitorTaskHandle = osThreadNew(RTOS_Monitor_StartTask, NULL, &MonitorTask_attributes);
 
   /* creation of ControlTask */
-  ControlTaskHandle = osThreadNew(StartControlTask, NULL, &ControlTask_attributes);
+  ControlTaskHandle = osThreadNew(RTOS_Control_StartTask, NULL, &ControlTask_attributes);
 
-  /* creation of USARTTask */
-  USARTTaskHandle = osThreadNew(StartUSARTTask, NULL, &USARTTask_attributes);
+  /* creation of UARTTask */
+  UARTTaskHandle = osThreadNew(RTOS_UART_StartTask, NULL, &UARTTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -156,61 +156,61 @@ void StartDefaultTask(void *argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartMonitor_Task */
+/* USER CODE BEGIN Header_RTOS_Monitor_StartTask */
 /**
 * @brief Function implementing the MotorTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartMonitor_Task */
-__weak void StartMonitor_Task(void *argument)
+/* USER CODE END Header_RTOS_Monitor_StartTask */
+__weak void RTOS_Monitor_StartTask(void *argument)
 {
-  /* USER CODE BEGIN StartMonitor_Task */
+  /* USER CODE BEGIN RTOS_Monitor_StartTask */
   (void)argument;
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartMonitor_Task */
+  /* USER CODE END RTOS_Monitor_StartTask */
 }
 
-/* USER CODE BEGIN Header_StartControlTask */
+/* USER CODE BEGIN Header_RTOS_Control_StartTask */
 /**
 * @brief Function implementing the ControlTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartControlTask */
-__weak void StartControlTask(void *argument)
+/* USER CODE END Header_RTOS_Control_StartTask */
+__weak void RTOS_Control_StartTask(void *argument)
 {
-  /* USER CODE BEGIN StartControlTask */
+  /* USER CODE BEGIN RTOS_Control_StartTask */
   (void)argument;
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartControlTask */
+  /* USER CODE END RTOS_Control_StartTask */
 }
 
-/* USER CODE BEGIN Header_StartUSARTTask */
+/* USER CODE BEGIN Header_RTOS_UART_StartTask */
 /**
-* @brief Function implementing the USARTTask thread.
+* @brief Function implementing the UARTTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartUSARTTask */
-__weak void StartUSARTTask(void *argument)
+/* USER CODE END Header_RTOS_UART_StartTask */
+__weak void RTOS_UART_StartTask(void *argument)
 {
-  /* USER CODE BEGIN StartUSARTTask */
+  /* USER CODE BEGIN RTOS_UART_StartTask */
   (void)argument;
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartUSARTTask */
+  /* USER CODE END RTOS_UART_StartTask */
 }
 
 /* Private application code --------------------------------------------------*/

@@ -3,23 +3,23 @@
 //
 
 /**
- * @file imu_wht101_usart.h
+ * @file imu_wht101_uart.h
  * @brief WHT101 UART IMU 具体实现。
  * @addtogroup drivers_concrete
  * @{
  */
 
-#ifndef LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
-#define LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
+#ifndef LAYERED_EMBEDDED_C_IMU_WHT101_UART_H
+#define LAYERED_EMBEDDED_C_IMU_WHT101_UART_H
 
 #include "imu_base.h"
-#include "usart_base.h"
+#include "uart_base.h"
 #include <stdbool.h>
 
 /**
  * @brief 帧解析状态。
  */
-typedef enum {
+typedef enum imu_wht101_state_e {
   IMU_WHT101_STATE_SYNCING_1 = 0U,
   IMU_WHT101_STATE_SYNCING_2,
   IMU_WHT101_STATE_RECEIVING_DATA,
@@ -29,7 +29,7 @@ typedef enum {
 /**
  * @brief WHT101 寄存器地址。
  */
-typedef enum {
+typedef enum imu_wht101_reg_e {
   IMU_WHT101_REG_SAVE    = 0x00,
   IMU_WHT101_REG_RRATE   = 0x03,
   IMU_WHT101_REG_BAUD    = 0x04,
@@ -41,7 +41,7 @@ typedef enum {
 /**
  * @brief 输出速率配置值。
  */
-typedef enum {
+typedef enum imu_wht101_rate_e {
   IMU_RATE_10HZ  = 0x06,
   IMU_RATE_100HZ = 0x09,
   IMU_RATE_200HZ = 0x0B,
@@ -50,7 +50,7 @@ typedef enum {
 /**
  * @brief 非阻塞配置状态机状态。
  */
-typedef enum {
+typedef enum imu_wht101_config_state_e {
   IMU_WHT101_CONFIG_IDLE = 0U,
   IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW,
   IMU_WHT101_CONFIG_ZERO_WAIT_SAVE,
@@ -85,9 +85,9 @@ typedef enum {
  * @note rx_buffer 是单字节中断接收的环形队列；解析在 process 中完成。
  * @note 置零和输出速率配置通过 zero_pending / rate_pending 非阻塞推进。
  */
-typedef struct {
+typedef struct imu_wht101_uart_s {
   imu_base_t imu_base;
-  usart_base_t *usart;
+  uart_base_t *uart_h;
 
   imu_wht101_state_t state;
   uint8_t frame[IMU_WHT101_FRAME_LEN];
@@ -112,42 +112,42 @@ typedef struct {
   volatile uint32_t rx_error_count;
   volatile uint32_t rx_checksum_error_count;
   volatile bool rx_resync_requested;
-} imu_wht101_usart_t;
+} imu_wht101_uart_t;
 
 /**
  * @brief 初始化 WHT101。
- * @param this 对象。
+ * @param imu_h 对象。
  * @param name 名称。
- * @param usart 已初始化的 usart_base 对象，需支持中断接收。
- * @param filter 已初始化的静态滤波器根节点；WHT101 通常注入 passthrough。
+ * @param uart_h 已初始化的 uart_base 对象，需支持中断接收。
+ * @param filter_h 已初始化的静态滤波器根节点；WHT101 通常注入 passthrough。
  */
-void Dev_IMU_WHT101_USART_Init(
-  imu_wht101_usart_t *this,
+void Dev_IMU_WHT101_UART_Init(
+  imu_wht101_uart_t *imu_h,
   const char *name,
-  usart_base_t *usart,
-  filter_base_t *filter
+  uart_base_t *uart_h,
+  filter_base_t *filter_h
 );
 /**
  * @brief 解析一个字节。
- * @param this 对象。
+ * @param imu_h 对象。
  * @param byte 输入字节。
  * @param now_ms 当前毫秒时间戳。
  * @note 该函数是解析器，不是 ISR 入队接口；应在任务上下文调用。
  */
-void Dev_IMU_WHT101_USART_FeedByte      (imu_wht101_usart_t *this, uint8_t byte, uint32_t now_ms);
+void Dev_IMU_WHT101_UART_FeedByte      (imu_wht101_uart_t *imu_h, uint8_t byte, uint32_t now_ms);
 /**
  * @brief 请求设置 yaw 零点。
  * @note 非阻塞；实际写入由 process 状态机推进。
  */
-void Dev_IMU_WHT101_USART_SetZero       (imu_wht101_usart_t *this);
+void Dev_IMU_WHT101_UART_SetZero       (imu_wht101_uart_t *imu_h);
 /**
  * @brief 请求设置输出速率。
- * @param this 对象。
+ * @param imu_h 对象。
  * @param rate 速率配置值。
  * @note 非阻塞；实际写入由 process 状态机推进。
  */
-void Dev_IMU_WHT101_USART_SetOutputRate (imu_wht101_usart_t *this, uint8_t rate);
+void Dev_IMU_WHT101_UART_SetOutputRate (imu_wht101_uart_t *imu_h, uint8_t rate);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_IMU_WHT101_USART_H
+#endif //LAYERED_EMBEDDED_C_IMU_WHT101_UART_H

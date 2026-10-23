@@ -46,17 +46,17 @@ Controller、Policy、Filter、RTOS 或 App 包含。
 
 每个功能使用独立的实例类型：
 
-- `Platform_PWM_Instance`
-- `Platform_PWM_Channel`
-- `Platform_Encoder_Instance`
-- `Platform_UART_Instance`
-- `Platform_I2C_Instance`
-- `Platform_SPI_Instance`
-- `Platform_ADC_Instance`
-- `Platform_DAC_Instance`
-- `Platform_CAN_Instance`
-- `Platform_RTC_Instance`
-- `Platform_FLASH_Instance`
+- `platform_pwm_instance_t`
+- `platform_pwm_channel_t`
+- `platform_encoder_instance_t`
+- `platform_uart_instance_t`
+- `platform_i2c_instance_t`
+- `platform_spi_instance_t`
+- `platform_adc_instance_t`
+- `platform_dac_instance_t`
+- `platform_can_instance_t`
+- `platform_rtc_instance_t`
+- `platform_flash_instance_t`
 
 未启用的实例不会进入公共枚举。当前板级通过 CMake 定义启用：
 
@@ -99,8 +99,8 @@ PLATFORM_ENABLE_WWDG=1
 
 ## 6. UART 回调所有权
 
-- `usart_port_t` 是物理 UART 的 Platform 回调所有者。
-- WHT101、FireWater 或 JustFloat 是 `usart_base_t` 的回调所有者。
+- `uart_port_t` 是物理 UART 的 Platform 回调所有者。
+- WHT101、FireWater 或 JustFloat 是 `uart_base_t` 的回调所有者。
 - 一个物理 UART 只能有一套 Platform 回调。
 - 回调必须在启动 IT/DMA 传输前注册。
 - 注册时复制回调结构，context 本身不被 Platform 拥有。
@@ -111,7 +111,7 @@ UART、I2C、SPI、CAN、ADC、DAC 统一使用 typed event 回调：
 - 每个实例只有一个 `callback + context` 所有者。
 - 完成、错误和 abort 通过 `Platform_X_Event.type` 区分。
 - 错误事件在 `event.error` 中携带模块错误位。
-- 重复注册返回 `Platform_BUSY`。
+- 重复注册返回 `PLATFORM_STATUS_BUSY`。
 
 ## 7. UART 缓冲区契约
 
@@ -126,7 +126,7 @@ UART、I2C、SPI、CAN、ADC、DAC 统一使用 typed event 回调：
 - 阻塞接口的 `timeout` 单位为毫秒。
 - `PLATFORM_TIMEOUT_INFINITE` 表示永久阻塞。
 - IT/DMA 接口没有阻塞超时，超时由设备层状态机判断。
-- `Platform_StatusTypeDef` 只表达粗粒度结果。
+- `platform_status_t` 只表达粗粒度结果。
 - `Platform_UART_GetLastError()` 返回 PE/NE/FE/ORE/DMA 等错误位。
 - 新操作成功启动后，HAL ErrorCode 由 HAL 或显式 abort/clear 路径复位。
 
@@ -169,7 +169,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 | CAN | CAN1–2 | CAN1 | 仅经典 CAN |
 | RTC | RTC | RTC | F1 无唤醒定时器，仅有每日闹钟 |
 | Flash | 内部 Flash | 内部 Flash | 仅底层原语，不含参数策略 |
-| USART/UART | USART1–6 | USART1–3 | UART HAL handle 统一映射 |
+| UART | USART1–6 | USART1–3 | UART HAL handle 统一映射 |
 
 未列出的实例不会出现在公共枚举中。F1 的 DAC、I2C3、CAN2、ADC3、SPI3
 和 USART4–6 不伪造实现。
@@ -183,7 +183,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 - 一次只允许一个活动传输，一个实例只有一个回调所有者。
 - 缓冲区在完成、错误或 abort 前必须保持有效。
 - 错误通过 `Platform_I2C_GetLastError()` 返回 BERR/ARLO/AF/OVR/DMA/TIMEOUT
-  等位，恢复使用显式 `Platform_I2C_Abort_IT()`。
+  等位，恢复使用显式 `Platform_I2C_AbortIT()`。
 
 ### SPI
 
@@ -192,7 +192,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
   并要求长度为偶数、地址对齐。
 - IT/DMA 缓冲区在完成、错误或 abort 前必须保持有效。
 - `Platform_SPI_Abort()` 用于任务上下文同步恢复，
-  `Platform_SPI_Abort_IT()` 用于中断完成路径。
+  `Platform_SPI_AbortIT()` 用于中断完成路径。
 
 ### CAN
 
@@ -213,10 +213,10 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 - `Platform_ADC_Read()` 只适用于单通道、单次转换配置。
 - 多通道扫描必须使用 DMA；常规组中断只会在序列结束时报告最后一次转换。
 - STM32F1 的独立 DMA 请求仅属于 ADC1，ADC2 的 DMA 启动请求返回
-  `Platform_UNSUPPORTED`。
+  `PLATFORM_STATUS_UNSUPPORTED`。
 - ADC DMA 的 `length` 是转换次数，不是字节数。
 - DAC DMA 的 `length` 是样本数，样本对齐方式必须与传入的
-  `Platform_DAC_Alignment` 一致。
+  `platform_dac_alignment_t` 一致。
 - ADC/DAC 的 DMA 缓冲区在完成、错误或 stop 前必须保持有效。
 
 ### RTC
@@ -225,7 +225,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 - 年份范围为 2000..2099，weekday 为 1..7。
 - 跨系列闹钟契约是每日闹钟，只比较时、分、秒。
 - F4 唤醒定时器使用 RTC 唤醒时钟和计数值，具体周期由所选时钟决定；
-  F1 保留相同公共 API，但返回 `Platform_UNSUPPORTED`。
+  F1 保留相同公共 API，但返回 `PLATFORM_STATUS_UNSUPPORTED`。
 - RTC 时钟源、备份域访问和 `MX_RTC_Init()` 由 CubeMX/Core 负责。
 
 ### Flash

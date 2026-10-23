@@ -18,11 +18,11 @@
 /**
  * @brief 参与看门狗报到的任务。
  */
-typedef enum {
+typedef enum sys_watchdog_task_e {
   SYS_WATCHDOG_TASK_CONTROL = 0,
-  SYS_WATCHDOG_TASK_USART,
+  SYS_WATCHDOG_TASK_UART,
   SYS_WATCHDOG_TASK_COUNT,
-} Sys_Watchdog_Task;
+} sys_watchdog_task_t;
 
 /**
  * @brief 启动 IWDG。
@@ -39,7 +39,7 @@ void Sys_Watchdog_Init(uint32_t timeout_ms);
  * @param now_ms 当前毫秒时间戳。
  * @note 只能在任务上下文调用，不能在 ISR 中调用。
  */
-void Sys_Watchdog_CheckIn(Sys_Watchdog_Task task, uint32_t now_ms);
+void Sys_Watchdog_CheckIn(sys_watchdog_task_t task, uint32_t now_ms);
 
 /**
  * @brief 检查所有任务是否新鲜；全部新鲜时喂狗。

@@ -18,17 +18,17 @@
  * @brief 透传滤波器对象。
  * @note 依赖 Filter_Base_Update 的预复制语义，直接输出原始通道。
  */
-typedef struct filter_passthrough {
+typedef struct filter_passthrough_s {
   filter_base_t filter_base;
 } filter_passthrough_t;
 
 /**
  * @brief 初始化透传滤波器。
- * @param this 对象。
+ * @param filter_h 对象。
  * @param name 名称。
  */
 void Filter_Passthrough_Init(
-  filter_passthrough_t *this,
+  filter_passthrough_t *filter_h,
   const char *name
 );
 

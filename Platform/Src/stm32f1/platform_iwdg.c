@@ -9,7 +9,7 @@
 
 #define PLATFORM_IWDG_LSI_HZ 40000u
 
-static IWDG_HandleTypeDef s_iwdg;
+static IWDG_HandleTypeDef s_iwdg_h;
 
 static uint32_t platform_iwdg_hal_prescaler(uint32_t divisor) {
   switch (divisor) {
@@ -28,23 +28,23 @@ uint32_t platform_iwdg_backend_lsi_hz(void) {
   return PLATFORM_IWDG_LSI_HZ;
 }
 
-Platform_StatusTypeDef platform_iwdg_backend_start(
+platform_status_t platform_iwdg_backend_start(
   uint32_t divisor,
   uint32_t reload
 ) {
   const uint32_t prescaler = platform_iwdg_hal_prescaler(divisor);
   if (prescaler == 0U) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
-  s_iwdg.Instance = IWDG;
-  s_iwdg.Init.Prescaler = prescaler;
-  s_iwdg.Init.Reload = reload;
-  return platform_from_hal_status(HAL_IWDG_Init(&s_iwdg));
+  s_iwdg_h.Instance = IWDG;
+  s_iwdg_h.Init.Prescaler = prescaler;
+  s_iwdg_h.Init.Reload = reload;
+  return platform_from_hal_status(HAL_IWDG_Init(&s_iwdg_h));
 }
 
-Platform_StatusTypeDef platform_iwdg_backend_refresh(void) {
-  return platform_from_hal_status(HAL_IWDG_Refresh(&s_iwdg));
+platform_status_t platform_iwdg_backend_refresh(void) {
+  return platform_from_hal_status(HAL_IWDG_Refresh(&s_iwdg_h));
 }
 
 bool platform_iwdg_backend_was_reset(void) {

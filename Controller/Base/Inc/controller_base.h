@@ -14,12 +14,12 @@
 
 #include <stdint.h>
 
-typedef struct controller_base controller_base_t;
+typedef struct controller_base_s controller_base_t;
 
 /**
  * @brief 控制律执行状态。
  */
-typedef enum {
+typedef enum controller_status_e {
   CONTROLLER_STATUS_OK = 0U,
   CONTROLLER_STATUS_SATURATED,
   CONTROLLER_STATUS_ERROR,
@@ -30,30 +30,30 @@ typedef enum {
  * @note 契约：target / measure 是当前槽位物理量（轮速环为 m/s）；
  *       dt 单位 s，必须大于 0；out 是执行器量（轮速环为 duty）。
  */
-typedef struct controller_ops {
+typedef struct controller_ops_s {
   controller_status_t (*update)(
-    controller_base_t *this,
+    controller_base_t *controller_h,
     float target,
     float measure,
     float dt,
     float *out
   );
-  void (*reset)(controller_base_t *this);
+  void (*reset)(controller_base_t *controller_h);
 } controller_ops_t;
 
 /**
  * @brief 控制律抽象对象。
  */
-typedef struct controller_base {
+typedef struct controller_base_s {
   const controller_ops_t *ops;
   const char             *name;
 } controller_base_t;
 
 /** @brief 初始化控制律抽象层并绑定操作表。 */
-void Ctrl_Base_Init(controller_base_t *this, const char *name, const controller_ops_t *ops);
+void Ctrl_Base_Init(controller_base_t *controller_h, const char *name, const controller_ops_t *ops);
 /**
  * @brief 运行一次控制律。
- * @param this 控制律对象。
+ * @param controller_h 控制律对象。
  * @param target 参考值。
  * @param measure 实测值。
  * @param dt 控制周期（s），必须有限且大于 0。
@@ -63,14 +63,14 @@ void Ctrl_Base_Init(controller_base_t *this, const char *name, const controller_
  * @retval CONTROLLER_STATUS_ERROR 输入/输出错误。
  */
 controller_status_t Ctrl_Base_Update(
-  controller_base_t *this,
+  controller_base_t *controller_h,
   float target,
   float measure,
   float dt,
   float *out
 );
 /** @brief 复位控制律内部状态。 */
-void Ctrl_Base_Reset(controller_base_t *this);
+void Ctrl_Base_Reset(controller_base_t *controller_h);
 
 /** @} */
 

@@ -11,13 +11,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_rng_backend_is_valid(Platform_RNG_Instance rng);
+bool platform_rng_backend_is_valid(platform_rng_instance_t rng);
 
-Platform_StatusTypeDef platform_rng_backend_get_random(
-  Platform_RNG_Instance rng,
+platform_status_t platform_rng_backend_get_random(
+  platform_rng_instance_t rng,
   uint32_t *value
 );
 
-uint32_t platform_rng_backend_get_error(Platform_RNG_Instance rng);
+uint32_t platform_rng_backend_get_error(platform_rng_instance_t rng);
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_RNG_BACKEND_H

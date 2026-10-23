@@ -24,7 +24,7 @@ HAL / CMSIS / FreeRTOS
 ## 模块
 
 - **Platform**：HAL 封装，枚举身份 + 静态映射。
-- **DeviceDrivers**：LED、电机、编码器、USART、IMU（统一滤波管线、WHT101、
+- **DeviceDrivers**：LED、电机、编码器、UART、IMU（统一滤波管线、WHT101、
   MPU6050 I2C）、底盘、遥测协议设备。
 - **Controller**：轮级 SISO 控制律（线性、compose；PID 待实现）。
 - **Policy**：底盘级 MIMO 运动策略（当前为 omni 运动学）。

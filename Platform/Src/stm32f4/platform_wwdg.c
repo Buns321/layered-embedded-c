@@ -9,7 +9,7 @@
 
 #define PLATFORM_WWDG_COUNTER_START 0x7Fu
 
-static WWDG_HandleTypeDef s_wwdg;
+static WWDG_HandleTypeDef s_wwdg_h;
 
 static uint32_t platform_wwdg_hal_prescaler(uint32_t divisor) {
   switch (divisor) {
@@ -25,27 +25,27 @@ uint32_t platform_wwdg_backend_pclk1_hz(void) {
   return HAL_RCC_GetPCLK1Freq();
 }
 
-Platform_StatusTypeDef platform_wwdg_backend_start(
+platform_status_t platform_wwdg_backend_start(
   uint32_t divisor,
   uint8_t window
 ) {
   const uint32_t prescaler = platform_wwdg_hal_prescaler(divisor);
   if (prescaler == 0U) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
   __HAL_RCC_WWDG_CLK_ENABLE();
 
-  s_wwdg.Instance = WWDG;
-  s_wwdg.Init.Prescaler = prescaler;
-  s_wwdg.Init.Window = window;
-  s_wwdg.Init.Counter = PLATFORM_WWDG_COUNTER_START;
-  s_wwdg.Init.EWIMode = WWDG_EWI_DISABLE;
-  return platform_from_hal_status(HAL_WWDG_Init(&s_wwdg));
+  s_wwdg_h.Instance = WWDG;
+  s_wwdg_h.Init.Prescaler = prescaler;
+  s_wwdg_h.Init.Window = window;
+  s_wwdg_h.Init.Counter = PLATFORM_WWDG_COUNTER_START;
+  s_wwdg_h.Init.EWIMode = WWDG_EWI_DISABLE;
+  return platform_from_hal_status(HAL_WWDG_Init(&s_wwdg_h));
 }
 
-Platform_StatusTypeDef platform_wwdg_backend_refresh(void) {
-  return platform_from_hal_status(HAL_WWDG_Refresh(&s_wwdg));
+platform_status_t platform_wwdg_backend_refresh(void) {
+  return platform_from_hal_status(HAL_WWDG_Refresh(&s_wwdg_h));
 }
 
 bool platform_wwdg_backend_was_reset(void) {

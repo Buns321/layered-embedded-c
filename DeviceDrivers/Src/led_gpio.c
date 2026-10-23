@@ -5,55 +5,55 @@
 #include "led_gpio.h"
 #include <assert.h>
 
-static void Dev_LED_GPIO_ON(led_base_t *this) {
-  assert(this);
-  led_gpio_t *self = (led_gpio_t *)this;
-  switch (self->active_level) {
+static void Dev_LED_GPIO_TurnOn(led_base_t *led_h) {
+  assert(led_h);
+  led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
+  switch (led_gpio_h->active_level) {
     case PLATFORM_GPIO_PIN_SET:
-      Platform_GPIO_WritePin(self->port, self->pin, PLATFORM_GPIO_PIN_SET);
+      Platform_GPIO_WritePin(led_gpio_h->port, led_gpio_h->pin, PLATFORM_GPIO_PIN_SET);
       break;
     case PLATFORM_GPIO_PIN_RESET:
-      Platform_GPIO_WritePin(self->port, self->pin, PLATFORM_GPIO_PIN_RESET);
+      Platform_GPIO_WritePin(led_gpio_h->port, led_gpio_h->pin, PLATFORM_GPIO_PIN_RESET);
       break;
     default: assert(0); break;
   }
 }
 
-static void Dev_LED_GPIO_OFF(led_base_t *this) {
-  assert(this);
-  led_gpio_t *self = (led_gpio_t *)this;
-  switch (self->active_level) {
+static void Dev_LED_GPIO_TurnOff(led_base_t *led_h) {
+  assert(led_h);
+  led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
+  switch (led_gpio_h->active_level) {
     case PLATFORM_GPIO_PIN_SET:
-      Platform_GPIO_WritePin(self->port, self->pin, PLATFORM_GPIO_PIN_RESET);
+      Platform_GPIO_WritePin(led_gpio_h->port, led_gpio_h->pin, PLATFORM_GPIO_PIN_RESET);
       break;
     case PLATFORM_GPIO_PIN_RESET:
-      Platform_GPIO_WritePin(self->port, self->pin, PLATFORM_GPIO_PIN_SET);
+      Platform_GPIO_WritePin(led_gpio_h->port, led_gpio_h->pin, PLATFORM_GPIO_PIN_SET);
       break;
     default: assert(0); break;
   }
 }
 
-static void Dev_LED_GPIO_SetBrightness(led_base_t *this, uint16_t brightness) {
+static void Dev_LED_GPIO_SetBrightness(led_base_t *led_h, uint16_t brightness) {
   // 空函数用于调用参数，防止编译(编译前期的语法/语义分析阶段)产生 unused parameter 警告
   // 由于优化器作用与编译后期，因此空语句被优化不影响防止产生 unused parameter 警告的作用
-  // 不可使用 assert(this && brightness) 语句以求防止产生 unused parameter 警告，这是因为在发布阶段定义 NODEBUG(Release) 后，assert() 会被展开为 (void)0
-  (void)this; (void)brightness; assert(0);
+  // 不可使用 assert(led_h && brightness) 语句以求防止产生 unused parameter 警告，这是因为在发布阶段定义 NODEBUG(Release) 后，assert() 会被展开为 (void)0
+  (void)led_h; (void)brightness; assert(0);
 }
 
 static const led_ops_t led_ops_gpio = {
-  .on             = Dev_LED_GPIO_ON,
-  .off            = Dev_LED_GPIO_OFF,
+  .on             = Dev_LED_GPIO_TurnOn,
+  .off            = Dev_LED_GPIO_TurnOff,
   .set_brightness = Dev_LED_GPIO_SetBrightness,
 };
 
-void Dev_LED_GPIO_Init(led_gpio_t *this, const char *name, Platform_GPIO_Port port, uint16_t pin, Platform_GPIO_Pin_State active_level) {
-  assert(this && name);
-  Dev_LED_Base_Init(&this->led_base, name, &led_ops_gpio);
-  this->port = port;
-  this->pin = pin;
-  this->active_level = active_level;
+void Dev_LED_GPIO_Init(led_gpio_t *led_h, const char *name, platform_gpio_port_t port, uint16_t pin, platform_gpio_pin_state_t active_level) {
+  assert(led_h && name);
+  Dev_LED_Base_Init(&led_h->led_base, name, &led_ops_gpio);
+  led_h->port = port;
+  led_h->pin = pin;
+  led_h->active_level = active_level;
 
-  Platform_GPIO_Pin_State inactive_level =
+  platform_gpio_pin_state_t inactive_level =
     (active_level == PLATFORM_GPIO_PIN_SET) ? PLATFORM_GPIO_PIN_RESET : PLATFORM_GPIO_PIN_SET;
   Platform_GPIO_WritePin(port, pin, inactive_level);
 }

@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-static platform_exti_callbacks_t exti_cb[PLATFORM_EXTI_LINE_COUNT];
+static platform_exti_callback_binding_t exti_cb[PLATFORM_EXTI_LINE_COUNT];
 static bool exti_cb_registered[PLATFORM_EXTI_LINE_COUNT];
 
 static bool platform_exti_pin_to_index(uint16_t pin, uint8_t *index) {
@@ -31,21 +31,21 @@ static bool platform_exti_pin_to_index(uint16_t pin, uint8_t *index) {
   return true;
 }
 
-Platform_StatusTypeDef Platform_EXTI_RegisterCallbacks(
+platform_status_t Platform_EXTI_RegisterCallback(
   uint16_t GPIO_Pin,
-  const platform_exti_callbacks_t *cb
+  const platform_exti_callback_binding_t *cb
 ) {
   uint8_t idx;
   if (cb == NULL || !platform_exti_pin_to_index(GPIO_Pin, &idx)) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (exti_cb_registered[idx]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   exti_cb[idx] = *cb;
   exti_cb_registered[idx] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 void platform_exti_dispatch_event(uint16_t GPIO_Pin) {

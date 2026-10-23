@@ -13,12 +13,12 @@
 
 uint32_t platform_iwdg_backend_lsi_hz(void);
 
-Platform_StatusTypeDef platform_iwdg_backend_start(
+platform_status_t platform_iwdg_backend_start(
   uint32_t divisor,
   uint32_t reload
 );
 
-Platform_StatusTypeDef platform_iwdg_backend_refresh(void);
+platform_status_t platform_iwdg_backend_refresh(void);
 
 bool platform_iwdg_backend_was_reset(void);
 

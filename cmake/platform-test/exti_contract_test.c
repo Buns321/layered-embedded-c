@@ -14,18 +14,18 @@ static void exti_callback(uint16_t pin, void *context) {
 
 static void test_exti_contract(void) {
   s_callback_count = 0U;
-  const platform_exti_callbacks_t callbacks = {
+  const platform_exti_callback_binding_t callbacks = {
     .exti_cb = exti_callback,
     .context = &s_callback_count,
   };
 
-  assert(Platform_EXTI_RegisterCallbacks(0x0004U, &callbacks) == Platform_OK);
-  assert(Platform_EXTI_RegisterCallbacks(0x0004U, &callbacks) ==
-         Platform_BUSY);
-  assert(Platform_EXTI_RegisterCallbacks(0U, &callbacks) ==
-         Platform_INVALID_ARGUMENT);
-  assert(Platform_EXTI_RegisterCallbacks(0x0004U, NULL) ==
-         Platform_INVALID_ARGUMENT);
+  assert(Platform_EXTI_RegisterCallback(0x0004U, &callbacks) == PLATFORM_STATUS_OK);
+  assert(Platform_EXTI_RegisterCallback(0x0004U, &callbacks) ==
+         PLATFORM_STATUS_BUSY);
+  assert(Platform_EXTI_RegisterCallback(0U, &callbacks) ==
+         PLATFORM_STATUS_INVALID_ARGUMENT);
+  assert(Platform_EXTI_RegisterCallback(0x0004U, NULL) ==
+         PLATFORM_STATUS_INVALID_ARGUMENT);
 
   platform_exti_dispatch_event(0x0004U);
   assert(s_callback_count == 1U);

@@ -11,7 +11,7 @@
 
 static inline void platform_error_reset(volatile uint32_t *error) {
   if (error != NULL) {
-    *error = PLATFORM_COMMON_ERROR_NONE;
+    *error = PLATFORM_ERROR_NONE;
   }
 }
 
@@ -25,22 +25,22 @@ static inline void platform_error_record(
 }
 
 static inline uint32_t platform_error_from_status(
-  Platform_StatusTypeDef status
+  platform_status_t status
 ) {
   switch (status) {
-    case Platform_OK:
-      return PLATFORM_COMMON_ERROR_NONE;
-    case Platform_BUSY:
-      return PLATFORM_COMMON_ERROR_BUSY;
-    case Platform_TIMEOUT:
-      return PLATFORM_COMMON_ERROR_TIMEOUT;
-    case Platform_INVALID_ARGUMENT:
-      return PLATFORM_COMMON_ERROR_PARAMETER;
-    case Platform_UNSUPPORTED:
-      return PLATFORM_COMMON_ERROR_UNSUPPORTED;
-    case Platform_ERROR:
+    case PLATFORM_STATUS_OK:
+      return PLATFORM_ERROR_NONE;
+    case PLATFORM_STATUS_BUSY:
+      return PLATFORM_ERROR_BUSY;
+    case PLATFORM_STATUS_TIMEOUT:
+      return PLATFORM_ERROR_TIMEOUT;
+    case PLATFORM_STATUS_INVALID_ARGUMENT:
+      return PLATFORM_ERROR_INVALID_ARGUMENT;
+    case PLATFORM_STATUS_UNSUPPORTED:
+      return PLATFORM_ERROR_UNSUPPORTED;
+    case PLATFORM_STATUS_ERROR:
     default:
-      return PLATFORM_COMMON_ERROR_HAL;
+      return PLATFORM_ERROR_HAL;
   }
 }
 

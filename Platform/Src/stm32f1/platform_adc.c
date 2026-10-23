@@ -8,7 +8,7 @@
 #include "platform_hal_internal.h"
 #include "stm32f1xx_hal.h"
 
-static ADC_HandleTypeDef *platform_adc_to_hal(Platform_ADC_Instance adc) {
+static ADC_HandleTypeDef *platform_adc_to_hal(platform_adc_instance_t adc) {
   switch (adc) {
 #if PLATFORM_ENABLE_ADC1
     case PLATFORM_ADC_1: return &hadc1;
@@ -21,20 +21,20 @@ static ADC_HandleTypeDef *platform_adc_to_hal(Platform_ADC_Instance adc) {
 }
 
 static bool platform_hal_to_adc(
-  ADC_HandleTypeDef *hadc,
-  Platform_ADC_Instance *adc
+  ADC_HandleTypeDef *adc_h,
+  platform_adc_instance_t *adc
 ) {
-  if (hadc == NULL || adc == NULL) {
+  if (adc_h == NULL || adc == NULL) {
     return false;
   }
 #if PLATFORM_ENABLE_ADC1
-  if (hadc == &hadc1) {
+  if (adc_h == &hadc1) {
     *adc = PLATFORM_ADC_1;
     return true;
   }
 #endif
 #if PLATFORM_ENABLE_ADC2
-  if (hadc == &hadc2) {
+  if (adc_h == &hadc2) {
     *adc = PLATFORM_ADC_2;
     return true;
   }
@@ -63,12 +63,12 @@ static uint32_t platform_adc_map_error(uint32_t hal_error) {
   return error;
 }
 
-bool platform_adc_backend_is_valid(Platform_ADC_Instance adc) {
+bool platform_adc_backend_is_valid(platform_adc_instance_t adc) {
   return (uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT &&
          platform_adc_to_hal(adc) != NULL;
 }
 
-bool platform_adc_backend_supports_dma(Platform_ADC_Instance adc) {
+bool platform_adc_backend_supports_dma(platform_adc_instance_t adc) {
 #if PLATFORM_ENABLE_ADC1
   return adc == PLATFORM_ADC_1;
 #else
@@ -77,101 +77,101 @@ bool platform_adc_backend_supports_dma(Platform_ADC_Instance adc) {
 #endif
 }
 
-Platform_StatusTypeDef platform_adc_backend_start(Platform_ADC_Instance adc) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_ADC_Start(h));
+platform_status_t platform_adc_backend_start(platform_adc_instance_t adc) {
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Start(adc_h));
 }
 
-Platform_StatusTypeDef platform_adc_backend_stop(Platform_ADC_Instance adc) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_ADC_Stop(h));
+platform_status_t platform_adc_backend_stop(platform_adc_instance_t adc) {
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop(adc_h));
 }
 
-Platform_StatusTypeDef platform_adc_backend_poll(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_poll(
+  platform_adc_instance_t adc,
   uint32_t timeout
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(
-                       HAL_ADC_PollForConversion(h, timeout)
+                       HAL_ADC_PollForConversion(adc_h, timeout)
                      );
 }
 
-Platform_StatusTypeDef platform_adc_backend_get_value(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_get_value(
+  platform_adc_instance_t adc,
   uint32_t *value
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  if (h == NULL || value == NULL) {
-    return Platform_INVALID_ARGUMENT;
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  if (adc_h == NULL || value == NULL) {
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  *value = HAL_ADC_GetValue(h);
-  return Platform_OK;
+  *value = HAL_ADC_GetValue(adc_h);
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_adc_backend_start_it(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_start_it(
+  platform_adc_instance_t adc
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_ADC_Start_IT(h));
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Start_IT(adc_h));
 }
 
-Platform_StatusTypeDef platform_adc_backend_stop_it(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_stop_it(
+  platform_adc_instance_t adc
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_ADC_Stop_IT(h));
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop_IT(adc_h));
 }
 
-Platform_StatusTypeDef platform_adc_backend_start_dma(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_start_dma(
+  platform_adc_instance_t adc,
   uint32_t *data,
   uint32_t length
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(
-                       HAL_ADC_Start_DMA(h, data, length)
+                       HAL_ADC_Start_DMA(adc_h, data, length)
                      );
 }
 
-Platform_StatusTypeDef platform_adc_backend_stop_dma(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_stop_dma(
+  platform_adc_instance_t adc
 ) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? Platform_INVALID_ARGUMENT
-                   : platform_from_hal_status(HAL_ADC_Stop_DMA(h));
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop_DMA(adc_h));
 }
 
-uint32_t platform_adc_backend_get_error(Platform_ADC_Instance adc) {
-  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
-  return h == NULL ? PLATFORM_ADC_ERROR_UNKNOWN
-                   : platform_adc_map_error(HAL_ADC_GetError(h));
+uint32_t platform_adc_backend_get_error(platform_adc_instance_t adc) {
+  ADC_HandleTypeDef *adc_h = platform_adc_to_hal(adc);
+  return adc_h == NULL ? PLATFORM_ADC_ERROR_UNKNOWN
+                   : platform_adc_map_error(HAL_ADC_GetError(adc_h));
 }
 
 static void platform_adc_dispatch_hal_event(
-  ADC_HandleTypeDef *hadc,
-  Platform_ADC_EventType type
+  ADC_HandleTypeDef *adc_h,
+  platform_adc_event_type_t type
 ) {
-  Platform_ADC_Instance adc;
-  if (platform_hal_to_adc(hadc, &adc)) {
+  platform_adc_instance_t adc;
+  if (platform_hal_to_adc(adc_h, &adc)) {
     platform_adc_dispatch_event(adc, type);
   }
 }
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_CONV_CPLT);
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *adc_h) {
+  platform_adc_dispatch_hal_event(adc_h, PLATFORM_ADC_EVENT_CONV_COMPLETE);
 }
 
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_CONV_HALF);
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *adc_h) {
+  platform_adc_dispatch_hal_event(adc_h, PLATFORM_ADC_EVENT_CONV_HALF_COMPLETE);
 }
 
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_ERROR);
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *adc_h) {
+  platform_adc_dispatch_hal_event(adc_h, PLATFORM_ADC_EVENT_ERROR);
 }

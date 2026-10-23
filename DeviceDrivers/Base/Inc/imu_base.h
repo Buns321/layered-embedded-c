@@ -16,13 +16,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct imu_base imu_base_t;
+typedef struct imu_base_s imu_base_t;
 
 /**
  * @brief IMU 通道位掩码。
  * @note 加速度单位 m/s^2，角速度单位 deg/s，姿态单位 deg。
  */
-typedef enum {
+typedef enum imu_channel_e {
   IMU_CHANNEL_YAW     = 1u << 0,
   IMU_CHANNEL_ROLL    = 1u << 1,
   IMU_CHANNEL_PITCH   = 1u << 2,
@@ -37,7 +37,7 @@ typedef enum {
 /**
  * @brief IMU 通道数组下标，与通道位号一致。
  */
-typedef enum {
+typedef enum imu_channel_index_e {
   IMU_CHANNEL_INDEX_YAW = 0u,
   IMU_CHANNEL_INDEX_ROLL,
   IMU_CHANNEL_INDEX_PITCH,
@@ -55,7 +55,7 @@ typedef enum {
 
 _Static_assert(
   IMU_CHANNEL_INDEX_COUNT <= FILTER_CHANNEL_CAPACITY,
-  "IMU channels must fit the filter sample capacity"
+  "IMU channels must fit the filter_h sample capacity"
 );
 _Static_assert(
   IMU_CHANNEL_YAW == (1u << IMU_CHANNEL_INDEX_YAW) &&
@@ -75,7 +75,7 @@ _Static_assert(
  * @note 未置位的 valid_mask 通道对应值没有意义。
  * @note channel_update_ms 用于异步通道的新鲜度判断。
  */
-typedef struct {
+typedef struct imu_sample_s {
   float    accel_mps2[3];
   float    gyro_dps[3];
   float    yaw_deg;
@@ -91,7 +91,7 @@ typedef struct {
  * @brief IMU 运行状态快照。
  * @note valid_mask、时间戳和 sample_count 由 imu_base 统一维护。
  */
-typedef struct {
+typedef struct imu_status_s {
   bool     is_started;
   bool     is_busy;
   bool     has_timestamp;
@@ -107,22 +107,22 @@ typedef struct {
  * @brief IMU 具体实现的操作表。
  * @note process 在任务上下文运行；set_zero 只处理具体设备侧动作。
  */
-typedef struct {
-  void (*start)      (imu_base_t *this);
-  void (*process)    (imu_base_t *this, uint32_t now_ms);
-  void (*get_status) (imu_base_t *this, imu_status_t *status);
-  void (*set_zero)   (imu_base_t *this);
+typedef struct imu_ops_s {
+  void (*start)      (imu_base_t *imu_h);
+  void (*process)    (imu_base_t *imu_h, uint32_t now_ms);
+  void (*get_status) (imu_base_t *imu_h, imu_status_t *status);
+  void (*set_zero)   (imu_base_t *imu_h);
 } imu_ops_t;
 
 /**
  * @brief IMU 抽象对象与统一滤波管线。
- * @note filter 是非 owning 指针，生命周期必须覆盖 IMU 对象。
- * @note filter 的输出通道沿用 imu_channel_t 编号。
+ * @note filter_h 是非 owning 指针，生命周期必须覆盖 IMU 对象。
+ * @note filter_h 的输出通道沿用 imu_channel_t 编号。
  */
-typedef struct imu_base {
+typedef struct imu_base_s {
   const imu_ops_t *ops;
   const char      *name;
-  filter_base_t   *filter;
+  filter_base_t   *filter_h;
 
   imu_sample_t raw_sample;
   imu_sample_t sample;
@@ -133,78 +133,78 @@ typedef struct imu_base {
 
 /**
  * @brief 初始化 IMU 抽象层。
- * @param this 对象。
+ * @param imu_h 对象。
  * @param name 名称。
  * @param ops 具体实现操作表。
- * @param filter 已初始化的静态滤波器根节点，不能为空。
+ * @param filter_h 已初始化的静态滤波器根节点，不能为空。
  */
 void Dev_IMU_Base_Init(
-  imu_base_t *this,
+  imu_base_t *imu_h,
   const char *name,
   const imu_ops_t *ops,
-  filter_base_t *filter
+  filter_base_t *filter_h
 );
 
 /** @brief 复位滤波器并启动具体 IMU。 */
-void Dev_IMU_Base_Start(imu_base_t *this);
+void Dev_IMU_Base_Start(imu_base_t *imu_h);
 
 /**
  * @brief 推进 IMU 的非阻塞状态机。
- * @param this IMU 对象。
+ * @param imu_h IMU 对象。
  * @param now_ms 当前毫秒时间戳。
  * @note 每个任务周期调用一次。
  */
-void Dev_IMU_Base_Process(imu_base_t *this, uint32_t now_ms);
+void Dev_IMU_Base_Process(imu_base_t *imu_h, uint32_t now_ms);
 
 /**
  * @brief 提交一帧由具体驱动采集的原始数据。
- * @param this IMU 对象。
+ * @param imu_h IMU 对象。
  * @param frame 原始滤波样本，只标记本帧更新的通道。
  * @return 滤波器是否产生了至少一个可发布通道。
  * @note 仅允许单写者调用；输入值必须是工程单位。
  * @note 调用方不能保持 frame；base 会完成滤波和结果合并。
  */
 bool Dev_IMU_Base_SubmitSample(
-  imu_base_t *this,
+  imu_base_t *imu_h,
   const filter_sample_t *frame
 );
 
 /** @brief 复制一份经过滤波的 IMU 数据快照。 */
-bool Dev_IMU_Base_GetSample(imu_base_t *this, imu_sample_t *sample);
+bool Dev_IMU_Base_GetSample(imu_base_t *imu_h, imu_sample_t *sample);
 
 /** @brief 复制一份未经软件滤波的 IMU 数据快照。 */
-bool Dev_IMU_Base_GetRawSample(imu_base_t *this, imu_sample_t *sample);
+bool Dev_IMU_Base_GetRawSample(imu_base_t *imu_h, imu_sample_t *sample);
 
 /** @brief 复制一份 IMU 运行状态快照。 */
-void Dev_IMU_Base_GetStatus(imu_base_t *this, imu_status_t *status);
+void Dev_IMU_Base_GetStatus(imu_base_t *imu_h, imu_status_t *status);
 
 /** @brief 读取滤波后的 yaw（度）。 */
-float Dev_IMU_Base_GetYaw(imu_base_t *this);
+float Dev_IMU_Base_GetYaw(imu_base_t *imu_h);
 /** @brief 读取滤波后的 roll（度）。 */
-float Dev_IMU_Base_GetRoll(imu_base_t *this);
+float Dev_IMU_Base_GetRoll(imu_base_t *imu_h);
 /** @brief 读取滤波后的 pitch（度）。 */
-float Dev_IMU_Base_GetPitch(imu_base_t *this);
+float Dev_IMU_Base_GetPitch(imu_base_t *imu_h);
 /** @brief 读取滤波后的 X 轴角速度（deg/s）。 */
-float Dev_IMU_Base_GetGyroX(imu_base_t *this);
+float Dev_IMU_Base_GetGyroX(imu_base_t *imu_h);
 /** @brief 读取滤波后的 Y 轴角速度（deg/s）。 */
-float Dev_IMU_Base_GetGyroY(imu_base_t *this);
+float Dev_IMU_Base_GetGyroY(imu_base_t *imu_h);
 /** @brief 读取滤波后的 Z 轴角速度（deg/s）。 */
-float Dev_IMU_Base_GetGyroZ(imu_base_t *this);
+float Dev_IMU_Base_GetGyroZ(imu_base_t *imu_h);
 /** @brief 读取滤波后的 X 轴加速度（m/s^2）。 */
-float Dev_IMU_Base_GetAccelX(imu_base_t *this);
+float Dev_IMU_Base_GetAccelX(imu_base_t *imu_h);
 /** @brief 读取滤波后的 Y 轴加速度（m/s^2）。 */
-float Dev_IMU_Base_GetAccelY(imu_base_t *this);
+float Dev_IMU_Base_GetAccelY(imu_base_t *imu_h);
 /** @brief 读取滤波后的 Z 轴加速度（m/s^2）。 */
-float Dev_IMU_Base_GetAccelZ(imu_base_t *this);
+float Dev_IMU_Base_GetAccelZ(imu_base_t *imu_h);
 
 /**
  * @brief 把当前滤波后的 yaw 设为零参考，不改变 raw_sample。
  * @note 该操作只影响对外发布值，不修改滤波器内部状态。
  */
-void Dev_IMU_Base_ZeroYaw(imu_base_t *this);
+void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h);
 
 /** @brief 请求具体 IMU 执行设备侧置零动作。 */
-void Dev_IMU_Base_SetZero(imu_base_t *this);
+void Dev_IMU_Base_SetZero(imu_base_t *imu_h);
 
 /** @} */
 

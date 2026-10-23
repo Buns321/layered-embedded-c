@@ -15,60 +15,60 @@
 #include "system_math_def.h"
 #include <assert.h>
 
-SYS_MATH_INLINE int Sys_Clamp_Int(int x, int lo, int hi) {
+SYS_MATH_INLINE int Sys_ClampInt(int x, int lo, int hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE long Sys_Clamp_Long(long x, long lo, long hi) {
+SYS_MATH_INLINE long Sys_ClampLong(long x, long lo, long hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE long long Sys_Clamp_LLong(long long x, long long lo, long long hi) {
+SYS_MATH_INLINE long long Sys_ClampLLong(long long x, long long lo, long long hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE unsigned int Sys_Clamp_UInt(unsigned int x, unsigned int lo, unsigned int hi) {
+SYS_MATH_INLINE unsigned int Sys_ClampUInt(unsigned int x, unsigned int lo, unsigned int hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE unsigned long Sys_Clamp_ULong(unsigned long x, unsigned long lo, unsigned long hi) {
+SYS_MATH_INLINE unsigned long Sys_ClampULong(unsigned long x, unsigned long lo, unsigned long hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE unsigned long long Sys_Clamp_ULLong(unsigned long long x, unsigned long long lo, unsigned long long hi) {
+SYS_MATH_INLINE unsigned long long Sys_ClampULLong(unsigned long long x, unsigned long long lo, unsigned long long hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE float Sys_Clamp_F32(float x, float lo, float hi) {
+SYS_MATH_INLINE float Sys_ClampF32(float x, float lo, float hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
-SYS_MATH_INLINE double Sys_Clamp_F64(double x, double lo, double hi) {
+SYS_MATH_INLINE double Sys_ClampF64(double x, double lo, double hi) {
   assert(lo <= hi);
   return (x < lo) ? lo : ((x > hi) ? hi : x);
 }
 
 #define SYS_CLAMP(x, lo, hi) _Generic((x), \
-  char:               Sys_Clamp_Int, \
-  signed char:        Sys_Clamp_Int, \
-  short:              Sys_Clamp_Int, \
-  int:                Sys_Clamp_Int, \
-  long:               Sys_Clamp_Long, \
-  long long:          Sys_Clamp_LLong, \
-  unsigned char:      Sys_Clamp_UInt, \
-  unsigned short:     Sys_Clamp_UInt, \
-  unsigned int:       Sys_Clamp_UInt, \
-  unsigned long:      Sys_Clamp_ULong, \
-  unsigned long long: Sys_Clamp_ULLong, \
-  float:              Sys_Clamp_F32, \
-  double:             Sys_Clamp_F64 \
+  char:               Sys_ClampInt, \
+  signed char:        Sys_ClampInt, \
+  short:              Sys_ClampInt, \
+  int:                Sys_ClampInt, \
+  long:               Sys_ClampLong, \
+  long long:          Sys_ClampLLong, \
+  unsigned char:      Sys_ClampUInt, \
+  unsigned short:     Sys_ClampUInt, \
+  unsigned int:       Sys_ClampUInt, \
+  unsigned long:      Sys_ClampULong, \
+  unsigned long long: Sys_ClampULLong, \
+  float:              Sys_ClampF32, \
+  double:             Sys_ClampF64 \
 )(x, lo, hi)
 
 /** @} */

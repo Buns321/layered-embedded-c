@@ -22,7 +22,7 @@
 #endif
 
 /** @brief 可用的 I2C 实例。 */
-typedef enum {
+typedef enum platform_i2c_instance_e {
 #if PLATFORM_ENABLE_I2C1
   PLATFORM_I2C_1 = 0U,
 #endif
@@ -32,13 +32,13 @@ typedef enum {
 #if PLATFORM_ENABLE_I2C3
   PLATFORM_I2C_3 = 2U,
 #endif
-} Platform_I2C_Instance;
+} platform_i2c_instance_t;
 
 /** @brief I2C 身份槽位数量上限。 */
 #define PLATFORM_I2C_INSTANCE_COUNT 3U
 
 /** @brief I2C 错误标志。 */
-typedef enum {
+typedef enum platform_i2c_error_e {
   PLATFORM_I2C_ERROR_NONE    = 0u,
   PLATFORM_I2C_ERROR_BERR    = (1u << 0),
   PLATFORM_I2C_ERROR_ARLO    = (1u << 1),
@@ -49,27 +49,27 @@ typedef enum {
   PLATFORM_I2C_ERROR_SIZE    = (1u << 8),
   PLATFORM_I2C_ERROR_DMA_PARAM = (1u << 9),
   PLATFORM_I2C_ERROR_UNKNOWN = (1u << 7),
-} Platform_I2C_Error;
+} platform_i2c_error_t;
 
 /** @brief I2C 异步事件。 */
-typedef enum {
-  PLATFORM_I2C_EVENT_MASTER_TX_CPLT = 0U,
-  PLATFORM_I2C_EVENT_MASTER_RX_CPLT,
-  PLATFORM_I2C_EVENT_MEM_TX_CPLT,
-  PLATFORM_I2C_EVENT_MEM_RX_CPLT,
+typedef enum platform_i2c_event_type_e {
+  PLATFORM_I2C_EVENT_MASTER_TX_COMPLETE = 0U,
+  PLATFORM_I2C_EVENT_MASTER_RX_COMPLETE,
+  PLATFORM_I2C_EVENT_MEM_TX_COMPLETE,
+  PLATFORM_I2C_EVENT_MEM_RX_COMPLETE,
   PLATFORM_I2C_EVENT_ERROR,
-  PLATFORM_I2C_EVENT_ABORT_CPLT,
-} Platform_I2C_EventType;
+  PLATFORM_I2C_EVENT_ABORT_COMPLETE,
+} platform_i2c_event_type_t;
 
 /** @brief I2C 事件数据，只在回调期间有效。 */
-typedef struct {
-  Platform_I2C_EventType type;
+typedef struct platform_i2c_event_s {
+  platform_i2c_event_type_t type;
   uint32_t error;
-} Platform_I2C_Event;
+} platform_i2c_event_t;
 
-typedef void (*Platform_I2C_Callback)(
-  Platform_I2C_Instance i2c,
-  const Platform_I2C_Event *event,
+typedef void (*platform_i2c_callback_t)(
+  platform_i2c_instance_t i2c,
+  const platform_i2c_event_t *event,
   void *context
 );
 
@@ -78,10 +78,10 @@ typedef void (*Platform_I2C_Callback)(
  * @note 回调在中断上下文执行。
  * @note 注册时会复制该结构体。一个物理实例只能有一个回调所有者。
  */
-typedef struct {
-  Platform_I2C_Callback callback;
+typedef struct platform_i2c_callback_binding_s {
+  platform_i2c_callback_t callback;
   void *context;
-} platform_i2c_callbacks_t;
+} platform_i2c_callback_binding_t;
 
 /**
  * @brief 阻塞式主机发送。
@@ -92,8 +92,8 @@ typedef struct {
  * @param timeout 超时时间（ms）。
  * @pre MX_I2Cx_Init() 已成功完成。
  */
-Platform_StatusTypeDef Platform_I2C_MasterTransmit(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmit(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size,
@@ -108,8 +108,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit(
  * @param size 字节数。
  * @param timeout 超时时间（ms）。
  */
-Platform_StatusTypeDef Platform_I2C_MasterReceive(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceive(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size,
@@ -126,8 +126,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive(
  * @param size 字节数。
  * @param timeout 超时时间（ms）。
  */
-Platform_StatusTypeDef Platform_I2C_MemWrite(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWrite(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -146,8 +146,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite(
  * @param size 字节数。
  * @param timeout 超时时间（ms）。
  */
-Platform_StatusTypeDef Platform_I2C_MemRead(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemRead(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -165,8 +165,8 @@ Platform_StatusTypeDef Platform_I2C_MemRead(
  * @note 在完成、错误或中止前，缓冲区必须保持有效且内容不变。完成回调
  *       在中断上下文执行。
  */
-Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmitIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
@@ -181,8 +181,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
  * @note 在完成、错误或中止前，缓冲区必须保持有效。完成回调在中断上下文
  *       执行。
  */
-Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceiveIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
@@ -198,8 +198,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
  * @param size 字节数。
  * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWriteIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -217,8 +217,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
  * @param size 字节数。
  * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_I2C_MemRead_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemReadIT(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -235,8 +235,8 @@ Platform_StatusTypeDef Platform_I2C_MemRead_IT(
  * @note 在完成、错误或中止前，缓冲区必须保持有效且内容不变。完成回调
  *       在中断上下文执行。
  */
-Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterTransmitDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
@@ -251,8 +251,8 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
  * @note 在完成、错误或中止前，缓冲区必须保持有效。完成回调在中断上下文
  *       执行。
  */
-Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MasterReceiveDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
@@ -268,8 +268,8 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
  * @param size 字节数。
  * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWriteDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -287,8 +287,8 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
  * @param size 字节数。
  * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemReadDMA(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -303,17 +303,17 @@ Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
  * @note 中止完成回调在中断上下文执行。只有在完成或错误处理结束后，才能
  *       启动新的传输。
  */
-Platform_StatusTypeDef Platform_I2C_Abort_IT(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_AbortIT(
+  platform_i2c_instance_t i2c,
   uint16_t address
 );
 
 /**
  * @brief 读取最近一次 HAL I2C 错误快照。
  * @param i2c I2C 实例。
- * @return Platform_I2C_Error 位掩码。
+ * @return platform_i2c_error_t 位掩码。
  */
-uint32_t Platform_I2C_GetLastError(Platform_I2C_Instance i2c);
+uint32_t Platform_I2C_GetLastError(platform_i2c_instance_t i2c);
 
 /**
  * @brief 注册 I2C 回调。
@@ -322,13 +322,13 @@ uint32_t Platform_I2C_GetLastError(Platform_I2C_Instance i2c);
  * @note 结构体会被复制。context 的生命周期必须覆盖所有使用过程。
  * @note 应在初始化阶段、启动 IT/DMA 传输前调用一次。一个物理实例在整个
  *       生命周期内只能有一个回调所有者。
- * @retval Platform_OK 注册成功。
- * @retval Platform_BUSY 该实例已注册回调。
- * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
+ * @retval PLATFORM_STATUS_OK 注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或回调集合非法。
  */
-Platform_StatusTypeDef Platform_I2C_RegisterCallbacks(
-  Platform_I2C_Instance i2c,
-  const platform_i2c_callbacks_t *callbacks
+platform_status_t Platform_I2C_RegisterCallback(
+  platform_i2c_instance_t i2c,
+  const platform_i2c_callback_binding_t *callbacks
 );
 
 /** @} */

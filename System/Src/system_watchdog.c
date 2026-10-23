@@ -30,14 +30,14 @@ void Sys_Watchdog_Init(uint32_t timeout_ms) {
 
   s_checkin_mask = 0u;
 
-  Platform_StatusTypeDef status = Platform_IWDG_Start(
+  platform_status_t status = Platform_IWDG_Start(
     PLATFORM_IWDG_1,
     timeout_ms
   );
-  assert(status == Platform_OK);
+  assert(status == PLATFORM_STATUS_OK);
 }
 
-void Sys_Watchdog_CheckIn(Sys_Watchdog_Task task, uint32_t now_ms) {
+void Sys_Watchdog_CheckIn(sys_watchdog_task_t task, uint32_t now_ms) {
   assert((uint32_t)task < (uint32_t)SYS_WATCHDOG_TASK_COUNT);
 
   if ((uint32_t)task < (uint32_t)SYS_WATCHDOG_TASK_COUNT) {
@@ -72,7 +72,7 @@ bool Sys_Watchdog_Service(uint32_t now_ms) {
     }
   }
 
-  return Platform_IWDG_Refresh(PLATFORM_IWDG_1) == Platform_OK;
+  return Platform_IWDG_Refresh(PLATFORM_IWDG_1) == PLATFORM_STATUS_OK;
 }
 
 bool Sys_Watchdog_WasReset(void) {

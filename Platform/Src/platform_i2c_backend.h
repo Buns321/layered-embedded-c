@@ -11,26 +11,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_i2c_backend_is_valid(Platform_I2C_Instance i2c);
+bool platform_i2c_backend_is_valid(platform_i2c_instance_t i2c);
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
 );
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -39,8 +39,8 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write(
   uint32_t timeout
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -49,22 +49,22 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read(
   uint32_t timeout
 );
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -72,8 +72,8 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write_it(
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -81,22 +81,22 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read_it(
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -104,8 +104,8 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write_dma(
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -113,16 +113,16 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read_dma(
   uint16_t size
 );
 
-Platform_StatusTypeDef platform_i2c_backend_abort_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_abort_it(
+  platform_i2c_instance_t i2c,
   uint16_t address
 );
 
-uint32_t platform_i2c_backend_get_error(Platform_I2C_Instance i2c);
+uint32_t platform_i2c_backend_get_error(platform_i2c_instance_t i2c);
 
 void platform_i2c_dispatch_event(
-  Platform_I2C_Instance i2c,
-  Platform_I2C_EventType type
+  platform_i2c_instance_t i2c,
+  platform_i2c_event_type_t type
 );
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_I2C_BACKEND_H

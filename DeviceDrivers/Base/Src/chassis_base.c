@@ -5,9 +5,9 @@
 #include "chassis_base.h"
 #include <assert.h>
 
-void Chassis_Base_Init(chassis_base_t *this, const char *name, const chassis_ops_t *ops) {
+void Chassis_Base_Init(chassis_base_t *chassis_h, const char *name, const chassis_ops_t *ops) {
   assert(
-    this        &&
+    chassis_h        &&
     name        &&
     ops         &&
     ops->update &&
@@ -15,21 +15,21 @@ void Chassis_Base_Init(chassis_base_t *this, const char *name, const chassis_ops
     ops->estop
   );
 
-  this->name = name;
-  this->ops  = ops;
+  chassis_h->name = name;
+  chassis_h->ops  = ops;
 }
 
-void Chassis_Base_Update(chassis_base_t *this, uint32_t now_ms) {
-  assert(this && this->ops && this->ops->update);
-  this->ops->update(this, now_ms);
+void Chassis_Base_Update(chassis_base_t *chassis_h, uint32_t now_ms) {
+  assert(chassis_h && chassis_h->ops && chassis_h->ops->update);
+  chassis_h->ops->update(chassis_h, now_ms);
 }
 
-void Chassis_Base_Stop(chassis_base_t *this) {
-  assert(this && this->ops && this->ops->stop);
-  this->ops->stop(this);
+void Chassis_Base_Stop(chassis_base_t *chassis_h) {
+  assert(chassis_h && chassis_h->ops && chassis_h->ops->stop);
+  chassis_h->ops->stop(chassis_h);
 }
 
-void Chassis_Base_EStop(chassis_base_t *this) {
-  assert(this && this->ops && this->ops->estop);
-  this->ops->estop(this);
+void Chassis_Base_EStop(chassis_base_t *chassis_h) {
+  assert(chassis_h && chassis_h->ops && chassis_h->ops->estop);
+  chassis_h->ops->estop(chassis_h);
 }

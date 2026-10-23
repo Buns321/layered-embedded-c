@@ -7,27 +7,27 @@
 #include <assert.h>
 
 static controller_status_t Ctrl_Compose_Update(
-  controller_base_t *this,
+  controller_base_t *controller_h,
   float target,
   float measure,
   float dt,
   float *out
 ) {
-  assert(this && out);
+  assert(controller_h && out);
 
-  controller_compose_t *self = (controller_compose_t *)this;
-  assert(self->stage_count > 0u);
-  assert(self->stage_count <= CONTROLLER_COMPOSE_CAPACITY);
+  controller_compose_t *controller_compose_h = (controller_compose_t *)controller_h;
+  assert(controller_compose_h->stage_count > 0u);
+  assert(controller_compose_h->stage_count <= CONTROLLER_COMPOSE_CAPACITY);
 
   float sum = 0.0f;
   controller_status_t status = CONTROLLER_STATUS_OK;
 
-  for (uint8_t i = 0; i < self->stage_count; i++) {
-    assert(self->stages[i]);
+  for (uint8_t i = 0; i < controller_compose_h->stage_count; i++) {
+    assert(controller_compose_h->controller_stage_h[i]);
 
     float stage_out = 0.0f;
     controller_status_t stage_status = Ctrl_Base_Update(
-      self->stages[i],
+      controller_compose_h->controller_stage_h[i],
       target,
       measure,
       dt,
@@ -55,16 +55,16 @@ static controller_status_t Ctrl_Compose_Update(
   return status;
 }
 
-static void Ctrl_Compose_Reset(controller_base_t *this) {
-  assert(this);
+static void Ctrl_Compose_Reset(controller_base_t *controller_h) {
+  assert(controller_h);
 
-  controller_compose_t *self = (controller_compose_t *)this;
-  assert(self->stage_count > 0u);
-  assert(self->stage_count <= CONTROLLER_COMPOSE_CAPACITY);
+  controller_compose_t *controller_compose_h = (controller_compose_t *)controller_h;
+  assert(controller_compose_h->stage_count > 0u);
+  assert(controller_compose_h->stage_count <= CONTROLLER_COMPOSE_CAPACITY);
 
-  for (uint8_t i = 0; i < self->stage_count; i++) {
-    assert(self->stages[i]);
-    Ctrl_Base_Reset(self->stages[i]);
+  for (uint8_t i = 0; i < controller_compose_h->stage_count; i++) {
+    assert(controller_compose_h->controller_stage_h[i]);
+    Ctrl_Base_Reset(controller_compose_h->controller_stage_h[i]);
   }
 }
 
@@ -74,44 +74,44 @@ static const controller_ops_t controller_ops_compose = {
 };
 
 void Ctrl_Compose_Init(
-  controller_compose_t      *this,
+  controller_compose_t      *controller_h,
   const char                *name,
-  controller_base_t *const  *stages,
+  controller_base_t *const  *controller_stage_h,
   uint8_t                    stage_count
 ) {
   assert(
-    this                                 &&
+    controller_h                                 &&
     name                                 &&
-    stages                               &&
+    controller_stage_h                               &&
     stage_count > 0u                     &&
     stage_count <= CONTROLLER_COMPOSE_CAPACITY
   );
 
   for (uint8_t i = 0; i < stage_count; i++) {
     assert(
-      stages[i]                       &&
-      stages[i] != &this->base        &&
-      stages[i]->ops                  &&
-      stages[i]->ops->update          &&
-      stages[i]->ops->reset
+      controller_stage_h[i]                       &&
+      controller_stage_h[i] != &controller_h->base        &&
+      controller_stage_h[i]->ops                  &&
+      controller_stage_h[i]->ops->update          &&
+      controller_stage_h[i]->ops->reset
     );
 
     for (uint8_t j = 0; j < i; j++) {
-      assert(stages[i] != stages[j]);
+      assert(controller_stage_h[i] != controller_stage_h[j]);
     }
   }
 
-  Ctrl_Base_Init(&this->base, name, &controller_ops_compose);
+  Ctrl_Base_Init(&controller_h->base, name, &controller_ops_compose);
 
   for (uint8_t i = 0; i < CONTROLLER_COMPOSE_CAPACITY; i++) {
-    this->stages[i] = NULL;
+    controller_h->controller_stage_h[i] = NULL;
   }
 
   for (uint8_t i = 0; i < stage_count; i++) {
-    this->stages[i] = stages[i];
+    controller_h->controller_stage_h[i] = controller_stage_h[i];
   }
 
-  this->stage_count = stage_count;
+  controller_h->stage_count = stage_count;
 
-  Ctrl_Base_Reset(&this->base);
+  Ctrl_Base_Reset(&controller_h->base);
 }

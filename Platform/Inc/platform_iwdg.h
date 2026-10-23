@@ -22,9 +22,9 @@
 #endif
 
 /** @brief 可用的 IWDG 身份。 */
-typedef enum {
+typedef enum platform_iwdg_instance_e {
   PLATFORM_IWDG_1 = 0U,
-} Platform_IWDG_Instance;
+} platform_iwdg_instance_t;
 
 /** @brief 基于各系列典型 LSI 频率可请求的最大超时。 */
 #if defined(STM32F1xx)
@@ -39,26 +39,26 @@ typedef enum {
  * @brief 启动独立看门狗。
  * @param iwdg IWDG 实例。
  * @param timeout_ms 请求的超时时间（ms），范围 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
- * @retval Platform_OK 启动成功。
- * @retval Platform_BUSY IWDG 已启动。
- * @retval Platform_INVALID_ARGUMENT 实例、超时范围或计算参数非法。
+ * @retval PLATFORM_STATUS_OK 启动成功。
+ * @retval PLATFORM_STATUS_BUSY IWDG 已启动。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、超时范围或计算参数非法。
  * @note 这是运行期策略操作，会立即启动看门狗。
  * @note 调用后无法停止 IWDG。
  * @note 超时时间会向上取整，并受 LSI 频率容差影响。
  */
-Platform_StatusTypeDef Platform_IWDG_Start(
-  Platform_IWDG_Instance iwdg,
+platform_status_t Platform_IWDG_Start(
+  platform_iwdg_instance_t iwdg,
   uint32_t timeout_ms
 );
 
 /**
  * @brief 刷新已启动的 IWDG。
- * @retval Platform_OK 刷新成功。
- * @retval Platform_INVALID_ARGUMENT 实例非法。
- * @retval Platform_ERROR IWDG 尚未启动或 HAL 刷新失败。
+ * @retval PLATFORM_STATUS_OK 刷新成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例非法。
+ * @retval PLATFORM_STATUS_ERROR IWDG 尚未启动或 HAL 刷新失败。
  */
-Platform_StatusTypeDef Platform_IWDG_Refresh(
-  Platform_IWDG_Instance iwdg
+platform_status_t Platform_IWDG_Refresh(
+  platform_iwdg_instance_t iwdg
 );
 
 /**
@@ -67,7 +67,7 @@ Platform_StatusTypeDef Platform_IWDG_Refresh(
  * @note 非法实例返回 false，不访问硬件。
  * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
  */
-bool Platform_IWDG_WasReset(Platform_IWDG_Instance iwdg);
+bool Platform_IWDG_WasReset(platform_iwdg_instance_t iwdg);
 
 /** @} */
 

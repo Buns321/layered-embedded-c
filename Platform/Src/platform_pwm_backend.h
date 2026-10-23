@@ -11,35 +11,35 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_pwm_backend_is_valid(Platform_PWM_Instance pwm);
+bool platform_pwm_backend_is_valid(platform_pwm_instance_t pwm);
 
-Platform_StatusTypeDef platform_pwm_backend_start(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t platform_pwm_backend_start(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 );
 
-Platform_StatusTypeDef platform_pwm_backend_start_all(
-  Platform_PWM_Instance pwm
+platform_status_t platform_pwm_backend_start_all(
+  platform_pwm_instance_t pwm
 );
 
-Platform_StatusTypeDef platform_pwm_backend_stop(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t platform_pwm_backend_stop(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 );
 
-Platform_StatusTypeDef platform_pwm_backend_stop_all(
-  Platform_PWM_Instance pwm
+platform_status_t platform_pwm_backend_stop_all(
+  platform_pwm_instance_t pwm
 );
 
-Platform_StatusTypeDef platform_pwm_backend_set_compare(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t platform_pwm_backend_set_compare(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t compare
 );
 
-Platform_StatusTypeDef platform_pwm_backend_set_duty(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t platform_pwm_backend_set_duty(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t max_duty,
   uint32_t duty
 );

@@ -29,7 +29,7 @@ static void platform_flash_release(void) {
 }
 
 static void platform_flash_record_busy(void) {
-  platform_error_record(&flash_error, PLATFORM_COMMON_ERROR_BUSY);
+  platform_error_record(&flash_error, PLATFORM_ERROR_BUSY);
 }
 
 static void platform_flash_record_backend_failure(uint32_t operation_error) {
@@ -39,12 +39,12 @@ static void platform_flash_record_backend_failure(uint32_t operation_error) {
   }
   platform_error_record(
     &flash_error,
-    PLATFORM_COMMON_ERROR_HAL | operation_error | error
+    PLATFORM_ERROR_HAL | operation_error | error
   );
 }
 
-Platform_StatusTypeDef Platform_FLASH_Read(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Read(
+  platform_flash_instance_t instance,
   uint32_t address,
   void *data,
   uint32_t size
@@ -57,26 +57,26 @@ Platform_StatusTypeDef Platform_FLASH_Read(
   ) {
     platform_error_record(
       &flash_error,
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_FLASH_ERROR_RANGE
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_FLASH_ERROR_RANGE
     );
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (!platform_flash_acquire()) {
     platform_flash_record_busy();
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_flash_backend_read(address, data, size);
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_flash_record_backend_failure(PLATFORM_FLASH_ERROR_PROGRAM);
   }
   platform_flash_release();
   return status;
 }
 
-Platform_StatusTypeDef Platform_FLASH_Write(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Write(
+  platform_flash_instance_t instance,
   uint32_t address,
   const void *data,
   uint32_t size
@@ -89,25 +89,25 @@ Platform_StatusTypeDef Platform_FLASH_Write(
   ) {
     platform_error_record(
       &flash_error,
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_FLASH_ERROR_RANGE
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_FLASH_ERROR_RANGE
     );
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (((address & 3UL) != 0UL) || ((size & 3UL) != 0UL)) {
     platform_error_record(
       &flash_error,
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_FLASH_ERROR_ALIGNMENT
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_FLASH_ERROR_ALIGNMENT
     );
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (!platform_flash_acquire()) {
     platform_flash_record_busy();
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_flash_backend_write(address, data, size);
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_flash_record_backend_failure(PLATFORM_FLASH_ERROR_PROGRAM);
   }
 
@@ -115,8 +115,8 @@ Platform_StatusTypeDef Platform_FLASH_Write(
   return status;
 }
 
-Platform_StatusTypeDef Platform_FLASH_Erase(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Erase(
+  platform_flash_instance_t instance,
   uint32_t address,
   uint32_t size
 ) {
@@ -127,9 +127,9 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
   ) {
     platform_error_record(
       &flash_error,
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_FLASH_ERROR_RANGE
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_FLASH_ERROR_RANGE
     );
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
   const uint32_t erase_unit =
@@ -137,18 +137,18 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
   if (erase_unit == 0U || (address % erase_unit) != 0U) {
     platform_error_record(
       &flash_error,
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_FLASH_ERROR_ALIGNMENT
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_FLASH_ERROR_ALIGNMENT
     );
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (!platform_flash_acquire()) {
     platform_flash_record_busy();
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_flash_backend_erase(address, size);
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_flash_record_backend_failure(PLATFORM_FLASH_ERROR_ERASE);
   }
 
@@ -157,7 +157,7 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
 }
 
 uint32_t Platform_FLASH_GetEraseUnitSize(
-  Platform_FLASH_Instance instance,
+  platform_flash_instance_t instance,
   uint32_t address
 ) {
   if (instance != PLATFORM_FLASH_1) {
@@ -166,9 +166,9 @@ uint32_t Platform_FLASH_GetEraseUnitSize(
   return platform_flash_backend_erase_unit_size(address);
 }
 
-uint32_t Platform_FLASH_GetLastError(Platform_FLASH_Instance instance) {
+uint32_t Platform_FLASH_GetLastError(platform_flash_instance_t instance) {
   if (instance != PLATFORM_FLASH_1) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return flash_error;
 }

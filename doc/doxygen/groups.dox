@@ -11,13 +11,13 @@
 
 /**
  * @defgroup drivers_base 基础接口
- * @brief 设备抽象接口（LED、电机、编码器、USART、IMU、底盘、遥测）。
+ * @brief 设备抽象接口（LED、电机、编码器、UART、IMU、底盘、遥测）。
  * @ingroup drivers
  */
 
 /**
  * @defgroup drivers_concrete 具体驱动
- * @brief 基于 Platform 的具体设备实现，包括 USART 遥测协议设备。
+ * @brief 基于 Platform 的具体设备实现，包括 UART 遥测协议设备。
  * @ingroup drivers
  */
 

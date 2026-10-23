@@ -1,5 +1,5 @@
 #include "filter_passthrough.h"
-#include "imu_wht101_usart.h"
+#include "imu_wht101_uart.h"
 #include "mpu6050_i2c.h"
 #include "system_critical.h"
 
@@ -61,8 +61,8 @@ static void fake_i2c_set_temperature_raw(int16_t value) {
   s_burst[7] = (uint8_t)value;
 }
 
-Platform_StatusTypeDef Platform_I2C_MemWrite(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemWrite(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -81,22 +81,22 @@ Platform_StatusTypeDef Platform_I2C_MemWrite(
     size == 0u ||
     mem_address >= FAKE_REG_COUNT
   ) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
 
   for (uint16_t i = 0u; i < size; i++) {
     uint16_t reg = (uint16_t)(mem_address + i);
     if (reg >= FAKE_REG_COUNT) {
-      return Platform_ERROR;
+      return PLATFORM_STATUS_ERROR;
     }
     s_registers[reg] = data[i];
   }
 
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef Platform_I2C_MemRead(
-  Platform_I2C_Instance i2c,
+platform_status_t Platform_I2C_MemRead(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -114,23 +114,23 @@ Platform_StatusTypeDef Platform_I2C_MemRead(
     data == NULL ||
     size == 0u
   ) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
 
   if (mem_address == 0x3Bu && size == sizeof(s_burst)) {
     memcpy(data, s_burst, sizeof(s_burst));
-    return Platform_OK;
+    return PLATFORM_STATUS_OK;
   }
 
   for (uint16_t i = 0u; i < size; i++) {
     uint16_t reg = (uint16_t)(mem_address + i);
     if (reg >= FAKE_REG_COUNT) {
-      return Platform_ERROR;
+      return PLATFORM_STATUS_ERROR;
     }
     data[i] = s_registers[reg];
   }
 
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 void Sys_Critical_Enter(void) {
@@ -144,23 +144,23 @@ typedef struct {
   bool started;
 } test_imu_t;
 
-static void test_imu_start(imu_base_t *this) {
-  test_imu_t *self = (test_imu_t *)this;
-  self->started = true;
+static void test_imu_start(imu_base_t *imu_h) {
+  test_imu_t *test_imu_h = (test_imu_t *)imu_h;
+  test_imu_h->started = true;
 }
 
-static void test_imu_process(imu_base_t *this, uint32_t now_ms) {
-  (void)this;
+static void test_imu_process(imu_base_t *imu_h, uint32_t now_ms) {
+  (void)imu_h;
   (void)now_ms;
 }
 
-static void test_imu_get_status(imu_base_t *this, imu_status_t *status) {
-  (void)this;
+static void test_imu_get_status(imu_base_t *imu_h, imu_status_t *status) {
+  (void)imu_h;
   *status = (imu_status_t){0};
 }
 
-static void test_imu_set_zero(imu_base_t *this) {
-  Dev_IMU_Base_ZeroYaw(this);
+static void test_imu_set_zero(imu_base_t *imu_h) {
+  Dev_IMU_Base_ZeroYaw(imu_h);
 }
 
 static const imu_ops_t s_test_imu_ops = {
@@ -171,24 +171,24 @@ static const imu_ops_t s_test_imu_ops = {
 };
 
 typedef struct {
-  usart_base_t base;
+  uart_base_t base;
   uint32_t receive_count;
-} test_usart_t;
+} test_uart_t;
 
-static Dev_USART_Status test_usart_receive_it(
-  usart_base_t *this,
+static dev_uart_status_t test_uart_receive_it(
+  uart_base_t *uart_h,
   uint8_t *data,
   uint16_t size
 ) {
-  test_usart_t *self = (test_usart_t *)this;
+  test_uart_t *test_uart_h = (test_uart_t *)uart_h;
   (void)data;
   (void)size;
-  self->receive_count++;
-  return DEV_USART_OK;
+  test_uart_h->receive_count++;
+  return DEV_UART_OK;
 }
 
-static const usart_ops_t s_test_usart_ops = {
-  .receive_it = test_usart_receive_it,
+static const uart_ops_t s_test_uart_ops = {
+  .receive_it = test_uart_receive_it,
 };
 
 typedef struct {
@@ -196,11 +196,11 @@ typedef struct {
 } test_attitude_filter_t;
 
 static void test_attitude_filter_update(
-  filter_base_t *this,
+  filter_base_t *filter_h,
   const filter_sample_t *input,
   filter_sample_t *output
 ) {
-  (void)this;
+  (void)filter_h;
   (void)input;
 
   output->valid_mask &= ~IMU_CHANNEL_GYRO_X;
@@ -208,8 +208,8 @@ static void test_attitude_filter_update(
   output->value[IMU_CHANNEL_INDEX_YAW] = 45.0f;
 }
 
-static void test_attitude_filter_reset(filter_base_t *this) {
-  (void)this;
+static void test_attitude_filter_reset(filter_base_t *filter_h) {
+  (void)filter_h;
 }
 
 static const filter_ops_t s_test_attitude_filter_ops = {
@@ -319,7 +319,7 @@ static int test_filter_adds_attitude_and_clears_channel(void) {
 }
 
 static void feed_wht101_frame(
-  imu_wht101_usart_t *imu,
+  imu_wht101_uart_t *imu,
   uint8_t type,
   int16_t value,
   uint32_t now_ms
@@ -337,19 +337,19 @@ static void feed_wht101_frame(
   frame[IMU_WHT101_FRAME_LEN - 1u] = checksum;
 
   for (uint8_t i = 0u; i < IMU_WHT101_FRAME_LEN; i++) {
-    Dev_IMU_WHT101_USART_FeedByte(imu, frame[i], now_ms);
+    Dev_IMU_WHT101_UART_FeedByte(imu, frame[i], now_ms);
   }
 }
 
 static int test_wht101_passthrough_pipeline(void) {
-  test_usart_t usart = {0};
-  Dev_USART_Base_Init(&usart.base, "wht-test-usart", &s_test_usart_ops);
+  test_uart_t usart = {0};
+  Dev_UART_Base_Init(&usart.base, "wht-test-usart", &s_test_uart_ops);
 
   filter_passthrough_t passthrough;
   Filter_Passthrough_Init(&passthrough, "wht-test-passthrough");
 
-  imu_wht101_usart_t imu = {0};
-  Dev_IMU_WHT101_USART_Init(
+  imu_wht101_uart_t imu = {0};
+  Dev_IMU_WHT101_UART_Init(
     &imu,
     "wht-test",
     &usart.base,
@@ -430,7 +430,7 @@ static int test_mpu6050_acquisition(void) {
       "mpu-test",
       &config,
       &passthrough.filter_base
-    ) == Platform_OK
+    ) == PLATFORM_STATUS_OK
   );
 
   fake_i2c_set_accel_raw(0, 0, 8192);
@@ -497,7 +497,7 @@ static int test_mpu6050_axis_mapping_and_probe_failure(void) {
       "mpu-axis",
       &config,
       &passthrough.filter_base
-    ) == Platform_OK
+    ) == PLATFORM_STATUS_OK
   );
 
   fake_i2c_set_accel_raw(8192, 4096, 0);
@@ -525,7 +525,7 @@ static int test_mpu6050_axis_mapping_and_probe_failure(void) {
       "mpu-invalid",
       &config,
       &passthrough.filter_base
-    ) == Platform_ERROR
+    ) == PLATFORM_STATUS_ERROR
   );
   return 0;
 }

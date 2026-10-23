@@ -8,7 +8,7 @@
 #include "platform_i2c_backend.h"
 #include "stm32f1xx_hal.h"
 
-static I2C_HandleTypeDef *platform_i2c_to_hal(Platform_I2C_Instance i2c) {
+static I2C_HandleTypeDef *platform_i2c_to_hal(platform_i2c_instance_t i2c) {
   switch (i2c) {
 #if PLATFORM_ENABLE_I2C1
     case PLATFORM_I2C_1: return &hi2c1;
@@ -21,20 +21,20 @@ static I2C_HandleTypeDef *platform_i2c_to_hal(Platform_I2C_Instance i2c) {
 }
 
 static bool platform_hal_to_i2c(
-  I2C_HandleTypeDef *hi2c,
-  Platform_I2C_Instance *i2c
+  I2C_HandleTypeDef *i2c_h,
+  platform_i2c_instance_t *i2c
 ) {
-  if (hi2c == NULL || i2c == NULL) {
+  if (i2c_h == NULL || i2c == NULL) {
     return false;
   }
 #if PLATFORM_ENABLE_I2C1
-  if (hi2c == &hi2c1) {
+  if (i2c_h == &hi2c1) {
     *i2c = PLATFORM_I2C_1;
     return true;
   }
 #endif
 #if PLATFORM_ENABLE_I2C2
-  if (hi2c == &hi2c2) {
+  if (i2c_h == &hi2c2) {
     *i2c = PLATFORM_I2C_2;
     return true;
   }
@@ -96,22 +96,22 @@ static uint32_t platform_i2c_map_error(uint32_t hal_error) {
   return error;
 }
 
-bool platform_i2c_backend_is_valid(Platform_I2C_Instance i2c) {
+bool platform_i2c_backend_is_valid(platform_i2c_instance_t i2c) {
   return (uint32_t)i2c < PLATFORM_I2C_INSTANCE_COUNT &&
          platform_i2c_to_hal(i2c) != NULL;
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Transmit(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        (uint8_t *)data,
                        size,
@@ -119,17 +119,17 @@ Platform_StatusTypeDef platform_i2c_backend_master_transmit(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Receive(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        data,
                        size,
@@ -137,8 +137,8 @@ Platform_StatusTypeDef platform_i2c_backend_master_receive(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -146,10 +146,10 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write(
   uint16_t size,
   uint32_t timeout
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Write(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -159,8 +159,8 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
@@ -168,10 +168,10 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read(
   uint16_t size,
   uint32_t timeout
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Read(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -181,50 +181,50 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Transmit_IT(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        (uint8_t *)data,
                        size
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Receive_IT(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        data,
                        size
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
   const uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Write_IT(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -233,18 +233,18 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write_it(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read_it(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
   uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Read_IT(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -253,50 +253,50 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read_it(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_transmit_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_transmit_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   const uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Transmit_DMA(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        (uint8_t *)data,
                        size
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_master_receive_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_master_receive_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Receive_DMA(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        data,
                        size
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_write_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_write_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
   const uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Write_DMA(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -305,18 +305,18 @@ Platform_StatusTypeDef platform_i2c_backend_mem_write_dma(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_mem_read_dma(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_mem_read_dma(
+  platform_i2c_instance_t i2c,
   uint16_t address,
   uint16_t mem_address,
   uint8_t mem_address_size,
   uint8_t *data,
   uint16_t size
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Mem_Read_DMA(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address),
                        mem_address,
                        mem_address_size,
@@ -325,60 +325,60 @@ Platform_StatusTypeDef platform_i2c_backend_mem_read_dma(
                      ));
 }
 
-Platform_StatusTypeDef platform_i2c_backend_abort_it(
-  Platform_I2C_Instance i2c,
+platform_status_t platform_i2c_backend_abort_it(
+  platform_i2c_instance_t i2c,
   uint16_t address
 ) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? Platform_INVALID_ARGUMENT
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
                    : platform_from_hal_status(HAL_I2C_Master_Abort_IT(
-                       h,
+                       i2c_h,
                        platform_i2c_hal_address(address)
                      ));
 }
 
-uint32_t platform_i2c_backend_get_error(Platform_I2C_Instance i2c) {
-  I2C_HandleTypeDef *h = platform_i2c_to_hal(i2c);
-  return h == NULL ? PLATFORM_I2C_ERROR_UNKNOWN
-                   : platform_i2c_map_error(HAL_I2C_GetError(h));
+uint32_t platform_i2c_backend_get_error(platform_i2c_instance_t i2c) {
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_I2C_ERROR_UNKNOWN
+                   : platform_i2c_map_error(HAL_I2C_GetError(i2c_h));
 }
 
 static void platform_i2c_dispatch_hal_event(
-  I2C_HandleTypeDef *hi2c,
-  Platform_I2C_EventType type
+  I2C_HandleTypeDef *i2c_h,
+  platform_i2c_event_type_t type
 ) {
-  Platform_I2C_Instance i2c;
-  if (platform_hal_to_i2c(hi2c, &i2c)) {
+  platform_i2c_instance_t i2c;
+  if (platform_hal_to_i2c(i2c_h, &i2c)) {
     platform_i2c_dispatch_event(i2c, type);
   }
 }
 
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *i2c_h) {
   platform_i2c_dispatch_hal_event(
-    hi2c,
-    PLATFORM_I2C_EVENT_MASTER_TX_CPLT
+    i2c_h,
+    PLATFORM_I2C_EVENT_MASTER_TX_COMPLETE
   );
 }
 
-void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *i2c_h) {
   platform_i2c_dispatch_hal_event(
-    hi2c,
-    PLATFORM_I2C_EVENT_MASTER_RX_CPLT
+    i2c_h,
+    PLATFORM_I2C_EVENT_MASTER_RX_COMPLETE
   );
 }
 
-void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  platform_i2c_dispatch_hal_event(hi2c, PLATFORM_I2C_EVENT_MEM_TX_CPLT);
+void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *i2c_h) {
+  platform_i2c_dispatch_hal_event(i2c_h, PLATFORM_I2C_EVENT_MEM_TX_COMPLETE);
 }
 
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  platform_i2c_dispatch_hal_event(hi2c, PLATFORM_I2C_EVENT_MEM_RX_CPLT);
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *i2c_h) {
+  platform_i2c_dispatch_hal_event(i2c_h, PLATFORM_I2C_EVENT_MEM_RX_COMPLETE);
 }
 
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-  platform_i2c_dispatch_hal_event(hi2c, PLATFORM_I2C_EVENT_ERROR);
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *i2c_h) {
+  platform_i2c_dispatch_hal_event(i2c_h, PLATFORM_I2C_EVENT_ERROR);
 }
 
-void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c) {
-  platform_i2c_dispatch_hal_event(hi2c, PLATFORM_I2C_EVENT_ABORT_CPLT);
+void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *i2c_h) {
+  platform_i2c_dispatch_hal_event(i2c_h, PLATFORM_I2C_EVENT_ABORT_COMPLETE);
 }

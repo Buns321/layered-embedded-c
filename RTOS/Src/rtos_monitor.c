@@ -6,7 +6,7 @@
 
 #include "cmsis_os2.h"
 
-void StartMonitor_Task(void *argument) {
+void RTOS_Monitor_StartTask(void *argument) {
   (void)argument;
   for (;;) {
     osDelay(100);

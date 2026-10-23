@@ -11,47 +11,47 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_adc_backend_is_valid(Platform_ADC_Instance adc);
+bool platform_adc_backend_is_valid(platform_adc_instance_t adc);
 
-bool platform_adc_backend_supports_dma(Platform_ADC_Instance adc);
+bool platform_adc_backend_supports_dma(platform_adc_instance_t adc);
 
-Platform_StatusTypeDef platform_adc_backend_start(Platform_ADC_Instance adc);
+platform_status_t platform_adc_backend_start(platform_adc_instance_t adc);
 
-Platform_StatusTypeDef platform_adc_backend_stop(Platform_ADC_Instance adc);
+platform_status_t platform_adc_backend_stop(platform_adc_instance_t adc);
 
-Platform_StatusTypeDef platform_adc_backend_poll(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_poll(
+  platform_adc_instance_t adc,
   uint32_t timeout
 );
 
-Platform_StatusTypeDef platform_adc_backend_get_value(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_get_value(
+  platform_adc_instance_t adc,
   uint32_t *value
 );
 
-Platform_StatusTypeDef platform_adc_backend_start_it(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_start_it(
+  platform_adc_instance_t adc
 );
 
-Platform_StatusTypeDef platform_adc_backend_stop_it(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_stop_it(
+  platform_adc_instance_t adc
 );
 
-Platform_StatusTypeDef platform_adc_backend_start_dma(
-  Platform_ADC_Instance adc,
+platform_status_t platform_adc_backend_start_dma(
+  platform_adc_instance_t adc,
   uint32_t *data,
   uint32_t length
 );
 
-Platform_StatusTypeDef platform_adc_backend_stop_dma(
-  Platform_ADC_Instance adc
+platform_status_t platform_adc_backend_stop_dma(
+  platform_adc_instance_t adc
 );
 
-uint32_t platform_adc_backend_get_error(Platform_ADC_Instance adc);
+uint32_t platform_adc_backend_get_error(platform_adc_instance_t adc);
 
 void platform_adc_dispatch_event(
-  Platform_ADC_Instance adc,
-  Platform_ADC_EventType type
+  platform_adc_instance_t adc,
+  platform_adc_event_type_t type
 );
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_ADC_BACKEND_H

@@ -8,7 +8,7 @@
 #include "rng.h"
 #include "stm32f4xx_hal.h"
 
-static RNG_HandleTypeDef *platform_rng_to_hal(Platform_RNG_Instance rng) {
+static RNG_HandleTypeDef *platform_rng_to_hal(platform_rng_instance_t rng) {
   return rng == PLATFORM_RNG_1 ? &hrng : NULL;
 }
 
@@ -37,24 +37,24 @@ static uint32_t platform_rng_map_error(uint32_t hal_error) {
   return error;
 }
 
-bool platform_rng_backend_is_valid(Platform_RNG_Instance rng) {
+bool platform_rng_backend_is_valid(platform_rng_instance_t rng) {
   return platform_rng_to_hal(rng) != NULL;
 }
 
-Platform_StatusTypeDef platform_rng_backend_get_random(
-  Platform_RNG_Instance rng,
+platform_status_t platform_rng_backend_get_random(
+  platform_rng_instance_t rng,
   uint32_t *value
 ) {
-  RNG_HandleTypeDef *h = platform_rng_to_hal(rng);
-  return h == NULL || value == NULL
-           ? Platform_INVALID_ARGUMENT
+  RNG_HandleTypeDef *rng_h = platform_rng_to_hal(rng);
+  return rng_h == NULL || value == NULL
+           ? PLATFORM_STATUS_INVALID_ARGUMENT
            : platform_from_hal_status(
-               HAL_RNG_GenerateRandomNumber(h, value)
+               HAL_RNG_GenerateRandomNumber(rng_h, value)
              );
 }
 
-uint32_t platform_rng_backend_get_error(Platform_RNG_Instance rng) {
-  RNG_HandleTypeDef *h = platform_rng_to_hal(rng);
-  return h == NULL ? PLATFORM_RNG_ERROR_UNKNOWN
-                   : platform_rng_map_error(HAL_RNG_GetError(h));
+uint32_t platform_rng_backend_get_error(platform_rng_instance_t rng) {
+  RNG_HandleTypeDef *rng_h = platform_rng_to_hal(rng);
+  return rng_h == NULL ? PLATFORM_RNG_ERROR_UNKNOWN
+                   : platform_rng_map_error(HAL_RNG_GetError(rng_h));
 }

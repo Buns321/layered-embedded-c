@@ -30,65 +30,65 @@
 #define MPU6050_CALIBRATION_MIN_ACCEL_MPS2 3.0f
 #define MPU6050_CALIBRATION_MAX_ACCEL_MPS2 15.0f
 
-static void mpu6050_process(imu_base_t *this, uint32_t now_ms);
+static void mpu6050_process(imu_base_t *imu_h, uint32_t now_ms);
 
-static Platform_StatusTypeDef mpu6050_write_reg(
-  mpu6050_i2c_t *self,
+static platform_status_t mpu6050_write_reg(
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
   uint8_t value
 ) {
-  assert(self);
+  assert(mpu6050_i2c_h);
 
-  Platform_StatusTypeDef status = Platform_I2C_MemWrite(
-    self->i2c,
-    self->address,
+  platform_status_t status = Platform_I2C_MemWrite(
+    mpu6050_i2c_h->i2c,
+    mpu6050_i2c_h->address,
     reg,
     1u,
     &value,
     1u,
-    self->config.i2c_timeout_ms
+    mpu6050_i2c_h->config.i2c_timeout_ms
   );
 
-  if (status != Platform_OK) {
-    self->i2c_error_count++;
-    self->last_request_failed = true;
+  if (status != PLATFORM_STATUS_OK) {
+    mpu6050_i2c_h->i2c_error_count++;
+    mpu6050_i2c_h->last_request_failed = true;
   }
 
   return status;
 }
 
-static Platform_StatusTypeDef mpu6050_read_regs(
-  mpu6050_i2c_t *self,
+static platform_status_t mpu6050_read_regs(
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
   uint8_t *data,
   uint16_t size
 ) {
-  assert(self && data && size != 0u);
+  assert(mpu6050_i2c_h && data && size != 0u);
 
-  Platform_StatusTypeDef status = Platform_I2C_MemRead(
-    self->i2c,
-    self->address,
+  platform_status_t status = Platform_I2C_MemRead(
+    mpu6050_i2c_h->i2c,
+    mpu6050_i2c_h->address,
     reg,
     1u,
     data,
     size,
-    self->config.i2c_timeout_ms
+    mpu6050_i2c_h->config.i2c_timeout_ms
   );
 
-  if (status != Platform_OK) {
-    self->i2c_error_count++;
-    self->last_request_failed = true;
+  if (status != PLATFORM_STATUS_OK) {
+    mpu6050_i2c_h->i2c_error_count++;
+    mpu6050_i2c_h->last_request_failed = true;
   }
 
   return status;
 }
 
-static Platform_StatusTypeDef mpu6050_read_reg(
-  mpu6050_i2c_t *self,
+static platform_status_t mpu6050_read_reg(
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
   uint8_t *value
 ) {
-  return mpu6050_read_regs(self, reg, value, 1u);
+  return mpu6050_read_regs(mpu6050_i2c_h, reg, value, 1u);
 }
 
 static bool mpu6050_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
@@ -146,57 +146,57 @@ static void mpu6050_apply_axis_map(
 }
 
 static void mpu6050_store_raw(
-  mpu6050_i2c_t *self,
+  mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_raw_sample_t *sample
 ) {
-  assert(self && sample);
+  assert(mpu6050_i2c_h && sample);
 
   Sys_Critical_Enter();
-  self->raw_sample = *sample;
-  self->has_raw_sample = true;
+  mpu6050_i2c_h->raw_sample = *sample;
+  mpu6050_i2c_h->has_raw_sample = true;
   Sys_Critical_Exit();
 }
 
-static void mpu6050_enter_error(mpu6050_i2c_t *self) {
-  assert(self);
+static void mpu6050_enter_error(mpu6050_i2c_t *mpu6050_i2c_h) {
+  assert(mpu6050_i2c_h);
 
-  self->state = MPU6050_STATE_ERROR;
-  self->last_request_failed = true;
+  mpu6050_i2c_h->state = MPU6050_STATE_ERROR;
+  mpu6050_i2c_h->last_request_failed = true;
 }
 
-static Platform_StatusTypeDef mpu6050_acquire(
-  mpu6050_i2c_t *self,
+static platform_status_t mpu6050_acquire(
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms,
   mpu6050_raw_sample_t *sample
 ) {
-  assert(self && sample);
+  assert(mpu6050_i2c_h && sample);
 
   uint8_t data[MPU6050_BURST_SIZE] = {0};
-  Platform_StatusTypeDef status = mpu6050_read_regs(
-    self,
+  platform_status_t status = mpu6050_read_regs(
+    mpu6050_i2c_h,
     MPU6050_REG_ACCEL_XOUT_H,
     data,
     MPU6050_BURST_SIZE
   );
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     return status;
   }
 
   float accel_g[3] = {
-    (float)mpu6050_be_i16(&data[0]) / self->accel_lsb_per_g,
-    (float)mpu6050_be_i16(&data[2]) / self->accel_lsb_per_g,
-    (float)mpu6050_be_i16(&data[4]) / self->accel_lsb_per_g,
+    (float)mpu6050_be_i16(&data[0]) / mpu6050_i2c_h->accel_lsb_per_g,
+    (float)mpu6050_be_i16(&data[2]) / mpu6050_i2c_h->accel_lsb_per_g,
+    (float)mpu6050_be_i16(&data[4]) / mpu6050_i2c_h->accel_lsb_per_g,
   };
   float gyro_dps[3] = {
-    (float)mpu6050_be_i16(&data[8]) / self->gyro_lsb_per_dps,
-    (float)mpu6050_be_i16(&data[10]) / self->gyro_lsb_per_dps,
-    (float)mpu6050_be_i16(&data[12]) / self->gyro_lsb_per_dps,
+    (float)mpu6050_be_i16(&data[8]) / mpu6050_i2c_h->gyro_lsb_per_dps,
+    (float)mpu6050_be_i16(&data[10]) / mpu6050_i2c_h->gyro_lsb_per_dps,
+    (float)mpu6050_be_i16(&data[12]) / mpu6050_i2c_h->gyro_lsb_per_dps,
   };
 
   float mapped_accel_g[3] = {0};
   float mapped_gyro_dps[3] = {0};
-  mpu6050_apply_axis_map(&self->config, accel_g, mapped_accel_g);
-  mpu6050_apply_axis_map(&self->config, gyro_dps, mapped_gyro_dps);
+  mpu6050_apply_axis_map(&mpu6050_i2c_h->config, accel_g, mapped_accel_g);
+  mpu6050_apply_axis_map(&mpu6050_i2c_h->config, gyro_dps, mapped_gyro_dps);
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
     sample->accel_mps2[axis] =
@@ -209,7 +209,7 @@ static Platform_StatusTypeDef mpu6050_acquire(
     (float)temperature_raw / 340.0f + 36.53f;
   sample->time_ms = now_ms;
 
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 static bool mpu6050_accel_is_stationary(
@@ -228,29 +228,29 @@ static bool mpu6050_accel_is_stationary(
     norm <= MPU6050_CALIBRATION_MAX_ACCEL_MPS2;
 }
 
-static void mpu6050_calibration_reset(mpu6050_i2c_t *self) {
-  assert(self);
+static void mpu6050_calibration_reset(mpu6050_i2c_t *mpu6050_i2c_h) {
+  assert(mpu6050_i2c_h);
 
-  self->calibration_count = 0u;
+  mpu6050_i2c_h->calibration_count = 0u;
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
-    self->calibration_gyro_sum[axis] = 0.0f;
-    self->calibration_gyro_sum_sq[axis] = 0.0f;
+    mpu6050_i2c_h->calibration_gyro_sum[axis] = 0.0f;
+    mpu6050_i2c_h->calibration_gyro_sum_sq[axis] = 0.0f;
   }
 }
 
-static bool mpu6050_calibration_finish(mpu6050_i2c_t *self) {
+static bool mpu6050_calibration_finish(mpu6050_i2c_t *mpu6050_i2c_h) {
   assert(
-    self &&
-    self->calibration_count == self->config.calibration_samples
+    mpu6050_i2c_h &&
+    mpu6050_i2c_h->calibration_count == mpu6050_i2c_h->config.calibration_samples
   );
 
-  float count = (float)self->calibration_count;
+  float count = (float)mpu6050_i2c_h->calibration_count;
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
-    float mean = self->calibration_gyro_sum[axis] / count;
+    float mean = mpu6050_i2c_h->calibration_gyro_sum[axis] / count;
     float variance =
-      self->calibration_gyro_sum_sq[axis] / count - mean * mean;
+      mpu6050_i2c_h->calibration_gyro_sum_sq[axis] / count - mean * mean;
     if (variance < 0.0f) {
       variance = 0.0f;
     }
@@ -259,153 +259,153 @@ static bool mpu6050_calibration_finish(mpu6050_i2c_t *self) {
       return false;
     }
 
-    self->gyro_bias_dps[axis] = mean;
+    mpu6050_i2c_h->gyro_bias_dps[axis] = mean;
   }
 
   return true;
 }
 
 static void mpu6050_calibration_accumulate(
-  mpu6050_i2c_t *self,
+  mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_raw_sample_t *sample
 ) {
-  assert(self && sample);
+  assert(mpu6050_i2c_h && sample);
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
-    self->calibration_gyro_sum[axis] += sample->gyro_dps[axis];
-    self->calibration_gyro_sum_sq[axis] +=
+    mpu6050_i2c_h->calibration_gyro_sum[axis] += sample->gyro_dps[axis];
+    mpu6050_i2c_h->calibration_gyro_sum_sq[axis] +=
       sample->gyro_dps[axis] * sample->gyro_dps[axis];
   }
 
-  self->calibration_count++;
+  mpu6050_i2c_h->calibration_count++;
 }
 
-static Platform_StatusTypeDef mpu6050_configure(mpu6050_i2c_t *self) {
-  assert(self);
+static platform_status_t mpu6050_configure(mpu6050_i2c_t *mpu6050_i2c_h) {
+  assert(mpu6050_i2c_h);
 
   const uint8_t gyro_config =
-    (uint8_t)((uint8_t)self->config.gyro_range << 3u);
+    (uint8_t)((uint8_t)mpu6050_i2c_h->config.gyro_range << 3u);
   const uint8_t accel_config =
-    (uint8_t)((uint8_t)self->config.accel_range << 3u);
+    (uint8_t)((uint8_t)mpu6050_i2c_h->config.accel_range << 3u);
 
-  Platform_StatusTypeDef status;
+  platform_status_t status;
 
   status = mpu6050_write_reg(
-    self,
+    mpu6050_i2c_h,
     MPU6050_REG_PWR_MGMT_1,
     MPU6050_PWR1_CLOCK_PLL_XGYRO
   );
-  if (status != Platform_OK) return status;
+  if (status != PLATFORM_STATUS_OK) return status;
 
   status = mpu6050_write_reg(
-    self,
+    mpu6050_i2c_h,
     MPU6050_REG_SMPLRT_DIV,
-    self->sample_rate_divider
+    mpu6050_i2c_h->sample_rate_divider
   );
-  if (status != Platform_OK) return status;
+  if (status != PLATFORM_STATUS_OK) return status;
 
   status = mpu6050_write_reg(
-    self,
+    mpu6050_i2c_h,
     MPU6050_REG_CONFIG,
-    (uint8_t)self->config.dlpf
+    (uint8_t)mpu6050_i2c_h->config.dlpf
   );
-  if (status != Platform_OK) return status;
+  if (status != PLATFORM_STATUS_OK) return status;
 
   status = mpu6050_write_reg(
-    self,
+    mpu6050_i2c_h,
     MPU6050_REG_GYRO_CONFIG,
     gyro_config
   );
-  if (status != Platform_OK) return status;
+  if (status != PLATFORM_STATUS_OK) return status;
 
   status = mpu6050_write_reg(
-    self,
+    mpu6050_i2c_h,
     MPU6050_REG_ACCEL_CONFIG,
     accel_config
   );
-  if (status != Platform_OK) return status;
+  if (status != PLATFORM_STATUS_OK) return status;
 
-  status = mpu6050_write_reg(self, MPU6050_REG_INT_ENABLE, 0u);
-  if (status != Platform_OK) return status;
+  status = mpu6050_write_reg(mpu6050_i2c_h, MPU6050_REG_INT_ENABLE, 0u);
+  if (status != PLATFORM_STATUS_OK) return status;
 
-  status = mpu6050_write_reg(self, MPU6050_REG_USER_CTRL, 0u);
-  if (status != Platform_OK) return status;
+  status = mpu6050_write_reg(mpu6050_i2c_h, MPU6050_REG_USER_CTRL, 0u);
+  if (status != PLATFORM_STATUS_OK) return status;
 
-  status = mpu6050_write_reg(self, MPU6050_REG_PWR_MGMT_2, 0u);
-  if (status != Platform_OK) return status;
+  status = mpu6050_write_reg(mpu6050_i2c_h, MPU6050_REG_PWR_MGMT_2, 0u);
+  if (status != PLATFORM_STATUS_OK) return status;
 
   uint8_t readback = 0u;
 
-  status = mpu6050_read_reg(self, MPU6050_REG_SMPLRT_DIV, &readback);
-  if (status != Platform_OK) return status;
-  if (readback != self->sample_rate_divider) return Platform_ERROR;
+  status = mpu6050_read_reg(mpu6050_i2c_h, MPU6050_REG_SMPLRT_DIV, &readback);
+  if (status != PLATFORM_STATUS_OK) return status;
+  if (readback != mpu6050_i2c_h->sample_rate_divider) return PLATFORM_STATUS_ERROR;
 
-  status = mpu6050_read_reg(self, MPU6050_REG_CONFIG, &readback);
-  if (status != Platform_OK) return status;
-  if ((readback & 0x07u) != (uint8_t)self->config.dlpf) {
-    return Platform_ERROR;
+  status = mpu6050_read_reg(mpu6050_i2c_h, MPU6050_REG_CONFIG, &readback);
+  if (status != PLATFORM_STATUS_OK) return status;
+  if ((readback & 0x07u) != (uint8_t)mpu6050_i2c_h->config.dlpf) {
+    return PLATFORM_STATUS_ERROR;
   }
 
-  status = mpu6050_read_reg(self, MPU6050_REG_GYRO_CONFIG, &readback);
-  if (status != Platform_OK) return status;
-  if ((readback & 0x18u) != gyro_config) return Platform_ERROR;
+  status = mpu6050_read_reg(mpu6050_i2c_h, MPU6050_REG_GYRO_CONFIG, &readback);
+  if (status != PLATFORM_STATUS_OK) return status;
+  if ((readback & 0x18u) != gyro_config) return PLATFORM_STATUS_ERROR;
 
-  status = mpu6050_read_reg(self, MPU6050_REG_ACCEL_CONFIG, &readback);
-  if (status != Platform_OK) return status;
-  if ((readback & 0x18u) != accel_config) return Platform_ERROR;
+  status = mpu6050_read_reg(mpu6050_i2c_h, MPU6050_REG_ACCEL_CONFIG, &readback);
+  if (status != PLATFORM_STATUS_OK) return status;
+  if ((readback & 0x18u) != accel_config) return PLATFORM_STATUS_ERROR;
 
-  status = mpu6050_read_reg(self, MPU6050_REG_PWR_MGMT_1, &readback);
-  if (status != Platform_OK) return status;
+  status = mpu6050_read_reg(mpu6050_i2c_h, MPU6050_REG_PWR_MGMT_1, &readback);
+  if (status != PLATFORM_STATUS_OK) return status;
   if ((readback & 0x7Fu) != MPU6050_PWR1_CLOCK_PLL_XGYRO) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
 
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-static void mpu6050_start(imu_base_t *this) {
-  assert(this);
-  mpu6050_i2c_t *self = (mpu6050_i2c_t *)this;
+static void mpu6050_start(imu_base_t *imu_h) {
+  assert(imu_h);
+  mpu6050_i2c_t *mpu6050_i2c_h = (mpu6050_i2c_t *)imu_h;
 
-  assert(!self->is_started);
+  assert(!mpu6050_i2c_h->is_started);
 
-  self->is_started = true;
-  self->state = MPU6050_STATE_RESET_PENDING;
-  self->last_request_failed = false;
+  mpu6050_i2c_h->is_started = true;
+  mpu6050_i2c_h->state = MPU6050_STATE_RESET_PENDING;
+  mpu6050_i2c_h->last_request_failed = false;
 }
 
 static void mpu6050_get_status(
-  imu_base_t *this,
+  imu_base_t *imu_h,
   imu_status_t *status
 ) {
-  assert(this && status);
-  mpu6050_i2c_t *self = (mpu6050_i2c_t *)this;
+  assert(imu_h && status);
+  mpu6050_i2c_t *mpu6050_i2c_h = (mpu6050_i2c_t *)imu_h;
 
   uint64_t error_count =
-    (uint64_t)self->i2c_error_count +
-    (uint64_t)self->configuration_error_count +
-    (uint64_t)self->calibration_error_count +
-    (uint64_t)self->filter_reject_count;
+    (uint64_t)mpu6050_i2c_h->i2c_error_count +
+    (uint64_t)mpu6050_i2c_h->configuration_error_count +
+    (uint64_t)mpu6050_i2c_h->calibration_error_count +
+    (uint64_t)mpu6050_i2c_h->filter_reject_count;
 
   if (error_count > UINT32_MAX) {
     error_count = UINT32_MAX;
   }
 
   *status = (imu_status_t){
-    .is_started = self->is_started,
+    .is_started = mpu6050_i2c_h->is_started,
     .is_busy =
-      self->state == MPU6050_STATE_RESET_PENDING ||
-      self->state == MPU6050_STATE_RESET_WAIT ||
-      self->state == MPU6050_STATE_CALIBRATE_PENDING ||
-      self->state == MPU6050_STATE_CALIBRATING,
-    .last_request_failed = self->last_request_failed,
+      mpu6050_i2c_h->state == MPU6050_STATE_RESET_PENDING ||
+      mpu6050_i2c_h->state == MPU6050_STATE_RESET_WAIT ||
+      mpu6050_i2c_h->state == MPU6050_STATE_CALIBRATE_PENDING ||
+      mpu6050_i2c_h->state == MPU6050_STATE_CALIBRATING,
+    .last_request_failed = mpu6050_i2c_h->last_request_failed,
     .error_count = (uint32_t)error_count,
   };
 }
 
-static void mpu6050_set_zero(imu_base_t *this) {
-  assert(this);
-  Dev_IMU_Base_ZeroYaw(this);
+static void mpu6050_set_zero(imu_base_t *imu_h) {
+  assert(imu_h);
+  Dev_IMU_Base_ZeroYaw(imu_h);
 }
 
 static const imu_ops_t mpu6050_imu_ops = {
@@ -458,17 +458,17 @@ static bool mpu6050_config_is_valid(const mpu6050_config_t *config) {
 }
 
 static void mpu6050_bind_config(
-  mpu6050_i2c_t *self,
+  mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_config_t *config
 ) {
-  assert(self && config);
+  assert(mpu6050_i2c_h && config);
 
-  self->config = *config;
-  self->i2c = config->i2c;
-  self->address = config->address;
-  self->accel_lsb_per_g =
+  mpu6050_i2c_h->config = *config;
+  mpu6050_i2c_h->i2c = config->i2c;
+  mpu6050_i2c_h->address = config->address;
+  mpu6050_i2c_h->accel_lsb_per_g =
     mpu6050_accel_lsb_per_g(config->accel_range);
-  self->gyro_lsb_per_dps =
+  mpu6050_i2c_h->gyro_lsb_per_dps =
     mpu6050_gyro_lsb_per_dps(config->gyro_range);
 
   uint32_t output_rate = mpu6050_gyro_output_rate(config->dlpf);
@@ -476,7 +476,7 @@ static void mpu6050_bind_config(
     (output_rate + config->sample_rate_hz / 2u) /
     config->sample_rate_hz;
   divider = divider == 0u ? 0u : divider - 1u;
-  self->sample_rate_divider = (uint8_t)divider;
+  mpu6050_i2c_h->sample_rate_divider = (uint8_t)divider;
 
   uint32_t period_ms =
     (1000u + config->sample_rate_hz / 2u) /
@@ -484,31 +484,31 @@ static void mpu6050_bind_config(
   if (period_ms < MPU6050_SAMPLE_PERIOD_MIN_MS) {
     period_ms = MPU6050_SAMPLE_PERIOD_MIN_MS;
   }
-  self->sample_period_ms = period_ms;
+  mpu6050_i2c_h->sample_period_ms = period_ms;
 }
 
-Platform_StatusTypeDef Dev_MPU6050_I2C_Init(
-  mpu6050_i2c_t *this,
+platform_status_t Dev_MPU6050_I2C_Init(
+  mpu6050_i2c_t *imu_h,
   const char *name,
   const mpu6050_config_t *config,
-  filter_base_t *filter
+  filter_base_t *filter_h
 ) {
-  assert(this && name && config && filter);
+  assert(imu_h && name && config && filter_h);
 
   if (!mpu6050_config_is_valid(config)) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
 
-  memset(this, 0, sizeof(*this));
-  mpu6050_bind_config(this, config);
-  this->state = MPU6050_STATE_UNINITIALIZED;
+  memset(imu_h, 0, sizeof(*imu_h));
+  mpu6050_bind_config(imu_h, config);
+  imu_h->state = MPU6050_STATE_UNINITIALIZED;
 
   uint8_t who_am_i = 0u;
-  Platform_StatusTypeDef status =
-    mpu6050_read_reg(this, MPU6050_REG_WHO_AM_I, &who_am_i);
+  platform_status_t status =
+    mpu6050_read_reg(imu_h, MPU6050_REG_WHO_AM_I, &who_am_i);
 
-  if (status != Platform_OK) {
-    this->last_request_failed = true;
+  if (status != PLATFORM_STATUS_OK) {
+    imu_h->last_request_failed = true;
     return status;
   }
 
@@ -516,118 +516,118 @@ Platform_StatusTypeDef Dev_MPU6050_I2C_Init(
     who_am_i != MPU6050_WHO_AM_I_VALUE &&
     who_am_i != MPU6050_WHO_AM_I_FIELD
   ) {
-    this->last_request_failed = true;
-    return Platform_ERROR;
+    imu_h->last_request_failed = true;
+    return PLATFORM_STATUS_ERROR;
   }
 
   Dev_IMU_Base_Init(
-    &this->imu_base,
+    &imu_h->imu_base,
     name,
     &mpu6050_imu_ops,
-    filter
+    filter_h
   );
 
-  this->last_request_failed = false;
-  return Platform_OK;
+  imu_h->last_request_failed = false;
+  return PLATFORM_STATUS_OK;
 }
 
 bool Dev_MPU6050_I2C_GetRawSample(
-  mpu6050_i2c_t *this,
+  mpu6050_i2c_t *imu_h,
   mpu6050_raw_sample_t *sample
 ) {
-  assert(this && sample);
+  assert(imu_h && sample);
 
   Sys_Critical_Enter();
-  *sample = this->raw_sample;
-  bool available = this->has_raw_sample;
+  *sample = imu_h->raw_sample;
+  bool available = imu_h->has_raw_sample;
   Sys_Critical_Exit();
 
   return available;
 }
 
-Platform_StatusTypeDef Dev_MPU6050_I2C_RequestGyroCalibration(
-  mpu6050_i2c_t *this
+platform_status_t Dev_MPU6050_I2C_RequestGyroCalibration(
+  mpu6050_i2c_t *imu_h
 ) {
-  assert(this);
+  assert(imu_h);
 
   if (
-    !this->is_started ||
-    this->config.calibration_samples == 0u ||
-    this->state != MPU6050_STATE_READY
+    !imu_h->is_started ||
+    imu_h->config.calibration_samples == 0u ||
+    imu_h->state != MPU6050_STATE_READY
   ) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
 
-  this->last_request_failed = false;
-  this->state = MPU6050_STATE_CALIBRATE_PENDING;
-  return Platform_OK;
+  imu_h->last_request_failed = false;
+  imu_h->state = MPU6050_STATE_CALIBRATE_PENDING;
+  return PLATFORM_STATUS_OK;
 }
 
 static void mpu6050_process_calibration(
-  mpu6050_i2c_t *self,
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms
 ) {
-  assert(self);
+  assert(mpu6050_i2c_h);
 
-  if (!mpu6050_time_reached(now_ms, self->next_sample_ms)) {
+  if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->next_sample_ms)) {
     return;
   }
 
-  self->next_sample_ms = now_ms + self->sample_period_ms;
+  mpu6050_i2c_h->next_sample_ms = now_ms + mpu6050_i2c_h->sample_period_ms;
 
   mpu6050_raw_sample_t sample = {0};
-  if (mpu6050_acquire(self, now_ms, &sample) != Platform_OK) {
-    self->calibration_error_count++;
-    mpu6050_enter_error(self);
+  if (mpu6050_acquire(mpu6050_i2c_h, now_ms, &sample) != PLATFORM_STATUS_OK) {
+    mpu6050_i2c_h->calibration_error_count++;
+    mpu6050_enter_error(mpu6050_i2c_h);
     return;
   }
 
   if (!mpu6050_accel_is_stationary(&sample)) {
-    self->calibration_error_count++;
-    mpu6050_enter_error(self);
+    mpu6050_i2c_h->calibration_error_count++;
+    mpu6050_enter_error(mpu6050_i2c_h);
     return;
   }
 
-  mpu6050_calibration_accumulate(self, &sample);
+  mpu6050_calibration_accumulate(mpu6050_i2c_h, &sample);
 
-  if (self->calibration_count < self->config.calibration_samples) {
+  if (mpu6050_i2c_h->calibration_count < mpu6050_i2c_h->config.calibration_samples) {
     return;
   }
 
-  if (!mpu6050_calibration_finish(self)) {
-    self->calibration_error_count++;
-    mpu6050_enter_error(self);
+  if (!mpu6050_calibration_finish(mpu6050_i2c_h)) {
+    mpu6050_i2c_h->calibration_error_count++;
+    mpu6050_enter_error(mpu6050_i2c_h);
     return;
   }
 
-  self->state = MPU6050_STATE_READY;
-  self->next_sample_ms = now_ms;
-  self->last_request_failed = false;
+  mpu6050_i2c_h->state = MPU6050_STATE_READY;
+  mpu6050_i2c_h->next_sample_ms = now_ms;
+  mpu6050_i2c_h->last_request_failed = false;
 }
 
 static void mpu6050_process_ready(
-  mpu6050_i2c_t *self,
+  mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms
 ) {
-  assert(self);
+  assert(mpu6050_i2c_h);
 
-  if (!mpu6050_time_reached(now_ms, self->next_sample_ms)) {
+  if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->next_sample_ms)) {
     return;
   }
 
-  self->next_sample_ms = now_ms + self->sample_period_ms;
+  mpu6050_i2c_h->next_sample_ms = now_ms + mpu6050_i2c_h->sample_period_ms;
 
   mpu6050_raw_sample_t raw = {0};
-  if (mpu6050_acquire(self, now_ms, &raw) != Platform_OK) {
-    self->last_request_failed = true;
+  if (mpu6050_acquire(mpu6050_i2c_h, now_ms, &raw) != PLATFORM_STATUS_OK) {
+    mpu6050_i2c_h->last_request_failed = true;
     return;
   }
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
-    raw.gyro_dps[axis] -= self->gyro_bias_dps[axis];
+    raw.gyro_dps[axis] -= mpu6050_i2c_h->gyro_bias_dps[axis];
   }
 
-  mpu6050_store_raw(self, &raw);
+  mpu6050_store_raw(mpu6050_i2c_h, &raw);
 
   filter_sample_t input = {
     .valid_mask =
@@ -647,70 +647,70 @@ static void mpu6050_process_ready(
   input.value[IMU_CHANNEL_INDEX_GYRO_Y] = raw.gyro_dps[1];
   input.value[IMU_CHANNEL_INDEX_GYRO_Z] = raw.gyro_dps[2];
 
-  if (Dev_IMU_Base_SubmitSample(&self->imu_base, &input)) {
-    self->last_request_failed = false;
+  if (Dev_IMU_Base_SubmitSample(&mpu6050_i2c_h->imu_base, &input)) {
+    mpu6050_i2c_h->last_request_failed = false;
   } else {
-    self->filter_reject_count++;
-    self->last_request_failed = true;
+    mpu6050_i2c_h->filter_reject_count++;
+    mpu6050_i2c_h->last_request_failed = true;
   }
 }
 
-static void mpu6050_process(imu_base_t *this, uint32_t now_ms) {
-  assert(this);
-  mpu6050_i2c_t *self = (mpu6050_i2c_t *)this;
+static void mpu6050_process(imu_base_t *imu_h, uint32_t now_ms) {
+  assert(imu_h);
+  mpu6050_i2c_t *mpu6050_i2c_h = (mpu6050_i2c_t *)imu_h;
 
-  if (!self->is_started) {
+  if (!mpu6050_i2c_h->is_started) {
     return;
   }
 
-  switch (self->state) {
+  switch (mpu6050_i2c_h->state) {
     case MPU6050_STATE_RESET_PENDING:
       if (
         mpu6050_write_reg(
-          self,
+          mpu6050_i2c_h,
           MPU6050_REG_PWR_MGMT_1,
           MPU6050_PWR1_DEVICE_RESET
-        ) != Platform_OK
+        ) != PLATFORM_STATUS_OK
       ) {
-        mpu6050_enter_error(self);
+        mpu6050_enter_error(mpu6050_i2c_h);
         return;
       }
-      self->state = MPU6050_STATE_RESET_WAIT;
-      self->state_deadline_ms = now_ms + MPU6050_RESET_DELAY_MS;
+      mpu6050_i2c_h->state = MPU6050_STATE_RESET_WAIT;
+      mpu6050_i2c_h->state_deadline_ms = now_ms + MPU6050_RESET_DELAY_MS;
       break;
 
     case MPU6050_STATE_RESET_WAIT:
-      if (!mpu6050_time_reached(now_ms, self->state_deadline_ms)) {
+      if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->state_deadline_ms)) {
         return;
       }
-      if (mpu6050_configure(self) != Platform_OK) {
-        self->configuration_error_count++;
-        self->last_request_failed = true;
-        mpu6050_enter_error(self);
+      if (mpu6050_configure(mpu6050_i2c_h) != PLATFORM_STATUS_OK) {
+        mpu6050_i2c_h->configuration_error_count++;
+        mpu6050_i2c_h->last_request_failed = true;
+        mpu6050_enter_error(mpu6050_i2c_h);
         return;
       }
-      self->state = MPU6050_STATE_CALIBRATE_PENDING;
+      mpu6050_i2c_h->state = MPU6050_STATE_CALIBRATE_PENDING;
       break;
 
     case MPU6050_STATE_CALIBRATE_PENDING:
-      mpu6050_calibration_reset(self);
-      self->next_sample_ms = now_ms;
-      if (self->config.calibration_samples == 0u) {
+      mpu6050_calibration_reset(mpu6050_i2c_h);
+      mpu6050_i2c_h->next_sample_ms = now_ms;
+      if (mpu6050_i2c_h->config.calibration_samples == 0u) {
         for (uint8_t axis = 0u; axis < 3u; axis++) {
-          self->gyro_bias_dps[axis] = 0.0f;
+          mpu6050_i2c_h->gyro_bias_dps[axis] = 0.0f;
         }
-        self->state = MPU6050_STATE_READY;
+        mpu6050_i2c_h->state = MPU6050_STATE_READY;
       } else {
-        self->state = MPU6050_STATE_CALIBRATING;
+        mpu6050_i2c_h->state = MPU6050_STATE_CALIBRATING;
       }
       break;
 
     case MPU6050_STATE_CALIBRATING:
-      mpu6050_process_calibration(self, now_ms);
+      mpu6050_process_calibration(mpu6050_i2c_h, now_ms);
       break;
 
     case MPU6050_STATE_READY:
-      mpu6050_process_ready(self, now_ms);
+      mpu6050_process_ready(mpu6050_i2c_h, now_ms);
       break;
 
     case MPU6050_STATE_UNINITIALIZED:

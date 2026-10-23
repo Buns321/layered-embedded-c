@@ -13,12 +13,12 @@
 
 uint32_t platform_wwdg_backend_pclk1_hz(void);
 
-Platform_StatusTypeDef platform_wwdg_backend_start(
+platform_status_t platform_wwdg_backend_start(
   uint32_t divisor,
   uint8_t window
 );
 
-Platform_StatusTypeDef platform_wwdg_backend_refresh(void);
+platform_status_t platform_wwdg_backend_refresh(void);
 
 bool platform_wwdg_backend_was_reset(void);
 

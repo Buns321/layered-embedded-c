@@ -14,15 +14,15 @@
 #include <assert.h>
 #include <stdint.h>
 
-static inline Platform_StatusTypeDef platform_from_hal_status(
+static inline platform_status_t platform_from_hal_status(
   uint32_t hal_status
 ) {
   switch (hal_status) {
-    case 0x00U: return Platform_OK;      /* HAL_OK */
-    case 0x01U: return Platform_ERROR;   /* HAL_ERROR */
-    case 0x02U: return Platform_BUSY;    /* HAL_BUSY */
-    case 0x03U: return Platform_TIMEOUT; /* HAL_TIMEOUT */
-    default:    assert(0); return Platform_ERROR;
+    case 0x00U: return PLATFORM_STATUS_OK;      /* HAL_OK */
+    case 0x01U: return PLATFORM_STATUS_ERROR;   /* HAL_ERROR */
+    case 0x02U: return PLATFORM_STATUS_BUSY;    /* HAL_BUSY */
+    case 0x03U: return PLATFORM_STATUS_TIMEOUT; /* HAL_TIMEOUT */
+    default:    assert(0); return PLATFORM_STATUS_ERROR;
   }
 }
 

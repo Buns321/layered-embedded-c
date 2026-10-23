@@ -22,21 +22,21 @@
  * @brief 串联滤波器链对象。
  * @note 每一级的输出作为下一级的输入；级数固定，不使用动态内存。
  */
-typedef struct filter_chain {
+typedef struct filter_chain_s {
   filter_base_t  filter_base;
-  filter_base_t *stages[FILTER_CHAIN_CAPACITY];
+  filter_base_t *filter_stage_h[FILTER_CHAIN_CAPACITY];
   uint8_t        stage_count;
 } filter_chain_t;
 
 /**
  * @brief 初始化滤波器链。
- * @param this 对象。
+ * @param filter_h 对象。
  * @param name 名称。
- * @param stages 静态级联表。
+ * @param filter_stage_h 静态级联表。
  * @param stage_count 级数，范围 1..FILTER_CHAIN_CAPACITY。
  * @note Init 会校验空指针、自引用和重复项，并级联 reset。
  */
-void Filter_Chain_Init(filter_chain_t *this, const char *name, filter_base_t *const *stages, uint8_t stage_count);
+void Filter_Chain_Init(filter_chain_t *filter_h, const char *name, filter_base_t *const *filter_stage_h, uint8_t stage_count);
 
 /** @} */
 

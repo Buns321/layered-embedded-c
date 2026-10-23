@@ -33,8 +33,9 @@ base 与 Platform；base 只依赖 System 和标准库。
 - `xxx_base_t` 是接口，不是可以独立实例化的对象。
 - 具体类型把 base 放在结构体第一个成员。
 - 具体 init 负责绑定静态 ops 表，并初始化自己的字段。
-- 回调里通过 `(具体类型 *)this` 还原具体对象。
-- 上层持有 `xxx_base_t *` 视图，例如 `&motor.motor_base`。
+- 回调里通过 `(具体类型 *)motor_h` 等角色句柄还原具体对象。
+- 上层通过 `<role>_h` 持有 `xxx_base_t *` 视图，例如
+  `motor_base_t *motor_h = &motor.motor_base`。
 - 不能复制 base 对象；复制会切片，回调强转后会读到越界数据。
 
 ## 4. 各层职责
@@ -46,7 +47,7 @@ base 与 Platform；base 只依赖 System 和标准库。
 - CubeMX/Core 独占引脚、时钟、DMA、NVIC 和 `MX_*_Init()`。
 - Platform 只做运行期启动、传输、校准、状态读取和回调分发。
 - 每个平台实现内部做私有 handle 映射，非法枚举直接断言。
-- 对外只暴露不依赖 HAL 类型的枚举、`Platform_StatusTypeDef` 和回调契约。
+- 对外只暴露不依赖 HAL 类型的枚举、`platform_status_t` 和回调契约。
 - I2C、SPI、UART、ADC 和 DAC 的 IT/DMA 缓冲区在完成、错误或 abort 前
   由调用方保持有效。
 - 跨系列公共校验、策略和状态机位于 `Platform/Src/common/`；HAL handle、
@@ -61,19 +62,19 @@ base 与 Platform；base 只依赖 System 和标准库。
 ### DeviceDrivers
 
 - `Base/` 放抽象接口：`led_base_t`、`motor_base_t`、`encoder_base_t`、
-  `usart_base_t`、`imu_base_t`、`chassis_base_t`、`telemetry_base_t`。
+  `uart_base_t`、`imu_base_t`、`chassis_base_t`、`telemetry_base_t`。
 - `Inc/`、`Src/` 放具体实现：`led_gpio_t`、`led_pwm_t`、`motor_tb6612_t`、
-  `encoder_tim_t`、`usart_port_t`、`imu_wht101_usart_t`、
+  `encoder_tim_t`、`uart_port_t`、`imu_wht101_uart_t`、
   `mpu6050_i2c_t`、`chassis_omni_t`、
-  `firewater_usart_t`、`justfloat_usart_t`。
+  `firewater_uart_t`、`justfloat_uart_t`。
 - 电机是闭环设备：目标速度、编码器、控制律、执行器都在 `motor_base` 里汇合。
-- USART 由 `usart_base_t` 抽象，`usart_port_t` 负责桥接 Platform 回调。
+- UART 由 `uart_base_t` 抽象，`uart_port_t` 负责桥接 Platform 回调。
 - IMU 的 `start` / `process` / `get_status` 由具体实现提供；具体驱动只提交
   带时间戳的原始通道帧，`imu_base_t` 统一调用已注册滤波器并发布结果。
 - WHT101 使用单字节中断接收、环形队列和非阻塞配置状态机，并通常注册
   `filter_passthrough_t`；MPU6050 通过 Platform I2C 轮询采样、校准并提交六轴数据。
 - `telemetry_base_t` 定义固定多通道样本和非阻塞整帧发送契约；
-  `firewater_usart_t` 与 `justfloat_usart_t` 是具体协议设备，各自持有发送缓冲。
+  `firewater_uart_t` 与 `justfloat_uart_t` 是具体协议设备，各自持有发送缓冲。
 
 ### Controller
 
@@ -81,7 +82,7 @@ base 与 Platform；base 只依赖 System 和标准库。
 
 ```c
 controller_status_t update(
-  controller_base_t *this,
+  controller_base_t *controller_h,
   float target,
   float measure,
   float dt,
@@ -99,7 +100,7 @@ controller_status_t update(
 ### Policy
 
 - 独立于 Controller 的 MIMO 运动解算层。
-- 按底盘种类拆分接口，例如 `omni_policy_base_t` 的
+- 按底盘种类拆分接口，例如 `policy_omni_base_t` 的
   `solve(v, dir, yaw, omega, out[4])`。
 - 底盘 init 接收对应的 policy base 类型，类型不匹配在编译期被挡住。
 - 当前实现 `policy_omni_kinematics_t`，持有安装角、方向符号、轮距。
@@ -109,7 +110,7 @@ controller_status_t update(
 - `chassis_base_t` 只承载生命周期：`update` / `stop` / `estop`。
 - 具体底盘内嵌 base，持有自己的执行器、IMU、policy 和命令。
 - `chassis_omni_t` 持有四个 `motor_base_t *`、`imu_base_t *`、
-  `omni_policy_base_t *`。
+  `policy_omni_base_t *`。
 - `Chassis_Omni_SetMotion(v, dir, omega)` 只保存命令。
 - `Chassis_Base_Update(now_ms)` 通过一次 IMU 快照检查 yaw 通道是否有效且未超时，
   将 yaw 转为弧度后调用 policy，再向四个电机写目标速度；
@@ -170,7 +171,7 @@ ControlTask:
         ├── sample = Dev_IMU_Base_GetSample(imu)
         ├── 拒绝无效或过期的 yaw，然后停机并制动
         ├── yaw_rad = sample.yaw_deg * PI / 180
-        ├── Omni_Policy_Base_Solve(policy, v, dir, yaw_rad, omega, wheel_mps[4])
+        ├── Policy_Omni_Base_Solve(policy, v, dir, yaw_rad, omega, wheel_mps[4])
         └── 对每个 i：Dev_Motor_Base_SetTargetSpeed(wheel[i], wheel_mps[i])
 
     对每个 i：Dev_Motor_Base_Update(wheel[i])
@@ -188,10 +189,10 @@ MonitorTask
     └── Dev_Telemetry_Base_Send(...)
           ├── JustFloat: 小端 float 数组 + 固定帧尾
           ├── FireWater: name:value 文本
-          └── usart_base_t -> USART2 DMA
+          └── uart_base_t -> USART2 DMA
 ```
 
-遥测发送不阻塞控制任务。USART DMA 忙时整帧丢弃，并通过
+遥测发送不阻塞控制任务。UART DMA 忙时整帧丢弃，并通过
 `telemetry_status_t` 暴露发送、丢弃和错误计数。
 
 ## 6. F407 初始化顺序（计划）
@@ -200,12 +201,12 @@ MonitorTask
 2. 控制律初始化（当前用 `Ctrl_Linear_Init`）
 3. `Dev_Motor_TB6612_Init` × 4（注入 controller + encoder + 传动常数）
 4. `Dev_Motor_Base_Enable` × 4
-5. `Dev_USART_Port_Init`（USART1）
+5. `Dev_UART_Port_Init`（USART1）
 6. WHT101：初始化 `filter_passthrough_t`，注入 IMU 并调用 `Dev_IMU_Base_Start`
 7. `Policy_Omni_Kinematics_Init`
 8. `Chassis_Omni_Init(..., imu_timeout_ms)`
-9. `Dev_USART_Port_Init`（USART2）
-10. `Dev_JustFloat_USART_Init` 或 `Dev_FireWater_USART_Init`
+9. `Dev_UART_Port_Init`（USART2）
+10. `Dev_JustFloat_UART_Init` 或 `Dev_FireWater_UART_Init`
 11. `Sys_Log_RTT_Init` + `Sys_Log_Init`
 
 当前 `main()` 已调用 `Sys_Delay_Init()`，并在启用 `SYS_LOG_USE_RTT` 时初始化
@@ -220,12 +221,12 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 | defaultTask | 512 B | Normal | 空循环 |
 | MonitorTask | 2048 B | Low | 最小占位（每 100 ms 让一次） |
 | ControlTask | 4096 B | Realtime | 弱占位，待实现 |
-| USARTTask | 4096 B | Normal | 弱占位，待实现 |
+| UARTTask | 4096 B | Normal | 弱占位，待实现 |
 
 计划中的职责：
 
 - **ControlTask**：固定周期调用底盘 update 和四个电机 update，维护心跳。
-- **USARTTask**：调用 `Dev_IMU_Base_Process(&imu, now_ms)`，后续接入命令链路。
+- **UARTTask**：调用 `Dev_IMU_Base_Process(&imu, now_ms)`，后续接入命令链路。
 - **MonitorTask**：检查心跳、控制律状态和故障，负责安全停机。
 
 ## 8. 所有权与内存
@@ -259,7 +260,7 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
 ## 11. 当前状态
 
-已实现：Platform（F4 完整接入，F103 支持外设完整实现）、LED、电机、编码器、USART、
+已实现：Platform（F4 完整接入，F103 支持外设完整实现）、LED、电机、编码器、UART、
 统一 IMU 滤波管线、WHT101、MPU6050 I2C 驱动、
 Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、

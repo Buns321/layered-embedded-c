@@ -6,6 +6,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    # These tests use assert() as their failure path; keep it active in Release.
+    add_compile_options(-UNDEBUG)
+endif()
+
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
 add_executable(platform_validation_test
@@ -15,9 +20,9 @@ add_executable(platform_validation_test
 add_executable(imu_pipeline_test
     imu_pipeline_test.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/imu_base.c
-    ${REPO_ROOT}/DeviceDrivers/Base/Src/usart_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
-    ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_usart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
 )

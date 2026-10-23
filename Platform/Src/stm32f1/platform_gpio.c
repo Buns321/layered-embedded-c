@@ -7,7 +7,7 @@
 #include "platform_hal_internal.h"
 #include "stm32f1xx_hal.h"
 
-static GPIO_TypeDef *platform_gpio_to_hal_port(Platform_GPIO_Port port) {
+static GPIO_TypeDef *platform_gpio_to_hal_port(platform_gpio_port_t port) {
   switch (port) {
     case PLATFORM_GPIO_PORT_A: return GPIOA;
     case PLATFORM_GPIO_PORT_B: return GPIOB;
@@ -23,12 +23,12 @@ static GPIO_TypeDef *platform_gpio_to_hal_port(Platform_GPIO_Port port) {
 }
 
 static GPIO_PinState platform_gpio_to_hal_state(
-  Platform_GPIO_Pin_State state
+  platform_gpio_pin_state_t state
 ) {
   return state == PLATFORM_GPIO_PIN_SET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 }
 
-static Platform_GPIO_Pin_State platform_gpio_from_hal_state(
+static platform_gpio_pin_state_t platform_gpio_from_hal_state(
   GPIO_PinState state
 ) {
   return state == GPIO_PIN_SET
@@ -36,12 +36,12 @@ static Platform_GPIO_Pin_State platform_gpio_from_hal_state(
            : PLATFORM_GPIO_PIN_RESET;
 }
 
-bool platform_gpio_backend_is_valid_port(Platform_GPIO_Port port) {
+bool platform_gpio_backend_is_valid_port(platform_gpio_port_t port) {
   return platform_gpio_to_hal_port(port) != NULL;
 }
 
-Platform_GPIO_Pin_State platform_gpio_backend_read(
-  Platform_GPIO_Port port,
+platform_gpio_pin_state_t platform_gpio_backend_read(
+  platform_gpio_port_t port,
   uint16_t pin
 ) {
   return platform_gpio_from_hal_state(
@@ -50,9 +50,9 @@ Platform_GPIO_Pin_State platform_gpio_backend_read(
 }
 
 void platform_gpio_backend_write(
-  Platform_GPIO_Port port,
+  platform_gpio_port_t port,
   uint16_t pin,
-  Platform_GPIO_Pin_State state
+  platform_gpio_pin_state_t state
 ) {
   HAL_GPIO_WritePin(
     platform_gpio_to_hal_port(port),
@@ -62,14 +62,14 @@ void platform_gpio_backend_write(
 }
 
 void platform_gpio_backend_toggle(
-  Platform_GPIO_Port port,
+  platform_gpio_port_t port,
   uint16_t pin
 ) {
   HAL_GPIO_TogglePin(platform_gpio_to_hal_port(port), pin);
 }
 
-Platform_StatusTypeDef platform_gpio_backend_lock(
-  Platform_GPIO_Port port,
+platform_status_t platform_gpio_backend_lock(
+  platform_gpio_port_t port,
   uint16_t pin
 ) {
   return platform_from_hal_status(

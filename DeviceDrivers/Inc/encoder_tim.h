@@ -23,9 +23,9 @@
  * @note position 使用 int64 累计，降低长期溢出风险。
  * @note max_counts_per_period 为 0 时不限制单周期增量。
  */
-typedef struct {
+typedef struct encoder_tim_s {
   encoder_base_t encoder_base;
-  Platform_Encoder_Instance tim;
+  platform_encoder_instance_t tim;
   uint8_t bit_width;
 
   bool has_base_count;
@@ -39,28 +39,28 @@ typedef struct {
 
 /**
  * @brief 初始化并启动定时器编码器。
- * @param this 对象。
+ * @param encoder_h 对象。
  * @param name 名称。
  * @param tim 定时器身份。
- * @retval Platform_OK 启动成功。
- * @retval Platform_ERROR 启动失败。
+ * @retval PLATFORM_STATUS_OK 启动成功。
+ * @retval PLATFORM_STATUS_ERROR 启动失败。
  */
-Platform_StatusTypeDef Dev_Encoder_TIM_Init(
-  encoder_tim_t *this,
+platform_status_t Dev_Encoder_TIM_Init(
+  encoder_tim_t *encoder_h,
   const char *name,
-  Platform_Encoder_Instance tim
+  platform_encoder_instance_t tim
 );
 /**
  * @brief 设置单周期增量上限。
- * @param this 编码器对象。
+ * @param encoder_h 编码器对象。
  * @param max_counts 上限（counts/period）；0 表示不限制。
  * @note 超限时增量会被夹紧并置 overflow 标志。
  */
-void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *this, uint32_t max_counts);
+void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *encoder_h, uint32_t max_counts);
 /** @brief 是否发生过单周期超限。 */
-bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *this);
+bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *encoder_h);
 /** @brief 清除 overflow 标志。 */
-void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *this);
+void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *encoder_h);
 
 /** @} */
 

@@ -34,7 +34,7 @@ _Static_assert(FILTER_CHANNEL_CAPACITY <= 32u, "FILTER_CHANNEL_CAPACITY must not
  * @note time_ms 是单调毫秒时间戳。
  * @warning valid_mask 中超出 FILTER_CHANNEL_CAPACITY 的位必须为 0。
  */
-typedef struct {
+typedef struct filter_sample_s {
   float    value[FILTER_CHANNEL_CAPACITY];
   uint32_t valid_mask;
   uint32_t time_ms;

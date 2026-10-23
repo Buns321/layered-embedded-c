@@ -17,7 +17,7 @@
 /**
  * @brief ISR 临界区返回的保存状态。
  */
-typedef uint32_t Sys_Critical_State;
+typedef uint32_t sys_critical_state_t;
 
 /**
  * @brief 进入任务上下文临界区。
@@ -36,13 +36,13 @@ void Sys_Critical_Exit(void);
  * @return 进入前的中断状态，供退出时恢复。
  * @note 必须与 Sys_Critical_ExitFromISR 成对使用。
  */
-Sys_Critical_State Sys_Critical_EnterFromISR(void);
+sys_critical_state_t Sys_Critical_EnterFromISR(void);
 
 /**
  * @brief 退出 ISR 上下文临界区并恢复中断状态。
  * @param state Sys_Critical_EnterFromISR 返回的状态。
  */
-void Sys_Critical_ExitFromISR(Sys_Critical_State state);
+void Sys_Critical_ExitFromISR(sys_critical_state_t state);
 
 /** @} */
 

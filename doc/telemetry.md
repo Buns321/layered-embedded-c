@@ -12,8 +12,8 @@ System/
 
 DeviceDrivers/
   Base/telemetry_base
-  firewater_usart
-  justfloat_usart
+  firewater_uart
+  justfloat_uart
 ```
 
 `System` 不依赖具体设备协议；DeviceDrivers 不依赖 App 或 RTOS。SEGGER RTT
@@ -96,7 +96,7 @@ J-Link RTT Viewer，应改用 J-Link GDB Server，而不是当前的 OpenOCD 服
 
 ### 3.2 JustFloat
 
-`justfloat_usart_t` 输出：
+`justfloat_uart_t` 输出：
 
 ```text
 float ch0
@@ -111,7 +111,7 @@ float chN
 
 ### 3.3 FireWater
 
-`firewater_usart_t` 输出带通道名的文本：
+`firewater_uart_t` 输出带通道名的文本：
 
 ```text
 target0:1.230,current0:1.180,yaw:45.200\n
@@ -123,19 +123,19 @@ target0:1.230,current0:1.180,yaw:45.200\n
 FireWater 比 JustFloat 占用更多 CPU 和串口带宽，适合低频调试；高频数据应使用
 JustFloat。
 
-### 3.4 USART 和 DMA
+### 3.4 UART 和 DMA
 
-两个实现都通过 `usart_base_t` 发送 DMA，不直接依赖 HAL：
+两个实现都通过 `uart_base_t` 发送 DMA，不直接依赖 HAL：
 
 ```c
-static usart_port_t g_usart2;
-static justfloat_usart_t g_telemetry;
+static uart_port_t g_uart_h;
+static justfloat_uart_t g_telemetry;
 
-Dev_USART_Port_Init(&g_usart2, "usart2", PLATFORM_USART_2);
-Dev_JustFloat_USART_Init(
+Dev_UART_Port_Init(&g_uart_h, "uart2", PLATFORM_UART_2);
+Dev_JustFloat_UART_Init(
   &g_telemetry,
   "justfloat2",
-  &g_usart2.usart_base,
+  &g_uart_h.uart_base,
   12u
 );
 ```
@@ -145,8 +145,8 @@ Dev_JustFloat_USART_Init(
 - TX 缓冲由具体设备对象持有，DMA 完成前不能被下一帧覆盖。
 - USART2 当前只启用 DMA 和 DMA IRQ，USART2 NVIC 未启用。
 - 只发送遥测时不需要 USART2 NVIC；需要接收命令和错误回调时必须启用。
-- 当前 `usart_base_t` 每个实例只有一套回调。`firewater_usart` 或
-  `justfloat_usart` 初始化后会接管该 USART 的回调槽，不能和另一个独立回调用户
+- 当前 `uart_base_t` 每个实例只有一套回调。`firewater_uart` 或
+  `justfloat_uart` 初始化后会接管该 UART 的回调槽，不能和另一个独立回调用户
   同时使用。
 - 发送缓冲必须位于普通 SRAM，不能放 CCMRAM，因为 F4 DMA 无法访问 CCMRAM。
 
@@ -192,7 +192,7 @@ cmake --build --preset Debug
 - System 日志 base、门面、RTT 后端
 - RTT 非阻塞输出与丢包统计
 - Telemetry base
-- FireWater / JustFloat USART DMA 协议设备
+- FireWater / JustFloat UART DMA 协议设备
 - Debug、Release 和无 RTT 构建
 
 尚未完成：

@@ -19,32 +19,32 @@
 /**
  * @brief 日志严重等级。
  */
-typedef enum {
+typedef enum sys_log_level_e {
   SYS_LOG_LEVEL_ERROR = 0,
   SYS_LOG_LEVEL_WARN,
   SYS_LOG_LEVEL_INFO,
   SYS_LOG_LEVEL_DEBUG,
   SYS_LOG_LEVEL_NONE,
-} Sys_Log_Level;
+} sys_log_level_t;
 
 /**
  * @brief 初始化日志门面。
- * @param sink 后端对象；传入 NULL 可关闭输出。
+ * @param sink_h 后端对象；传入 NULL 可关闭输出。
  * @note 应在 HAL 初始化完成后，从任务上下文调用。
  */
-void Sys_Log_Init(sys_log_base_t *sink);
+void Sys_Log_Init(sys_log_base_t *sink_h);
 
 /** @brief 替换当前生效的后端。 */
-void Sys_Log_SetSink(sys_log_base_t *sink);
+void Sys_Log_SetSink(sys_log_base_t *sink_h);
 
 /**
  * @brief 设置运行期最低输出等级。
  * @param level 最低等级；使用 SYS_LOG_LEVEL_NONE 可关闭日志。
  */
-void Sys_Log_SetLevel(Sys_Log_Level level);
+void Sys_Log_SetLevel(sys_log_level_t level);
 
 /** @brief 读取当前配置的最低输出等级。 */
-Sys_Log_Level Sys_Log_GetLevel(void);
+sys_log_level_t Sys_Log_GetLevel(void);
 
 /** @brief 后端已配置时返回 true。 */
 bool Sys_Log_IsReady(void);
@@ -59,7 +59,7 @@ bool Sys_Log_IsReady(void);
  * @warning 常规日志中避免格式化浮点数。高频或浮点数据应使用遥测。
  */
 void Sys_Log_Write(
-  Sys_Log_Level level,
+  sys_log_level_t level,
   const char *tag,
   const char *format,
   ...

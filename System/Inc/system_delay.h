@@ -8,8 +8,8 @@
  * @addtogroup system
  * @{
  * @note 通过 STM32F4xx / STM32F1xx 选择 CMSIS 设备头。
- * @note USE_FREERTOS 定义时，Sys_Delay_Ms 使用 osDelay。
- * @warning Sys_Delay_Us 是忙等，长延时不要放在 ISR 或高优先级任务里。
+ * @note USE_FREERTOS 定义时，Sys_DelayMs 使用 osDelay。
+ * @warning Sys_DelayUs 是忙等，长延时不要放在 ISR 或高优先级任务里。
  */
 
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_DELAY_H
@@ -52,7 +52,7 @@ SYS_DELAY_INLINE void Sys_Delay_Init(void) {
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
-SYS_DELAY_INLINE void Sys_Delay_Us(uint32_t us) {
+SYS_DELAY_INLINE void Sys_DelayUs(uint32_t us) {
   uint32_t startTick = DWT->CYCCNT;
   uint32_t delayTicks = us * (SystemCoreClock / 1000000);
   while (DWT->CYCCNT - startTick < delayTicks) {
@@ -60,12 +60,12 @@ SYS_DELAY_INLINE void Sys_Delay_Us(uint32_t us) {
   }
 }
 
-SYS_DELAY_INLINE void Sys_Delay_Ms(uint32_t ms) {
+SYS_DELAY_INLINE void Sys_DelayMs(uint32_t ms) {
 #ifdef USE_FREERTOS
   osDelay(ms);
 #else
   for (uint32_t i = 0; i < ms; i++) {
-    Sys_Delay_Us(1000u);
+    Sys_DelayUs(1000u);
   }
 #endif
 }

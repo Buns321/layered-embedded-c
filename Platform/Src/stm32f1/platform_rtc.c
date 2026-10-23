@@ -45,8 +45,8 @@ bool platform_rtc_backend_has_wakeup_timer(void) {
   return false;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_time(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_time(
+  const platform_rtc_date_time_t *date_time
 ) {
   RTC_TimeTypeDef time = {
     .Hours = date_time->hour,
@@ -59,8 +59,8 @@ Platform_StatusTypeDef platform_rtc_backend_set_time(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_date(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_date(
+  const platform_rtc_date_time_t *date_time
 ) {
   RTC_DateTypeDef date = {
     .WeekDay = date_time->weekday,
@@ -74,14 +74,14 @@ Platform_StatusTypeDef platform_rtc_backend_set_date(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_time(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_time(
+  platform_rtc_date_time_t *date_time
 ) {
   RTC_TimeTypeDef time;
-  Platform_StatusTypeDef status = platform_from_hal_status(
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     date_time->hour = (uint8_t)time.Hours;
     date_time->minute = (uint8_t)time.Minutes;
     date_time->second = (uint8_t)time.Seconds;
@@ -89,14 +89,14 @@ Platform_StatusTypeDef platform_rtc_backend_get_time(
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_date(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_date(
+  platform_rtc_date_time_t *date_time
 ) {
   RTC_DateTypeDef date;
-  Platform_StatusTypeDef status = platform_from_hal_status(
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     date_time->year = (uint16_t)(2000U + date.Year);
     date_time->month = (uint8_t)date.Month;
     date_time->day = (uint8_t)date.Date;
@@ -105,8 +105,8 @@ Platform_StatusTypeDef platform_rtc_backend_get_date(
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_alarm(
-  const Platform_RTC_AlarmConfig *alarm
+platform_status_t platform_rtc_backend_set_alarm(
+  const platform_rtc_alarm_config_t *alarm
 ) {
   RTC_AlarmTypeDef hal_alarm = {
     .AlarmTime = {
@@ -117,42 +117,42 @@ Platform_StatusTypeDef platform_rtc_backend_set_alarm(
     .Alarm = RTC_ALARM_A,
   };
 
-  Platform_StatusTypeDef status = platform_from_hal_status(
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_SetAlarm_IT(&hrtc, &hal_alarm, RTC_FORMAT_BIN)
   );
-  rtc_alarm_enabled = status == Platform_OK;
+  rtc_alarm_enabled = status == PLATFORM_STATUS_OK;
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_disable_alarm(void) {
-  Platform_StatusTypeDef status = platform_from_hal_status(
+platform_status_t platform_rtc_backend_disable_alarm(void) {
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     rtc_alarm_enabled = false;
   }
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_start_wakeup(
+platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
-  Platform_RTC_WakeUpClock clock
+  platform_rtc_wakeup_clock_t clock
 ) {
   (void)counter;
   (void)clock;
-  return Platform_UNSUPPORTED;
+  return PLATFORM_STATUS_UNSUPPORTED;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_stop_wakeup(void) {
-  return Platform_UNSUPPORTED;
+platform_status_t platform_rtc_backend_stop_wakeup(void) {
+  return PLATFORM_STATUS_UNSUPPORTED;
 }
 
-void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc_handle) {
-  assert(hrtc_handle == &hrtc);
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *rtc_h) {
+  assert(rtc_h == &hrtc);
   if (rtc_alarm_enabled && !platform_rtc_rearm_daily_alarm()) {
     platform_rtc_record_error(
       PLATFORM_RTC_ERROR_ALARM |
-      PLATFORM_COMMON_ERROR_HAL
+      PLATFORM_ERROR_HAL
     );
   }
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_ALARM);

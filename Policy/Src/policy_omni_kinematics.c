@@ -8,16 +8,16 @@
 #include <math.h>
 
 static void Policy_Omni_Kinematics_Solve(
-  omni_policy_base_t *this,
+  policy_omni_base_t *policy_h,
   float v,
   float dir,
   float yaw,
   float omega,
   float out[4]
 ) {
-  assert(this && out);
+  assert(policy_h && out);
 
-  policy_omni_kinematics_t *self = (policy_omni_kinematics_t *)this;
+  policy_omni_kinematics_t *policy_omni_kinematics_h = (policy_omni_kinematics_t *)policy_h;
 
   if (
     !SYS_ISFINITE(v)     ||
@@ -32,27 +32,27 @@ static void Policy_Omni_Kinematics_Solve(
   }
 
   for (uint8_t i = 0; i < 4; i++) {
-    float alpha = self->wheel_theta[i] + yaw;
+    float alpha = policy_omni_kinematics_h->wheel_theta[i] + yaw;
     float trans = v * cosf(dir - alpha);
-    float rotate = omega * self->wheel_distance * self->wheel_sign[i];
+    float rotate = omega * policy_omni_kinematics_h->wheel_distance * policy_omni_kinematics_h->wheel_sign[i];
 
     out[i] = trans + rotate;
   }
 }
 
-static const omni_policy_ops_t omni_policy_ops = {
+static const policy_omni_ops_t policy_omni_ops = {
   .solve = Policy_Omni_Kinematics_Solve,
 };
 
 void Policy_Omni_Kinematics_Init(
-  policy_omni_kinematics_t *this,
+  policy_omni_kinematics_t *policy_h,
   const char *name,
   float wheel_distance,
   const float wheel_theta[4],
   const float wheel_sign[4]
 ) {
   assert(
-    this            &&
+    policy_h            &&
     name            &&
     wheel_theta     &&
     wheel_sign      &&
@@ -65,12 +65,12 @@ void Policy_Omni_Kinematics_Init(
     assert(SYS_ISFINITE(wheel_sign[i]));
   }
 
-  Omni_Policy_Base_Init(&this->base, name, &omni_policy_ops);
+  Policy_Omni_Base_Init(&policy_h->base, name, &policy_omni_ops);
 
-  this->wheel_distance = wheel_distance;
+  policy_h->wheel_distance = wheel_distance;
 
   for (uint8_t i = 0; i < 4; i++) {
-    this->wheel_theta[i] = wheel_theta[i];
-    this->wheel_sign[i]  = wheel_sign[i];
+    policy_h->wheel_theta[i] = wheel_theta[i];
+    policy_h->wheel_sign[i]  = wheel_sign[i];
   }
 }

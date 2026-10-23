@@ -121,50 +121,50 @@ static bool imu_merge_frame(
 }
 
 void Dev_IMU_Base_Init(
-  imu_base_t *this,
+  imu_base_t *imu_h,
   const char *name,
   const imu_ops_t *ops,
-  filter_base_t *filter
+  filter_base_t *filter_h
 ) {
   assert(
-    this         &&
+    imu_h         &&
     name         &&
     ops          &&
-    filter       &&
+    filter_h       &&
     ops->start   &&
     ops->process &&
     ops->get_status &&
     ops->set_zero
   );
 
-  memset(this, 0, sizeof(*this));
-  this->ops    = ops;
-  this->name   = name;
-  this->filter = filter;
+  memset(imu_h, 0, sizeof(*imu_h));
+  imu_h->ops    = ops;
+  imu_h->name   = name;
+  imu_h->filter_h = filter_h;
 }
 
-void Dev_IMU_Base_Start(imu_base_t *this) {
-  assert(this && this->ops && this->filter && !this->is_started);
+void Dev_IMU_Base_Start(imu_base_t *imu_h) {
+  assert(imu_h && imu_h->ops && imu_h->filter_h && !imu_h->is_started);
 
-  Filter_Base_Reset(this->filter);
-  this->ops->start(this);
-  this->is_started = true;
+  Filter_Base_Reset(imu_h->filter_h);
+  imu_h->ops->start(imu_h);
+  imu_h->is_started = true;
 }
 
-void Dev_IMU_Base_Process(imu_base_t *this, uint32_t now_ms) {
-  assert(this && this->ops && this->ops->process && this->is_started);
-  this->ops->process(this, now_ms);
+void Dev_IMU_Base_Process(imu_base_t *imu_h, uint32_t now_ms) {
+  assert(imu_h && imu_h->ops && imu_h->ops->process && imu_h->is_started);
+  imu_h->ops->process(imu_h, now_ms);
 }
 
 bool Dev_IMU_Base_SubmitSample(
-  imu_base_t *this,
+  imu_base_t *imu_h,
   const filter_sample_t *frame
 ) {
   assert(
-    this           &&
+    imu_h           &&
     frame          &&
-    this->filter   &&
-    this->is_started
+    imu_h->filter_h   &&
+    imu_h->is_started
   );
 
   filter_sample_t sanitized;
@@ -173,23 +173,23 @@ bool Dev_IMU_Base_SubmitSample(
   }
 
   Sys_Critical_Enter();
-  (void)imu_merge_frame(&this->raw_sample, &sanitized, 0u, 0.0f);
+  (void)imu_merge_frame(&imu_h->raw_sample, &sanitized, 0u, 0.0f);
   Sys_Critical_Exit();
 
   filter_sample_t filtered;
-  Filter_Base_Update(this->filter, &sanitized, &filtered);
+  Filter_Base_Update(imu_h->filter_h, &sanitized, &filtered);
 
   Sys_Critical_Enter();
 
   bool published = imu_merge_frame(
-    &this->sample,
+    &imu_h->sample,
     &filtered,
     sanitized.valid_mask,
-    this->yaw_offset_deg
+    imu_h->yaw_offset_deg
   );
 
   if (published) {
-    this->sample_count++;
+    imu_h->sample_count++;
   }
 
   Sys_Critical_Exit();
@@ -197,44 +197,44 @@ bool Dev_IMU_Base_SubmitSample(
   return published;
 }
 
-bool Dev_IMU_Base_GetSample(imu_base_t *this, imu_sample_t *sample) {
-  assert(this && sample);
+bool Dev_IMU_Base_GetSample(imu_base_t *imu_h, imu_sample_t *sample) {
+  assert(imu_h && sample);
 
   Sys_Critical_Enter();
-  *sample = this->sample;
-  bool available = this->is_started && sample->sequence != 0u;
+  *sample = imu_h->sample;
+  bool available = imu_h->is_started && sample->sequence != 0u;
   Sys_Critical_Exit();
 
   return available;
 }
 
-bool Dev_IMU_Base_GetRawSample(imu_base_t *this, imu_sample_t *sample) {
-  assert(this && sample);
+bool Dev_IMU_Base_GetRawSample(imu_base_t *imu_h, imu_sample_t *sample) {
+  assert(imu_h && sample);
 
   Sys_Critical_Enter();
-  *sample = this->raw_sample;
-  bool available = this->is_started && sample->sequence != 0u;
+  *sample = imu_h->raw_sample;
+  bool available = imu_h->is_started && sample->sequence != 0u;
   Sys_Critical_Exit();
 
   return available;
 }
 
-void Dev_IMU_Base_GetStatus(imu_base_t *this, imu_status_t *status) {
-  assert(this && this->ops && this->ops->get_status && status);
+void Dev_IMU_Base_GetStatus(imu_base_t *imu_h, imu_status_t *status) {
+  assert(imu_h && imu_h->ops && imu_h->ops->get_status && status);
 
   imu_status_t device_status = {0};
-  this->ops->get_status(this, &device_status);
+  imu_h->ops->get_status(imu_h, &device_status);
 
   Sys_Critical_Enter();
-  device_status.is_started = this->is_started;
-  device_status.has_timestamp = this->sample.sequence != 0u;
-  device_status.valid_mask = this->sample.valid_mask;
-  device_status.sample_count = this->sample_count;
-  device_status.last_update_ms = this->sample.sample_time_ms;
+  device_status.is_started = imu_h->is_started;
+  device_status.has_timestamp = imu_h->sample.sequence != 0u;
+  device_status.valid_mask = imu_h->sample.valid_mask;
+  device_status.sample_count = imu_h->sample_count;
+  device_status.last_update_ms = imu_h->sample.sample_time_ms;
 
   memcpy(
     device_status.channel_update_ms,
-    this->sample.channel_update_ms,
+    imu_h->sample.channel_update_ms,
     sizeof(device_status.channel_update_ms)
   );
 
@@ -243,76 +243,76 @@ void Dev_IMU_Base_GetStatus(imu_base_t *this, imu_status_t *status) {
   *status = device_status;
 }
 
-float Dev_IMU_Base_GetYaw(imu_base_t *this) {
+float Dev_IMU_Base_GetYaw(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.yaw_deg;
 }
 
-float Dev_IMU_Base_GetRoll(imu_base_t *this) {
+float Dev_IMU_Base_GetRoll(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.roll_deg;
 }
 
-float Dev_IMU_Base_GetPitch(imu_base_t *this) {
+float Dev_IMU_Base_GetPitch(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.pitch_deg;
 }
 
-float Dev_IMU_Base_GetGyroX(imu_base_t *this) {
+float Dev_IMU_Base_GetGyroX(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[0];
 }
 
-float Dev_IMU_Base_GetGyroY(imu_base_t *this) {
+float Dev_IMU_Base_GetGyroY(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[1];
 }
 
-float Dev_IMU_Base_GetGyroZ(imu_base_t *this) {
+float Dev_IMU_Base_GetGyroZ(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[2];
 }
 
-float Dev_IMU_Base_GetAccelX(imu_base_t *this) {
+float Dev_IMU_Base_GetAccelX(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[0];
 }
 
-float Dev_IMU_Base_GetAccelY(imu_base_t *this) {
+float Dev_IMU_Base_GetAccelY(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[1];
 }
 
-float Dev_IMU_Base_GetAccelZ(imu_base_t *this) {
+float Dev_IMU_Base_GetAccelZ(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
-  (void)Dev_IMU_Base_GetSample(this, &sample);
+  (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[2];
 }
 
-void Dev_IMU_Base_ZeroYaw(imu_base_t *this) {
-  assert(this);
+void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h) {
+  assert(imu_h);
 
   Sys_Critical_Enter();
 
-  if ((this->sample.valid_mask & IMU_CHANNEL_YAW) != 0u) {
-    this->yaw_offset_deg = imu_wrap_deg(
-      this->yaw_offset_deg + this->sample.yaw_deg
+  if ((imu_h->sample.valid_mask & IMU_CHANNEL_YAW) != 0u) {
+    imu_h->yaw_offset_deg = imu_wrap_deg(
+      imu_h->yaw_offset_deg + imu_h->sample.yaw_deg
     );
-    this->sample.yaw_deg = 0.0f;
+    imu_h->sample.yaw_deg = 0.0f;
   }
 
   Sys_Critical_Exit();
 }
 
-void Dev_IMU_Base_SetZero(imu_base_t *this) {
-  assert(this && this->ops && this->ops->set_zero);
-  this->ops->set_zero(this);
+void Dev_IMU_Base_SetZero(imu_base_t *imu_h) {
+  assert(imu_h && imu_h->ops && imu_h->ops->set_zero);
+  imu_h->ops->set_zero(imu_h);
 }

@@ -17,19 +17,19 @@
 /**
  * @brief 定时器通道身份。
  */
-typedef enum {
+typedef enum platform_tim_channel_e {
   PLATFORM_TIM_CHANNEL_1 = 0U,
   PLATFORM_TIM_CHANNEL_2,
   PLATFORM_TIM_CHANNEL_3,
   PLATFORM_TIM_CHANNEL_4,
   PLATFORM_TIM_CHANNEL_ALL,
-} Platform_TIM_Channel;
+} platform_tim_channel_t;
 
 /**
  * @brief 定时器实例身份。
  */
 /* STM32F1 构建中省略 TIM5-TIM14。 */
-typedef enum {
+typedef enum platform_tim_instance_e {
   PLATFORM_TIM_TIM1 = 0U,
   PLATFORM_TIM_TIM2,
   PLATFORM_TIM_TIM3,
@@ -46,7 +46,7 @@ typedef enum {
   PLATFORM_TIM_TIM13,
   PLATFORM_TIM_TIM14,
 #endif
-} Platform_TIM_Instance;
+} platform_tim_instance_t;
 
 /** @} */
 

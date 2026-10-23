@@ -6,10 +6,10 @@
 #include <stdint.h>
 
 static bool s_has_wakeup;
-static Platform_StatusTypeDef s_set_time_status;
-static Platform_StatusTypeDef s_set_date_status;
-static Platform_StatusTypeDef s_set_alarm_status;
-static Platform_RTC_DateTime s_datetime;
+static platform_status_t s_set_time_status;
+static platform_status_t s_set_date_status;
+static platform_status_t s_set_alarm_status;
+static platform_rtc_date_time_t s_datetime;
 static uint32_t s_alarm_count;
 static uint32_t s_wakeup_count;
 
@@ -17,8 +17,8 @@ bool platform_rtc_backend_has_wakeup_timer(void) {
   return s_has_wakeup;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_time(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_time(
+  const platform_rtc_date_time_t *date_time
 ) {
   s_datetime.hour = date_time->hour;
   s_datetime.minute = date_time->minute;
@@ -26,8 +26,8 @@ Platform_StatusTypeDef platform_rtc_backend_set_time(
   return s_set_time_status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_date(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_date(
+  const platform_rtc_date_time_t *date_time
 ) {
   s_datetime.year = date_time->year;
   s_datetime.month = date_time->month;
@@ -36,52 +36,52 @@ Platform_StatusTypeDef platform_rtc_backend_set_date(
   return s_set_date_status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_time(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_time(
+  platform_rtc_date_time_t *date_time
 ) {
   date_time->hour = s_datetime.hour;
   date_time->minute = s_datetime.minute;
   date_time->second = s_datetime.second;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_date(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_date(
+  platform_rtc_date_time_t *date_time
 ) {
   date_time->year = s_datetime.year;
   date_time->month = s_datetime.month;
   date_time->day = s_datetime.day;
   date_time->weekday = s_datetime.weekday;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_alarm(
-  const Platform_RTC_AlarmConfig *alarm
+platform_status_t platform_rtc_backend_set_alarm(
+  const platform_rtc_alarm_config_t *alarm
 ) {
   (void)alarm;
   return s_set_alarm_status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_disable_alarm(void) {
-  return Platform_OK;
+platform_status_t platform_rtc_backend_disable_alarm(void) {
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_start_wakeup(
+platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
-  Platform_RTC_WakeUpClock clock
+  platform_rtc_wakeup_clock_t clock
 ) {
   (void)counter;
   (void)clock;
-  return s_has_wakeup ? Platform_OK : Platform_UNSUPPORTED;
+  return s_has_wakeup ? PLATFORM_STATUS_OK : PLATFORM_STATUS_UNSUPPORTED;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_stop_wakeup(void) {
-  return s_has_wakeup ? Platform_OK : Platform_UNSUPPORTED;
+platform_status_t platform_rtc_backend_stop_wakeup(void) {
+  return s_has_wakeup ? PLATFORM_STATUS_OK : PLATFORM_STATUS_UNSUPPORTED;
 }
 
 static void alarm_callback(
-  Platform_RTC_Instance rtc,
-  Platform_RTC_Event event,
+  platform_rtc_instance_t rtc,
+  platform_rtc_event_t event,
   void *context
 ) {
   assert(rtc == PLATFORM_RTC_1);
@@ -95,13 +95,13 @@ static void alarm_callback(
 
 static void test_rtc_contract(void) {
   s_has_wakeup = false;
-  s_set_time_status = Platform_OK;
-  s_set_date_status = Platform_OK;
-  s_set_alarm_status = Platform_OK;
+  s_set_time_status = PLATFORM_STATUS_OK;
+  s_set_date_status = PLATFORM_STATUS_OK;
+  s_set_alarm_status = PLATFORM_STATUS_OK;
 
   assert(!Platform_RTC_HasWakeUpTimer(PLATFORM_RTC_1));
 
-  Platform_RTC_DateTime invalid_datetime = {
+  platform_rtc_date_time_t invalid_datetime = {
     .year = 2100U,
     .month = 1U,
     .day = 1U,
@@ -111,11 +111,11 @@ static void test_rtc_contract(void) {
     .second = 0U,
   };
   assert(Platform_RTC_SetDateTime(PLATFORM_RTC_1, &invalid_datetime) ==
-         Platform_INVALID_ARGUMENT);
+         PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_RTC_GetLastError(PLATFORM_RTC_1) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 
-  const Platform_RTC_DateTime valid_datetime = {
+  const platform_rtc_date_time_t valid_datetime = {
     .year = 2026U,
     .month = 10U,
     .day = 24U,
@@ -125,10 +125,10 @@ static void test_rtc_contract(void) {
     .second = 56U,
   };
   assert(Platform_RTC_SetDateTime(PLATFORM_RTC_1, &valid_datetime) ==
-         Platform_OK);
+         PLATFORM_STATUS_OK);
 
-  Platform_RTC_DateTime readback = {0};
-  assert(Platform_RTC_GetDateTime(PLATFORM_RTC_1, &readback) == Platform_OK);
+  platform_rtc_date_time_t readback = {0};
+  assert(Platform_RTC_GetDateTime(PLATFORM_RTC_1, &readback) == PLATFORM_STATUS_OK);
   assert(readback.year == valid_datetime.year);
   assert(readback.month == valid_datetime.month);
   assert(readback.day == valid_datetime.day);
@@ -137,37 +137,37 @@ static void test_rtc_contract(void) {
   assert(readback.minute == valid_datetime.minute);
   assert(readback.second == valid_datetime.second);
 
-  s_set_date_status = Platform_ERROR;
+  s_set_date_status = PLATFORM_STATUS_ERROR;
   assert(Platform_RTC_SetDateTime(PLATFORM_RTC_1, &valid_datetime) ==
-         Platform_ERROR);
+         PLATFORM_STATUS_ERROR);
   assert((Platform_RTC_GetLastError(PLATFORM_RTC_1) &
           PLATFORM_RTC_ERROR_DATE) != 0U);
   assert((Platform_RTC_GetLastError(PLATFORM_RTC_1) &
-          PLATFORM_COMMON_ERROR_HAL) != 0U);
+          PLATFORM_ERROR_HAL) != 0U);
 
-  const Platform_RTC_AlarmConfig alarm = {
+  const platform_rtc_alarm_config_t alarm = {
     .hour = 1U,
     .minute = 2U,
     .second = 3U,
   };
-  assert(Platform_RTC_SetAlarm(PLATFORM_RTC_1, &alarm) == Platform_OK);
+  assert(Platform_RTC_SetAlarm(PLATFORM_RTC_1, &alarm) == PLATFORM_STATUS_OK);
   assert(Platform_RTC_StartWakeUpTimer(
            PLATFORM_RTC_1,
            10U,
            PLATFORM_RTC_WAKEUP_DIV16
-         ) == Platform_UNSUPPORTED);
+         ) == PLATFORM_STATUS_UNSUPPORTED);
   assert((Platform_RTC_GetLastError(PLATFORM_RTC_1) &
-          PLATFORM_COMMON_ERROR_UNSUPPORTED) != 0U);
+          PLATFORM_ERROR_UNSUPPORTED) != 0U);
 
-  const platform_rtc_callbacks_t callbacks = {
+  const platform_rtc_callback_binding_t callbacks = {
     .alarm_cb = alarm_callback,
     .wakeup_cb = alarm_callback,
     .context = &s_alarm_count,
   };
-  assert(Platform_RTC_RegisterCallbacks(PLATFORM_RTC_1, &callbacks) ==
-         Platform_OK);
-  assert(Platform_RTC_RegisterCallbacks(PLATFORM_RTC_1, &callbacks) ==
-         Platform_BUSY);
+  assert(Platform_RTC_RegisterCallback(PLATFORM_RTC_1, &callbacks) ==
+         PLATFORM_STATUS_OK);
+  assert(Platform_RTC_RegisterCallback(PLATFORM_RTC_1, &callbacks) ==
+         PLATFORM_STATUS_BUSY);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_ALARM);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_WAKEUP);
   assert(s_alarm_count == 1U);
@@ -179,7 +179,7 @@ static void test_rtc_contract(void) {
            PLATFORM_RTC_1,
            10U,
            PLATFORM_RTC_WAKEUP_DIV16
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
 }
 
 int main(void) {

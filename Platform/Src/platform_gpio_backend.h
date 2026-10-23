@@ -11,26 +11,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_gpio_backend_is_valid_port(Platform_GPIO_Port port);
+bool platform_gpio_backend_is_valid_port(platform_gpio_port_t port);
 
-Platform_GPIO_Pin_State platform_gpio_backend_read(
-  Platform_GPIO_Port port,
+platform_gpio_pin_state_t platform_gpio_backend_read(
+  platform_gpio_port_t port,
   uint16_t pin
 );
 
 void platform_gpio_backend_write(
-  Platform_GPIO_Port port,
+  platform_gpio_port_t port,
   uint16_t pin,
-  Platform_GPIO_Pin_State state
+  platform_gpio_pin_state_t state
 );
 
 void platform_gpio_backend_toggle(
-  Platform_GPIO_Port port,
+  platform_gpio_port_t port,
   uint16_t pin
 );
 
-Platform_StatusTypeDef platform_gpio_backend_lock(
-  Platform_GPIO_Port port,
+platform_status_t platform_gpio_backend_lock(
+  platform_gpio_port_t port,
   uint16_t pin
 );
 

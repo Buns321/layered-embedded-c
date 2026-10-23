@@ -2,7 +2,7 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
-#include "firewater_usart.h"
+#include "firewater_uart.h"
 #include "system_math.h"
 #include <assert.h>
 #include <stddef.h>
@@ -15,19 +15,19 @@ static const uint32_t s_pow10[] = {
   1u, 10u, 100u, 1000u, 10000u, 100000u, 1000000u,
 };
 
-static void Dev_FireWater_USART_OnTxCplt(
-  usart_base_t *usart,
+static void Dev_FireWater_UART_OnTxCplt(
+  uart_base_t *uart_h,
   void *context
 ) {
-  (void)usart;
+  (void)uart_h;
   assert(context);
 
-  firewater_usart_t *self = (firewater_usart_t *)context;
-  self->sent_frames++;
-  self->busy = false;
+  firewater_uart_t *firewater_uart_h = (firewater_uart_t *)context;
+  firewater_uart_h->sent_frames++;
+  firewater_uart_h->busy = false;
 }
 
-static bool Dev_FireWater_USART_AppendChar(
+static bool Dev_FireWater_UART_AppendChar(
   uint8_t *buffer,
   uint32_t capacity,
   uint32_t *length,
@@ -42,7 +42,7 @@ static bool Dev_FireWater_USART_AppendChar(
   return true;
 }
 
-static bool Dev_FireWater_USART_AppendString(
+static bool Dev_FireWater_UART_AppendString(
   uint8_t *buffer,
   uint32_t capacity,
   uint32_t *length,
@@ -62,7 +62,7 @@ static bool Dev_FireWater_USART_AppendString(
   return true;
 }
 
-static bool Dev_FireWater_USART_AppendUnsigned(
+static bool Dev_FireWater_UART_AppendUnsigned(
   uint8_t *buffer,
   uint32_t capacity,
   uint32_t *length,
@@ -90,7 +90,7 @@ static bool Dev_FireWater_USART_AppendUnsigned(
   return true;
 }
 
-static bool Dev_FireWater_USART_AppendValue(
+static bool Dev_FireWater_UART_AppendValue(
   uint8_t *buffer,
   uint32_t capacity,
   uint32_t *length,
@@ -120,7 +120,7 @@ static bool Dev_FireWater_USART_AppendValue(
     : (uint32_t)integer_scaled;
 
   if (integer_scaled < 0) {
-    if (!Dev_FireWater_USART_AppendChar(buffer, capacity, length, '-')) {
+    if (!Dev_FireWater_UART_AppendChar(buffer, capacity, length, '-')) {
       return false;
     }
   }
@@ -128,7 +128,7 @@ static bool Dev_FireWater_USART_AppendValue(
   uint32_t integer_part = magnitude / scale;
   uint32_t decimal_part = magnitude % scale;
 
-  if (!Dev_FireWater_USART_AppendUnsigned(
+  if (!Dev_FireWater_UART_AppendUnsigned(
         buffer,
         capacity,
         length,
@@ -140,7 +140,7 @@ static bool Dev_FireWater_USART_AppendValue(
     return true;
   }
 
-  if (!Dev_FireWater_USART_AppendChar(buffer, capacity, length, '.')) {
+  if (!Dev_FireWater_UART_AppendChar(buffer, capacity, length, '.')) {
     return false;
   }
 
@@ -148,7 +148,7 @@ static bool Dev_FireWater_USART_AppendValue(
     uint32_t divisor = s_pow10[divisor_index - 1u];
     char digit = (char)('0' + ((decimal_part / divisor) % 10u));
 
-    if (!Dev_FireWater_USART_AppendChar(buffer, capacity, length, digit)) {
+    if (!Dev_FireWater_UART_AppendChar(buffer, capacity, length, digit)) {
       return false;
     }
   }
@@ -156,24 +156,24 @@ static bool Dev_FireWater_USART_AppendValue(
   return true;
 }
 
-static bool Dev_FireWater_USART_Encode(
-  firewater_usart_t *self,
+static bool Dev_FireWater_UART_Encode(
+  firewater_uart_t *firewater_uart_h,
   const telemetry_sample_t *sample,
   uint32_t *frame_size
 ) {
   uint32_t length = 0u;
   bool has_value = false;
 
-  for (uint8_t channel = 0u; channel < self->channel_count; channel++) {
+  for (uint8_t channel = 0u; channel < firewater_uart_h->channel_count; channel++) {
     uint32_t mask = (uint32_t)1u << channel;
     if ((sample->valid_mask & mask) == 0u) {
       continue;
     }
 
     if (has_value) {
-      if (!Dev_FireWater_USART_AppendChar(
-            self->tx_buffer,
-            FIREWATER_USART_TX_CAPACITY,
+      if (!Dev_FireWater_UART_AppendChar(
+            firewater_uart_h->tx_buffer,
+            FIREWATER_UART_TX_CAPACITY,
             &length,
             ',')) {
         return false;
@@ -181,22 +181,22 @@ static bool Dev_FireWater_USART_Encode(
     }
 
     if (
-      !Dev_FireWater_USART_AppendString(
-        self->tx_buffer,
-        FIREWATER_USART_TX_CAPACITY,
+      !Dev_FireWater_UART_AppendString(
+        firewater_uart_h->tx_buffer,
+        FIREWATER_UART_TX_CAPACITY,
         &length,
-        self->channel_names[channel]) ||
-      !Dev_FireWater_USART_AppendChar(
-        self->tx_buffer,
-        FIREWATER_USART_TX_CAPACITY,
+        firewater_uart_h->channel_names[channel]) ||
+      !Dev_FireWater_UART_AppendChar(
+        firewater_uart_h->tx_buffer,
+        FIREWATER_UART_TX_CAPACITY,
         &length,
         ':') ||
-      !Dev_FireWater_USART_AppendValue(
-        self->tx_buffer,
-        FIREWATER_USART_TX_CAPACITY,
+      !Dev_FireWater_UART_AppendValue(
+        firewater_uart_h->tx_buffer,
+        FIREWATER_UART_TX_CAPACITY,
         &length,
         sample->value[channel],
-        self->precision)
+        firewater_uart_h->precision)
     ) {
       return false;
     }
@@ -208,9 +208,9 @@ static bool Dev_FireWater_USART_Encode(
     return false;
   }
 
-  if (!Dev_FireWater_USART_AppendChar(
-        self->tx_buffer,
-        FIREWATER_USART_TX_CAPACITY,
+  if (!Dev_FireWater_UART_AppendChar(
+        firewater_uart_h->tx_buffer,
+        FIREWATER_UART_TX_CAPACITY,
         &length,
         '\n')) {
     return false;
@@ -220,79 +220,79 @@ static bool Dev_FireWater_USART_Encode(
   return true;
 }
 
-static Dev_Telemetry_Status Dev_FireWater_USART_Send(
-  telemetry_base_t *this,
+static dev_telemetry_status_t Dev_FireWater_UART_Send(
+  telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
 ) {
-  assert(this && sample);
+  assert(telemetry_h && sample);
 
-  firewater_usart_t *self = (firewater_usart_t *)this;
+  firewater_uart_t *firewater_uart_h = (firewater_uart_t *)telemetry_h;
 
-  if (self->busy) {
-    self->dropped_frames++;
+  if (firewater_uart_h->busy) {
+    firewater_uart_h->dropped_frames++;
     return DEV_TELEMETRY_BUSY;
   }
 
   uint32_t frame_size = 0u;
-  if (!Dev_FireWater_USART_Encode(self, sample, &frame_size)) {
-    self->error_count++;
+  if (!Dev_FireWater_UART_Encode(firewater_uart_h, sample, &frame_size)) {
+    firewater_uart_h->error_count++;
     return DEV_TELEMETRY_ERROR;
   }
 
-  self->busy = true;
-  Dev_USART_Status status = Dev_USART_Transmit_DMA(
-    self->usart,
-    self->tx_buffer,
+  firewater_uart_h->busy = true;
+  dev_uart_status_t status = Dev_UART_TransmitDMA(
+    firewater_uart_h->uart_h,
+    firewater_uart_h->tx_buffer,
     (uint16_t)frame_size
   );
 
-  if (status != DEV_USART_OK) {
-    self->busy = false;
+  if (status != DEV_UART_OK) {
+    firewater_uart_h->busy = false;
 
-    if (status == DEV_USART_BUSY) {
-      self->dropped_frames++;
+    if (status == DEV_UART_BUSY) {
+      firewater_uart_h->dropped_frames++;
       return DEV_TELEMETRY_BUSY;
     }
 
-    self->error_count++;
+    firewater_uart_h->error_count++;
     return DEV_TELEMETRY_ERROR;
   }
 
   return DEV_TELEMETRY_OK;
 }
 
-static void Dev_FireWater_USART_GetStatus(
-  telemetry_base_t *this,
+static void Dev_FireWater_UART_GetStatus(
+  telemetry_base_t *telemetry_h,
   telemetry_status_t *status
 ) {
-  assert(this && status);
+  assert(telemetry_h && status);
 
-  firewater_usart_t *self = (firewater_usart_t *)this;
+  firewater_uart_t *firewater_uart_h = (firewater_uart_t *)telemetry_h;
   *status = (telemetry_status_t){
-    .is_busy = self->busy,
-    .sent_frames = self->sent_frames,
-    .dropped_frames = self->dropped_frames,
-    .error_count = self->error_count,
+    .is_busy = firewater_uart_h->busy,
+    .sent_frames = firewater_uart_h->sent_frames,
+    .dropped_frames = firewater_uart_h->dropped_frames,
+    .error_count = firewater_uart_h->error_count,
   };
 }
 
 static const telemetry_ops_t telemetry_ops_firewater = {
-  .send       = Dev_FireWater_USART_Send,
-  .get_status = Dev_FireWater_USART_GetStatus,
+  .send       = Dev_FireWater_UART_Send,
+  .get_status = Dev_FireWater_UART_GetStatus,
 };
 
-void Dev_FireWater_USART_Init(
-  firewater_usart_t *this,
+void Dev_FireWater_UART_Init(
+  firewater_uart_t *telemetry_h,
   const char *name,
-  usart_base_t *usart,
+  uart_base_t *uart_h,
   const char *const channel_names[],
   uint8_t channel_count,
   uint8_t precision
 ) {
   assert(
-    this &&
+    telemetry_h &&
     name &&
-    usart &&
+    uart_h &&
     channel_names &&
     channel_count > 0u &&
     channel_count <= TELEMETRY_CHANNEL_CAPACITY &&
@@ -309,23 +309,23 @@ void Dev_FireWater_USART_Init(
   }
 
   Dev_Telemetry_Base_Init(
-    &this->base,
+    &telemetry_h->base,
     name,
     &telemetry_ops_firewater
   );
 
-  this->usart = usart;
-  this->channel_names = channel_names;
-  this->channel_count = channel_count;
-  this->precision = precision;
-  this->busy = false;
-  this->sent_frames = 0u;
-  this->dropped_frames = 0u;
-  this->error_count = 0u;
+  telemetry_h->uart_h = uart_h;
+  telemetry_h->channel_names = channel_names;
+  telemetry_h->channel_count = channel_count;
+  telemetry_h->precision = precision;
+  telemetry_h->busy = false;
+  telemetry_h->sent_frames = 0u;
+  telemetry_h->dropped_frames = 0u;
+  telemetry_h->error_count = 0u;
 
-  dev_usart_callbacks_t callbacks = {
-    .tx_cplt_cb = Dev_FireWater_USART_OnTxCplt,
-    .context = this,
+  dev_uart_callbacks_t callbacks = {
+    .tx_complete_cb = Dev_FireWater_UART_OnTxCplt,
+    .context = telemetry_h,
   };
-  Dev_USART_RegisterCallbacks(usart, &callbacks);
+  Dev_UART_RegisterCallback(uart_h, &callbacks);
 }

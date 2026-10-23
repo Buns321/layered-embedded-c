@@ -11,26 +11,26 @@ Platform 的公共行为必须跨 STM32F1/F4 保持一致。允许不同的内�
 
 F1/F4 不得在参数校验、返回值、错误快照、回调所有权、异步状态机和 abort
 语义上产生差异。公共 API 必须保持同一签名，不支持的能力通过
-`Platform_UNSUPPORTED` 表达，不通过删除函数或改变返回类型表达。
+`PLATFORM_STATUS_UNSUPPORTED` 表达，不通过删除函数或改变返回类型表达。
 
 ## 2. 状态码
 
-所有可能失败的控制、配置和传输操作返回 `Platform_StatusTypeDef`：
+所有可能失败的控制、配置和传输操作返回 `platform_status_t`：
 
 | 状态 | 含义 |
 | --- | --- |
-| `Platform_OK` | 操作成功，或异步操作已成功启动 |
-| `Platform_ERROR` | 硬件或内部执行失败 |
-| `Platform_BUSY` | 资源已被占用，或重复注册/重复启动 |
-| `Platform_TIMEOUT` | 阻塞等待超时 |
-| `Platform_INVALID_ARGUMENT` | 公共输入不满足接口契约 |
-| `Platform_UNSUPPORTED` | 当前系列或实例不支持请求的能力 |
+| `PLATFORM_STATUS_OK` | 操作成功，或异步操作已成功启动 |
+| `PLATFORM_STATUS_ERROR` | 硬件或内部执行失败 |
+| `PLATFORM_STATUS_BUSY` | 资源已被占用，或重复注册/重复启动 |
+| `PLATFORM_STATUS_TIMEOUT` | 阻塞等待超时 |
+| `PLATFORM_STATUS_INVALID_ARGUMENT` | 公共输入不满足接口契约 |
+| `PLATFORM_STATUS_UNSUPPORTED` | 当前系列或实例不支持请求的能力 |
 
-异步启动函数返回 `Platform_OK` 只表示硬件已接受请求，不表示传输完成。
+异步启动函数返回 `PLATFORM_STATUS_OK` 只表示硬件已接受请求，不表示传输完成。
 
 ## 3. 参数校验
 
-公共输入错误统一返回 `Platform_INVALID_ARGUMENT`，不得同时依赖 `assert`。
+公共输入错误统一返回 `PLATFORM_STATUS_INVALID_ARGUMENT`，不得同时依赖 `assert`。
 以下输入属于公共输入错误：
 
 - 空指针。
@@ -49,10 +49,10 @@ F1/F4 不得在参数校验、返回值、错误快照、回调所有权、异�
 1. 每次公共操作开始时清除该实例的软件错误。
 2. 参数错误、状态错误和不支持能力写入通用错误位。
 3. HAL 或硬件错误映射后写入模块错误位。
-4. 成功操作保持错误值为 `PLATFORM_COMMON_ERROR_NONE`。
+4. 成功操作保持错误值为 `PLATFORM_ERROR_NONE`。
 5. `GetLastError()` 只读，不清除错误。
 6. 非法实例调用 `GetLastError()` 返回
-   `PLATFORM_COMMON_ERROR_PARAMETER`，不得解引用硬件 handle。
+   `PLATFORM_ERROR_INVALID_ARGUMENT`，不得解引用硬件 handle。
 
 通用错误位定义在 `platform_def.h`，模块专用错误位不得覆盖这些位。
 
@@ -60,10 +60,10 @@ F1/F4 不得在参数校验、返回值、错误快照、回调所有权、异�
 
 所有回调注册入口统一为：
 
-- 返回 `Platform_StatusTypeDef`。
+- 返回 `platform_status_t`。
 - 一个物理实例只能注册一次。
-- 重复注册返回 `Platform_BUSY`。
-- 空回调结构返回 `Platform_INVALID_ARGUMENT`。
+- 重复注册返回 `PLATFORM_STATUS_BUSY`。
+- 空回调结构返回 `PLATFORM_STATUS_INVALID_ARGUMENT`。
 - 回调结构在注册时复制，`context` 生命周期由调用方保证。
 - 回调在中断上下文执行，不得阻塞、分配内存或执行长耗时解析。
 - 同一模块族使用 typed event 结构，不为每个事件维护独立的函数指针槽。
@@ -77,8 +77,8 @@ F1/F4 不得在参数校验、返回值、错误快照、回调所有权、异�
 - 可无限等待的接口接受 `PLATFORM_TIMEOUT_INFINITE`。
 - 阻塞接口只允许在任务上下文调用。
 - 不得隐藏不可配置的 HAL 默认超时。
-- timeout 到期返回 `Platform_TIMEOUT`，不得伪装成 `Platform_BUSY`。
-- 总线忙且尚未等待超时返回 `Platform_BUSY`。
+- timeout 到期返回 `PLATFORM_STATUS_TIMEOUT`，不得伪装成 `PLATFORM_STATUS_BUSY`。
+- 总线忙且尚未等待超时返回 `PLATFORM_STATUS_BUSY`。
 
 ## 7. IT / DMA 生命周期
 
@@ -95,7 +95,7 @@ IDLE -> BUSY -> COMPLETION
 - 一次操作只能产生一个最终完成、错误或 abort 事件。
 - 源/目的缓冲区从启动成功开始，到最终事件前必须保持有效。
 - 回调后需要重新启动的操作由上层显式发起。
-- 不支持异步 abort 的外设返回 `Platform_UNSUPPORTED`，不得静默忽略。
+- 不支持异步 abort 的外设返回 `PLATFORM_STATUS_UNSUPPORTED`，不得静默忽略。
 - 中止完成后必须清除硬件和软件错误状态，允许显式重新启动。
 
 ## 8. 查询接口
@@ -103,7 +103,7 @@ IDLE -> BUSY -> COMPLETION
 可能失败的查询使用：
 
 ```c
-Platform_StatusTypeDef Platform_X_GetValue(
+platform_status_t Platform_X_GetValue(
   Platform_X_Instance instance,
   Platform_X_Value *value
 );

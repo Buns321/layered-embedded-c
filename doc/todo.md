@@ -2,14 +2,25 @@
 
 ## 当前里程碑
 **状态**：核心分层、F4/F1 Platform 全部支持外设、F103 基础目标、设备驱动、
-控制/策略、Filter、System 基础服务、RTT 日志和两种 USART 遥测协议均已实现并通过构建。
+控制/策略、Filter、System 基础服务、RTT 日志和两种 UART 遥测协议均已实现并通过构建。
 - [x] F4 与 F103 的 Debug、Release、无 RTT 三种配置构建通过
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
-- [x] FireWater / JustFloat 遥测设备与 USART DMA 发送
+- [x] FireWater / JustFloat 遥测设备与 UART DMA 发送
 - [ ] Board 层与 App / RTOS 运行链路的完整接线
 - [ ] 轮速 PID、参数标定和板上验证
 - [ ] 遥测通道 schema、周期发送与 USART2 高速配置
+
+## 命名与接口一致性
+**目标**：公共类型、聚合标签、函数动作、对象句柄和并行模块词序使用同一套规则，
+由 `doc/conventions.md` 冻结。
+- [x] 公共 typedef 统一为小写蛇形 `_t`
+- [x] 聚合标签统一为 `_s` / `_e` / `_u`，清除匿名公共聚合
+- [x] 公共函数最后一段统一为驼峰动作，IT/DMA 等后缀不再拆成下划线
+- [x] 对象句柄统一为 `<role>_h`，同类实例使用数组下标
+- [x] 项目自有 UART 符号统一，CubeMX/HAL 的 USART 符号保留原名
+- [x] Policy、RTOS、System 数学 API 和文件名统一词序
+- [x] F4/F103 Debug、Release、`-Werror` 与全实例检查通过
 
 ## Platform · 统一契约重构
 **目标**：F1/F4 只允许在实例数量、位宽、能力集合和 HAL 后端上不同；公共参数
@@ -19,7 +30,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **规则冻结**
 - [x] 新增 `doc/platform-contract.md`，冻结状态码、错误位、参数校验、timeout、
   回调、abort、缓冲区和跨系列能力规则
-- [x] `Platform_StatusTypeDef` 增加参数错误和硬件不支持状态
+- [x] `platform_status_t` 增加参数错误和硬件不支持状态
 - [x] 定义跨外设通用错误位，模块专用 HAL 错误使用独立高位
 - [x] 明确公共参数错误不在 Debug/Release 间采用不同行为
 - [x] 明确 `assert` 只用于内部不变量，不用于可返回错误的公共输入
@@ -28,8 +39,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **公共基础设施**
 - [x] 提取公共错误快照辅助函数
 - [ ] 提取公共实例校验和状态转换辅助函数
-- [x] 回调注册统一返回 `Platform_StatusTypeDef`
-- [x] 每个物理实例只允许注册一次；重复注册统一返回 `Platform_BUSY`
+- [x] 回调注册统一返回 `platform_status_t`
+- [x] 每个物理实例只允许注册一次；重复注册统一返回 `PLATFORM_STATUS_BUSY`
 - [x] EXTI 取消特殊覆盖语义，与其他外设统一回调所有权
 - [x] 增加原生 fake-backend watchdog/RTC/Flash 契约测试，覆盖能力、状态和错误差异
 - [ ] 扩展 `cmake/platform-check`，验证两系列公共 API 签名和行为可编译
@@ -57,7 +68,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] converter 组已统一使用 typed event 结构
 
 **F1/F4 去重**
-- [x] Public headers 只保留一份，能力差异通过配置、查询或 `Platform_UNSUPPORTED`
+- [x] Public headers 只保留一份，能力差异通过配置、查询或 `PLATFORM_STATUS_UNSUPPORTED`
   表达，不改变普通函数签名
 - [x] 公共参数校验、状态机、错误映射和回调分发迁入 `Platform/Src/common/`
 - [x] F1/F4 目录只保留 handle 映射、HAL 调用、时钟和硬件能力差异
@@ -128,7 +139,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] `stm32f4/platform_can.c`
 - [x] `stm32f4/platform_rtc.c`
 - [x] `stm32f4/platform_flash.c`
-- [x] `stm32f4/platform_usart.c` 补齐 USART3 / UART4 / UART5 / USART6 映射
+- [x] `stm32f4/platform_uart.c` 补齐 USART3 / UART4 / UART5 / USART6 映射
 
 **F1 与构建**
 - [x] F103 目标接入共享 App / Controller / Policy / Filter / DeviceDrivers base / RTOS
@@ -136,7 +147,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] F1 USART1–3、PWM TIM1、Encoder TIM2–4、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC、Flash 实现
 - [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
 - [x] F4/F1 独立 Platform 全实例 Debug、Release 构建通过 `-Wall -Wextra`
-- [ ] F103 CubeMX 配置实际 USART/TIM/I2C/SPI/ADC/CAN/RTC 实例、DMA 和 NVIC
+- [ ] F103 CubeMX 配置实际 UART/TIM/I2C/SPI/ADC/CAN/RTC 实例、DMA 和 NVIC
 - [ ] 每个实际启用的 F103 实例同步 CubeMX handle、初始化和板级 CMake 开关
 - [ ] 板上验证新增 I2C / SPI / ADC / DAC / CAN / RTC / Flash 的电气与时序行为
 - [ ] 评估 I2S / USB / SDIO / ETH / DCMI / FSMC，按项目需要启用
@@ -168,7 +179,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] `motor_tb6612` 对 `power` 做有限值检查和 `[-max_duty, +max_duty]` 限幅
 - [x] `motor_tb6612` 在方向切换前先撤销 PWM，再更新 IN1/IN2
 - [x] `motor_tb6612` 的 `brake` 使用满占空比形成短制动
-- [x] `Dev_Motor_TB6612_Init` 返回 `Platform_StatusTypeDef` 并处理 PWM 启动失败
+- [x] `Dev_Motor_TB6612_Init` 返回 `platform_status_t` 并处理 PWM 启动失败
 - [x] 增加 `Dev_Motor_Base_Brake` 公共入口，使已经实现的 TB6612 短制动能力可达
 - [x] 具体驱动保持 base 首成员 + 静态 ops 表
 - [ ] 用 PID 替换线性开环映射，完成真实轮速闭环
@@ -212,13 +223,13 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 
 ## Policy
 **架构**：Policy 是独立的 MIMO 运动解算层，与 Controller 平级。按底盘种类拆分接口，每种底盘只接受对应类型的 Policy；具体 Policy 内嵌 base 并绑定静态 ops 表。
-- [x] 新增 `omni_policy_base_t`，ops 含 `solve(v, dir, yaw, omega, out[4])`
+- [x] 新增 `policy_omni_base_t`，ops 含 `solve(v, dir, yaw, omega, out[4])`
 - [x] 新增 `policy_omni_kinematics_t`，内嵌 base，持有安装角、轮距、方向符号
 
 ## DeviceDrivers · 底盘
 **架构**：`chassis_base_t` 只承载生命周期（update/stop/estop）；具体底盘内嵌 base，持有自己的执行器、IMU、Policy 和命令。底盘负责解算与下发目标，闭环仍在各电机内部。
 - [x] 新增 `chassis_base_t`
-- [x] 新增 `chassis_omni_t`，持有 `motor_base_t *wheel[4]`、`imu_base_t *imu`、`omni_policy_base_t *policy`
+- [x] 新增 `chassis_omni_t`，持有 `motor_base_t *wheel[4]`、`imu_base_t *imu`、`policy_omni_base_t *policy`
 - [x] `chassis_omni_t` 提供 `set_motion(v, dir, omega)`
 - [x] `chassis_omni_t` 提供 `update`：读取 yaw、调用 policy 解算、向四个电机下发目标
 - [x] `chassis_omni_t` 根据 yaw 有效位和时间戳拒绝过期数据并锁存制动
@@ -230,17 +241,17 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **架构**：`imu_base_t` 负责原始帧合并、已注册滤波器的调度、滤波结果发布、逐通道时间戳和一致快照。WHT101 通过 UART 采集并提交 yaw/gyro-z；MPU6050 通过 Platform I2C 采集六轴、完成陀螺零偏标定和轴映射后提交 accel/gyro。具体驱动不内置软件滤波，WHT101 显式注册 passthrough，MPU6050 可注册 lowpass、chain 或后续 Kalman。
 **状态**：统一管线、WHT101 迁移、MPU6050 I2C 驱动和主机侧测试已完成；
 App/RTOS 仍需把 IMU 解析和采样接入任务。
-- [x] `usart_base` 补齐 `Dev_USART_Receive_IT`、`Dev_USART_Transmit_IT`、`Dev_USART_Receive_DMA`、`Dev_USART_Transmit_DMA`、`Dev_USART_RegisterCallbacks` 的转发实现
-- [x] 重构 `usart_base` 使用独立的 `Dev_USART_Status`，不向设备层返回 Platform 类型
-- [x] 新增 `usart_port_t` 适配 `Platform_UART_*`，并在 Platform 回调与 `usart_base` 回调之间桥接
-- [x] `usart_pingpong` 已归档并删除，不再重写或恢复
-- [x] 删除空的 `usart_controller`；协议明确后再新建具体驱动
+- [x] `uart_base` 补齐 `Dev_UART_ReceiveIT`、`Dev_UART_TransmitIT`、`Dev_UART_ReceiveDMA`、`Dev_UART_TransmitDMA`、`Dev_UART_RegisterCallback` 的转发实现
+- [x] 重构 `uart_base` 使用独立的 `dev_uart_status_t`，不向设备层返回 Platform 类型
+- [x] 新增 `uart_port_t` 适配 `Platform_UART_*`，并在 Platform 回调与 `uart_base` 回调之间桥接
+- [x] `uart_pingpong` 已归档并删除，不再重写或恢复
+- [x] 删除空的 `uart_controller`；协议明确后再新建具体驱动
 - [x] `imu_base_t` 增加 accel XYZ、完整样本、raw/filtered 快照和统一滤波调度
 - [x] 具体 IMU 通过 valid_mask 表示不支持通道，不再依赖空 getter 断言
 - [x] 将 WHT101 置零和输出速率配置改为由 `process(now_ms)` 推进的非阻塞状态机
 - [x] 为各 IMU 通道提供独立更新时间戳，明确不同异步帧的新鲜度判断
 - [x] `imu_base_t` 增加 `start`、`process` ops 及对应转发入口
-- [x] WHT101 仅依赖 `usart_base_t`，不再包含或引用 Platform UART 类型
+- [x] WHT101 仅依赖 `uart_base_t`，不再包含或引用 Platform UART 类型
 - [x] WHT101 使用单字节中断接收、256 字节环形队列、溢出统计和自动重新挂起
 - [x] 建立 USART1 中断 -> 环形队列 -> `process()` -> `FeedByte` 的输入路径
 - [x] WHT101 提交模块内部处理后的 yaw 和 gyro-z，并通过 passthrough 发布
@@ -267,12 +278,12 @@ App/RTOS 仍需把 IMU 解析和采样接入任务。
 
 ## DeviceDrivers · 遥测
 **架构**：`telemetry_base_t` 承载固定多通道样本和非阻塞整帧发送契约；
-`firewater_usart_t` 与 `justfloat_usart_t` 是具体协议设备，通过 `usart_base_t`
-DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。USART 回调槽由当前
+`firewater_uart_t` 与 `justfloat_uart_t` 是具体协议设备，通过 `uart_base_t`
+DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 回调槽由当前
 协议设备独占。
 - [x] 新增 `telemetry_base_t`、样本、状态与 base/ops
-- [x] 新增 `firewater_usart_t` 文本协议实现
-- [x] 新增 `justfloat_usart_t` 小端二进制协议实现
+- [x] 新增 `firewater_uart_t` 文本协议实现
+- [x] 新增 `justfloat_uart_t` 小端二进制协议实现
 - [x] 对有效掩码、非有限值、帧容量和 DMA 状态做检查
 - [x] 记录发送、丢弃和错误计数
 - [x] 加入 CMake 与 Doxygen 输入
@@ -300,11 +311,11 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。USART
 - [ ] `App_Init` 按索引完成电机、编码器、控制律、底盘、policy 的接线
 - [ ] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
 - [ ] 上层接线按硬件组成对管理 STBY（`m0/m1`、`m2/m3`），禁止单电机依赖 STBY 停机
-- [ ] `rtos_control.c` 实现 `StartControlTask`，固定周期调用底盘 update 与四个电机 update
+- [ ] `rtos_control.c` 实现 `RTOS_Control_StartTask`，固定周期调用底盘 update 与四个电机 update
 - [ ] `rtos_control.c` 维护 `g_ctrl_heartbeat`
-- [ ] `rtos_usart.c` 实现 `StartUSARTTask`，周期调用 `Dev_IMU_Base_Process(now_ms)`
+- [ ] `rtos_uart.c` 实现 `RTOS_UART_StartTask`，周期调用 `Dev_IMU_Base_Process(now_ms)`
 - [ ] `rtos_monitor.c` 补齐控制任务死亡与电机堵转时的停机动作
-- [ ] 替换 `Core/Src/freertos.c` 中 `StartControlTask`、`StartUSARTTask` 的 `__weak` 占位
+- [ ] 替换 `Core/Src/freertos.c` 中 `RTOS_Control_StartTask`、`RTOS_UART_StartTask` 的 `__weak` 占位
 - [ ] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
 - [ ] 为 Idle/Timer Task 提供静态内存并关闭 FreeRTOS 动态分配
 - [ ] 开启并实现 `configCHECK_FOR_STACK_OVERFLOW`
@@ -324,7 +335,7 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。USART
 **架构**：时基统一——RTOS 下毫秒延时使用内核延时，裸机下使用 DWT；
 微秒级延时统一使用 DWT。
 - [x] 在构建配置中定义 `USE_FREERTOS`
-- [x] `Sys_Delay_Ms` 在 RTOS 下改用 `osDelay` 或 `vTaskDelay`，并包含对应头文件
+- [x] `Sys_DelayMs` 在 RTOS 下改用 `osDelay` 或 `vTaskDelay`，并包含对应头文件
 - [x] 在 System 内用条件编译（`STM32F4xx` / `STM32F1xx`）选择 MCU 头文件与延时实现，保留 DWT 细节
 - [x] 在启动流程中调用 `Sys_Delay_Init()`，确保 DWT 微秒延时可用
 - [x] 修复 `SYS_ABS` 对 `INT_MIN`/`LONG_MIN`/`LLONG_MIN` 的未定义行为，默认使用饱和版本
@@ -368,7 +379,7 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。USART
 - [x] 将新增的 policy、chassis 源文件加入 `CMakeLists.txt`
 - [x] 同步 `motor_base` 新接口到 `motor_tb6612`
 - [ ] 更新 App/RTOS 调用点并完成运行链路接线（工程链接已通过）
-- [x] 从 CMake 中移除 Algorithm、空的 controller/usart/platform_tim 文件和不再使用的旧模块
+- [x] 从 CMake 中移除 Algorithm、空的 controller/uart/platform_tim 文件和不再使用的旧模块
 - [x] 用 `target_include_directories` 替代大量 `../../` 相对 include
 - [x] 新增 `SYS_LOG_USE_RTT` CMake 开关并验证关闭后无 SEGGER 依赖
 - [x] RTT、日志和遥测源码加入顶层构建

@@ -17,7 +17,7 @@
  * @param argument 未使用。
  * @note 当前是最小占位实现，心跳和故障停机待接入。
  */
-void StartMonitor_Task(void *argument);
+void RTOS_Monitor_StartTask(void *argument);
 
 /** @} */
 

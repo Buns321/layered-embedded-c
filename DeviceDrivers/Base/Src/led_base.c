@@ -5,41 +5,41 @@
 #include "led_base.h"
 #include <assert.h>
 
-void Dev_LED_Base_Init(led_base_t *this, const char *name, const led_ops_t *ops) {
-  assert(this && name && ops);
-  this->ops        = ops;
-  this->name       = name;
-  this->is_on      = DEV_LED_OFF;
+void Dev_LED_Base_Init(led_base_t *led_h, const char *name, const led_ops_t *ops) {
+  assert(led_h && name && ops);
+  led_h->ops        = ops;
+  led_h->name       = name;
+  led_h->is_on      = DEV_LED_OFF;
 }
 
-Dev_LED_State Dev_LED_Base_ReadStatus(const led_base_t *this) {
-  assert(this);
-  return this->is_on;
+dev_led_state_t Dev_LED_Base_ReadStatus(const led_base_t *led_h) {
+  assert(led_h);
+  return led_h->is_on;
 }
 
-void Dev_LED_Base_SetBrightness(led_base_t *this, uint16_t brightness) {
-  assert(this && this->ops && this->ops->set_brightness);
-  this->ops->set_brightness(this, brightness);
-  this->is_on = brightness == 0 ? DEV_LED_OFF : DEV_LED_ON;
+void Dev_LED_Base_SetBrightness(led_base_t *led_h, uint16_t brightness) {
+  assert(led_h && led_h->ops && led_h->ops->set_brightness);
+  led_h->ops->set_brightness(led_h, brightness);
+  led_h->is_on = brightness == 0 ? DEV_LED_OFF : DEV_LED_ON;
 }
 
-void Dev_LED_Base_ON(led_base_t *this) {
-  assert(this && this->ops && this->ops->on);
-  this->ops->on(this);
-  this->is_on = DEV_LED_ON;
+void Dev_LED_Base_TurnOn(led_base_t *led_h) {
+  assert(led_h && led_h->ops && led_h->ops->on);
+  led_h->ops->on(led_h);
+  led_h->is_on = DEV_LED_ON;
 }
 
-void Dev_LED_Base_OFF(led_base_t *this) {
-  assert(this && this->ops && this->ops->off);
-  this->ops->off(this);
-  this->is_on = DEV_LED_OFF;
+void Dev_LED_Base_TurnOff(led_base_t *led_h) {
+  assert(led_h && led_h->ops && led_h->ops->off);
+  led_h->ops->off(led_h);
+  led_h->is_on = DEV_LED_OFF;
 }
 
-void Dev_LED_Base_Toggle(led_base_t *this) {
-  assert(this);
-  switch (this->is_on) {
-    case DEV_LED_ON:  Dev_LED_Base_OFF(this); break;
-    case DEV_LED_OFF: Dev_LED_Base_ON(this);  break;
+void Dev_LED_Base_Toggle(led_base_t *led_h) {
+  assert(led_h);
+  switch (led_h->is_on) {
+    case DEV_LED_ON:  Dev_LED_Base_TurnOff(led_h); break;
+    case DEV_LED_OFF: Dev_LED_Base_TurnOn(led_h);  break;
     default:          assert(0);               break;
   }
 }

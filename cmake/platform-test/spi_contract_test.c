@@ -5,26 +5,26 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static Platform_SPI_DataWidth s_data_width;
-static Platform_StatusTypeDef s_transmit_status;
+static platform_spi_data_width_t s_data_width;
+static platform_status_t s_transmit_status;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
 
-bool platform_spi_backend_is_valid(Platform_SPI_Instance spi) {
+bool platform_spi_backend_is_valid(platform_spi_instance_t spi) {
   return spi == PLATFORM_SPI_1;
 }
 
-Platform_StatusTypeDef platform_spi_backend_get_data_width(
-  Platform_SPI_Instance spi,
-  Platform_SPI_DataWidth *data_width
+platform_status_t platform_spi_backend_get_data_width(
+  platform_spi_instance_t spi,
+  platform_spi_data_width_t *data_width
 ) {
   (void)spi;
   *data_width = s_data_width;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -36,8 +36,8 @@ Platform_StatusTypeDef platform_spi_backend_transmit(
   return s_transmit_status;
 }
 
-Platform_StatusTypeDef platform_spi_backend_receive(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_receive(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -46,11 +46,11 @@ Platform_StatusTypeDef platform_spi_backend_receive(
   (void)data;
   (void)size;
   (void)timeout;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit_receive(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit_receive(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size,
@@ -61,33 +61,33 @@ Platform_StatusTypeDef platform_spi_backend_transmit_receive(
   (void)rx_data;
   (void)size;
   (void)timeout;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit_it(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit_it(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 ) {
   (void)spi;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_receive_it(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_receive_it(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 ) {
   (void)spi;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit_receive_it(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit_receive_it(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -96,33 +96,33 @@ Platform_StatusTypeDef platform_spi_backend_transmit_receive_it(
   (void)tx_data;
   (void)rx_data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit_dma(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit_dma(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 ) {
   (void)spi;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_receive_dma(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_receive_dma(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 ) {
   (void)spi;
   (void)data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_transmit_receive_dma(
-  Platform_SPI_Instance spi,
+platform_status_t platform_spi_backend_transmit_receive_dma(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -131,29 +131,29 @@ Platform_StatusTypeDef platform_spi_backend_transmit_receive_dma(
   (void)tx_data;
   (void)rx_data;
   (void)size;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_abort(Platform_SPI_Instance spi) {
+platform_status_t platform_spi_backend_abort(platform_spi_instance_t spi) {
   (void)spi;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_spi_backend_abort_it(
-  Platform_SPI_Instance spi
+platform_status_t platform_spi_backend_abort_it(
+  platform_spi_instance_t spi
 ) {
   (void)spi;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-uint32_t platform_spi_backend_get_error(Platform_SPI_Instance spi) {
+uint32_t platform_spi_backend_get_error(platform_spi_instance_t spi) {
   (void)spi;
   return s_backend_error;
 }
 
 static void spi_callback(
-  Platform_SPI_Instance spi,
-  const Platform_SPI_Event *event,
+  platform_spi_instance_t spi,
+  const platform_spi_event_t *event,
   void *context
 ) {
   assert(spi == PLATFORM_SPI_1);
@@ -164,38 +164,38 @@ static void spi_callback(
 
 static void test_spi_contract(void) {
   const uint8_t buffer[4] = {0U, 1U, 2U, 3U};
-  s_transmit_status = Platform_OK;
+  s_transmit_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_SPI_ERROR_NONE;
   s_event_count = 0U;
 
-  Platform_SPI_DataWidth width;
+  platform_spi_data_width_t width;
   s_data_width = PLATFORM_SPI_DATA_WIDTH_16_BIT;
-  assert(Platform_SPI_GetDataWidth(PLATFORM_SPI_1, &width) == Platform_OK);
+  assert(Platform_SPI_GetDataWidth(PLATFORM_SPI_1, &width) == PLATFORM_STATUS_OK);
   assert(width == PLATFORM_SPI_DATA_WIDTH_16_BIT);
   assert(Platform_SPI_Transmit(PLATFORM_SPI_1, buffer, 3U, 10U) ==
-         Platform_INVALID_ARGUMENT);
+         PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_SPI_GetLastError(PLATFORM_SPI_1) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 
   s_data_width = PLATFORM_SPI_DATA_WIDTH_8_BIT;
-  s_transmit_status = Platform_ERROR;
+  s_transmit_status = PLATFORM_STATUS_ERROR;
   assert(Platform_SPI_Transmit(PLATFORM_SPI_1, buffer, 3U, 10U) ==
-         Platform_ERROR);
+         PLATFORM_STATUS_ERROR);
   assert((Platform_SPI_GetLastError(PLATFORM_SPI_1) &
-          PLATFORM_COMMON_ERROR_HAL) != 0U);
+          PLATFORM_ERROR_HAL) != 0U);
 
-  s_transmit_status = Platform_OK;
+  s_transmit_status = PLATFORM_STATUS_OK;
   assert(Platform_SPI_Transmit(PLATFORM_SPI_1, buffer, 3U, 10U) ==
-         Platform_OK);
+         PLATFORM_STATUS_OK);
 
-  const platform_spi_callbacks_t callbacks = {
+  const platform_spi_callback_binding_t callbacks = {
     .callback = spi_callback,
     .context = &s_event_count,
   };
-  assert(Platform_SPI_RegisterCallbacks(PLATFORM_SPI_1, &callbacks) ==
-         Platform_OK);
-  assert(Platform_SPI_RegisterCallbacks(PLATFORM_SPI_1, &callbacks) ==
-         Platform_BUSY);
+  assert(Platform_SPI_RegisterCallback(PLATFORM_SPI_1, &callbacks) ==
+         PLATFORM_STATUS_OK);
+  assert(Platform_SPI_RegisterCallback(PLATFORM_SPI_1, &callbacks) ==
+         PLATFORM_STATUS_BUSY);
 
   s_backend_error = PLATFORM_SPI_ERROR_OVR;
   platform_spi_dispatch_event(PLATFORM_SPI_1, PLATFORM_SPI_EVENT_ERROR);

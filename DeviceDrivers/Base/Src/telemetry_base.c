@@ -7,37 +7,37 @@
 #include <assert.h>
 
 void Dev_Telemetry_Base_Init(
-  telemetry_base_t *this,
+  telemetry_base_t *telemetry_h,
   const char *name,
   const telemetry_ops_t *ops
 ) {
   assert(
-    this           &&
+    telemetry_h           &&
     name           &&
     ops            &&
     ops->send      &&
     ops->get_status
   );
 
-  this->name = name;
-  this->ops  = ops;
+  telemetry_h->name = name;
+  telemetry_h->ops  = ops;
 }
 
-Dev_Telemetry_Status Dev_Telemetry_Base_Send(
-  telemetry_base_t *this,
+dev_telemetry_status_t Dev_Telemetry_Base_Send(
+  telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
 ) {
   assert(
-    this              &&
-    this->ops         &&
-    this->ops->send   &&
+    telemetry_h              &&
+    telemetry_h->ops         &&
+    telemetry_h->ops->send   &&
     sample
   );
 
   if (
-    this == NULL       ||
-    this->ops == NULL  ||
-    this->ops->send == NULL ||
+    telemetry_h == NULL       ||
+    telemetry_h->ops == NULL  ||
+    telemetry_h->ops->send == NULL ||
     sample == NULL
   ) {
     return DEV_TELEMETRY_ERROR;
@@ -61,19 +61,19 @@ Dev_Telemetry_Status Dev_Telemetry_Base_Send(
     }
   }
 
-  return this->ops->send(this, sample);
+  return telemetry_h->ops->send(telemetry_h, sample);
 }
 
 void Dev_Telemetry_Base_GetStatus(
-  telemetry_base_t *this,
+  telemetry_base_t *telemetry_h,
   telemetry_status_t *status
 ) {
   assert(
-    this                    &&
-    this->ops               &&
-    this->ops->get_status   &&
+    telemetry_h                    &&
+    telemetry_h->ops               &&
+    telemetry_h->ops->get_status   &&
     status
   );
 
-  this->ops->get_status(this, status);
+  telemetry_h->ops->get_status(telemetry_h, status);
 }

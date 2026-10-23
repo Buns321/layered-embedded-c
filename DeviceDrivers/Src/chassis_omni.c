@@ -6,17 +6,17 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Chassis_Omni_Stop(chassis_base_t *this);
+static void Chassis_Omni_Stop(chassis_base_t *chassis_h);
 
-static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
-  assert(this);
+static void Chassis_Omni_Update(chassis_base_t *chassis_h, uint32_t now_ms) {
+  assert(chassis_h);
 
-  chassis_omni_t *self = (chassis_omni_t *)this;
-  assert(self->imu && self->policy);
+  chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
+  assert(chassis_omni_h->imu_h && chassis_omni_h->policy_h);
 
   imu_sample_t imu_sample = {0};
   bool imu_available = Dev_IMU_Base_GetSample(
-    self->imu,
+    chassis_omni_h->imu_h,
     &imu_sample
   );
 
@@ -27,9 +27,9 @@ static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
   if (
     !imu_available                                          ||
     (imu_sample.valid_mask & IMU_CHANNEL_YAW) == 0u         ||
-    yaw_age_ms > self->imu_timeout_ms
+    yaw_age_ms > chassis_omni_h->imu_timeout_ms
   ) {
-    Chassis_Omni_Stop(this);
+    Chassis_Omni_Stop(chassis_h);
     return;
   }
 
@@ -37,47 +37,47 @@ static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
   float yaw_rad = imu_sample.yaw_deg * deg_to_rad;
   float wheel_speed[CHASSIS_OMNI_WHEEL_COUNT] = {0};
 
-  Omni_Policy_Base_Solve(
-    self->policy,
-    self->v,
-    self->dir,
+  Policy_Omni_Base_Solve(
+    chassis_omni_h->policy_h,
+    chassis_omni_h->v,
+    chassis_omni_h->dir,
     yaw_rad,
-    self->omega,
+    chassis_omni_h->omega,
     wheel_speed
   );
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
-    assert(self->wheel[i]);
-    Dev_Motor_Base_SetTargetSpeed(self->wheel[i], wheel_speed[i]);
+    assert(chassis_omni_h->motor_h[i]);
+    Dev_Motor_Base_SetTargetSpeed(chassis_omni_h->motor_h[i], wheel_speed[i]);
   }
 }
 
-static void Chassis_Omni_Stop(chassis_base_t *this) {
-  assert(this);
+static void Chassis_Omni_Stop(chassis_base_t *chassis_h) {
+  assert(chassis_h);
 
-  chassis_omni_t *self = (chassis_omni_t *)this;
+  chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
 
-  self->v     = 0.0f;
-  self->omega = 0.0f;
+  chassis_omni_h->v     = 0.0f;
+  chassis_omni_h->omega = 0.0f;
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
-    assert(self->wheel[i]);
-    Dev_Motor_Base_SetTargetSpeed(self->wheel[i], 0.0f);
-    Dev_Motor_Base_Brake(self->wheel[i]);
+    assert(chassis_omni_h->motor_h[i]);
+    Dev_Motor_Base_SetTargetSpeed(chassis_omni_h->motor_h[i], 0.0f);
+    Dev_Motor_Base_Brake(chassis_omni_h->motor_h[i]);
   }
 }
 
-static void Chassis_Omni_EStop(chassis_base_t *this) {
-  assert(this);
+static void Chassis_Omni_EStop(chassis_base_t *chassis_h) {
+  assert(chassis_h);
 
-  chassis_omni_t *self = (chassis_omni_t *)this;
+  chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
 
-  self->v     = 0.0f;
-  self->omega = 0.0f;
+  chassis_omni_h->v     = 0.0f;
+  chassis_omni_h->omega = 0.0f;
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
-    assert(self->wheel[i]);
-    Dev_Motor_Base_Disable(self->wheel[i]);
+    assert(chassis_omni_h->motor_h[i]);
+    Dev_Motor_Base_Disable(chassis_omni_h->motor_h[i]);
   }
 }
 
@@ -88,46 +88,46 @@ static const chassis_ops_t chassis_ops_omni = {
 };
 
 void Chassis_Omni_Init(
-  chassis_omni_t     *this,
+  chassis_omni_t     *chassis_h,
   const char         *name,
-  motor_base_t *const wheel[CHASSIS_OMNI_WHEEL_COUNT],
-  imu_base_t         *imu,
-  omni_policy_base_t *policy,
+  motor_base_t *const motor_h[CHASSIS_OMNI_WHEEL_COUNT],
+  imu_base_t         *imu_h,
+  policy_omni_base_t *policy_h,
   uint32_t            imu_timeout_ms
 ) {
   assert(
-    this            &&
+    chassis_h            &&
     name            &&
-    wheel           &&
-    imu             &&
-    policy          &&
+    motor_h           &&
+    imu_h             &&
+    policy_h          &&
     imu_timeout_ms > 0u
   );
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
-    assert(wheel[i]);
+    assert(motor_h[i]);
 
     for (uint8_t j = 0; j < i; j++) {
-      assert(wheel[i] != wheel[j]);
+      assert(motor_h[i] != motor_h[j]);
     }
   }
 
-  Chassis_Base_Init(&this->base, name, &chassis_ops_omni);
+  Chassis_Base_Init(&chassis_h->base, name, &chassis_ops_omni);
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
-    this->wheel[i] = wheel[i];
+    chassis_h->motor_h[i] = motor_h[i];
   }
 
-  this->imu    = imu;
-  this->policy = policy;
-  this->v      = 0.0f;
-  this->dir    = 0.0f;
-  this->omega  = 0.0f;
-  this->imu_timeout_ms = imu_timeout_ms;
+  chassis_h->imu_h    = imu_h;
+  chassis_h->policy_h = policy_h;
+  chassis_h->v      = 0.0f;
+  chassis_h->dir    = 0.0f;
+  chassis_h->omega  = 0.0f;
+  chassis_h->imu_timeout_ms = imu_timeout_ms;
 }
 
-void Chassis_Omni_SetMotion(chassis_omni_t *this, float v, float dir, float omega) {
-  assert(this);
+void Chassis_Omni_SetMotion(chassis_omni_t *chassis_h, float v, float dir, float omega) {
+  assert(chassis_h);
 
   assert(
     SYS_ISFINITE(v)     &&
@@ -139,7 +139,7 @@ void Chassis_Omni_SetMotion(chassis_omni_t *this, float v, float dir, float omeg
   if (!SYS_ISFINITE(dir))   dir   = 0.0f;
   if (!SYS_ISFINITE(omega)) omega = 0.0f;
 
-  this->v     = v;
-  this->dir   = dir;
-  this->omega = omega;
+  chassis_h->v     = v;
+  chassis_h->dir   = dir;
+  chassis_h->omega = omega;
 }

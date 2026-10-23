@@ -8,15 +8,15 @@
 
 static volatile uint32_t pwm_error[2];
 
-static uint32_t platform_pwm_error_index(Platform_PWM_Instance pwm) {
+static uint32_t platform_pwm_error_index(platform_pwm_instance_t pwm) {
   return pwm == PLATFORM_PWM_TIM1 ? 0U : 1U;
 }
 
-static Platform_StatusTypeDef platform_pwm_finish(
-  Platform_PWM_Instance pwm,
-  Platform_StatusTypeDef status
+static platform_status_t platform_pwm_finish(
+  platform_pwm_instance_t pwm,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &pwm_error[platform_pwm_error_index(pwm)],
       platform_error_from_status(status)
@@ -25,26 +25,26 @@ static Platform_StatusTypeDef platform_pwm_finish(
   return status;
 }
 
-static bool platform_pwm_channel_valid(Platform_PWM_Channel channel) {
+static bool platform_pwm_channel_valid(platform_pwm_channel_t channel) {
   return (uint32_t)channel <= (uint32_t)PLATFORM_PWM_CHANNEL_4;
 }
 
-static Platform_StatusTypeDef platform_pwm_invalid(
-  Platform_PWM_Instance pwm,
+static platform_status_t platform_pwm_invalid(
+  platform_pwm_instance_t pwm,
   bool instance_valid
 ) {
   if (instance_valid) {
     platform_error_record(
       &pwm_error[platform_pwm_error_index(pwm)],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
-Platform_StatusTypeDef Platform_PWM_Start(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t Platform_PWM_Start(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 ) {
   const bool instance_valid = platform_pwm_backend_is_valid(pwm);
   if (instance_valid) {
@@ -59,7 +59,7 @@ Platform_StatusTypeDef Platform_PWM_Start(
   );
 }
 
-Platform_StatusTypeDef Platform_PWM_StartAll(Platform_PWM_Instance pwm) {
+platform_status_t Platform_PWM_StartAll(platform_pwm_instance_t pwm) {
   const bool instance_valid = platform_pwm_backend_is_valid(pwm);
   if (instance_valid) {
     platform_error_reset(&pwm_error[platform_pwm_error_index(pwm)]);
@@ -70,9 +70,9 @@ Platform_StatusTypeDef Platform_PWM_StartAll(Platform_PWM_Instance pwm) {
   return platform_pwm_finish(pwm, platform_pwm_backend_start_all(pwm));
 }
 
-Platform_StatusTypeDef Platform_PWM_Stop(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t Platform_PWM_Stop(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 ) {
   const bool instance_valid = platform_pwm_backend_is_valid(pwm);
   if (instance_valid) {
@@ -87,7 +87,7 @@ Platform_StatusTypeDef Platform_PWM_Stop(
   );
 }
 
-Platform_StatusTypeDef Platform_PWM_StopAll(Platform_PWM_Instance pwm) {
+platform_status_t Platform_PWM_StopAll(platform_pwm_instance_t pwm) {
   const bool instance_valid = platform_pwm_backend_is_valid(pwm);
   if (instance_valid) {
     platform_error_reset(&pwm_error[platform_pwm_error_index(pwm)]);
@@ -98,9 +98,9 @@ Platform_StatusTypeDef Platform_PWM_StopAll(Platform_PWM_Instance pwm) {
   return platform_pwm_finish(pwm, platform_pwm_backend_stop_all(pwm));
 }
 
-Platform_StatusTypeDef Platform_PWM_SetCompare(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t Platform_PWM_SetCompare(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t compare
 ) {
   const bool instance_valid = platform_pwm_backend_is_valid(pwm);
@@ -116,9 +116,9 @@ Platform_StatusTypeDef Platform_PWM_SetCompare(
   );
 }
 
-Platform_StatusTypeDef Platform_PWM_SetDuty(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t Platform_PWM_SetDuty(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t max_duty,
   uint32_t duty
 ) {
@@ -139,9 +139,9 @@ Platform_StatusTypeDef Platform_PWM_SetDuty(
   );
 }
 
-uint32_t Platform_PWM_GetLastError(Platform_PWM_Instance pwm) {
+uint32_t Platform_PWM_GetLastError(platform_pwm_instance_t pwm) {
   if (!platform_pwm_backend_is_valid(pwm)) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return pwm_error[platform_pwm_error_index(pwm)];
 }

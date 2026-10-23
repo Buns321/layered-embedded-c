@@ -9,50 +9,50 @@ static uint32_t s_counter;
 static uint8_t s_counter_bits;
 
 bool platform_encoder_backend_is_valid(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 ) {
   return encoder == PLATFORM_ENCODER_TIM2;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_start(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_start(
+  platform_encoder_instance_t encoder
 ) {
   (void)encoder;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_stop(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_stop(
+  platform_encoder_instance_t encoder
 ) {
   (void)encoder;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter(
+  platform_encoder_instance_t encoder,
   uint32_t *counter
 ) {
   (void)encoder;
   *counter = s_counter;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_set_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_set_counter(
+  platform_encoder_instance_t encoder,
   uint32_t counter
 ) {
   (void)encoder;
   s_counter = counter;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter_bits(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter_bits(
+  platform_encoder_instance_t encoder,
   uint8_t *counter_bits
 ) {
   (void)encoder;
   *counter_bits = s_counter_bits;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 static void test_encoder_contract(void) {
@@ -64,27 +64,27 @@ static void test_encoder_contract(void) {
   assert(Platform_Encoder_GetCounterBits(
            PLATFORM_ENCODER_TIM2,
            &bits
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
   assert(bits == 32U);
   assert(Platform_Encoder_GetCounter(
            PLATFORM_ENCODER_TIM2,
            &counter
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
   assert(counter == s_counter);
   assert(Platform_Encoder_SetCounter(
            PLATFORM_ENCODER_TIM2,
            7U
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
   assert(s_counter == 7U);
-  assert(Platform_Encoder_Start(PLATFORM_ENCODER_TIM2) == Platform_OK);
-  assert(Platform_Encoder_Stop(PLATFORM_ENCODER_TIM2) == Platform_OK);
+  assert(Platform_Encoder_Start(PLATFORM_ENCODER_TIM2) == PLATFORM_STATUS_OK);
+  assert(Platform_Encoder_Stop(PLATFORM_ENCODER_TIM2) == PLATFORM_STATUS_OK);
 
   assert(Platform_Encoder_GetCounter(
            PLATFORM_ENCODER_TIM2,
            NULL
-         ) == Platform_INVALID_ARGUMENT);
+         ) == PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_Encoder_GetLastError(PLATFORM_ENCODER_TIM2) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
 int main(void) {

@@ -22,9 +22,9 @@
 #endif
 
 /** @brief 可用的 WWDG 身份。 */
-typedef enum {
+typedef enum platform_wwdg_instance_e {
   PLATFORM_WWDG_1 = 0U,
-} Platform_WWDG_Instance;
+} platform_wwdg_instance_t;
 
 /** @brief 有效的原始窗口最小值。 */
 #define PLATFORM_WWDG_WINDOW_MIN 0x40u
@@ -34,10 +34,10 @@ typedef enum {
 /**
  * @brief WWDG 运行期配置。
  */
-typedef struct {
+typedef struct platform_wwdg_config_s {
   uint32_t timeout_ms; /**< 请求超时，范围 1..Platform_WWDG_GetMaxTimeoutMs()。 */
   uint8_t window;      /**< 原始刷新窗口，范围 PLATFORM_WWDG_WINDOW_MIN..MAX。 */
-} Platform_WWDG_Config;
+} platform_wwdg_config_t;
 
 /**
  * @brief 查询当前时钟下的最大可配置超时。
@@ -45,32 +45,32 @@ typedef struct {
  * @return 最大超时（ms）；实例非法或时钟不可用时返回 0。
  * @note 该值取决于真实 PCLK1，不能假设 F1/F4 相同。
  */
-uint32_t Platform_WWDG_GetMaxTimeoutMs(Platform_WWDG_Instance wwdg);
+uint32_t Platform_WWDG_GetMaxTimeoutMs(platform_wwdg_instance_t wwdg);
 
 /**
  * @brief 启动窗口看门狗。
  * @param wwdg WWDG 实例。
  * @param config 运行期配置。
- * @retval Platform_OK 启动成功。
- * @retval Platform_BUSY WWDG 已启动。
- * @retval Platform_INVALID_ARGUMENT 实例、窗口或超时范围非法。
+ * @retval PLATFORM_STATUS_OK 启动成功。
+ * @retval PLATFORM_STATUS_BUSY WWDG 已启动。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、窗口或超时范围非法。
  * @note 这是运行期策略操作，会立即启动看门狗。
  * @note 调用后无法停止 WWDG。
  * @note 应在计数器低于 window 后、到达 0x3F 前刷新。
  */
-Platform_StatusTypeDef Platform_WWDG_Start(
-  Platform_WWDG_Instance wwdg,
-  const Platform_WWDG_Config *config
+platform_status_t Platform_WWDG_Start(
+  platform_wwdg_instance_t wwdg,
+  const platform_wwdg_config_t *config
 );
 
 /**
  * @brief 刷新已启动的 WWDG。
- * @retval Platform_OK 刷新成功。
- * @retval Platform_INVALID_ARGUMENT 实例非法。
- * @retval Platform_ERROR WWDG 尚未启动或 HAL 刷新失败。
+ * @retval PLATFORM_STATUS_OK 刷新成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例非法。
+ * @retval PLATFORM_STATUS_ERROR WWDG 尚未启动或 HAL 刷新失败。
  */
-Platform_StatusTypeDef Platform_WWDG_Refresh(
-  Platform_WWDG_Instance wwdg
+platform_status_t Platform_WWDG_Refresh(
+  platform_wwdg_instance_t wwdg
 );
 
 /**
@@ -79,7 +79,7 @@ Platform_StatusTypeDef Platform_WWDG_Refresh(
  * @note 非法实例返回 false，不访问硬件。
  * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
  */
-bool Platform_WWDG_WasReset(Platform_WWDG_Instance wwdg);
+bool Platform_WWDG_WasReset(platform_wwdg_instance_t wwdg);
 
 /** @} */
 

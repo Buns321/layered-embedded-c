@@ -19,7 +19,7 @@
 #define SYS_LOG_LINE_CAPACITY 192u
 
 static sys_log_base_t *s_log_sink;
-static Sys_Log_Level s_log_level = SYS_LOG_LEVEL_INFO;
+static sys_log_level_t s_log_level = SYS_LOG_LEVEL_INFO;
 static volatile bool s_log_locked;
 static volatile uint32_t s_drop_bytes;
 static volatile uint32_t s_contention_count;
@@ -34,7 +34,7 @@ static void Sys_Log_ExitExclusive(uint32_t primask) {
   __set_PRIMASK(primask);
 }
 
-static const char *Sys_Log_LevelTag(Sys_Log_Level level) {
+static const char *sys_log_level_tTag(sys_log_level_t level) {
   switch (level) {
     case SYS_LOG_LEVEL_ERROR: return "E";
     case SYS_LOG_LEVEL_WARN:  return "W";
@@ -69,18 +69,18 @@ static void Sys_Log_IncrementCounter(volatile uint32_t *counter) {
   Sys_Log_ExitExclusive(primask);
 }
 
-void Sys_Log_Init(sys_log_base_t *sink) {
-  s_log_sink = sink;
+void Sys_Log_Init(sys_log_base_t *sink_h) {
+  s_log_sink = sink_h;
   s_drop_bytes = 0u;
   s_contention_count = 0u;
   s_log_locked = false;
 }
 
-void Sys_Log_SetSink(sys_log_base_t *sink) {
-  s_log_sink = sink;
+void Sys_Log_SetSink(sys_log_base_t *sink_h) {
+  s_log_sink = sink_h;
 }
 
-void Sys_Log_SetLevel(Sys_Log_Level level) {
+void Sys_Log_SetLevel(sys_log_level_t level) {
   if ((uint32_t)level <= (uint32_t)SYS_LOG_LEVEL_NONE) {
     s_log_level = level;
   } else {
@@ -88,7 +88,7 @@ void Sys_Log_SetLevel(Sys_Log_Level level) {
   }
 }
 
-Sys_Log_Level Sys_Log_GetLevel(void) {
+sys_log_level_t Sys_Log_GetLevel(void) {
   return s_log_level;
 }
 
@@ -97,7 +97,7 @@ bool Sys_Log_IsReady(void) {
 }
 
 void Sys_Log_Write(
-  Sys_Log_Level level,
+  sys_log_level_t level,
   const char *tag,
   const char *format,
   ...
@@ -125,7 +125,7 @@ void Sys_Log_Write(
     sizeof(line),
     "[%lu][%s][%s] ",
     (unsigned long)now_ms,
-    Sys_Log_LevelTag(level),
+    sys_log_level_tTag(level),
     tag
   );
 

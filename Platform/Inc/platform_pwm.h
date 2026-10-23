@@ -20,24 +20,24 @@
  * @brief 可用的 PWM 定时器身份。
  * @note 未启用的实例不会进入该枚举。
  */
-typedef enum {
+typedef enum platform_pwm_instance_e {
 #if PLATFORM_ENABLE_PWM_TIM1
   PLATFORM_PWM_TIM1 = 0,
 #endif
 #if PLATFORM_ENABLE_PWM_TIM3
   PLATFORM_PWM_TIM3 = 3,
 #endif
-} Platform_PWM_Instance;
+} platform_pwm_instance_t;
 
 /**
  * @brief PWM 通道身份。
  */
-typedef enum {
+typedef enum platform_pwm_channel_e {
   PLATFORM_PWM_CHANNEL_1 = 0U,
   PLATFORM_PWM_CHANNEL_2,
   PLATFORM_PWM_CHANNEL_3,
   PLATFORM_PWM_CHANNEL_4,
-} Platform_PWM_Channel;
+} platform_pwm_channel_t;
 
 #if !PLATFORM_ENABLE_PWM_TIM1 && !PLATFORM_ENABLE_PWM_TIM3
 #error "At least one Platform PWM instance must be enabled"
@@ -47,59 +47,59 @@ typedef enum {
  * @brief 启动指定 PWM 定时器的单通道输出。
  * @param pwm PWM 定时器身份。
  * @param channel 通道身份。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
- * @retval Platform_BUSY 忙。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
+ * @retval PLATFORM_STATUS_BUSY 忙。
  * @pre 对应定时器的 MX_TIMx_Init() 已完成并配置为 PWM 模式。
  */
-Platform_StatusTypeDef Platform_PWM_Start(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t Platform_PWM_Start(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 );
 
 /**
  * @brief 启动指定 PWM 定时器的全部四个通道。
  * @param pwm PWM 定时器身份。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
- * @retval Platform_BUSY 忙。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
+ * @retval PLATFORM_STATUS_BUSY 忙。
  * @pre 对应定时器的 MX_TIMx_Init() 已完成并配置为 PWM 模式。
  */
-Platform_StatusTypeDef Platform_PWM_StartAll(Platform_PWM_Instance pwm);
+platform_status_t Platform_PWM_StartAll(platform_pwm_instance_t pwm);
 
 /**
  * @brief 停止指定 PWM 定时器的单通道输出。
  * @param pwm PWM 定时器身份。
  * @param channel 通道身份。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
- * @retval Platform_BUSY 忙。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
+ * @retval PLATFORM_STATUS_BUSY 忙。
  */
-Platform_StatusTypeDef Platform_PWM_Stop(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel
+platform_status_t Platform_PWM_Stop(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel
 );
 
 /**
  * @brief 停止指定 PWM 定时器的全部四个通道。
  * @param pwm PWM 定时器身份。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
- * @retval Platform_BUSY 忙。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
+ * @retval PLATFORM_STATUS_BUSY 忙。
  */
-Platform_StatusTypeDef Platform_PWM_StopAll(Platform_PWM_Instance pwm);
+platform_status_t Platform_PWM_StopAll(platform_pwm_instance_t pwm);
 
 /**
  * @brief 设置比较值。
  * @param pwm PWM 定时器身份。
  * @param channel 通道身份。
  * @param compare 比较值，内部会夹紧到 ARR。
- * @retval Platform_OK 设置成功。
- * @retval Platform_INVALID_ARGUMENT 实例或通道非法。
+ * @retval PLATFORM_STATUS_OK 设置成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或通道非法。
  */
-Platform_StatusTypeDef Platform_PWM_SetCompare(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t Platform_PWM_SetCompare(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t compare
 );
 
@@ -110,18 +110,18 @@ Platform_StatusTypeDef Platform_PWM_SetCompare(
  * @param max_duty 占空比量程，必须大于 0。
  * @param duty 目标占空比，内部会夹紧到 max_duty。
  * @note 实际 CCR = ARR * duty / max_duty，使用 64 位中间量避免溢出。
- * @retval Platform_OK 设置成功。
- * @retval Platform_INVALID_ARGUMENT 实例、通道或量程非法。
+ * @retval PLATFORM_STATUS_OK 设置成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、通道或量程非法。
  */
-Platform_StatusTypeDef Platform_PWM_SetDuty(
-  Platform_PWM_Instance pwm,
-  Platform_PWM_Channel channel,
+platform_status_t Platform_PWM_SetDuty(
+  platform_pwm_instance_t pwm,
+  platform_pwm_channel_t channel,
   uint32_t max_duty,
   uint32_t duty
 );
 
 /** @brief 读取最近一次 PWM 操作错误快照。 */
-uint32_t Platform_PWM_GetLastError(Platform_PWM_Instance pwm);
+uint32_t Platform_PWM_GetLastError(platform_pwm_instance_t pwm);
 
 /** @} */
 

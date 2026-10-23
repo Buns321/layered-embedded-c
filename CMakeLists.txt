@@ -107,14 +107,14 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Src/stm32f4/platform_encoder.c
         Platform/Inc/platform_encoder.h
         Platform/Src/common/platform_uart_common.c
-        Platform/Src/stm32f4/platform_usart.c
-        Platform/Inc/platform_usart.h
+        Platform/Src/stm32f4/platform_uart.c
+        Platform/Inc/platform_uart.h
         App/Src/app_motor_demo.c
         App/Inc/app_motor_demo.h
-        DeviceDrivers/Base/Src/usart_base.c
-        DeviceDrivers/Base/Inc/usart_base.h
-        DeviceDrivers/Src/usart_port.c
-        DeviceDrivers/Inc/usart_port.h
+        DeviceDrivers/Base/Src/uart_base.c
+        DeviceDrivers/Base/Inc/uart_base.h
+        DeviceDrivers/Src/uart_port.c
+        DeviceDrivers/Inc/uart_port.h
         Platform/Src/stm32f4/platform_exti.c
         Platform/Inc/platform_exti.h
         DeviceDrivers/Base/Src/encoder_base.c
@@ -127,10 +127,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Src/chassis_omni.c
         DeviceDrivers/Base/Inc/telemetry_base.h
         DeviceDrivers/Base/Src/telemetry_base.c
-        DeviceDrivers/Inc/firewater_usart.h
-        DeviceDrivers/Src/firewater_usart.c
-        DeviceDrivers/Inc/justfloat_usart.h
-        DeviceDrivers/Src/justfloat_usart.c
+        DeviceDrivers/Inc/firewater_uart.h
+        DeviceDrivers/Src/firewater_uart.c
+        DeviceDrivers/Inc/justfloat_uart.h
+        DeviceDrivers/Src/justfloat_uart.c
         RTOS/Src/rtos_shared.c
         RTOS/Inc/rtos_shared.h
         RTOS/Src/rtos_monitor.c
@@ -139,19 +139,19 @@ add_executable(${CMAKE_PROJECT_NAME}
         RTOS/Inc/rtos_control.h
         DeviceDrivers/Base/Src/imu_base.c
         DeviceDrivers/Base/Inc/imu_base.h
-        DeviceDrivers/Src/imu_wht101_usart.c
-        DeviceDrivers/Inc/imu_wht101_usart.h
+        DeviceDrivers/Src/imu_wht101_uart.c
+        DeviceDrivers/Inc/imu_wht101_uart.h
         DeviceDrivers/Inc/mpu6050_i2c.h
-        RTOS/Src/rtos_usart.c
-        RTOS/Inc/rtos_usart.h
+        RTOS/Src/rtos_uart.c
+        RTOS/Inc/rtos_uart.h
         Controller/Base/Inc/controller_base.h
         Controller/Base/Src/controller_base.c
         Controller/Inc/controller_linear.h
         Controller/Src/controller_linear.c
         Controller/Inc/controller_compose.h
         Controller/Src/controller_compose.c
-        Policy/Base/Inc/omni_policy_base.h
-        Policy/Base/Src/omni_policy_base.c
+        Policy/Base/Inc/policy_omni_base.h
+        Policy/Base/Src/policy_omni_base.c
         Policy/Inc/policy_omni_kinematics.h
         Policy/Src/policy_omni_kinematics.c
         Filter/Base/Inc/filter_sample.h

@@ -20,7 +20,7 @@ static const uint32_t s_wwdg_divisors[] = {
 
 static bool s_wwdg_started;
 
-uint32_t Platform_WWDG_GetMaxTimeoutMs(Platform_WWDG_Instance wwdg) {
+uint32_t Platform_WWDG_GetMaxTimeoutMs(platform_wwdg_instance_t wwdg) {
   if (wwdg != PLATFORM_WWDG_1) {
     return 0U;
   }
@@ -80,9 +80,9 @@ static bool platform_wwdg_calculate(
   return false;
 }
 
-Platform_StatusTypeDef Platform_WWDG_Start(
-  Platform_WWDG_Instance wwdg,
-  const Platform_WWDG_Config *config
+platform_status_t Platform_WWDG_Start(
+  platform_wwdg_instance_t wwdg,
+  const platform_wwdg_config_t *config
 ) {
   if (
     wwdg != PLATFORM_WWDG_1 ||
@@ -90,38 +90,38 @@ Platform_StatusTypeDef Platform_WWDG_Start(
     config->window < PLATFORM_WWDG_WINDOW_MIN ||
     config->window > PLATFORM_WWDG_WINDOW_MAX
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (s_wwdg_started) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   uint32_t divisor;
   if (!platform_wwdg_calculate(config->timeout_ms, &divisor)) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_wwdg_backend_start(divisor, config->window);
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     s_wwdg_started = true;
   }
   return status;
 }
 
-Platform_StatusTypeDef Platform_WWDG_Refresh(
-  Platform_WWDG_Instance wwdg
+platform_status_t Platform_WWDG_Refresh(
+  platform_wwdg_instance_t wwdg
 ) {
   if (wwdg != PLATFORM_WWDG_1) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (!s_wwdg_started) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
   return platform_wwdg_backend_refresh();
 }
 
-bool Platform_WWDG_WasReset(Platform_WWDG_Instance wwdg) {
+bool Platform_WWDG_WasReset(platform_wwdg_instance_t wwdg) {
   if (wwdg != PLATFORM_WWDG_1) {
     return false;
   }

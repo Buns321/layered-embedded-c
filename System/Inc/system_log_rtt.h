@@ -19,19 +19,19 @@
  * @brief RTT 日志后端对象。
  * @note 该对象必须是静态对象，或以其他方式保证生命周期长于 System 日志门面。
  */
-typedef struct {
+typedef struct system_log_rtt_s {
   sys_log_base_t base;
   uint32_t       channel;
 } system_log_rtt_t;
 
 /**
  * @brief 初始化 RTT 日志后端。
- * @param this 后端对象。
+ * @param log_h 后端对象。
  * @param name 调试名称。
  * @param channel RTT 上行通道，通常为 0。
  */
 void Sys_Log_RTT_Init(
-  system_log_rtt_t *this,
+  system_log_rtt_t *log_h,
   const char *name,
   uint32_t channel
 );

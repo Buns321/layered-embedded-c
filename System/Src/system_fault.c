@@ -12,13 +12,13 @@
 #error "Unsupported STM32 family"
 #endif
 
-static Sys_Fault_Info s_fault_info;
+static sys_fault_info_t s_fault_info;
 
-__attribute__((weak)) void Sys_Fault_OnFault(const Sys_Fault_Info *info) {
+__attribute__((weak)) void Sys_Fault_OnFault(const sys_fault_info_t *info) {
   (void)info;
 }
 
-void Sys_Fault_Handler(Sys_Fault_Type type) {
+void Sys_Fault_Handler(sys_fault_type_t type) {
   s_fault_info.type = type;
   s_fault_info.cfsr = SCB->CFSR;
   s_fault_info.hfsr = SCB->HFSR;
@@ -32,6 +32,6 @@ void Sys_Fault_Handler(Sys_Fault_Type type) {
   __disable_irq();
 }
 
-const Sys_Fault_Info *Sys_Fault_GetInfo(void) {
+const sys_fault_info_t *Sys_Fault_GetInfo(void) {
   return &s_fault_info;
 }

@@ -74,11 +74,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/DeviceDrivers/Base/Src/led_base.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/motor_base.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/telemetry_base.c
-    ${REPO_ROOT}/DeviceDrivers/Base/Src/usart_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/chassis_omni.c
-    ${REPO_ROOT}/DeviceDrivers/Src/firewater_usart.c
-    ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_usart.c
-    ${REPO_ROOT}/DeviceDrivers/Src/justfloat_usart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/firewater_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/justfloat_uart.c
     ${REPO_ROOT}/DeviceDrivers/Src/led_gpio.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_chain.c
@@ -95,12 +95,12 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_wwdg.c
     ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
     ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
-    ${REPO_ROOT}/Policy/Base/Src/omni_policy_base.c
+    ${REPO_ROOT}/Policy/Base/Src/policy_omni_base.c
     ${REPO_ROOT}/Policy/Src/policy_omni_kinematics.c
     ${REPO_ROOT}/RTOS/Src/rtos_control.c
     ${REPO_ROOT}/RTOS/Src/rtos_monitor.c
     ${REPO_ROOT}/RTOS/Src/rtos_shared.c
-    ${REPO_ROOT}/RTOS/Src/rtos_usart.c
+    ${REPO_ROOT}/RTOS/Src/rtos_uart.c
     ${REPO_ROOT}/System/Src/system_critical.c
     ${REPO_ROOT}/System/Src/system_fault.c
     ${REPO_ROOT}/System/Src/system_log_base.c

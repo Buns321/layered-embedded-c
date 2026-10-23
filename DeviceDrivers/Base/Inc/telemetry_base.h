@@ -40,7 +40,7 @@ _Static_assert(
  * @brief 一次遥测样本。
  * @note value 下标与 valid_mask 位下标一一对应。
  */
-typedef struct {
+typedef struct telemetry_sample_s {
   float    value[TELEMETRY_CHANNEL_CAPACITY];
   uint32_t valid_mask;
   uint32_t time_ms;
@@ -49,35 +49,35 @@ typedef struct {
 /**
  * @brief 遥测发送状态。
  */
-typedef enum {
+typedef enum dev_telemetry_status_e {
   DEV_TELEMETRY_OK = 0,
   DEV_TELEMETRY_BUSY,
   DEV_TELEMETRY_ERROR,
-} Dev_Telemetry_Status;
+} dev_telemetry_status_t;
 
 /**
  * @brief 遥测后端状态快照。
  */
-typedef struct {
+typedef struct telemetry_status_s {
   bool     is_busy;
   uint32_t sent_frames;
   uint32_t dropped_frames;
   uint32_t error_count;
 } telemetry_status_t;
 
-typedef struct telemetry_base telemetry_base_t;
+typedef struct telemetry_base_s telemetry_base_t;
 
 /**
  * @brief 具体遥测协议的操作表。
  * @note send 必须非阻塞，并且只能完整接受一帧或完全不接受。
  */
-typedef struct telemetry_ops {
-  Dev_Telemetry_Status (*send)(
-    telemetry_base_t *this,
+typedef struct telemetry_ops_s {
+  dev_telemetry_status_t (*send)(
+    telemetry_base_t *telemetry_h,
     const telemetry_sample_t *sample
   );
   void (*get_status)(
-    telemetry_base_t *this,
+    telemetry_base_t *telemetry_h,
     telemetry_status_t *status
   );
 } telemetry_ops_t;
@@ -85,14 +85,14 @@ typedef struct telemetry_ops {
 /**
  * @brief 遥测设备抽象对象。
  */
-typedef struct telemetry_base {
+typedef struct telemetry_base_s {
   const telemetry_ops_t *ops;
   const char            *name;
 } telemetry_base_t;
 
 /** @brief 初始化遥测设备并绑定静态操作表。 */
 void Dev_Telemetry_Base_Init(
-  telemetry_base_t *this,
+  telemetry_base_t *telemetry_h,
   const char *name,
   const telemetry_ops_t *ops
 );
@@ -102,14 +102,14 @@ void Dev_Telemetry_Base_Init(
  * @return 接受时返回 OK；传输通道被占用时返回 BUSY；输入格式非法或编码
  *         失败时返回 ERROR。
  */
-Dev_Telemetry_Status Dev_Telemetry_Base_Send(
-  telemetry_base_t *this,
+dev_telemetry_status_t Dev_Telemetry_Base_Send(
+  telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
 );
 
 /** @brief 复制当前后端状态快照。 */
 void Dev_Telemetry_Base_GetStatus(
-  telemetry_base_t *this,
+  telemetry_base_t *telemetry_h,
   telemetry_status_t *status
 );
 

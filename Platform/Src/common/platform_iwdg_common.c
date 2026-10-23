@@ -54,44 +54,44 @@ static bool platform_iwdg_calculate(
   return false;
 }
 
-Platform_StatusTypeDef Platform_IWDG_Start(
-  Platform_IWDG_Instance iwdg,
+platform_status_t Platform_IWDG_Start(
+  platform_iwdg_instance_t iwdg,
   uint32_t timeout_ms
 ) {
   if (iwdg != PLATFORM_IWDG_1) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (s_iwdg_started) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   uint32_t divisor;
   uint32_t reload;
   if (!platform_iwdg_calculate(timeout_ms, &divisor, &reload)) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_iwdg_backend_start(divisor, reload);
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     s_iwdg_started = true;
   }
   return status;
 }
 
-Platform_StatusTypeDef Platform_IWDG_Refresh(
-  Platform_IWDG_Instance iwdg
+platform_status_t Platform_IWDG_Refresh(
+  platform_iwdg_instance_t iwdg
 ) {
   if (iwdg != PLATFORM_IWDG_1) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (!s_iwdg_started) {
-    return Platform_ERROR;
+    return PLATFORM_STATUS_ERROR;
   }
   return platform_iwdg_backend_refresh();
 }
 
-bool Platform_IWDG_WasReset(Platform_IWDG_Instance iwdg) {
+bool Platform_IWDG_WasReset(platform_iwdg_instance_t iwdg) {
   if (iwdg != PLATFORM_IWDG_1) {
     return false;
   }

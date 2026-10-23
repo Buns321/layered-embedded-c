@@ -22,7 +22,7 @@
 #endif
 
 /** @brief 可用的 SPI 实例。 */
-typedef enum {
+typedef enum platform_spi_instance_e {
 #if PLATFORM_ENABLE_SPI1
   PLATFORM_SPI_1 = 0U,
 #endif
@@ -32,19 +32,19 @@ typedef enum {
 #if PLATFORM_ENABLE_SPI3
   PLATFORM_SPI_3 = 2U,
 #endif
-} Platform_SPI_Instance;
+} platform_spi_instance_t;
 
 /** @brief SPI 身份槽位数量上限。 */
 #define PLATFORM_SPI_INSTANCE_COUNT 3U
 
 /** @brief CubeMX 为 SPI 实例配置的数据宽度。 */
-typedef enum {
+typedef enum platform_spi_data_width_e {
   PLATFORM_SPI_DATA_WIDTH_8_BIT = 8U,
   PLATFORM_SPI_DATA_WIDTH_16_BIT = 16U,
-} Platform_SPI_DataWidth;
+} platform_spi_data_width_t;
 
 /** @brief SPI 错误标志，可同时置位多个位。 */
-typedef enum {
+typedef enum platform_spi_error_e {
   PLATFORM_SPI_ERROR_NONE    = 0u,
   PLATFORM_SPI_ERROR_MODF    = (1u << 0),
   PLATFORM_SPI_ERROR_CRC     = (1u << 1),
@@ -54,26 +54,26 @@ typedef enum {
   PLATFORM_SPI_ERROR_FLAG    = (1u << 5),
   PLATFORM_SPI_ERROR_ABORT   = (1u << 6),
   PLATFORM_SPI_ERROR_UNKNOWN = (1u << 7),
-} Platform_SPI_Error;
+} platform_spi_error_t;
 
 /** @brief SPI 异步事件。 */
-typedef enum {
-  PLATFORM_SPI_EVENT_TX_CPLT = 0U,
-  PLATFORM_SPI_EVENT_RX_CPLT,
-  PLATFORM_SPI_EVENT_TXRX_CPLT,
+typedef enum platform_spi_event_type_e {
+  PLATFORM_SPI_EVENT_TX_COMPLETE = 0U,
+  PLATFORM_SPI_EVENT_RX_COMPLETE,
+  PLATFORM_SPI_EVENT_TX_RX_COMPLETE,
   PLATFORM_SPI_EVENT_ERROR,
-  PLATFORM_SPI_EVENT_ABORT_CPLT,
-} Platform_SPI_EventType;
+  PLATFORM_SPI_EVENT_ABORT_COMPLETE,
+} platform_spi_event_type_t;
 
 /** @brief SPI 事件数据，只在回调期间有效。 */
-typedef struct {
-  Platform_SPI_EventType type;
+typedef struct platform_spi_event_s {
+  platform_spi_event_type_t type;
   uint32_t error;
-} Platform_SPI_Event;
+} platform_spi_event_t;
 
-typedef void (*Platform_SPI_Callback)(
-  Platform_SPI_Instance spi,
-  const Platform_SPI_Event *event,
+typedef void (*platform_spi_callback_t)(
+  platform_spi_instance_t spi,
+  const platform_spi_event_t *event,
   void *context
 );
 
@@ -82,22 +82,22 @@ typedef void (*Platform_SPI_Callback)(
  * @note 回调在中断上下文执行。
  * @note 一个物理实例在整个生命周期内只能有一个回调所有者。
  */
-typedef struct {
-  Platform_SPI_Callback callback;
+typedef struct platform_spi_callback_binding_s {
+  platform_spi_callback_t callback;
   void *context;
-} platform_spi_callbacks_t;
+} platform_spi_callback_binding_t;
 
 /**
  * @brief 读取 CubeMX 配置的数据宽度。
  * @param spi SPI 实例。
  * @param data_width 输出数据宽度。
  * @note 即使工作在 16 位模式，传输函数中的长度仍以字节为单位。
- * @retval Platform_OK 查询成功。
- * @retval Platform_INVALID_ARGUMENT 实例、输出指针或 CubeMX 数据宽度非法。
+ * @retval PLATFORM_STATUS_OK 查询成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、输出指针或 CubeMX 数据宽度非法。
  */
-Platform_StatusTypeDef Platform_SPI_GetDataWidth(
-  Platform_SPI_Instance spi,
-  Platform_SPI_DataWidth *data_width
+platform_status_t Platform_SPI_GetDataWidth(
+  platform_spi_instance_t spi,
+  platform_spi_data_width_t *data_width
 );
 
 /**
@@ -108,8 +108,8 @@ Platform_StatusTypeDef Platform_SPI_GetDataWidth(
  * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  * @pre MX_SPIx_Init() 已完成，且调用方已拉低所需片选。
  */
-Platform_StatusTypeDef Platform_SPI_Transmit(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_Transmit(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -122,8 +122,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit(
  * @param size 字节数。16 位模式下必须为偶数。
  * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
-Platform_StatusTypeDef Platform_SPI_Receive(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_Receive(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size,
   uint32_t timeout
@@ -137,8 +137,8 @@ Platform_StatusTypeDef Platform_SPI_Receive(
  * @param size 字节数。16 位模式下必须为偶数。
  * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
-Platform_StatusTypeDef Platform_SPI_TransmitReceive(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceive(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size,
@@ -152,8 +152,8 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive(
  * @param size 字节数。
  * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_Transmit_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitIT(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 );
@@ -165,8 +165,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit_IT(
  * @param size 字节数。
  * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_Receive_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_ReceiveIT(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 );
@@ -179,8 +179,8 @@ Platform_StatusTypeDef Platform_SPI_Receive_IT(
  * @param size 字节数。
  * @note 在完成、错误或中止前，两个缓冲区都必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceiveIT(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -193,8 +193,8 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
  * @param size 字节数。
  * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitDMA(
+  platform_spi_instance_t spi,
   const uint8_t *data,
   uint16_t size
 );
@@ -206,8 +206,8 @@ Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
  * @param size 字节数。
  * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_Receive_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_ReceiveDMA(
+  platform_spi_instance_t spi,
   uint8_t *data,
   uint16_t size
 );
@@ -220,8 +220,8 @@ Platform_StatusTypeDef Platform_SPI_Receive_DMA(
  * @param size 字节数。
  * @note 在完成、错误或中止前，两个缓冲区都必须保持有效。
  */
-Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
-  Platform_SPI_Instance spi,
+platform_status_t Platform_SPI_TransmitReceiveDMA(
+  platform_spi_instance_t spi,
   const uint8_t *tx_data,
   uint8_t *rx_data,
   uint16_t size
@@ -232,33 +232,33 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
  * @param spi SPI 实例。
  * @note 只能从任务上下文调用，禁止在 ISR 中调用。
  */
-Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi);
+platform_status_t Platform_SPI_Abort(platform_spi_instance_t spi);
 
 /**
  * @brief 使用中断方式中止当前传输。
  * @param spi SPI 实例。
  * @note 中止完成回调在中断上下文执行。
  */
-Platform_StatusTypeDef Platform_SPI_Abort_IT(Platform_SPI_Instance spi);
+platform_status_t Platform_SPI_AbortIT(platform_spi_instance_t spi);
 
 /**
- * @brief 读取最近一次 HAL SPI 错误快照，并转换为 Platform_SPI_Error 位。
+ * @brief 读取最近一次 HAL SPI 错误快照，并转换为 platform_spi_error_t 位。
  * @param spi SPI 实例。
  */
-uint32_t Platform_SPI_GetLastError(Platform_SPI_Instance spi);
+uint32_t Platform_SPI_GetLastError(platform_spi_instance_t spi);
 
 /**
  * @brief 注册 SPI 回调。
  * @param spi SPI 实例。
  * @param callbacks 待复制的回调集合。
  * @note 结构体会被复制。应在初始化阶段、启动 IT/DMA 传输前调用一次。
- * @retval Platform_OK 注册成功。
- * @retval Platform_BUSY 该实例已注册回调。
- * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
+ * @retval PLATFORM_STATUS_OK 注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或回调集合非法。
  */
-Platform_StatusTypeDef Platform_SPI_RegisterCallbacks(
-  Platform_SPI_Instance spi,
-  const platform_spi_callbacks_t *callbacks
+platform_status_t Platform_SPI_RegisterCallback(
+  platform_spi_instance_t spi,
+  const platform_spi_callback_binding_t *callbacks
 );
 
 /** @} */

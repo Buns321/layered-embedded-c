@@ -6,24 +6,24 @@
 #include "platform_encoder.h"
 #include "assert.h"
 
-static int32_t dev_encoder_tim_readdelta(encoder_base_t *this) {
-  assert(this);
-  encoder_tim_t *self = (encoder_tim_t*)this;
+static int32_t dev_encoder_tim_readdelta(encoder_base_t *encoder_h) {
+  assert(encoder_h);
+  encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   uint32_t now = 0u;
-  if (Platform_Encoder_GetCounter(self->tim, &now) != Platform_OK) {
-    self->overflow = true;
+  if (Platform_Encoder_GetCounter(encoder_tim_h->tim, &now) != PLATFORM_STATUS_OK) {
+    encoder_tim_h->overflow = true;
     return 0;
   }
-  if (self->has_base_count == false) {
-    self->last_count = now;
-    self->has_base_count = true;
+  if (encoder_tim_h->has_base_count == false) {
+    encoder_tim_h->last_count = now;
+    encoder_tim_h->has_base_count = true;
     return 0;
   }
 
-  uint32_t diff = now - self->last_count;
+  uint32_t diff = now - encoder_tim_h->last_count;
   int32_t delta;
 
-  if (self->bit_width == 16U) {
+  if (encoder_tim_h->bit_width == 16U) {
     diff &= 0xFFFFU;
     if (diff >= 0x8000U) {
       delta = (int32_t)((int64_t)diff - 0x10000LL);
@@ -38,61 +38,61 @@ static int32_t dev_encoder_tim_readdelta(encoder_base_t *this) {
     }
   }
 
-  if (self->max_counts_per_period != 0u) {
+  if (encoder_tim_h->max_counts_per_period != 0u) {
     int64_t delta64 = (int64_t)delta;
-    int64_t limit = (int64_t)self->max_counts_per_period;
+    int64_t limit = (int64_t)encoder_tim_h->max_counts_per_period;
 
     if (delta64 > limit) {
       delta64 = limit;
-      self->overflow = true;
+      encoder_tim_h->overflow = true;
     } else if (delta64 < -limit) {
       delta64 = -limit;
-      self->overflow = true;
+      encoder_tim_h->overflow = true;
     }
 
     delta = (int32_t)delta64;
   }
 
-  self->last_count = now;
-  self->position += delta;
+  encoder_tim_h->last_count = now;
+  encoder_tim_h->position += delta;
   return delta;
 }
 
-static int64_t Dev_Encoder_TIM_GetPosition(encoder_base_t *this) {
-  assert(this);
-  encoder_tim_t *self = (encoder_tim_t*)this;
-  return self->position;
+static int64_t Dev_Encoder_TIM_GetPosition(encoder_base_t *encoder_h) {
+  assert(encoder_h);
+  encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
+  return encoder_tim_h->position;
 }
 
-static void Dev_Encoder_TIM_SetZero(encoder_base_t *this) {
-  assert(this);
-  encoder_tim_t *self = (encoder_tim_t*)this;
-  if (Platform_Encoder_SetCounter(self->tim, 0u) != Platform_OK) {
-    self->overflow = true;
+static void Dev_Encoder_TIM_SetZero(encoder_base_t *encoder_h) {
+  assert(encoder_h);
+  encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
+  if (Platform_Encoder_SetCounter(encoder_tim_h->tim, 0u) != PLATFORM_STATUS_OK) {
+    encoder_tim_h->overflow = true;
     return;
   }
-  self->last_count = 0;
-  self->has_base_count = true;
-  self->overflow = false;
-  self->position = 0;
+  encoder_tim_h->last_count = 0;
+  encoder_tim_h->has_base_count = true;
+  encoder_tim_h->overflow = false;
+  encoder_tim_h->position = 0;
 }
 
-static int32_t Dev_Encoder_TIM_GetDelta(encoder_base_t *this) {
-  assert(this);
-  return dev_encoder_tim_readdelta(this);
+static int32_t Dev_Encoder_TIM_GetDelta(encoder_base_t *encoder_h) {
+  assert(encoder_h);
+  return dev_encoder_tim_readdelta(encoder_h);
 }
 
-static void Dev_Encoder_TIM_Resync(encoder_base_t *this) {
-  assert(this);
-  encoder_tim_t *self = (encoder_tim_t*)this;
+static void Dev_Encoder_TIM_Resync(encoder_base_t *encoder_h) {
+  assert(encoder_h);
+  encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   uint32_t counter = 0u;
-  if (Platform_Encoder_GetCounter(self->tim, &counter) != Platform_OK) {
-    self->overflow = true;
+  if (Platform_Encoder_GetCounter(encoder_tim_h->tim, &counter) != PLATFORM_STATUS_OK) {
+    encoder_tim_h->overflow = true;
     return;
   }
-  self->last_count = counter;
-  self->has_base_count = true;
-  self->overflow = false;
+  encoder_tim_h->last_count = counter;
+  encoder_tim_h->has_base_count = true;
+  encoder_tim_h->overflow = false;
 }
 
 static const encoder_ops_t encoder_ops_tim = {
@@ -102,46 +102,46 @@ static const encoder_ops_t encoder_ops_tim = {
   .resync = Dev_Encoder_TIM_Resync,
 };
 
-Platform_StatusTypeDef Dev_Encoder_TIM_Init(
-  encoder_tim_t *this,
+platform_status_t Dev_Encoder_TIM_Init(
+  encoder_tim_t *encoder_h,
   const char *name,
-  Platform_Encoder_Instance tim
+  platform_encoder_instance_t tim
 ) {
-  assert(this && name);
+  assert(encoder_h && name);
 
-  this->tim = tim;
-  Platform_StatusTypeDef status = Platform_Encoder_GetCounterBits(
-    this->tim,
-    &this->bit_width
+  encoder_h->tim = tim;
+  platform_status_t status = Platform_Encoder_GetCounterBits(
+    encoder_h->tim,
+    &encoder_h->bit_width
   );
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     return status;
   }
 
-  assert(this->bit_width == 16U || this->bit_width == 32U);
+  assert(encoder_h->bit_width == 16U || encoder_h->bit_width == 32U);
 
-  Dev_Encoder_Base_Init(&this->encoder_base, name, &encoder_ops_tim);
+  Dev_Encoder_Base_Init(&encoder_h->encoder_base, name, &encoder_ops_tim);
 
-  this->position = 0;
-  this->last_count = 0;
-  this->has_base_count = false;
-  this->overflow = false;
-  this->max_counts_per_period = 0u;
+  encoder_h->position = 0;
+  encoder_h->last_count = 0;
+  encoder_h->has_base_count = false;
+  encoder_h->overflow = false;
+  encoder_h->max_counts_per_period = 0u;
 
-  return Platform_Encoder_Start(this->tim);
+  return Platform_Encoder_Start(encoder_h->tim);
 }
 
-void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *this, uint32_t max_counts) {
-  assert(this);
-  this->max_counts_per_period = max_counts;
+void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *encoder_h, uint32_t max_counts) {
+  assert(encoder_h);
+  encoder_h->max_counts_per_period = max_counts;
 }
 
-bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *this) {
-  assert(this);
-  return this->overflow;
+bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *encoder_h) {
+  assert(encoder_h);
+  return encoder_h->overflow;
 }
 
-void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *this) {
-  assert(this);
-  this->overflow = false;
+void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *encoder_h) {
+  assert(encoder_h);
+  encoder_h->overflow = false;
 }

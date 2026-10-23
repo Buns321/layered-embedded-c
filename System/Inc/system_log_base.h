@@ -14,16 +14,16 @@
 
 #include <stdint.h>
 
-typedef struct sys_log_base sys_log_base_t;
+typedef struct sys_log_base_s sys_log_base_t;
 
 /**
  * @brief 日志后端操作表。
  * @note write 必须在数据失效前返回，不得阻塞，并返回已接受的字节数；
  *       返回 0 表示丢弃该条日志。
  */
-typedef struct sys_log_ops {
+typedef struct sys_log_ops_s {
   uint32_t (*write)(
-    sys_log_base_t *this,
+    sys_log_base_t *log_h,
     const uint8_t *data,
     uint32_t size
   );
@@ -32,27 +32,27 @@ typedef struct sys_log_ops {
 /**
  * @brief 日志后端抽象对象。
  */
-typedef struct sys_log_base {
+typedef struct sys_log_base_s {
   const sys_log_ops_t *ops;
   const char          *name;
 } sys_log_base_t;
 
 /** @brief 初始化日志后端并绑定静态操作表。 */
 void Sys_Log_Base_Init(
-  sys_log_base_t *this,
+  sys_log_base_t *log_h,
   const char *name,
   const sys_log_ops_t *ops
 );
 
 /**
  * @brief 向日志后端写入字节。
- * @param this 后端对象。
+ * @param log_h 后端对象。
  * @param data 字节缓冲区。
  * @param size 字节数。
  * @return 已接受的字节数；后端不可用或数据被丢弃时返回 0。
  */
 uint32_t Sys_Log_Base_Write(
-  sys_log_base_t *this,
+  sys_log_base_t *log_h,
   const uint8_t *data,
   uint32_t size
 );

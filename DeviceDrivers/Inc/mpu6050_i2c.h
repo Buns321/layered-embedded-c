@@ -25,7 +25,7 @@
 /**
  * @brief 数字低通滤波器配置。
  */
-typedef enum {
+typedef enum mpu6050_dlpf_e {
   MPU6050_DLPF_256HZ = 0u,
   MPU6050_DLPF_188HZ,
   MPU6050_DLPF_98HZ,
@@ -38,7 +38,7 @@ typedef enum {
 /**
  * @brief 陀螺仪量程配置。
  */
-typedef enum {
+typedef enum mpu6050_gyro_range_e {
   MPU6050_GYRO_RANGE_250DPS = 0u,
   MPU6050_GYRO_RANGE_500DPS,
   MPU6050_GYRO_RANGE_1000DPS,
@@ -48,7 +48,7 @@ typedef enum {
 /**
  * @brief 加速度计量程配置。
  */
-typedef enum {
+typedef enum mpu6050_accel_range_e {
   MPU6050_ACCEL_RANGE_2G = 0u,
   MPU6050_ACCEL_RANGE_4G,
   MPU6050_ACCEL_RANGE_8G,
@@ -60,8 +60,8 @@ typedef enum {
  * @note axis_source 和 axis_sign 把芯片轴映射到车体轴。
  * @note address 使用 7 位地址，由 AD0 电平决定。
  */
-typedef struct {
-  Platform_I2C_Instance i2c;
+typedef struct mpu6050_config_s {
+  platform_i2c_instance_t i2c;
   uint8_t address;
   mpu6050_dlpf_t dlpf;
   mpu6050_gyro_range_t gyro_range;
@@ -76,7 +76,7 @@ typedef struct {
 /**
  * @brief 未经软件滤波的工程单位样本。
  */
-typedef struct {
+typedef struct mpu6050_raw_sample_s {
   float accel_mps2[3];
   float gyro_dps[3];
   float temperature_c;
@@ -86,7 +86,7 @@ typedef struct {
 /**
  * @brief MPU6050 状态机。
  */
-typedef enum {
+typedef enum mpu6050_state_e {
   MPU6050_STATE_UNINITIALIZED = 0u,
   MPU6050_STATE_RESET_PENDING,
   MPU6050_STATE_RESET_WAIT,
@@ -100,9 +100,9 @@ typedef enum {
  * @brief MPU6050 具体对象。
  * @note imu_base 必须是首成员。
  */
-typedef struct {
+typedef struct mpu6050_i2c_s {
   imu_base_t imu_base;
-  Platform_I2C_Instance i2c;
+  platform_i2c_instance_t i2c;
   uint8_t address;
   mpu6050_config_t config;
 
@@ -132,20 +132,20 @@ typedef struct {
 
 /**
  * @brief 初始化并探测 MPU6050。
- * @param this 对象。
+ * @param imu_h 对象。
  * @param name 名称。
  * @param config 配置，内容会被复制。
- * @param filter 已初始化的静态滤波器根节点。
- * @retval Platform_OK WHO_AM_I 匹配。
- * @retval Platform_ERROR 参数、通信或设备 ID 错误。
- * @retval Platform_TIMEOUT I2C 超时。
+ * @param filter_h 已初始化的静态滤波器根节点。
+ * @retval PLATFORM_STATUS_OK WHO_AM_I 匹配。
+ * @retval PLATFORM_STATUS_ERROR 参数、通信或设备 ID 错误。
+ * @retval PLATFORM_STATUS_TIMEOUT I2C 超时。
  * @note 本函数执行一次阻塞 WHO_AM_I 读取，不启动采样。
  */
-Platform_StatusTypeDef Dev_MPU6050_I2C_Init(
-  mpu6050_i2c_t *this,
+platform_status_t Dev_MPU6050_I2C_Init(
+  mpu6050_i2c_t *imu_h,
   const char *name,
   const mpu6050_config_t *config,
-  filter_base_t *filter
+  filter_base_t *filter_h
 );
 
 /**
@@ -153,18 +153,18 @@ Platform_StatusTypeDef Dev_MPU6050_I2C_Init(
  * @return 是否已有可用样本。
  */
 bool Dev_MPU6050_I2C_GetRawSample(
-  mpu6050_i2c_t *this,
+  mpu6050_i2c_t *imu_h,
   mpu6050_raw_sample_t *sample
 );
 
 /**
  * @brief 请求重新采集静止陀螺零偏。
- * @retval Platform_OK 请求已接受。
- * @retval Platform_ERROR IMU 未启动或当前状态不允许标定。
+ * @retval PLATFORM_STATUS_OK 请求已接受。
+ * @retval PLATFORM_STATUS_ERROR IMU 未启动或当前状态不允许标定。
  * @note 标定期间 process() 不发布新样本。
  */
-Platform_StatusTypeDef Dev_MPU6050_I2C_RequestGyroCalibration(
-  mpu6050_i2c_t *this
+platform_status_t Dev_MPU6050_I2C_RequestGyroCalibration(
+  mpu6050_i2c_t *imu_h
 );
 
 /** @} */

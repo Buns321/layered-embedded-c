@@ -12,8 +12,8 @@
 #define TEST_ERASE_UNIT  256U
 
 static uint8_t s_flash[TEST_FLASH_END - TEST_FLASH_START + 1U];
-static Platform_StatusTypeDef s_write_status;
-static Platform_StatusTypeDef s_erase_status;
+static platform_status_t s_write_status;
+static platform_status_t s_erase_status;
 static uint32_t s_backend_error;
 
 void Sys_Critical_Enter(void) {
@@ -39,40 +39,40 @@ uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
            : 0U;
 }
 
-Platform_StatusTypeDef platform_flash_backend_read(
+platform_status_t platform_flash_backend_read(
   uint32_t address,
   void *data,
   uint32_t size
 ) {
   memcpy(data, &s_flash[address - TEST_FLASH_START], size);
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_flash_backend_write(
+platform_status_t platform_flash_backend_write(
   uint32_t address,
   const void *data,
   uint32_t size
 ) {
-  if (s_write_status != Platform_OK) {
+  if (s_write_status != PLATFORM_STATUS_OK) {
     s_backend_error = PLATFORM_FLASH_ERROR_PROGRAM;
     return s_write_status;
   }
   memcpy(&s_flash[address - TEST_FLASH_START], data, size);
   s_backend_error = PLATFORM_FLASH_ERROR_NONE;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_flash_backend_erase(
+platform_status_t platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
 ) {
-  if (s_erase_status != Platform_OK) {
+  if (s_erase_status != PLATFORM_STATUS_OK) {
     s_backend_error = PLATFORM_FLASH_ERROR_ERASE;
     return s_erase_status;
   }
   memset(&s_flash[address - TEST_FLASH_START], 0xFF, size);
   s_backend_error = PLATFORM_FLASH_ERROR_NONE;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
 uint32_t platform_flash_backend_get_error(void) {
@@ -80,8 +80,8 @@ uint32_t platform_flash_backend_get_error(void) {
 }
 
 static void test_flash_contract(void) {
-  s_write_status = Platform_OK;
-  s_erase_status = Platform_OK;
+  s_write_status = PLATFORM_STATUS_OK;
+  s_erase_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_FLASH_ERROR_NONE;
 
   const uint32_t words[2] = {0x11223344U, 0x55667788U};
@@ -90,7 +90,7 @@ static void test_flash_contract(void) {
            TEST_FLASH_START,
            words,
            sizeof(words)
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
 
   uint32_t readback[2] = {0};
   assert(Platform_FLASH_Read(
@@ -98,7 +98,7 @@ static void test_flash_contract(void) {
            TEST_FLASH_START,
            readback,
            sizeof(readback)
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
   assert(readback[0] == words[0]);
   assert(readback[1] == words[1]);
 
@@ -107,7 +107,7 @@ static void test_flash_contract(void) {
            TEST_FLASH_START + 1U,
            words,
            sizeof(words)
-         ) == Platform_INVALID_ARGUMENT);
+         ) == PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_FLASH_GetLastError(PLATFORM_FLASH_1) &
           PLATFORM_FLASH_ERROR_ALIGNMENT) != 0U);
 
@@ -115,7 +115,7 @@ static void test_flash_contract(void) {
            PLATFORM_FLASH_1,
            TEST_FLASH_START + 1U,
            TEST_ERASE_UNIT
-         ) == Platform_INVALID_ARGUMENT);
+         ) == PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_FLASH_GetLastError(PLATFORM_FLASH_1) &
           PLATFORM_FLASH_ERROR_ALIGNMENT) != 0U);
 
@@ -123,9 +123,9 @@ static void test_flash_contract(void) {
            PLATFORM_FLASH_1,
            TEST_FLASH_START,
            TEST_ERASE_UNIT
-         ) == Platform_OK);
+         ) == PLATFORM_STATUS_OK);
   assert(Platform_FLASH_GetLastError(PLATFORM_FLASH_1) ==
-         PLATFORM_COMMON_ERROR_NONE);
+         PLATFORM_ERROR_NONE);
   assert(Platform_FLASH_GetEraseUnitSize(
            PLATFORM_FLASH_1,
            TEST_FLASH_START
@@ -135,21 +135,21 @@ static void test_flash_contract(void) {
            TEST_FLASH_END + 1U
          ) == 0U);
 
-  s_write_status = Platform_ERROR;
+  s_write_status = PLATFORM_STATUS_ERROR;
   s_backend_error = PLATFORM_FLASH_ERROR_PROGRAM;
   assert(Platform_FLASH_Write(
            PLATFORM_FLASH_1,
            TEST_FLASH_START,
            words,
            sizeof(words)
-         ) == Platform_ERROR);
+         ) == PLATFORM_STATUS_ERROR);
   assert((Platform_FLASH_GetLastError(PLATFORM_FLASH_1) &
           PLATFORM_FLASH_ERROR_PROGRAM) != 0U);
   assert((Platform_FLASH_GetLastError(PLATFORM_FLASH_1) &
-          PLATFORM_COMMON_ERROR_HAL) != 0U);
+          PLATFORM_ERROR_HAL) != 0U);
 
-  assert((Platform_FLASH_GetLastError((Platform_FLASH_Instance)99U) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+  assert((Platform_FLASH_GetLastError((platform_flash_instance_t)99U) &
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
 int main(void) {

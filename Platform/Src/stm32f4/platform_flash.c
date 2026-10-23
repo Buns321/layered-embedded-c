@@ -132,16 +132,16 @@ uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
            : platform_flash_sector_size(sector);
 }
 
-Platform_StatusTypeDef platform_flash_backend_read(
+platform_status_t platform_flash_backend_read(
   uint32_t address,
   void *data,
   uint32_t size
 ) {
   (void)memcpy(data, (const void *)address, size);
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_flash_backend_write(
+platform_status_t platform_flash_backend_write(
   uint32_t address,
   const void *data,
   uint32_t size
@@ -172,7 +172,7 @@ Platform_StatusTypeDef platform_flash_backend_write(
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef platform_flash_backend_erase(
+platform_status_t platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
 ) {
@@ -182,7 +182,7 @@ Platform_StatusTypeDef platform_flash_backend_erase(
   );
   if (first_sector == UINT32_MAX || last_sector == UINT32_MAX) {
     flash_backend_error = PLATFORM_FLASH_ERROR_RANGE;
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 
   FLASH_EraseInitTypeDef erase = {0};

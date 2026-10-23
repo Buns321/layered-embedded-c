@@ -9,7 +9,7 @@
 #include "stm32f4xx_hal.h"
 
 static uint32_t platform_rtc_wakeup_clock(
-  Platform_RTC_WakeUpClock clock
+  platform_rtc_wakeup_clock_t clock
 ) {
   switch (clock) {
     case PLATFORM_RTC_WAKEUP_DIV16:
@@ -33,8 +33,8 @@ bool platform_rtc_backend_has_wakeup_timer(void) {
   return true;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_time(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_time(
+  const platform_rtc_date_time_t *date_time
 ) {
   RTC_TimeTypeDef time = {
     .Hours = date_time->hour,
@@ -50,8 +50,8 @@ Platform_StatusTypeDef platform_rtc_backend_set_time(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_date(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_date(
+  const platform_rtc_date_time_t *date_time
 ) {
   RTC_DateTypeDef date = {
     .WeekDay = date_time->weekday,
@@ -65,14 +65,14 @@ Platform_StatusTypeDef platform_rtc_backend_set_date(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_time(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_time(
+  platform_rtc_date_time_t *date_time
 ) {
   RTC_TimeTypeDef time;
-  Platform_StatusTypeDef status = platform_from_hal_status(
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     date_time->hour = (uint8_t)time.Hours;
     date_time->minute = (uint8_t)time.Minutes;
     date_time->second = (uint8_t)time.Seconds;
@@ -80,14 +80,14 @@ Platform_StatusTypeDef platform_rtc_backend_get_time(
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_get_date(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_date(
+  platform_rtc_date_time_t *date_time
 ) {
   RTC_DateTypeDef date;
-  Platform_StatusTypeDef status = platform_from_hal_status(
+  platform_status_t status = platform_from_hal_status(
     HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN)
   );
-  if (status == Platform_OK) {
+  if (status == PLATFORM_STATUS_OK) {
     date_time->year = (uint16_t)(2000U + date.Year);
     date_time->month = (uint8_t)date.Month;
     date_time->day = (uint8_t)date.Date;
@@ -96,8 +96,8 @@ Platform_StatusTypeDef platform_rtc_backend_get_date(
   return status;
 }
 
-Platform_StatusTypeDef platform_rtc_backend_set_alarm(
-  const Platform_RTC_AlarmConfig *alarm
+platform_status_t platform_rtc_backend_set_alarm(
+  const platform_rtc_alarm_config_t *alarm
 ) {
   RTC_AlarmTypeDef hal_alarm = {
     .AlarmTime = {
@@ -120,15 +120,15 @@ Platform_StatusTypeDef platform_rtc_backend_set_alarm(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_disable_alarm(void) {
+platform_status_t platform_rtc_backend_disable_alarm(void) {
   return platform_from_hal_status(
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A)
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_start_wakeup(
+platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
-  Platform_RTC_WakeUpClock clock
+  platform_rtc_wakeup_clock_t clock
 ) {
   return platform_from_hal_status(
     HAL_RTCEx_SetWakeUpTimer_IT(
@@ -139,18 +139,18 @@ Platform_StatusTypeDef platform_rtc_backend_start_wakeup(
   );
 }
 
-Platform_StatusTypeDef platform_rtc_backend_stop_wakeup(void) {
+platform_status_t platform_rtc_backend_stop_wakeup(void) {
   return platform_from_hal_status(
     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc)
   );
 }
 
-void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc_handle) {
-  assert(hrtc_handle == &hrtc);
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *rtc_h) {
+  assert(rtc_h == &hrtc);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_ALARM);
 }
 
-void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc_handle) {
-  assert(hrtc_handle == &hrtc);
+void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *rtc_h) {
+  assert(rtc_h == &hrtc);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_WAKEUP);
 }

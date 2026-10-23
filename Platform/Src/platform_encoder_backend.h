@@ -11,28 +11,28 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool platform_encoder_backend_is_valid(Platform_Encoder_Instance encoder);
+bool platform_encoder_backend_is_valid(platform_encoder_instance_t encoder);
 
-Platform_StatusTypeDef platform_encoder_backend_start(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_start(
+  platform_encoder_instance_t encoder
 );
 
-Platform_StatusTypeDef platform_encoder_backend_stop(
-  Platform_Encoder_Instance encoder
+platform_status_t platform_encoder_backend_stop(
+  platform_encoder_instance_t encoder
 );
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter(
+  platform_encoder_instance_t encoder,
   uint32_t *counter
 );
 
-Platform_StatusTypeDef platform_encoder_backend_set_counter(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_set_counter(
+  platform_encoder_instance_t encoder,
   uint32_t counter
 );
 
-Platform_StatusTypeDef platform_encoder_backend_get_counter_bits(
-  Platform_Encoder_Instance encoder,
+platform_status_t platform_encoder_backend_get_counter_bits(
+  platform_encoder_instance_t encoder,
   uint8_t *counter_bits
 );
 

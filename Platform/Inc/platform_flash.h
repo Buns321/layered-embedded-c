@@ -23,12 +23,12 @@
 #endif
 
 /** @brief 可用的内部 Flash 实例。 */
-typedef enum {
+typedef enum platform_flash_instance_e {
   PLATFORM_FLASH_1 = 0U,
-} Platform_FLASH_Instance;
+} platform_flash_instance_t;
 
 /** @brief 内部 Flash 错误标志。 */
-typedef enum {
+typedef enum platform_flash_error_e {
   PLATFORM_FLASH_ERROR_NONE          = 0u,
   PLATFORM_FLASH_ERROR_PROGRAM       = (1u << 0),
   PLATFORM_FLASH_ERROR_ERASE         = (1u << 1),
@@ -38,7 +38,7 @@ typedef enum {
   PLATFORM_FLASH_ERROR_RANGE         = (1u << 5),
   PLATFORM_FLASH_ERROR_INTERNAL      = (1u << 6),
   PLATFORM_FLASH_ERROR_UNKNOWN       = (1u << 7),
-} Platform_FLASH_Error;
+} platform_flash_error_t;
 
 /**
  * @brief 从内部 Flash 复制字节。
@@ -46,14 +46,14 @@ typedef enum {
  * @param address MCU Flash 地址空间中的起始地址。
  * @param data 目标缓冲区。
  * @param size 字节数，必须大于零。
- * @retval Platform_OK 成功。
- * @retval Platform_BUSY 另一个 Flash 操作正在进行。
- * @retval Platform_ERROR 地址范围非法或缓冲区为空。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
+ * @retval PLATFORM_STATUS_ERROR 地址范围非法或缓冲区为空。
  * @note 从任务上下文调用。应用中的所有 Flash 操作都必须使用这个 Platform
  *       实例，以确保忙状态保护具有唯一权威性。
  */
-Platform_StatusTypeDef Platform_FLASH_Read(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Read(
+  platform_flash_instance_t instance,
   uint32_t address,
   void *data,
   uint32_t size
@@ -65,14 +65,14 @@ Platform_StatusTypeDef Platform_FLASH_Read(
  * @param address 目标地址，必须按 4 字节对齐。
  * @param data 源缓冲区。
  * @param size 字节数，必须是四的非零整数倍。
- * @retval Platform_OK 成功。
- * @retval Platform_BUSY 另一个 Flash 操作正在进行。
- * @retval Platform_ERROR 地址范围或对齐非法，或 HAL 写入失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
+ * @retval PLATFORM_STATUS_ERROR 地址范围或对齐非法，或 HAL 写入失败。
  * @note 目标区域必须已擦除，擦除策略由调用方负责。
  * @note 从任务上下文调用，并遵守目标 MCU 对中断或 RTOS 调度的要求。
  */
-Platform_StatusTypeDef Platform_FLASH_Write(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Write(
+  platform_flash_instance_t instance,
   uint32_t address,
   const void *data,
   uint32_t size
@@ -83,15 +83,15 @@ Platform_StatusTypeDef Platform_FLASH_Write(
  * @param instance 内部 Flash 实例。
  * @param address 起始地址，必须按擦除单元边界对齐。
  * @param size 字节数，必须大于零。
- * @retval Platform_OK 成功。
- * @retval Platform_BUSY 另一个 Flash 操作正在进行。
- * @retval Platform_ERROR 地址范围非法或 HAL 擦除失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
+ * @retval PLATFORM_STATUS_ERROR 地址范围非法或 HAL 擦除失败。
  * @warning 与范围相交的所有页或扇区都会被擦除。选择参数槽位前应先调用
  *          Platform_FLASH_GetEraseUnitSize()。
  * @note 从任务上下文调用，且不能从正在被擦除的区域执行代码。
  */
-Platform_StatusTypeDef Platform_FLASH_Erase(
-  Platform_FLASH_Instance instance,
+platform_status_t Platform_FLASH_Erase(
+  platform_flash_instance_t instance,
   uint32_t address,
   uint32_t size
 );
@@ -103,7 +103,7 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
  * @return 擦除单元大小（字节）；地址不在 Flash 中时返回零。
  */
 uint32_t Platform_FLASH_GetEraseUnitSize(
-  Platform_FLASH_Instance instance,
+  platform_flash_instance_t instance,
   uint32_t address
 );
 
@@ -111,7 +111,7 @@ uint32_t Platform_FLASH_GetEraseUnitSize(
  * @brief 读取最近一次 Platform Flash 错误快照。
  * @param instance 内部 Flash 实例。
  */
-uint32_t Platform_FLASH_GetLastError(Platform_FLASH_Instance instance);
+uint32_t Platform_FLASH_GetLastError(platform_flash_instance_t instance);
 
 /** @} */
 

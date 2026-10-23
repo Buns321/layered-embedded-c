@@ -12,36 +12,36 @@
 
 bool platform_rtc_backend_has_wakeup_timer(void);
 
-Platform_StatusTypeDef platform_rtc_backend_set_time(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_time(
+  const platform_rtc_date_time_t *date_time
 );
 
-Platform_StatusTypeDef platform_rtc_backend_set_date(
-  const Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_set_date(
+  const platform_rtc_date_time_t *date_time
 );
 
-Platform_StatusTypeDef platform_rtc_backend_get_time(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_time(
+  platform_rtc_date_time_t *date_time
 );
 
-Platform_StatusTypeDef platform_rtc_backend_get_date(
-  Platform_RTC_DateTime *date_time
+platform_status_t platform_rtc_backend_get_date(
+  platform_rtc_date_time_t *date_time
 );
 
-Platform_StatusTypeDef platform_rtc_backend_set_alarm(
-  const Platform_RTC_AlarmConfig *alarm
+platform_status_t platform_rtc_backend_set_alarm(
+  const platform_rtc_alarm_config_t *alarm
 );
 
-Platform_StatusTypeDef platform_rtc_backend_disable_alarm(void);
+platform_status_t platform_rtc_backend_disable_alarm(void);
 
-Platform_StatusTypeDef platform_rtc_backend_start_wakeup(
+platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
-  Platform_RTC_WakeUpClock clock
+  platform_rtc_wakeup_clock_t clock
 );
 
-Platform_StatusTypeDef platform_rtc_backend_stop_wakeup(void);
+platform_status_t platform_rtc_backend_stop_wakeup(void);
 
-void platform_rtc_dispatch_event(Platform_RTC_Event event);
+void platform_rtc_dispatch_event(platform_rtc_event_t event);
 
 void platform_rtc_record_error(uint32_t error);
 

@@ -9,38 +9,38 @@
 #include <stddef.h>
 
 static volatile uint32_t can_error[PLATFORM_CAN_INSTANCE_COUNT];
-static platform_can_callbacks_t can_cb[PLATFORM_CAN_INSTANCE_COUNT];
+static platform_can_callback_binding_t can_cb[PLATFORM_CAN_INSTANCE_COUNT];
 static bool can_cb_registered[PLATFORM_CAN_INSTANCE_COUNT];
 
-static Platform_StatusTypeDef platform_can_finish(
-  Platform_CAN_Instance can,
-  Platform_StatusTypeDef status
+static platform_status_t platform_can_finish(
+  platform_can_instance_t can,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &can_error[can],
       platform_error_from_status(status)
     );
   }
-  if (status == Platform_TIMEOUT) {
+  if (status == PLATFORM_STATUS_TIMEOUT) {
     platform_error_record(&can_error[can], PLATFORM_CAN_ERROR_TIMEOUT);
   }
   return status;
 }
 
-static Platform_StatusTypeDef platform_can_invalid(
-  Platform_CAN_Instance can
+static platform_status_t platform_can_invalid(
+  platform_can_instance_t can
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
     platform_error_record(
       &can_error[can],
-      PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_CAN_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_CAN_ERROR_PARAMETER
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
-static bool platform_can_frame_is_valid(const Platform_CAN_Frame *frame) {
+static bool platform_can_frame_is_valid(const platform_can_frame_t *frame) {
   if (
     frame == NULL ||
     (frame->id_type != PLATFORM_CAN_ID_STANDARD &&
@@ -56,7 +56,7 @@ static bool platform_can_frame_is_valid(const Platform_CAN_Frame *frame) {
 }
 
 static bool platform_can_filter_is_valid(
-  const Platform_CAN_FilterConfig *config
+  const platform_can_filter_config_t *config
 ) {
   if (
     config == NULL ||
@@ -93,8 +93,8 @@ static bool platform_can_notifications_are_valid(uint32_t notifications) {
 }
 
 void platform_can_dispatch_event(
-  Platform_CAN_Instance can,
-  const Platform_CAN_Event *event
+  platform_can_instance_t can,
+  const platform_can_event_t *event
 ) {
   if (
     (uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
@@ -108,9 +108,9 @@ void platform_can_dispatch_event(
   }
 }
 
-Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
-  Platform_CAN_Instance can,
-  const Platform_CAN_FilterConfig *config
+platform_status_t Platform_CAN_ConfigureFilter(
+  platform_can_instance_t can,
+  const platform_can_filter_config_t *config
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
     platform_error_reset(&can_error[can]);
@@ -123,9 +123,9 @@ Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
     return platform_can_invalid(can);
   }
 
-  Platform_StatusTypeDef status =
+  platform_status_t status =
     platform_can_backend_configure_filter(can, config);
-  if (status == Platform_INVALID_ARGUMENT) {
+  if (status == PLATFORM_STATUS_INVALID_ARGUMENT) {
     platform_can_invalid(can);
   } else {
     status = platform_can_finish(can, status);
@@ -133,7 +133,7 @@ Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
   return status;
 }
 
-Platform_StatusTypeDef Platform_CAN_Start(Platform_CAN_Instance can) {
+platform_status_t Platform_CAN_Start(platform_can_instance_t can) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
     platform_error_reset(&can_error[can]);
   }
@@ -143,7 +143,7 @@ Platform_StatusTypeDef Platform_CAN_Start(Platform_CAN_Instance can) {
   return platform_can_finish(can, platform_can_backend_start(can));
 }
 
-Platform_StatusTypeDef Platform_CAN_Stop(Platform_CAN_Instance can) {
+platform_status_t Platform_CAN_Stop(platform_can_instance_t can) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
     platform_error_reset(&can_error[can]);
   }
@@ -153,9 +153,9 @@ Platform_StatusTypeDef Platform_CAN_Stop(Platform_CAN_Instance can) {
   return platform_can_finish(can, platform_can_backend_stop(can));
 }
 
-Platform_StatusTypeDef Platform_CAN_Transmit(
-  Platform_CAN_Instance can,
-  const Platform_CAN_Frame *frame,
+platform_status_t Platform_CAN_Transmit(
+  platform_can_instance_t can,
+  const platform_can_frame_t *frame,
   uint32_t timeout
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
@@ -174,10 +174,10 @@ Platform_StatusTypeDef Platform_CAN_Transmit(
   );
 }
 
-Platform_StatusTypeDef Platform_CAN_Receive(
-  Platform_CAN_Instance can,
-  Platform_CAN_FIFO fifo,
-  Platform_CAN_Frame *frame,
+platform_status_t Platform_CAN_Receive(
+  platform_can_instance_t can,
+  platform_can_fifo_t fifo,
+  platform_can_frame_t *frame,
   uint32_t timeout
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
@@ -197,8 +197,8 @@ Platform_StatusTypeDef Platform_CAN_Receive(
   );
 }
 
-Platform_StatusTypeDef Platform_CAN_ActivateNotification(
-  Platform_CAN_Instance can,
+platform_status_t Platform_CAN_ActivateNotification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
@@ -217,8 +217,8 @@ Platform_StatusTypeDef Platform_CAN_ActivateNotification(
   );
 }
 
-Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
-  Platform_CAN_Instance can,
+platform_status_t Platform_CAN_DeactivateNotification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
   if ((uint32_t)can < PLATFORM_CAN_INSTANCE_COUNT) {
@@ -237,29 +237,29 @@ Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
   );
 }
 
-uint32_t Platform_CAN_GetLastError(Platform_CAN_Instance can) {
+uint32_t Platform_CAN_GetLastError(platform_can_instance_t can) {
   if ((uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT) {
-    return PLATFORM_COMMON_ERROR_PARAMETER | PLATFORM_CAN_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT | PLATFORM_CAN_ERROR_PARAMETER;
   }
   return can_error[can] | platform_can_backend_get_error(can);
 }
 
-Platform_StatusTypeDef Platform_CAN_RegisterCallbacks(
-  Platform_CAN_Instance can,
-  const platform_can_callbacks_t *callbacks
+platform_status_t Platform_CAN_RegisterCallback(
+  platform_can_instance_t can,
+  const platform_can_callback_binding_t *callbacks
 ) {
   if (
     (uint32_t)can >= PLATFORM_CAN_INSTANCE_COUNT ||
     callbacks == NULL ||
     !platform_can_backend_is_valid(can)
   ) {
-    return Platform_INVALID_ARGUMENT;
+    return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
   if (can_cb_registered[can]) {
-    return Platform_BUSY;
+    return PLATFORM_STATUS_BUSY;
   }
 
   can_cb[can] = *callbacks;
   can_cb_registered[can] = true;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }

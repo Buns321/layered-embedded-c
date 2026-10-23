@@ -5,28 +5,28 @@
 #include "encoder_base.h"
 #include  <assert.h>
 
-void Dev_Encoder_Base_Init(encoder_base_t *this, const char *name, const encoder_ops_t *ops) {
-  assert(this && name && ops);
-  this->ops = ops;
-  this->name = name;
+void Dev_Encoder_Base_Init(encoder_base_t *encoder_h, const char *name, const encoder_ops_t *ops) {
+  assert(encoder_h && name && ops);
+  encoder_h->ops = ops;
+  encoder_h->name = name;
 }
 
-void Dev_Encoder_Base_SetZero(encoder_base_t *this) {
-  assert(this && this->ops && this->ops->set_zero);
-  this->ops->set_zero(this);
+void Dev_Encoder_Base_SetZero(encoder_base_t *encoder_h) {
+  assert(encoder_h && encoder_h->ops && encoder_h->ops->set_zero);
+  encoder_h->ops->set_zero(encoder_h);
 }
 
-int64_t Dev_Encoder_Base_GetPosition(encoder_base_t *this) {
-  assert(this && this->ops && this->ops->get_position);
-  return this->ops->get_position(this);
+int64_t Dev_Encoder_Base_GetPosition(encoder_base_t *encoder_h) {
+  assert(encoder_h && encoder_h->ops && encoder_h->ops->get_position);
+  return encoder_h->ops->get_position(encoder_h);
 }
 
-int32_t Dev_Encoder_Base_GetDelta(encoder_base_t *this){
-  assert(this && this->ops && this->ops->get_delta);
-  return this->ops->get_delta(this);
+int32_t Dev_Encoder_Base_GetDelta(encoder_base_t *encoder_h){
+  assert(encoder_h && encoder_h->ops && encoder_h->ops->get_delta);
+  return encoder_h->ops->get_delta(encoder_h);
 }
 
-void Dev_Encoder_Base_Resync(encoder_base_t *this){
-  assert(this && this->ops && this->ops->resync);
-  this->ops->resync(this);
+void Dev_Encoder_Base_Resync(encoder_base_t *encoder_h){
+  assert(encoder_h && encoder_h->ops && encoder_h->ops->resync);
+  encoder_h->ops->resync(encoder_h);
 }

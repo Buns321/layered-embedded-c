@@ -22,7 +22,7 @@
 #endif
 
 /** @brief 可用的 ADC 实例。 */
-typedef enum {
+typedef enum platform_adc_instance_e {
 #if PLATFORM_ENABLE_ADC1
   PLATFORM_ADC_1 = 0U,
 #endif
@@ -32,36 +32,36 @@ typedef enum {
 #if PLATFORM_ENABLE_ADC3
   PLATFORM_ADC_3 = 2U,
 #endif
-} Platform_ADC_Instance;
+} platform_adc_instance_t;
 
 /** @brief ADC 身份槽位数量上限。 */
 #define PLATFORM_ADC_INSTANCE_COUNT 3U
 
 /** @brief ADC 错误标志，可同时置位多个位。 */
-typedef enum {
+typedef enum platform_adc_error_e {
   PLATFORM_ADC_ERROR_NONE     = 0u,
   PLATFORM_ADC_ERROR_INTERNAL = (1u << 0),
   PLATFORM_ADC_ERROR_OVERRUN  = (1u << 1),
   PLATFORM_ADC_ERROR_DMA      = (1u << 2),
   PLATFORM_ADC_ERROR_UNKNOWN  = (1u << 7),
-} Platform_ADC_Error;
+} platform_adc_error_t;
 
 /** @brief ADC 异步事件。 */
-typedef enum {
-  PLATFORM_ADC_EVENT_CONV_CPLT = 0U,
-  PLATFORM_ADC_EVENT_CONV_HALF,
+typedef enum platform_adc_event_type_e {
+  PLATFORM_ADC_EVENT_CONV_COMPLETE = 0U,
+  PLATFORM_ADC_EVENT_CONV_HALF_COMPLETE,
   PLATFORM_ADC_EVENT_ERROR,
-} Platform_ADC_EventType;
+} platform_adc_event_type_t;
 
 /** @brief ADC 事件数据，只在回调期间有效。 */
-typedef struct {
-  Platform_ADC_EventType type;
+typedef struct platform_adc_event_s {
+  platform_adc_event_type_t type;
   uint32_t error;
-} Platform_ADC_Event;
+} platform_adc_event_t;
 
-typedef void (*Platform_ADC_Callback)(
-  Platform_ADC_Instance adc,
-  const Platform_ADC_Event *event,
+typedef void (*platform_adc_callback_t)(
+  platform_adc_instance_t adc,
+  const platform_adc_event_t *event,
   void *context
 );
 
@@ -70,31 +70,31 @@ typedef void (*Platform_ADC_Callback)(
  * @note 回调在中断上下文执行。
  * @note 一个物理实例只能有一个回调所有者。
  */
-typedef struct {
-  Platform_ADC_Callback callback;
+typedef struct platform_adc_callback_binding_s {
+  platform_adc_callback_t callback;
   void *context;
-} platform_adc_callbacks_t;
+} platform_adc_callback_binding_t;
 
 /**
  * @brief 以轮询模式启动转换。
  * @param adc ADC 实例。
  * @pre MX_ADCx_Init() 已完成，且规则组通道已配置。
  */
-Platform_StatusTypeDef Platform_ADC_Start(Platform_ADC_Instance adc);
+platform_status_t Platform_ADC_Start(platform_adc_instance_t adc);
 
 /**
  * @brief 停止轮询转换。
  * @param adc ADC 实例。
  */
-Platform_StatusTypeDef Platform_ADC_Stop(Platform_ADC_Instance adc);
+platform_status_t Platform_ADC_Stop(platform_adc_instance_t adc);
 
 /**
  * @brief 等待当前轮询转换完成。
  * @param adc ADC 实例。
  * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
-Platform_StatusTypeDef Platform_ADC_PollForConversion(
-  Platform_ADC_Instance adc,
+platform_status_t Platform_ADC_PollForConversion(
+  platform_adc_instance_t adc,
   uint32_t timeout
 );
 
@@ -104,8 +104,8 @@ Platform_StatusTypeDef Platform_ADC_PollForConversion(
  * @param value 转换结果输出。
  * @note 除非 CubeMX 另行配置，该值是原始 ADC 码值。
  */
-Platform_StatusTypeDef Platform_ADC_GetValue(
-  Platform_ADC_Instance adc,
+platform_status_t Platform_ADC_GetValue(
+  platform_adc_instance_t adc,
   uint32_t *value
 );
 
@@ -119,8 +119,8 @@ Platform_StatusTypeDef Platform_ADC_GetValue(
  *       转换结果。
  * @note 返回前会停止转换。
  */
-Platform_StatusTypeDef Platform_ADC_Read(
-  Platform_ADC_Instance adc,
+platform_status_t Platform_ADC_Read(
+  platform_adc_instance_t adc,
   uint32_t *value,
   uint32_t timeout
 );
@@ -129,13 +129,13 @@ Platform_StatusTypeDef Platform_ADC_Read(
  * @brief 使用规则组中断启动转换。
  * @param adc ADC 实例。
  */
-Platform_StatusTypeDef Platform_ADC_Start_IT(Platform_ADC_Instance adc);
+platform_status_t Platform_ADC_StartIT(platform_adc_instance_t adc);
 
 /**
  * @brief 停止中断方式转换。
  * @param adc ADC 实例。
  */
-Platform_StatusTypeDef Platform_ADC_Stop_IT(Platform_ADC_Instance adc);
+platform_status_t Platform_ADC_StopIT(platform_adc_instance_t adc);
 
 /**
  * @brief 启动规则组 DMA 转换。
@@ -144,10 +144,10 @@ Platform_StatusTypeDef Platform_ADC_Stop_IT(Platform_ADC_Instance adc);
  * @param length 转换次数，不是字节数。
  * @note 在完成、错误或停止前，data 必须保持有效。
  * @note STM32F1 上只有 ADC1 具有 DMA 请求。对不支持的实例启动或停止 DMA
- *       会返回 Platform_ERROR。
+ *       会返回 PLATFORM_STATUS_ERROR。
  */
-Platform_StatusTypeDef Platform_ADC_Start_DMA(
-  Platform_ADC_Instance adc,
+platform_status_t Platform_ADC_StartDMA(
+  platform_adc_instance_t adc,
   uint32_t *data,
   uint32_t length
 );
@@ -157,26 +157,26 @@ Platform_StatusTypeDef Platform_ADC_Start_DMA(
  * @param adc ADC 实例。
  * @note STM32F1 上只支持停止 ADC1。
  */
-Platform_StatusTypeDef Platform_ADC_Stop_DMA(Platform_ADC_Instance adc);
+platform_status_t Platform_ADC_StopDMA(platform_adc_instance_t adc);
 
 /**
  * @brief 读取最近一次 HAL ADC 错误快照。
  * @param adc ADC 实例。
  */
-uint32_t Platform_ADC_GetLastError(Platform_ADC_Instance adc);
+uint32_t Platform_ADC_GetLastError(platform_adc_instance_t adc);
 
 /**
  * @brief 注册 ADC 回调。
  * @param adc ADC 实例。
  * @param callbacks 待复制的回调集合。
  * @note 应在初始化阶段、启动 IT/DMA 转换前调用一次。
- * @retval Platform_OK 注册成功。
- * @retval Platform_BUSY 该实例已注册回调。
- * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
+ * @retval PLATFORM_STATUS_OK 注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或回调集合非法。
  */
-Platform_StatusTypeDef Platform_ADC_RegisterCallbacks(
-  Platform_ADC_Instance adc,
-  const platform_adc_callbacks_t *callbacks
+platform_status_t Platform_ADC_RegisterCallback(
+  platform_adc_instance_t adc,
+  const platform_adc_callback_binding_t *callbacks
 );
 
 /** @} */

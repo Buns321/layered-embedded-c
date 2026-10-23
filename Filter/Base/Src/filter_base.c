@@ -5,23 +5,23 @@
 #include "filter_base.h"
 #include <assert.h>
 
-void Filter_Base_Init(filter_base_t *this, const char *name, const filter_ops_t *ops) {
+void Filter_Base_Init(filter_base_t *filter_h, const char *name, const filter_ops_t *ops) {
   assert(
-    this        &&
+    filter_h        &&
     name        &&
     ops         &&
     ops->update &&
     ops->reset
   );
-  this->name = name;
-  this->ops  = ops;
+  filter_h->name = name;
+  filter_h->ops  = ops;
 }
 
-void Filter_Base_Update(filter_base_t *this, const filter_sample_t *input, filter_sample_t *output) {
+void Filter_Base_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(
-    this              &&
-    this->ops         &&
-    this->ops->update &&
+    filter_h              &&
+    filter_h->ops         &&
+    filter_h->ops->update &&
     input             &&
     output            &&
     input != output
@@ -29,13 +29,13 @@ void Filter_Base_Update(filter_base_t *this, const filter_sample_t *input, filte
   assert((input->valid_mask & ~FILTER_CHANNEL_MASK) == 0u);
 
   *output = *input;
-  this->ops->update(this, input, output);
+  filter_h->ops->update(filter_h, input, output);
 
   assert((output->valid_mask & ~FILTER_CHANNEL_MASK) == 0u);
   assert(output->time_ms == input->time_ms);
 }
 
-void Filter_Base_Reset(filter_base_t *this) {
-  assert(this && this->ops && this->ops->reset);
-  this->ops->reset(this);
+void Filter_Base_Reset(filter_base_t *filter_h) {
+  assert(filter_h && filter_h->ops && filter_h->ops->reset);
+  filter_h->ops->reset(filter_h);
 }

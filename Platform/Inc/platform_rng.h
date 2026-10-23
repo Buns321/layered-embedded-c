@@ -21,19 +21,19 @@
 #endif
 
 /** @brief 可用的硬件 RNG 身份。 */
-typedef enum {
+typedef enum platform_rng_instance_e {
   PLATFORM_RNG_1 = 0U,
-} Platform_RNG_Instance;
+} platform_rng_instance_t;
 
 /** @brief RNG 错误标志。 */
-typedef enum {
+typedef enum platform_rng_error_e {
   PLATFORM_RNG_ERROR_NONE    = 0u,
   PLATFORM_RNG_ERROR_TIMEOUT = (1u << 0),
   PLATFORM_RNG_ERROR_BUSY    = (1u << 1),
   PLATFORM_RNG_ERROR_SEED    = (1u << 2),
   PLATFORM_RNG_ERROR_CLOCK   = (1u << 3),
   PLATFORM_RNG_ERROR_UNKNOWN = (1u << 7),
-} Platform_RNG_Error;
+} platform_rng_error_t;
 
 /**
  * @brief 生成一个 32 位随机数。
@@ -43,16 +43,16 @@ typedef enum {
  * @pre MX_RNG_Init() 已成功完成。
  * @note 使用 HAL RNG 的超时机制，必须从任务上下文调用。
  */
-Platform_StatusTypeDef Platform_RNG_GetRandom(
-  Platform_RNG_Instance rng,
+platform_status_t Platform_RNG_GetRandom(
+  platform_rng_instance_t rng,
   uint32_t *value
 );
 
 /**
  * @brief 读取最近一次 HAL RNG 错误快照。
- * @return Platform_RNG_Error 位掩码。
+ * @return platform_rng_error_t 位掩码。
  */
-uint32_t Platform_RNG_GetLastError(Platform_RNG_Instance rng);
+uint32_t Platform_RNG_GetLastError(platform_rng_instance_t rng);
 
 /** @} */
 

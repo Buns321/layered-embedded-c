@@ -9,22 +9,22 @@
 #include <assert.h>
 
 void Dev_Motor_Base_Init(
-  motor_base_t *this,
+  motor_base_t *motor_h,
   const char *name,
   const motor_ops_t *ops,
-  controller_base_t *controller,
-  encoder_base_t *encoder,
+  controller_base_t *controller_h,
+  encoder_base_t *encoder_h,
   float counts_per_meter,
   float control_period,
   float target_speed,
   int32_t max_duty
 ) {
   assert(
-    this                           &&
+    motor_h                           &&
     name                           &&
     ops                            &&
-    controller                     &&
-    encoder                        &&
+    controller_h                     &&
+    encoder_h                        &&
     SYS_ISFINITE(counts_per_meter) &&
     counts_per_meter > 0.0f        &&
     SYS_ISFINITE(control_period)   &&
@@ -32,133 +32,133 @@ void Dev_Motor_Base_Init(
     max_duty > 0
   );
 
-  this->ops              = ops;
-  this->name             = name;
-  this->controller       = controller;
-  this->encoder          = encoder;
-  this->state            = DEV_MOTOR_DISABLE;
-  this->current_speed    = 0;
-  this->target_speed     = 0.0f;
-  this->counts_per_meter = counts_per_meter;
-  this->control_period   = control_period;
-  this->max_duty         = max_duty;
-  this->controller_status = CONTROLLER_STATUS_OK;
+  motor_h->ops              = ops;
+  motor_h->name             = name;
+  motor_h->controller_h       = controller_h;
+  motor_h->encoder_h          = encoder_h;
+  motor_h->state            = DEV_MOTOR_DISABLE;
+  motor_h->current_speed    = 0;
+  motor_h->target_speed     = 0.0f;
+  motor_h->counts_per_meter = counts_per_meter;
+  motor_h->control_period   = control_period;
+  motor_h->max_duty         = max_duty;
+  motor_h->controller_status = CONTROLLER_STATUS_OK;
 
-  Dev_Motor_Base_SetTargetSpeed(this, target_speed);
+  Dev_Motor_Base_SetTargetSpeed(motor_h, target_speed);
 }
 
-Dev_Motor_State Dev_Motor_Base_ReadStatus(motor_base_t *this) {
-  assert(this);
-  return this->state;
+dev_motor_state_t Dev_Motor_Base_ReadStatus(motor_base_t *motor_h) {
+  assert(motor_h);
+  return motor_h->state;
 }
 
-float Dev_Motor_Base_ReadTargetSpeed(motor_base_t *this) {
-  assert(this);
-  return this->target_speed;
+float Dev_Motor_Base_ReadTargetSpeed(motor_base_t *motor_h) {
+  assert(motor_h);
+  return motor_h->target_speed;
 }
 
-float Dev_Motor_Base_ReadCurrentSpeed(motor_base_t *this) {
-  assert(this);
-  return this->current_speed;
+float Dev_Motor_Base_ReadCurrentSpeed(motor_base_t *motor_h) {
+  assert(motor_h);
+  return motor_h->current_speed;
 }
 
-controller_status_t Dev_Motor_Base_ReadControllerStatus(motor_base_t *this) {
-  assert(this);
-  return this->controller_status;
+controller_status_t Dev_Motor_Base_ReadControllerStatus(motor_base_t *motor_h) {
+  assert(motor_h);
+  return motor_h->controller_status;
 }
 
-void Dev_Motor_Base_SetTargetSpeed(motor_base_t *this, float target_speed) {
-  assert(this && SYS_ISFINITE(target_speed));
+void Dev_Motor_Base_SetTargetSpeed(motor_base_t *motor_h, float target_speed) {
+  assert(motor_h && SYS_ISFINITE(target_speed));
 
   if (!SYS_ISFINITE(target_speed)) {
     target_speed = 0.0f;
   }
 
-  this->target_speed = target_speed;
+  motor_h->target_speed = target_speed;
 }
 
-void Dev_Motor_Base_Enable(motor_base_t *this) {
+void Dev_Motor_Base_Enable(motor_base_t *motor_h) {
   assert(
-    this              &&
-    this->ops         &&
-    this->ops->enable
+    motor_h              &&
+    motor_h->ops         &&
+    motor_h->ops->enable
   );
 
-  Dev_Motor_Base_Reset(this);
-  this->ops->enable(this);
-  this->state            = DEV_MOTOR_ENABLE;
+  Dev_Motor_Base_Reset(motor_h);
+  motor_h->ops->enable(motor_h);
+  motor_h->state            = DEV_MOTOR_ENABLE;
 }
 
 
-void Dev_Motor_Base_Disable(motor_base_t *this) {
+void Dev_Motor_Base_Disable(motor_base_t *motor_h) {
   assert(
-    this                 &&
-    this->ops            &&
-    this->ops->set_power &&
-    this->ops->disable
+    motor_h                 &&
+    motor_h->ops            &&
+    motor_h->ops->set_power &&
+    motor_h->ops->disable
   );
 
-  this->ops->set_power(this, 0.0f);
-  this->ops->disable(this);
+  motor_h->ops->set_power(motor_h, 0.0f);
+  motor_h->ops->disable(motor_h);
 
-  this->state            = DEV_MOTOR_DISABLE;
-  this->current_speed = 0.0f;
-  this->target_speed = 0.0f;
-  this->controller_status = CONTROLLER_STATUS_OK;
+  motor_h->state            = DEV_MOTOR_DISABLE;
+  motor_h->current_speed = 0.0f;
+  motor_h->target_speed = 0.0f;
+  motor_h->controller_status = CONTROLLER_STATUS_OK;
 }
 
-void Dev_Motor_Base_Brake(motor_base_t *this) {
+void Dev_Motor_Base_Brake(motor_base_t *motor_h) {
   assert(
-    this             &&
-    this->ops        &&
-    this->ops->brake &&
-    this->controller
+    motor_h             &&
+    motor_h->ops        &&
+    motor_h->ops->brake &&
+    motor_h->controller_h
   );
 
-  this->target_speed  = 0.0f;
-  this->current_speed = 0.0f;
-  this->controller_status = CONTROLLER_STATUS_OK;
+  motor_h->target_speed  = 0.0f;
+  motor_h->current_speed = 0.0f;
+  motor_h->controller_status = CONTROLLER_STATUS_OK;
 
-  if (this->state == DEV_MOTOR_DISABLE) {
+  if (motor_h->state == DEV_MOTOR_DISABLE) {
     return;
   }
 
-  Ctrl_Base_Reset(this->controller);
-  this->ops->brake(this);
-  this->state            = DEV_MOTOR_BRAKE;
+  Ctrl_Base_Reset(motor_h->controller_h);
+  motor_h->ops->brake(motor_h);
+  motor_h->state            = DEV_MOTOR_BRAKE;
 }
 
-void Dev_Motor_Base_Update(motor_base_t *this) {
+void Dev_Motor_Base_Update(motor_base_t *motor_h) {
   assert(
-    this                 &&
-    this->ops            &&
-    this->ops->set_power &&
-    this->controller     &&
-    this->encoder
+    motor_h                 &&
+    motor_h->ops            &&
+    motor_h->ops->set_power &&
+    motor_h->controller_h     &&
+    motor_h->encoder_h
   );
 
-  if (this->state != DEV_MOTOR_ENABLE) {
+  if (motor_h->state != DEV_MOTOR_ENABLE) {
     return;
   }
 
-  int32_t delta = Dev_Encoder_Base_GetDelta(this->encoder);
+  int32_t delta = Dev_Encoder_Base_GetDelta(motor_h->encoder_h);
 
-  float speed_scale = this->counts_per_meter * this->control_period;
+  float speed_scale = motor_h->counts_per_meter * motor_h->control_period;
   if (!SYS_ISFINITE(speed_scale) || speed_scale <= 0.0f) {
-    this->current_speed = 0.0f;
-    this->controller_status = CONTROLLER_STATUS_ERROR;
-    this->ops->set_power(this, 0.0f);
+    motor_h->current_speed = 0.0f;
+    motor_h->controller_status = CONTROLLER_STATUS_ERROR;
+    motor_h->ops->set_power(motor_h, 0.0f);
     return;
   }
 
-  this->current_speed = (float)delta / speed_scale;
+  motor_h->current_speed = (float)delta / speed_scale;
 
   float power = 0.0f;
   controller_status_t status = Ctrl_Base_Update(
-    this->controller,
-    this->target_speed,
-    this->current_speed,
-    this->control_period,
+    motor_h->controller_h,
+    motor_h->target_speed,
+    motor_h->current_speed,
+    motor_h->control_period,
     &power
   );
 
@@ -171,33 +171,33 @@ void Dev_Motor_Base_Update(motor_base_t *this) {
 
   float clamped_power = SYS_CLAMP(
     power,
-    -(float)this->max_duty,
-    (float)this->max_duty
+    -(float)motor_h->max_duty,
+    (float)motor_h->max_duty
   );
 
   if (clamped_power != power) {
     status = CONTROLLER_STATUS_SATURATED;
   }
 
-  this->controller_status = status;
-  this->ops->set_power(this, clamped_power);
+  motor_h->controller_status = status;
+  motor_h->ops->set_power(motor_h, clamped_power);
 }
 
-void Dev_Motor_Base_Reset(motor_base_t *this) {
+void Dev_Motor_Base_Reset(motor_base_t *motor_h) {
   assert(
-    this                 &&
-    this->ops            &&
-    this->ops->set_power &&
-    this->controller     &&
-    this->encoder
+    motor_h                 &&
+    motor_h->ops            &&
+    motor_h->ops->set_power &&
+    motor_h->controller_h     &&
+    motor_h->encoder_h
   );
 
-  this->ops->set_power(this, 0.0f);
+  motor_h->ops->set_power(motor_h, 0.0f);
 
-  Ctrl_Base_Reset(this->controller);
+  Ctrl_Base_Reset(motor_h->controller_h);
 
-  Dev_Encoder_Base_Resync(this->encoder);
+  Dev_Encoder_Base_Resync(motor_h->encoder_h);
 
-  this->current_speed = 0.0f;
-  this->controller_status = CONTROLLER_STATUS_OK;
+  motor_h->current_speed = 0.0f;
+  motor_h->controller_status = CONTROLLER_STATUS_OK;
 }

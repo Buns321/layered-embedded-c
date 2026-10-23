@@ -9,16 +9,16 @@
 static volatile uint32_t encoder_error[6];
 
 static uint32_t platform_encoder_error_index(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 ) {
   return (uint32_t)encoder;
 }
 
-static Platform_StatusTypeDef platform_encoder_finish(
-  Platform_Encoder_Instance encoder,
-  Platform_StatusTypeDef status
+static platform_status_t platform_encoder_finish(
+  platform_encoder_instance_t encoder,
+  platform_status_t status
 ) {
-  if (status != Platform_OK) {
+  if (status != PLATFORM_STATUS_OK) {
     platform_error_record(
       &encoder_error[platform_encoder_error_index(encoder)],
       platform_error_from_status(status)
@@ -27,21 +27,21 @@ static Platform_StatusTypeDef platform_encoder_finish(
   return status;
 }
 
-static Platform_StatusTypeDef platform_encoder_invalid(
-  Platform_Encoder_Instance encoder,
+static platform_status_t platform_encoder_invalid(
+  platform_encoder_instance_t encoder,
   bool instance_valid
 ) {
   if (instance_valid) {
     platform_error_record(
       &encoder_error[platform_encoder_error_index(encoder)],
-      PLATFORM_COMMON_ERROR_PARAMETER
+      PLATFORM_ERROR_INVALID_ARGUMENT
     );
   }
-  return Platform_INVALID_ARGUMENT;
+  return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
-Platform_StatusTypeDef Platform_Encoder_Start(
-  Platform_Encoder_Instance encoder
+platform_status_t Platform_Encoder_Start(
+  platform_encoder_instance_t encoder
 ) {
   const bool valid = platform_encoder_backend_is_valid(encoder);
   if (valid) {
@@ -56,8 +56,8 @@ Platform_StatusTypeDef Platform_Encoder_Start(
   );
 }
 
-Platform_StatusTypeDef Platform_Encoder_Stop(
-  Platform_Encoder_Instance encoder
+platform_status_t Platform_Encoder_Stop(
+  platform_encoder_instance_t encoder
 ) {
   const bool valid = platform_encoder_backend_is_valid(encoder);
   if (valid) {
@@ -72,8 +72,8 @@ Platform_StatusTypeDef Platform_Encoder_Stop(
   );
 }
 
-Platform_StatusTypeDef Platform_Encoder_GetCounter(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_GetCounter(
+  platform_encoder_instance_t encoder,
   uint32_t *counter
 ) {
   const bool valid = platform_encoder_backend_is_valid(encoder);
@@ -89,8 +89,8 @@ Platform_StatusTypeDef Platform_Encoder_GetCounter(
   );
 }
 
-Platform_StatusTypeDef Platform_Encoder_SetCounter(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_SetCounter(
+  platform_encoder_instance_t encoder,
   uint32_t counter
 ) {
   const bool valid = platform_encoder_backend_is_valid(encoder);
@@ -106,8 +106,8 @@ Platform_StatusTypeDef Platform_Encoder_SetCounter(
   );
 }
 
-Platform_StatusTypeDef Platform_Encoder_GetCounterBits(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_GetCounterBits(
+  platform_encoder_instance_t encoder,
   uint8_t *counter_bits
 ) {
   const bool valid = platform_encoder_backend_is_valid(encoder);
@@ -124,10 +124,10 @@ Platform_StatusTypeDef Platform_Encoder_GetCounterBits(
 }
 
 uint32_t Platform_Encoder_GetLastError(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 ) {
   if (!platform_encoder_backend_is_valid(encoder)) {
-    return PLATFORM_COMMON_ERROR_PARAMETER;
+    return PLATFORM_ERROR_INVALID_ARGUMENT;
   }
   return encoder_error[platform_encoder_error_index(encoder)];
 }

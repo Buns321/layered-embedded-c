@@ -5,42 +5,42 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static Platform_StatusTypeDef s_transmit_status;
-static Platform_StatusTypeDef s_filter_status;
+static platform_status_t s_transmit_status;
+static platform_status_t s_filter_status;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
-static Platform_CAN_Event s_last_event;
+static platform_can_event_t s_last_event;
 
-bool platform_can_backend_is_valid(Platform_CAN_Instance can) {
+bool platform_can_backend_is_valid(platform_can_instance_t can) {
   return can == PLATFORM_CAN_1;
 }
 
-Platform_StatusTypeDef platform_can_backend_configure_filter(
-  Platform_CAN_Instance can,
-  const Platform_CAN_FilterConfig *config
+platform_status_t platform_can_backend_configure_filter(
+  platform_can_instance_t can,
+  const platform_can_filter_config_t *config
 ) {
   (void)can;
   (void)config;
   return s_filter_status;
 }
 
-Platform_StatusTypeDef platform_can_backend_start(
-  Platform_CAN_Instance can
+platform_status_t platform_can_backend_start(
+  platform_can_instance_t can
 ) {
   (void)can;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_can_backend_stop(
-  Platform_CAN_Instance can
+platform_status_t platform_can_backend_stop(
+  platform_can_instance_t can
 ) {
   (void)can;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_can_backend_transmit(
-  Platform_CAN_Instance can,
-  const Platform_CAN_Frame *frame,
+platform_status_t platform_can_backend_transmit(
+  platform_can_instance_t can,
+  const platform_can_frame_t *frame,
   uint32_t timeout
 ) {
   (void)can;
@@ -49,45 +49,45 @@ Platform_StatusTypeDef platform_can_backend_transmit(
   return s_transmit_status;
 }
 
-Platform_StatusTypeDef platform_can_backend_receive(
-  Platform_CAN_Instance can,
-  Platform_CAN_FIFO fifo,
-  Platform_CAN_Frame *frame,
+platform_status_t platform_can_backend_receive(
+  platform_can_instance_t can,
+  platform_can_fifo_t fifo,
+  platform_can_frame_t *frame,
   uint32_t timeout
 ) {
   (void)can;
   (void)fifo;
   (void)frame;
   (void)timeout;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_can_backend_activate_notification(
-  Platform_CAN_Instance can,
+platform_status_t platform_can_backend_activate_notification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
   (void)can;
   (void)notifications;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-Platform_StatusTypeDef platform_can_backend_deactivate_notification(
-  Platform_CAN_Instance can,
+platform_status_t platform_can_backend_deactivate_notification(
+  platform_can_instance_t can,
   uint32_t notifications
 ) {
   (void)can;
   (void)notifications;
-  return Platform_OK;
+  return PLATFORM_STATUS_OK;
 }
 
-uint32_t platform_can_backend_get_error(Platform_CAN_Instance can) {
+uint32_t platform_can_backend_get_error(platform_can_instance_t can) {
   (void)can;
   return s_backend_error;
 }
 
 static void can_callback(
-  Platform_CAN_Instance can,
-  const Platform_CAN_Event *event,
+  platform_can_instance_t can,
+  const platform_can_event_t *event,
   void *context
 ) {
   assert(can == PLATFORM_CAN_1);
@@ -98,37 +98,37 @@ static void can_callback(
 }
 
 static void test_can_contract(void) {
-  s_transmit_status = Platform_OK;
-  s_filter_status = Platform_OK;
+  s_transmit_status = PLATFORM_STATUS_OK;
+  s_filter_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_CAN_ERROR_NONE;
   s_event_count = 0U;
 
-  Platform_CAN_Frame frame = {
+  platform_can_frame_t frame = {
     .id = 0x123U,
     .dlc = 8U,
     .id_type = PLATFORM_CAN_ID_STANDARD,
     .remote = false,
   };
-  assert(Platform_CAN_Transmit(PLATFORM_CAN_1, &frame, 10U) == Platform_OK);
+  assert(Platform_CAN_Transmit(PLATFORM_CAN_1, &frame, 10U) == PLATFORM_STATUS_OK);
 
   frame.dlc = 9U;
   assert(Platform_CAN_Transmit(PLATFORM_CAN_1, &frame, 10U) ==
-         Platform_INVALID_ARGUMENT);
+         PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_CAN_GetLastError(PLATFORM_CAN_1) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
   assert((Platform_CAN_GetLastError(PLATFORM_CAN_1) &
           PLATFORM_CAN_ERROR_PARAMETER) != 0U);
 
   frame.dlc = 8U;
-  s_transmit_status = Platform_TIMEOUT;
+  s_transmit_status = PLATFORM_STATUS_TIMEOUT;
   assert(Platform_CAN_Transmit(PLATFORM_CAN_1, &frame, 1U) ==
-         Platform_TIMEOUT);
+         PLATFORM_STATUS_TIMEOUT);
   assert((Platform_CAN_GetLastError(PLATFORM_CAN_1) &
-          PLATFORM_COMMON_ERROR_TIMEOUT) != 0U);
+          PLATFORM_ERROR_TIMEOUT) != 0U);
   assert((Platform_CAN_GetLastError(PLATFORM_CAN_1) &
           PLATFORM_CAN_ERROR_TIMEOUT) != 0U);
 
-  const Platform_CAN_FilterConfig filter = {
+  const platform_can_filter_config_t filter = {
     .bank = 0U,
     .id = 0x123U,
     .mask = 0x7FFU,
@@ -138,24 +138,24 @@ static void test_can_contract(void) {
     .remote = false,
     .enabled = true,
   };
-  assert(Platform_CAN_ConfigureFilter(PLATFORM_CAN_1, &filter) == Platform_OK);
+  assert(Platform_CAN_ConfigureFilter(PLATFORM_CAN_1, &filter) == PLATFORM_STATUS_OK);
 
-  s_filter_status = Platform_INVALID_ARGUMENT;
+  s_filter_status = PLATFORM_STATUS_INVALID_ARGUMENT;
   assert(Platform_CAN_ConfigureFilter(PLATFORM_CAN_1, &filter) ==
-         Platform_INVALID_ARGUMENT);
+         PLATFORM_STATUS_INVALID_ARGUMENT);
   assert((Platform_CAN_GetLastError(PLATFORM_CAN_1) &
-          PLATFORM_COMMON_ERROR_PARAMETER) != 0U);
+          PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 
-  const platform_can_callbacks_t callbacks = {
+  const platform_can_callback_binding_t callbacks = {
     .callback = can_callback,
     .context = &s_event_count,
   };
-  assert(Platform_CAN_RegisterCallbacks(PLATFORM_CAN_1, &callbacks) ==
-         Platform_OK);
-  assert(Platform_CAN_RegisterCallbacks(PLATFORM_CAN_1, &callbacks) ==
-         Platform_BUSY);
+  assert(Platform_CAN_RegisterCallback(PLATFORM_CAN_1, &callbacks) ==
+         PLATFORM_STATUS_OK);
+  assert(Platform_CAN_RegisterCallback(PLATFORM_CAN_1, &callbacks) ==
+         PLATFORM_STATUS_BUSY);
 
-  const Platform_CAN_Event event = {
+  const platform_can_event_t event = {
     .type = PLATFORM_CAN_EVENT_ERROR,
     .error = PLATFORM_CAN_ERROR_BUS_OFF,
   };

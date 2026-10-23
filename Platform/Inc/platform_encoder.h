@@ -20,7 +20,7 @@
  * @brief 可用的硬件编码器定时器身份。
  * @note 未启用的实例不会进入该枚举。
  */
-typedef enum {
+typedef enum platform_encoder_instance_e {
 #if PLATFORM_ENABLE_ENCODER_TIM1
   PLATFORM_ENCODER_TIM1 = 1,
 #endif
@@ -36,7 +36,7 @@ typedef enum {
 #if PLATFORM_ENABLE_ENCODER_TIM5
   PLATFORM_ENCODER_TIM5 = 5,
 #endif
-} Platform_Encoder_Instance;
+} platform_encoder_instance_t;
 
 #if !PLATFORM_ENABLE_ENCODER_TIM1 && !PLATFORM_ENABLE_ENCODER_TIM2 && \
     !PLATFORM_ENABLE_ENCODER_TIM3 && !PLATFORM_ENABLE_ENCODER_TIM4 && \
@@ -47,18 +47,18 @@ typedef enum {
 /**
  * @brief 启动编码器接口。
  * @param encoder 编码器定时器身份。
- * @retval Platform_OK 成功。
- * @retval Platform_ERROR 失败。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
  * @pre 对应定时器的 MX_TIMx_Init() 已完成并配置为 Encoder 模式。
  * @note 编码器模式固定使用定时器的两个输入通道。
  */
-Platform_StatusTypeDef Platform_Encoder_Start(
-  Platform_Encoder_Instance encoder
+platform_status_t Platform_Encoder_Start(
+  platform_encoder_instance_t encoder
 );
 
 /** @brief 停止编码器接口。 */
-Platform_StatusTypeDef Platform_Encoder_Stop(
-  Platform_Encoder_Instance encoder
+platform_status_t Platform_Encoder_Stop(
+  platform_encoder_instance_t encoder
 );
 
 /**
@@ -66,8 +66,8 @@ Platform_StatusTypeDef Platform_Encoder_Stop(
  * @param encoder 编码器定时器身份。
  * @param counter 当前计数值输出。
  */
-Platform_StatusTypeDef Platform_Encoder_GetCounter(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_GetCounter(
+  platform_encoder_instance_t encoder,
   uint32_t *counter
 );
 
@@ -76,8 +76,8 @@ Platform_StatusTypeDef Platform_Encoder_GetCounter(
  * @param encoder 编码器定时器身份。
  * @param counter 目标计数值。
  */
-Platform_StatusTypeDef Platform_Encoder_SetCounter(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_SetCounter(
+  platform_encoder_instance_t encoder,
   uint32_t counter
 );
 
@@ -86,14 +86,14 @@ Platform_StatusTypeDef Platform_Encoder_SetCounter(
  * @param encoder 编码器定时器身份。
  * @param counter_bits 位宽输出，值为 16 或 32。
  */
-Platform_StatusTypeDef Platform_Encoder_GetCounterBits(
-  Platform_Encoder_Instance encoder,
+platform_status_t Platform_Encoder_GetCounterBits(
+  platform_encoder_instance_t encoder,
   uint8_t *counter_bits
 );
 
 /** @brief 读取最近一次编码器操作错误快照。 */
 uint32_t Platform_Encoder_GetLastError(
-  Platform_Encoder_Instance encoder
+  platform_encoder_instance_t encoder
 );
 
 /** @} */

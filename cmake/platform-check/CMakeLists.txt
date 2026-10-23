@@ -47,7 +47,7 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_rng.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_rtc.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_spi.c
-      ${REPO_ROOT}/Platform/Src/stm32f4/platform_usart.c
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_uart.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_wwdg.c
   )
 
@@ -215,7 +215,7 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_pwm.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_rtc.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_spi.c
-      ${REPO_ROOT}/Platform/Src/stm32f1/platform_usart.c
+      ${REPO_ROOT}/Platform/Src/stm32f1/platform_uart.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_wwdg.c
   )
 
