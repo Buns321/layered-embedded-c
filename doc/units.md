@@ -18,6 +18,7 @@
 | Controller | target/measure m/s, dt s | duty | 输出范围由调用方/电机上限约束 |
 | Policy (omni) | v m/s, dir rad, yaw rad, omega rad/s | 四轮 m/s | 世界系平动 + 独立自转 |
 | Chassis (omni) | v m/s, dir rad, omega rad/s | 四轮目标 m/s | 只下发目标 |
+| IMU | raw accel m/s², gyro deg/s, attitude deg | 滤波后同单位 | 通道 0–8 固定 |
 | Filter | 用户定义通道 | 用户定义通道 | `time_ms` 毫秒 |
 | System delay | us / ms | — | DWT / `osDelay` |
 
@@ -89,6 +90,7 @@ Platform_FLASH_Write alignment = 4 bytes
 | `wheel_theta[4]` | policy | 轮子滚动方向与车头夹角，单位 rad |
 | `wheel_sign[4]` | policy | 安装方向符号，通常 ±1 |
 | `wheel_distance` | policy | 轮子到车体中心距离，单位 m |
+| MPU6050 `axis_source/sign` | Board / MPU6050 配置 | 芯片轴到车体轴的映射 |
 | RTC 唤醒计数 | Platform RTC | 所选 RTC 唤醒时钟的 tick 数 |
 | Flash 擦除粒度 | Platform Flash | F4 sector / F1 page，单位 byte |
 | 引脚 / STBY 分组 | Board | 待集中到 Board 层 |

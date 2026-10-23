@@ -8,7 +8,7 @@
 已完成并通过工具链构建的是**基础设施层**：
 
 - **Platform**：GPIO / PWM / Encoder / USART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的 HAL-free 接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
-- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（WHT101 UART）、遥测（base + FireWater / JustFloat USART）。
+- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、USART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、遥测（base + FireWater / JustFloat USART）。
 - **Controller**：轮级 SISO 控制契约、线性控制律、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
@@ -24,7 +24,7 @@
 - App / RTOS 接线
 - Board 层（四轮编号、引脚拓扑、STBY 分组、统一初始化、故障切电机）
 - 参数标定
-- Filter 单元测试、统一单调时间源、Kalman / MPU6050
+- Filter 单元测试、统一单调时间源、Kalman 姿态实现、MPU6050 板上验证
 - Platform 新增外设的板上电气与时序验证
 - MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
 
@@ -94,9 +94,10 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - [架构说明](doc/architecture.md)
 - [单位与量纲](doc/units.md)
 - [编码约定](doc/conventions.md)
+- [IMU 与 MPU6050](doc/imu.md)
 - [Platform 契约与能力矩阵](doc/platform.md)
 - Platform 全实例编译检查：`cmake/platform-check/README.md`
-- Platform 原生测试：`cmake/platform-test/README.md`
+- Platform/IMU 原生测试：`cmake/platform-test/README.md`
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [TODO](doc/todo.md)

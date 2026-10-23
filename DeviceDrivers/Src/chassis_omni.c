@@ -14,17 +14,19 @@ static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
   chassis_omni_t *self = (chassis_omni_t *)this;
   assert(self->imu && self->policy);
 
-  imu_status_t imu_status = {0};
-  Dev_IMU_Base_GetStatus(self->imu, &imu_status);
+  imu_sample_t imu_sample = {0};
+  bool imu_available = Dev_IMU_Base_GetSample(
+    self->imu,
+    &imu_sample
+  );
 
   uint32_t yaw_age_ms =
     now_ms -
-    imu_status.channel_update_ms[IMU_CHANNEL_INDEX_YAW];
+    imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW];
 
   if (
-    !imu_status.is_started                                  ||
-    !imu_status.has_timestamp                               ||
-    (imu_status.valid_mask & IMU_CHANNEL_YAW) == 0u         ||
+    !imu_available                                          ||
+    (imu_sample.valid_mask & IMU_CHANNEL_YAW) == 0u         ||
     yaw_age_ms > self->imu_timeout_ms
   ) {
     Chassis_Omni_Stop(this);
@@ -32,7 +34,7 @@ static void Chassis_Omni_Update(chassis_base_t *this, uint32_t now_ms) {
   }
 
   const float deg_to_rad = 3.14159265358979323846f / 180.0f;
-  float yaw_rad = Dev_IMU_Base_GetYaw(self->imu) * deg_to_rad;
+  float yaw_rad = imu_sample.yaw_deg * deg_to_rad;
   float wheel_speed[CHASSIS_OMNI_WHEEL_COUNT] = {0};
 
   Omni_Policy_Base_Solve(

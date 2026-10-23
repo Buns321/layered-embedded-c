@@ -141,11 +141,12 @@
 - [x] 为 `FILTER_CHANNEL_CAPACITY` 增加编译期上限检查，避免掩码移位超过 32 位
 - [ ] 为 Filter Base、Lowpass、Chain、Distributor 增加可执行的单元测试和组合测试
 - [ ] 新增 `filter_kalman_t` 具体实现，基于样本有效位支持预测与校正
-- [ ] 定义 MPU6050 六通道枚举及三轴 Kalman 路由表
+- [x] 定义统一 IMU 九通道枚举，覆盖姿态、gyro XYZ 与 accel XYZ
+- [x] MPU6050 原始六轴提交给已注册滤波器
 - [ ] 为三轴传感器配置 Kalman/低通 Chain 或 Distributor 组合，并验证输出不冲突
-- [x] 确认 WHT101 模块内部完成卡尔曼滤波、校准和姿态解算，不接入 Filter 层
+- [x] 确认 WHT101 模块内部完成卡尔曼滤波、校准和姿态解算，外部注册 passthrough
 - [ ] 为 Filter 的其他使用者提供统一单调时间源，支持可变采样周期
-- [x] Filter 暂不用于 WHT101，保留给其他传感器或控制量使用
+- [x] WHT101 显式注册 passthrough，统一走 IMU 滤波管线
 
 ## Policy
 **架构**：Policy 是独立的 MIMO 运动解算层，与 Controller 平级。按底盘种类拆分接口，每种底盘只接受对应类型的 Policy；具体 Policy 内嵌 base 并绑定静态 ops 表。
@@ -164,22 +165,23 @@
 - [x] `chassis_omni_t` 提供 `estop`：向四个电机传播 Disable
 
 ## DeviceDrivers · 串口与 IMU
-**架构**：WHT101 是带 MCU 的智能 IMU，模块内部完成滤波、零偏处理和姿态解算，UART 驱动只负责单字节中断接收、环形缓冲、帧校验和直接发布 yaw 与校准后 gyro-z。`usart_pingpong` 已永久废弃，不再作为接收链路方案；F4 高速路径可后续评估循环 DMA 或 DMA double-buffer，但解析器保持不变。
-**状态**：UART 数据链路与底盘侧 yaw 超时判断已完成；I2C 驱动暂缓，
-App/RTOS 仍需把 IMU 解析接入任务。
+**架构**：`imu_base_t` 负责原始帧合并、已注册滤波器的调度、滤波结果发布、逐通道时间戳和一致快照。WHT101 通过 UART 采集并提交 yaw/gyro-z；MPU6050 通过 Platform I2C 采集六轴、完成陀螺零偏标定和轴映射后提交 accel/gyro。具体驱动不内置软件滤波，WHT101 显式注册 passthrough，MPU6050 可注册 lowpass、chain 或后续 Kalman。
+**状态**：统一管线、WHT101 迁移、MPU6050 I2C 驱动和主机侧测试已完成；
+App/RTOS 仍需把 IMU 解析和采样接入任务。
 - [x] `usart_base` 补齐 `Dev_USART_Receive_IT`、`Dev_USART_Transmit_IT`、`Dev_USART_Receive_DMA`、`Dev_USART_Transmit_DMA`、`Dev_USART_RegisterCallbacks` 的转发实现
 - [x] 重构 `usart_base` 使用独立的 `Dev_USART_Status`，不向设备层返回 Platform 类型
 - [x] 新增 `usart_port_t` 适配 `Platform_UART_*`，并在 Platform 回调与 `usart_base` 回调之间桥接
 - [x] `usart_pingpong` 已归档并删除，不再重写或恢复
 - [x] 删除空的 `usart_controller`；协议明确后再新建具体驱动
-- [x] 确认 `imu_base_t` 保留完整通用能力，具体 IMU 不支持的 ops 保持空指针并由断言暴露
+- [x] `imu_base_t` 增加 accel XYZ、完整样本、raw/filtered 快照和统一滤波调度
+- [x] 具体 IMU 通过 valid_mask 表示不支持通道，不再依赖空 getter 断言
 - [x] 将 WHT101 置零和输出速率配置改为由 `process(now_ms)` 推进的非阻塞状态机
 - [x] 为各 IMU 通道提供独立更新时间戳，明确不同异步帧的新鲜度判断
 - [x] `imu_base_t` 增加 `start`、`process` ops 及对应转发入口
 - [x] WHT101 仅依赖 `usart_base_t`，不再包含或引用 Platform UART 类型
 - [x] WHT101 使用单字节中断接收、256 字节环形队列、溢出统计和自动重新挂起
 - [x] 建立 USART1 中断 -> 环形队列 -> `process()` -> `FeedByte` 的输入路径
-- [x] WHT101 直接发布模块内部滤波后的 yaw 和校准后 gyro-z，不增加软件滤波
+- [x] WHT101 提交模块内部处理后的 yaw 和 gyro-z，并通过 passthrough 发布
 - [x] 增加 UART 错误回调和 ORE/FE/噪声错误后的解析重同步与接收重挂
 - [x] 队列溢出和 UART 错误通过任务侧重同步标志复位解析状态，避免 ISR 修改解析器
 - [x] 通过 base 暴露启动状态、有效通道、样本数和累计错误数
@@ -188,6 +190,13 @@ App/RTOS 仍需把 IMU 解析接入任务。
 - [x] 上层根据时间戳实现数据过期判断和安全停机
 - [ ] 高速输出时评估 F4 循环 DMA 或 DMA double-buffer 接收路径
 - [ ] UART 驱动稳定后，另行实现独立的 HWT101 I2C 驱动
+- [x] 新增 `mpu6050_i2c_t`，支持 WHO_AM_I、复位、DLPF、量程和采样率配置回读
+- [x] MPU6050 使用 14 字节突发读取并输出 m/s²、deg/s 和温度
+- [x] MPU6050 支持静止陀螺零偏标定、加速度模长检查和三轴映射
+- [x] MPU6050 与 F103/F407 Platform I2C API 共用同一实现
+- [x] 新增 IMU 管线与 MPU6050 假 I2C 主机测试
+- [ ] 在真实 F103/F407 上启用 I2C 实例并完成板上采样验证
+- [ ] 实现低通/互补或 Kalman 姿态滤波器并输出 yaw/roll/pitch
 
 ## DeviceDrivers · LED
 **架构**：LED base 保留调光能力；GPIO 实现只负责开关，调光由独立 PWM LED 具体实现承担。

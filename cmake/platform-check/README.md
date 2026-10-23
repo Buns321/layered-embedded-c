@@ -35,6 +35,8 @@ into the Cortex-M3 build.
 
 The build also enables `-Werror` and compiles the alternative PWM TIM3,
 encoder TIM1, CAN1-only, and CAN2-only branches in separate object targets.
+The IMU base pipeline and MPU6050 I2C driver are compiled as family-specific
+object targets for both F4 and F1.
 
 ## Native tests
 

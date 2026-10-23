@@ -62,12 +62,15 @@ base 与 Platform；base 只依赖 System 和标准库。
 - `Base/` 放抽象接口：`led_base_t`、`motor_base_t`、`encoder_base_t`、
   `usart_base_t`、`imu_base_t`、`chassis_base_t`、`telemetry_base_t`。
 - `Inc/`、`Src/` 放具体实现：`led_gpio_t`、`led_pwm_t`、`motor_tb6612_t`、
-  `encoder_tim_t`、`usart_port_t`、`imu_wht101_usart_t`、`chassis_omni_t`、
+  `encoder_tim_t`、`usart_port_t`、`imu_wht101_usart_t`、
+  `mpu6050_i2c_t`、`chassis_omni_t`、
   `firewater_usart_t`、`justfloat_usart_t`。
 - 电机是闭环设备：目标速度、编码器、控制律、执行器都在 `motor_base` 里汇合。
 - USART 由 `usart_base_t` 抽象，`usart_port_t` 负责桥接 Platform 回调。
-- IMU 的 `start` / `process` / `get_status` 由具体实现提供；WHT101 使用
-  单字节中断接收、环形队列和非阻塞配置状态机。
+- IMU 的 `start` / `process` / `get_status` 由具体实现提供；具体驱动只提交
+  带时间戳的原始通道帧，`imu_base_t` 统一调用已注册滤波器并发布结果。
+- WHT101 使用单字节中断接收、环形队列和非阻塞配置状态机，并通常注册
+  `filter_passthrough_t`；MPU6050 通过 Platform I2C 轮询采样、校准并提交六轴数据。
 - `telemetry_base_t` 定义固定多通道样本和非阻塞整帧发送契约；
   `firewater_usart_t` 与 `justfloat_usart_t` 是具体协议设备，各自持有发送缓冲。
 
@@ -107,8 +110,8 @@ controller_status_t update(
 - `chassis_omni_t` 持有四个 `motor_base_t *`、`imu_base_t *`、
   `omni_policy_base_t *`。
 - `Chassis_Omni_SetMotion(v, dir, omega)` 只保存命令。
-- `Chassis_Base_Update(now_ms)` 检查 yaw 通道是否有效且未超时，将 IMU
-  的角度制 yaw 转为弧度后调用 policy，再向四个电机写目标速度；
+- `Chassis_Base_Update(now_ms)` 通过一次 IMU 快照检查 yaw 通道是否有效且未超时，
+  将 yaw 转为弧度后调用 policy，再向四个电机写目标速度；
   它不运行电机闭环。IMU 无效或过期时锁存制动。
 - `Chassis_Base_Stop` 清零目标并调用电机制动；
   制动状态会保持到显式重新使能。`Chassis_Base_EStop` 直接禁用四个电机。
@@ -117,6 +120,10 @@ controller_status_t update(
 
 - `filter_sample_t` 固定 16 通道，包含 `value[]`、`valid_mask`、`time_ms`。
 - `Filter_Base_Update` 先把输入全量复制到输出，再调用具体滤波器的 `update`。
+- IMU 通道 0–8 固定为 yaw、roll、pitch、gyro XYZ、accel XYZ；具体驱动只置位
+  本帧更新的通道，`imu_base_t` 合并异步帧并保存逐通道时间戳。
+- MPU6050 首版提交 accel/gyro 六通道；yaw/roll/pitch 由后续注册的姿态滤波
+  或 Kalman 输出，驱动本身不内置滤波算法。
 - 低通、透传、chain、distributor 都依赖这个预复制语义。
 - Distributor 的路由输出会覆盖预复制通道；跨路由写同一输出通道在 Init 阶段拒绝。
 - 整层不使用动态内存。
@@ -159,9 +166,9 @@ Chassis_Omni_SetMotion(v, dir, omega)
 
 ControlTask:
     Chassis_Base_Update(&chassis.base, now_ms)
-        ├── status = Dev_IMU_Base_GetStatus(imu)
+        ├── sample = Dev_IMU_Base_GetSample(imu)
         ├── reject invalid/stale yaw, then stop and brake
-        ├── yaw_rad = Dev_IMU_Base_GetYaw(imu) * PI / 180
+        ├── yaw_rad = sample.yaw_deg * PI / 180
         ├── Omni_Policy_Base_Solve(policy, v, dir, yaw_rad, omega, wheel_mps[4])
         └── for i: Dev_Motor_Base_SetTargetSpeed(wheel[i], wheel_mps[i])
 
@@ -193,7 +200,7 @@ MonitorTask
 3. `Dev_Motor_TB6612_Init` × 4（注入 controller + encoder + 传动常数）
 4. `Dev_Motor_Base_Enable` × 4
 5. `Dev_USART_Port_Init`（USART1）
-6. `Dev_IMU_WHT101_USART_Init` + `Dev_IMU_Base_Start`
+6. WHT101：初始化 `filter_passthrough_t`，注入 IMU 并调用 `Dev_IMU_Base_Start`
 7. `Policy_Omni_Kinematics_Init`
 8. `Chassis_Omni_Init(..., imu_timeout_ms)`
 9. `Dev_USART_Port_Init`（USART2）
@@ -251,12 +258,13 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
 ## 11. 当前状态
 
-已实现：Platform（F4 完整接入，F103 支持外设完整实现）、LED、电机、编码器、USART、IMU、
+已实现：Platform（F4 完整接入，F103 支持外设完整实现）、LED、电机、编码器、USART、
+统一 IMU 滤波管线、WHT101、MPU6050 I2C 驱动、
 Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
 System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
 
 待完成或暂缓：PID、App / RTOS 接线、Board 层、F103 板级外设接线与验证、参数标定、
-Filter 单测 / 统一时间源 / Kalman、Platform 新增外设板上验证、
+Filter/Kalman 姿态实现、MPU6050 板上验证、Platform 新增外设板上验证、
 MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
 遥测对象与任务接线、USART2 高波特率配置、RTT 主机侧实测。

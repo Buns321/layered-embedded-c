@@ -14,6 +14,7 @@ EXTRACT_STATIC         = NO
 
 INPUT                  = README.md \
                          doc/architecture.md \
+                         doc/imu.md \
                          doc/platform.md \
                          doc/units.md \
                          doc/conventions.md \

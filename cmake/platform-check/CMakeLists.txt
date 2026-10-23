@@ -150,6 +150,27 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
   target_compile_options(platform_f4_can2_only_check PRIVATE
       -Wall -Wextra -Werror
   )
+
+  add_library(mpu6050_f4_check OBJECT
+      ${REPO_ROOT}/DeviceDrivers/Base/Src/imu_base.c
+      ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
+      ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+      ${REPO_ROOT}/Filter/Src/filter_passthrough.c
+  )
+  target_include_directories(mpu6050_f4_check PRIVATE
+      ${REPO_ROOT}/DeviceDrivers/Base/Inc
+      ${REPO_ROOT}/DeviceDrivers/Inc
+      ${REPO_ROOT}/Filter/Base/Inc
+      ${REPO_ROOT}/Filter/Inc
+      ${PLATFORM_COMMON_INCLUDE_DIRS}
+      ${REPO_ROOT}/System/Inc
+  )
+  target_compile_definitions(mpu6050_f4_check PRIVATE
+      PLATFORM_ENABLE_I2C1=1
+  )
+  target_compile_options(mpu6050_f4_check PRIVATE
+      -Wall -Wextra -Werror
+  )
 elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
   add_library(platform_f1_check OBJECT
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
@@ -240,6 +261,27 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       ${PLATFORM_F1_ALT_TIM_DEFINITIONS}
   )
   target_compile_options(platform_f1_alt_tim_check PRIVATE
+      -Wall -Wextra -Werror
+  )
+
+  add_library(mpu6050_f1_check OBJECT
+      ${REPO_ROOT}/DeviceDrivers/Base/Src/imu_base.c
+      ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
+      ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+      ${REPO_ROOT}/Filter/Src/filter_passthrough.c
+  )
+  target_include_directories(mpu6050_f1_check PRIVATE
+      ${REPO_ROOT}/DeviceDrivers/Base/Inc
+      ${REPO_ROOT}/DeviceDrivers/Inc
+      ${REPO_ROOT}/Filter/Base/Inc
+      ${REPO_ROOT}/Filter/Inc
+      ${PLATFORM_COMMON_INCLUDE_DIRS}
+      ${REPO_ROOT}/System/Inc
+  )
+  target_compile_definitions(mpu6050_f1_check PRIVATE
+      PLATFORM_ENABLE_I2C1=1
+  )
+  target_compile_options(mpu6050_f1_check PRIVATE
       -Wall -Wextra -Werror
   )
 else()

@@ -11,30 +11,12 @@ static void imu_wht101_process(imu_base_t *this, uint32_t now_ms);
 static void imu_wht101_rx_cplt_cb(usart_base_t *usart, void *context);
 static void imu_wht101_uart_err_cb(usart_base_t *usart, void *context);
 
-static float imu_wht101_get_yaw(imu_base_t *this) {
-  imu_wht101_usart_t *self = (imu_wht101_usart_t*)this;
-  return self->yaw;
-}
-
-static float imu_wht101_get_gyro_z(imu_base_t *this) {
-  imu_wht101_usart_t *self = (imu_wht101_usart_t*)this;
-  return self->gyro_z;
-}
-
 static void imu_wht101_get_status(
   imu_base_t *this,
   imu_status_t *status
 ) {
   assert(this && status);
   imu_wht101_usart_t *self = (imu_wht101_usart_t *)this;
-
-  uint32_t valid_mask = 0u;
-  if (self->has_yaw) {
-    valid_mask |= IMU_CHANNEL_YAW;
-  }
-  if (self->has_gyro_z) {
-    valid_mask |= IMU_CHANNEL_GYRO_Z;
-  }
 
   uint64_t error_count =
     (uint64_t)self->rx_error_count +
@@ -51,22 +33,9 @@ static void imu_wht101_get_status(
       self->config_state != IMU_WHT101_CONFIG_IDLE ||
       self->zero_pending ||
       self->rate_pending,
-    .has_timestamp   = self->has_timestamp,
     .last_request_failed = self->config_failed,
-    .valid_mask      = valid_mask,
-    .sample_count    = self->rx_frame_count,
     .error_count     = (uint32_t)error_count,
-    .last_update_ms  = self->last_update_ms,
   };
-
-  for (
-    uint8_t channel = 0u;
-    channel < IMU_CHANNEL_INDEX_COUNT;
-    channel++
-  ) {
-    status->channel_update_ms[channel] =
-      self->channel_update_ms[channel];
-  }
 }
 
 static void imu_wht101_set_zero(imu_base_t *this) {
@@ -78,8 +47,6 @@ static const imu_ops_t imu_ops_wht101 = {
   .start      = imu_wht101_start,
   .process    = imu_wht101_process,
   .get_status = imu_wht101_get_status,
-  .get_yaw    = imu_wht101_get_yaw,
-  .get_gyro_z = imu_wht101_get_gyro_z,
   .set_zero   = imu_wht101_set_zero,
 };
 
@@ -107,35 +74,49 @@ static Dev_USART_Status imu_wht101_write_reg(
 
 /******************************************************************************/
 
-static void imu_wht101_parse_angle(imu_wht101_usart_t *self) {
+static float imu_wht101_parse_angle(const imu_wht101_usart_t *self) {
   // 角度帧: 55 53 00 00 00 00 YawL YawH VL VH SUM
   int16_t yaw_raw = (int16_t)((self->frame[7] << 8) | self->frame[6]);
-  self->yaw = yaw_raw / IMU_WHT101_SCALE * IMU_WHT101_YAW_RANGE;
+  return yaw_raw / IMU_WHT101_SCALE * IMU_WHT101_YAW_RANGE;
 }
 
-static void imu_wht101_parse_gyro(imu_wht101_usart_t *self) {
+static float imu_wht101_parse_gyro(const imu_wht101_usart_t *self) {
   // 角速度帧: 55 52 00 00 RWzL RWzH WzL WzH 00 00 SUM
   int16_t wz_raw = (int16_t)((self->frame[7] << 8) | self->frame[6]);
-  self->gyro_z = wz_raw / IMU_WHT101_SCALE * IMU_WHT101_GYRO_RANGE;
+  return wz_raw / IMU_WHT101_SCALE * IMU_WHT101_GYRO_RANGE;
+}
+
+static void imu_wht101_submit_channel(
+  imu_wht101_usart_t *self,
+  imu_channel_index_t channel,
+  float value,
+  uint32_t now_ms
+) {
+  filter_sample_t sample = {
+    .valid_mask = (uint32_t)1u << channel,
+    .time_ms = now_ms,
+  };
+  sample.value[channel] = value;
+  (void)Dev_IMU_Base_SubmitSample(&self->imu_base, &sample);
 }
 
 /******************************************************************************/
 
-void Dev_IMU_WHT101_USART_Init(imu_wht101_usart_t *this, const char *name, usart_base_t *usart) {
-  assert(this && usart);
-  Dev_IMU_Base_Init(&this->imu_base, name, &imu_ops_wht101);
+void Dev_IMU_WHT101_USART_Init(
+  imu_wht101_usart_t *this,
+  const char *name,
+  usart_base_t *usart,
+  filter_base_t *filter
+) {
+  assert(this && usart && filter);
+
+  Dev_IMU_Base_Init(&this->imu_base, name, &imu_ops_wht101, filter);
   this->usart                   = usart;
   this->state                   = IMU_WHT101_STATE_SYNCING_1;
   this->frame_idx               = 0;
-  this->yaw                     = 0;
-  this->gyro_z                  = 0;
   this->is_started              = false;
-  this->has_yaw                 = false;
-  this->has_gyro_z              = false;
-  this->has_timestamp           = false;
   this->config_state            = IMU_WHT101_CONFIG_IDLE;
   this->config_deadline_ms      = 0u;
-  this->last_update_ms          = 0u;
   this->zero_pending            = false;
   this->rate_pending            = false;
   this->config_failed           = false;
@@ -147,16 +128,7 @@ void Dev_IMU_WHT101_USART_Init(imu_wht101_usart_t *this, const char *name, usart
   this->rx_overflow_count       = 0;
   this->rx_error_count          = 0;
   this->rx_checksum_error_count = 0;
-  this->rx_frame_count          = 0;
   this->rx_resync_requested     = false;
-
-  for (
-    uint8_t channel = 0u;
-    channel < IMU_CHANNEL_INDEX_COUNT;
-    channel++
-  ) {
-    this->channel_update_ms[channel] = 0u;
-  }
 }
 
 static void imu_wht101_rearm_receive(imu_wht101_usart_t *self) {
@@ -416,18 +388,20 @@ void Dev_IMU_WHT101_USART_FeedByte(
       uint8_t sum = 0;
       for (int i = 0; i < IMU_WHT101_FRAME_LEN - 1; i++) sum += this->frame[i];
       if (sum == this->frame[IMU_WHT101_FRAME_LEN - 1]) {
-        this->rx_frame_count++;
-        this->has_timestamp = true;
-        this->last_update_ms = now_ms;
-
         if (this->frame[1] == IMU_WHT101_TYPE_GYRO) {
-          imu_wht101_parse_gyro(this);
-          this->has_gyro_z = true;
-          this->channel_update_ms[IMU_CHANNEL_INDEX_GYRO_Z] = now_ms;
+          imu_wht101_submit_channel(
+            this,
+            IMU_CHANNEL_INDEX_GYRO_Z,
+            imu_wht101_parse_gyro(this),
+            now_ms
+          );
         } else if (this->frame[1] == IMU_WHT101_TYPE_ANGLE) {
-          imu_wht101_parse_angle(this);
-          this->has_yaw = true;
-          this->channel_update_ms[IMU_CHANNEL_INDEX_YAW] = now_ms;
+          imu_wht101_submit_channel(
+            this,
+            IMU_CHANNEL_INDEX_YAW,
+            imu_wht101_parse_angle(this),
+            now_ms
+          );
         }
       } else {
         this->rx_checksum_error_count++;

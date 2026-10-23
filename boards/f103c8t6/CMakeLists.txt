@@ -106,6 +106,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 if(PLATFORM_BUILD_I2C)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_i2c.c
+        ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
     )
 endif()
 if(PLATFORM_BUILD_SPI)

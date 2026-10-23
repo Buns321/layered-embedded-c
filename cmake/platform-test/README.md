@@ -1,7 +1,7 @@
-# Platform Native Tests
+# Native Tests
 
-These tests exercise HAL-free validation and arithmetic helpers used by the
-Platform CAN, SPI, and RTC implementations.
+These tests exercise HAL-free validation, arithmetic helpers, the unified IMU
+pipeline, and the MPU6050 driver through a fake Platform I2C transport.
 
 ```powershell
 cmake -S cmake/platform-test -B build/platform-test -G Ninja `

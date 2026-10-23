@@ -132,6 +132,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/imu_base.h
         DeviceDrivers/Src/imu_wht101_usart.c
         DeviceDrivers/Inc/imu_wht101_usart.h
+        DeviceDrivers/Inc/mpu6050_i2c.h
         RTOS/Src/rtos_usart.c
         RTOS/Inc/rtos_usart.h
         Controller/Base/Inc/controller_base.h
@@ -160,6 +161,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 if(PLATFORM_BUILD_I2C)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         Platform/Src/stm32f4/platform_i2c.c
+        DeviceDrivers/Src/mpu6050_i2c.c
     )
 endif()
 if(PLATFORM_BUILD_SPI)

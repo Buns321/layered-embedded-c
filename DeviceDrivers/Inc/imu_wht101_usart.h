@@ -93,18 +93,10 @@ typedef struct {
   uint8_t frame[IMU_WHT101_FRAME_LEN];
   uint8_t frame_idx;
 
-  volatile float yaw;
-  volatile float gyro_z;
-
   bool is_started;
-  bool has_yaw;
-  bool has_gyro_z;
-  bool has_timestamp;
 
   imu_wht101_config_state_t config_state;
   uint32_t config_deadline_ms;
-  volatile uint32_t last_update_ms;
-  volatile uint32_t channel_update_ms[IMU_CHANNEL_INDEX_COUNT];
   bool zero_pending;
   bool rate_pending;
   volatile bool config_failed;
@@ -119,7 +111,6 @@ typedef struct {
   volatile uint32_t rx_overflow_count;
   volatile uint32_t rx_error_count;
   volatile uint32_t rx_checksum_error_count;
-  volatile uint32_t rx_frame_count;
   volatile bool rx_resync_requested;
 } imu_wht101_usart_t;
 
@@ -128,8 +119,14 @@ typedef struct {
  * @param this 对象。
  * @param name 名称。
  * @param usart 已初始化的 usart_base 对象，需支持中断接收。
+ * @param filter 已初始化的静态滤波器根节点；WHT101 通常注入 passthrough。
  */
-void Dev_IMU_WHT101_USART_Init          (imu_wht101_usart_t *this, const char *name, usart_base_t *usart);
+void Dev_IMU_WHT101_USART_Init(
+  imu_wht101_usart_t *this,
+  const char *name,
+  usart_base_t *usart,
+  filter_base_t *filter
+);
 /**
  * @brief 解析一个字节。
  * @param this 对象。
