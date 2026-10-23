@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/22.
+// 由 Buns_ 创建于 2026/10/22。
 //
 
 /**
  * @file platform_iwdg.h
- * @brief Independent watchdog start, refresh and reset flags.
+ * @brief 独立看门狗的启动、刷新与复位标志接口。
  * @addtogroup platform
  * @{
  */
@@ -21,12 +21,12 @@
 #error "Platform IWDG is not enabled"
 #endif
 
-/** @brief Available IWDG identity. */
+/** @brief 可用的 IWDG 身份。 */
 typedef enum {
   PLATFORM_IWDG_1 = 0U,
 } Platform_IWDG_Instance;
 
-/** @brief Maximum requested timeout using the family's typical LSI. */
+/** @brief 基于各系列典型 LSI 频率可请求的最大超时。 */
 #if defined(STM32F1xx)
 #define PLATFORM_IWDG_MAX_TIMEOUT_MS 26208u
 #elif defined(STM32F4xx)
@@ -36,13 +36,13 @@ typedef enum {
 #endif
 
 /**
- * @brief Start the independent watchdog.
- * @param iwdg IWDG instance.
- * @param timeout_ms Requested timeout in milliseconds, 1..PLATFORM_IWDG_MAX_TIMEOUT_MS.
- * @return Platform status.
- * @note This is a runtime policy operation and starts the watchdog immediately.
- * @note IWDG cannot be stopped after this call.
- * @note The timeout is rounded up and depends on LSI tolerance.
+ * @brief 启动独立看门狗。
+ * @param iwdg IWDG 实例。
+ * @param timeout_ms 请求的超时时间（ms），范围 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
+ * @return Platform 状态。
+ * @note 这是运行期策略操作，会立即启动看门狗。
+ * @note 调用后无法停止 IWDG。
+ * @note 超时时间会向上取整，并受 LSI 频率容差影响。
  */
 Platform_StatusTypeDef Platform_IWDG_Start(
   Platform_IWDG_Instance iwdg,
@@ -50,17 +50,17 @@ Platform_StatusTypeDef Platform_IWDG_Start(
 );
 
 /**
- * @brief Refresh a started IWDG.
- * @return Platform_OK on success, Platform_ERROR if IWDG was not started.
+ * @brief 刷新已启动的 IWDG。
+ * @return 成功返回 Platform_OK；IWDG 尚未启动时返回 Platform_ERROR。
  */
 Platform_StatusTypeDef Platform_IWDG_Refresh(
   Platform_IWDG_Instance iwdg
 );
 
 /**
- * @brief Read and clear the IWDG reset flag.
- * @return true when the last reset was caused by IWDG.
- * @note Clearing reset flags clears the shared STM32 reset-flag latch.
+ * @brief 读取并清除 IWDG 复位标志。
+ * @return 最近一次复位由 IWDG 触发时返回 true。
+ * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
  */
 bool Platform_IWDG_WasReset(Platform_IWDG_Instance iwdg);
 

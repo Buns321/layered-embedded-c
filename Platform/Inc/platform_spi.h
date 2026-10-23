@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_spi.h
- * @brief HAL-free SPI master transport interface.
+ * @brief 不依赖 HAL 类型的 SPI 主机传输接口。
  * @addtogroup platform
  * @{
  */
@@ -21,7 +21,7 @@
 #error "At least one Platform SPI instance must be enabled"
 #endif
 
-/** @brief Available SPI instances. */
+/** @brief 可用的 SPI 实例。 */
 typedef enum {
 #if PLATFORM_ENABLE_SPI1
   PLATFORM_SPI_1 = 0U,
@@ -34,16 +34,16 @@ typedef enum {
 #endif
 } Platform_SPI_Instance;
 
-/** @brief Number of possible SPI identity slots. */
+/** @brief SPI 身份槽位数量上限。 */
 #define PLATFORM_SPI_INSTANCE_COUNT 3U
 
-/** @brief Data width configured by CubeMX for an SPI instance. */
+/** @brief CubeMX 为 SPI 实例配置的数据宽度。 */
 typedef enum {
   PLATFORM_SPI_DATA_WIDTH_8_BIT = 8U,
   PLATFORM_SPI_DATA_WIDTH_16_BIT = 16U,
 } Platform_SPI_DataWidth;
 
-/** @brief SPI error flags. Multiple bits may be set together. */
+/** @brief SPI 错误标志，可同时置位多个位。 */
 typedef enum {
   PLATFORM_SPI_ERROR_NONE    = 0u,
   PLATFORM_SPI_ERROR_MODF    = (1u << 0),
@@ -62,9 +62,9 @@ typedef void (*Platform_SPI_Callback)(
 );
 
 /**
- * @brief SPI completion callbacks.
- * @note Callbacks run in interrupt context.
- * @note One physical instance has one callback owner for its whole lifetime.
+ * @brief SPI 完成回调集合。
+ * @note 回调在中断上下文执行。
+ * @note 一个物理实例在整个生命周期内只能有一个回调所有者。
  */
 typedef struct {
   Platform_SPI_Callback tx_cplt_cb;
@@ -76,24 +76,23 @@ typedef struct {
 } platform_spi_callbacks_t;
 
 /**
- * @brief Read the data width configured by CubeMX.
- * @param spi SPI instance.
- * @note Byte counts in transfer functions refer to bytes even in 16-bit mode.
- * @note Null data, zero length, odd 16-bit length, unaligned 16-bit data, and
- *       invalid instances are rejected with Platform_ERROR.
+ * @brief 读取 CubeMX 配置的数据宽度。
+ * @param spi SPI 实例。
+ * @note 即使工作在 16 位模式，传输函数中的长度仍以字节为单位。
+ * @note 空指针、长度为零、16 位模式下长度为奇数、16 位数据未对齐以及
+ *       非法实例都会返回 Platform_ERROR。
  */
 Platform_SPI_DataWidth Platform_SPI_GetDataWidth(
   Platform_SPI_Instance spi
 );
 
 /**
- * @brief Blocking master transmit.
- * @param spi SPI instance.
- * @param data Buffer of size bytes. It is read only during the call.
- * @param size Byte count. Must be even in 16-bit mode.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
- * @pre MX_SPIx_Init() completed and the required chip select is asserted by
- *      the caller.
+ * @brief 阻塞式主机发送。
+ * @param spi SPI 实例。
+ * @param data 大小为 size 字节的缓冲区，调用期间只读。
+ * @param size 字节数。16 位模式下必须为偶数。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
+ * @pre MX_SPIx_Init() 已完成，且调用方已拉低所需片选。
  */
 Platform_StatusTypeDef Platform_SPI_Transmit(
   Platform_SPI_Instance spi,
@@ -103,11 +102,11 @@ Platform_StatusTypeDef Platform_SPI_Transmit(
 );
 
 /**
- * @brief Blocking master receive.
- * @param spi SPI instance.
- * @param data Receive buffer.
- * @param size Byte count. Must be even in 16-bit mode.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
+ * @brief 阻塞式主机接收。
+ * @param spi SPI 实例。
+ * @param data 接收缓冲区。
+ * @param size 字节数。16 位模式下必须为偶数。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
 Platform_StatusTypeDef Platform_SPI_Receive(
   Platform_SPI_Instance spi,
@@ -117,12 +116,12 @@ Platform_StatusTypeDef Platform_SPI_Receive(
 );
 
 /**
- * @brief Blocking full-duplex master transfer.
- * @param spi SPI instance.
- * @param tx_data Transmit buffer.
- * @param rx_data Receive buffer.
- * @param size Byte count. Must be even in 16-bit mode.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
+ * @brief 阻塞式全双工主机传输。
+ * @param spi SPI 实例。
+ * @param tx_data 发送缓冲区。
+ * @param rx_data 接收缓冲区。
+ * @param size 字节数。16 位模式下必须为偶数。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
 Platform_StatusTypeDef Platform_SPI_TransmitReceive(
   Platform_SPI_Instance spi,
@@ -133,11 +132,11 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive(
 );
 
 /**
- * @brief Interrupt master transmit.
- * @param spi SPI instance.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort.
+ * @brief 中断方式主机发送。
+ * @param spi SPI 实例。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_Transmit_IT(
   Platform_SPI_Instance spi,
@@ -146,11 +145,11 @@ Platform_StatusTypeDef Platform_SPI_Transmit_IT(
 );
 
 /**
- * @brief Interrupt master receive.
- * @param spi SPI instance.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort.
+ * @brief 中断方式主机接收。
+ * @param spi SPI 实例。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_Receive_IT(
   Platform_SPI_Instance spi,
@@ -159,12 +158,12 @@ Platform_StatusTypeDef Platform_SPI_Receive_IT(
 );
 
 /**
- * @brief Interrupt full-duplex master transfer.
- * @param spi SPI instance.
- * @param tx_data Transmit buffer.
- * @param rx_data Receive buffer.
- * @param size Byte count.
- * @note Both buffers must remain valid until completion, error, or abort.
+ * @brief 中断方式全双工主机传输。
+ * @param spi SPI 实例。
+ * @param tx_data 发送缓冲区。
+ * @param rx_data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，两个缓冲区都必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
   Platform_SPI_Instance spi,
@@ -174,11 +173,11 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_IT(
 );
 
 /**
- * @brief DMA master transmit.
- * @param spi SPI instance.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort.
+ * @brief DMA 方式主机发送。
+ * @param spi SPI 实例。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
   Platform_SPI_Instance spi,
@@ -187,11 +186,11 @@ Platform_StatusTypeDef Platform_SPI_Transmit_DMA(
 );
 
 /**
- * @brief DMA master receive.
- * @param spi SPI instance.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort.
+ * @brief DMA 方式主机接收。
+ * @param spi SPI 实例。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_Receive_DMA(
   Platform_SPI_Instance spi,
@@ -200,12 +199,12 @@ Platform_StatusTypeDef Platform_SPI_Receive_DMA(
 );
 
 /**
- * @brief DMA full-duplex master transfer.
- * @param spi SPI instance.
- * @param tx_data Transmit buffer.
- * @param rx_data Receive buffer.
- * @param size Byte count.
- * @note Both buffers must remain valid until completion, error, or abort.
+ * @brief DMA 方式全双工主机传输。
+ * @param spi SPI 实例。
+ * @param tx_data 发送缓冲区。
+ * @param rx_data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，两个缓冲区都必须保持有效。
  */
 Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
   Platform_SPI_Instance spi,
@@ -215,31 +214,30 @@ Platform_StatusTypeDef Platform_SPI_TransmitReceive_DMA(
 );
 
 /**
- * @brief Abort the active transfer synchronously and clear its error snapshot.
- * @param spi SPI instance.
- * @note Call from task context, never from an ISR.
+ * @brief 同步中止当前传输并清除错误快照。
+ * @param spi SPI 实例。
+ * @note 只能从任务上下文调用，禁止在 ISR 中调用。
  */
 Platform_StatusTypeDef Platform_SPI_Abort(Platform_SPI_Instance spi);
 
 /**
- * @brief Abort the active transfer using interrupt mode.
- * @param spi SPI instance.
- * @note The abort completion callback runs in interrupt context.
+ * @brief 使用中断方式中止当前传输。
+ * @param spi SPI 实例。
+ * @note 中止完成回调在中断上下文执行。
  */
 Platform_StatusTypeDef Platform_SPI_Abort_IT(Platform_SPI_Instance spi);
 
 /**
- * @brief Read the latest HAL SPI error snapshot as Platform_SPI_Error bits.
- * @param spi SPI instance.
+ * @brief 读取最近一次 HAL SPI 错误快照，并转换为 Platform_SPI_Error 位。
+ * @param spi SPI 实例。
  */
 uint32_t Platform_SPI_GetLastError(Platform_SPI_Instance spi);
 
 /**
- * @brief Register SPI callbacks.
- * @param spi SPI instance.
- * @param callbacks Callback set to copy.
- * @note The structure is copied. Call once during initialization before
- *       starting IT/DMA transfers.
+ * @brief 注册 SPI 回调。
+ * @param spi SPI 实例。
+ * @param callbacks 待复制的回调集合。
+ * @note 结构体会被复制。应在初始化阶段、启动 IT/DMA 传输前调用一次。
  */
 void Platform_SPI_RegisterCallbacks(
   Platform_SPI_Instance spi,

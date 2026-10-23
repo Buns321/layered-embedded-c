@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/17.
+// 由 Buns_ 创建于 2026/10/17。
 //
 
 #include "controller_base.h"

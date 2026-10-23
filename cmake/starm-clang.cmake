@@ -4,7 +4,7 @@ set(CMAKE_SYSTEM_PROCESSOR          arm)
 set(CMAKE_C_COMPILER_ID Clang)
 set(CMAKE_CXX_COMPILER_ID Clang)
 
-# Some default llvm settings
+# LLVM 默认设置
 set(TOOLCHAIN_PREFIX                starm-)
 
 set(CMAKE_C_COMPILER                ${TOOLCHAIN_PREFIX}clang)
@@ -20,11 +20,11 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX     ".elf")
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# STARM_TOOLCHAIN_CONFIG allows you to choose the toolchain configuration.
-# Possible values are:
-#  "STARM_HYBRID"   : Hybrid configuration using starm-clang Assemler and Compiler and GNU Linker
-#  "STARM_NEWLIB"   : starm-clang toolchain with NEWLIB C library
-#  "STARM_PICOLIBC" : starm-clang toolchain with PICOLIBC C library
+# STARM_TOOLCHAIN_CONFIG 用于选择工具链配置。
+# 可选值：
+#  "STARM_HYBRID"   ：使用 starm-clang 汇编器/编译器与 GNU 链接器的混合配置
+#  "STARM_NEWLIB"   ：使用 NEWLIB C 库的 starm-clang 工具链
+#  "STARM_PICOLIBC" ：使用 PICOLIBC C 库的 starm-clang 工具链
 set(STARM_TOOLCHAIN_CONFIG "STARM_HYBRID")
 
 if(STARM_TOOLCHAIN_CONFIG STREQUAL "STARM_HYBRID")
@@ -33,7 +33,7 @@ elseif (STARM_TOOLCHAIN_CONFIG STREQUAL "STARM_NEWLIB")
   set(TOOLCHAIN_MULTILIBS "--config=newlib.cfg")
 endif()
 
-# MCU specific flags
+# MCU 专用参数
 set(TARGET_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard ${TOOLCHAIN_MULTILIBS}")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TARGET_FLAGS}")

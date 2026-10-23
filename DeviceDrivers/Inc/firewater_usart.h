@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 /**
  * @file firewater_usart.h
- * @brief FireWater text telemetry over a USART DMA transmitter.
+ * @brief 通过 USART DMA 发送的 FireWater 文本遥测。
  * @addtogroup drivers_concrete
  * @{
  */
@@ -20,9 +20,9 @@
 #define FIREWATER_USART_TX_CAPACITY 512u
 
 /**
- * @brief FireWater USART device object.
- * @note Init takes ownership of the USART callback slot. The USART instance
- *       must not have another independent callback client.
+ * @brief FireWater USART 设备对象。
+ * @note Init 会取得该 USART 回调槽的所有权。该 USART 实例不得再有其他
+ *       独立回调使用者。
  */
 typedef struct {
   telemetry_base_t base;
@@ -39,13 +39,13 @@ typedef struct {
 } firewater_usart_t;
 
 /**
- * @brief Initialize FireWater over USART.
- * @param this Object.
- * @param name Debug name.
- * @param usart Initialized USART backend with DMA-capable TX.
- * @param channel_names Static channel-name table.
- * @param channel_count Number of configured channels, 1..capacity.
- * @param precision Decimal digits, 0..6.
+ * @brief 在 USART 上初始化 FireWater。
+ * @param this 对象。
+ * @param name 调试名称。
+ * @param usart 已完成初始化且 TX 支持 DMA 的 USART 后端。
+ * @param channel_names 静态通道名称表。
+ * @param channel_count 已配置通道数，范围 1..capacity。
+ * @param precision 小数位数，范围 0..6。
  */
 void Dev_FireWater_USART_Init(
   firewater_usart_t *this,

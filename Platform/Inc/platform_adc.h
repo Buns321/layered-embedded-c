@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_adc.h
- * @brief HAL-free ADC runtime interface.
+ * @brief 不依赖 HAL 类型的 ADC 运行期接口。
  * @addtogroup platform
  * @{
  */
@@ -21,7 +21,7 @@
 #error "At least one Platform ADC instance must be enabled"
 #endif
 
-/** @brief Available ADC instances. */
+/** @brief 可用的 ADC 实例。 */
 typedef enum {
 #if PLATFORM_ENABLE_ADC1
   PLATFORM_ADC_1 = 0U,
@@ -34,10 +34,10 @@ typedef enum {
 #endif
 } Platform_ADC_Instance;
 
-/** @brief Number of possible ADC identity slots. */
+/** @brief ADC 身份槽位数量上限。 */
 #define PLATFORM_ADC_INSTANCE_COUNT 3U
 
-/** @brief ADC error flags. Multiple bits may be set together. */
+/** @brief ADC 错误标志，可同时置位多个位。 */
 typedef enum {
   PLATFORM_ADC_ERROR_NONE     = 0u,
   PLATFORM_ADC_ERROR_INTERNAL = (1u << 0),
@@ -52,9 +52,9 @@ typedef void (*Platform_ADC_Callback)(
 );
 
 /**
- * @brief ADC conversion callbacks.
- * @note Callbacks run in interrupt context.
- * @note One physical instance has one callback owner.
+ * @brief ADC 转换回调集合。
+ * @note 回调在中断上下文执行。
+ * @note 一个物理实例只能有一个回调所有者。
  */
 typedef struct {
   Platform_ADC_Callback conv_cplt_cb;
@@ -64,22 +64,22 @@ typedef struct {
 } platform_adc_callbacks_t;
 
 /**
- * @brief Start conversions in polling mode.
- * @param adc ADC instance.
- * @pre MX_ADCx_Init() completed and regular-group channels are configured.
+ * @brief 以轮询模式启动转换。
+ * @param adc ADC 实例。
+ * @pre MX_ADCx_Init() 已完成，且规则组通道已配置。
  */
 Platform_StatusTypeDef Platform_ADC_Start(Platform_ADC_Instance adc);
 
 /**
- * @brief Stop polling conversions.
- * @param adc ADC instance.
+ * @brief 停止轮询转换。
+ * @param adc ADC 实例。
  */
 Platform_StatusTypeDef Platform_ADC_Stop(Platform_ADC_Instance adc);
 
 /**
- * @brief Wait for the current polling conversion to complete.
- * @param adc ADC instance.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
+ * @brief 等待当前轮询转换完成。
+ * @param adc ADC 实例。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
  */
 Platform_StatusTypeDef Platform_ADC_PollForConversion(
   Platform_ADC_Instance adc,
@@ -87,21 +87,21 @@ Platform_StatusTypeDef Platform_ADC_PollForConversion(
 );
 
 /**
- * @brief Read the latest regular conversion result.
- * @param adc ADC instance.
- * @note The value is a raw ADC code unless CubeMX configured otherwise.
+ * @brief 读取最近一次规则组转换结果。
+ * @param adc ADC 实例。
+ * @note 除非 CubeMX 另行配置，该值是原始 ADC 码值。
  */
 uint32_t Platform_ADC_GetValue(Platform_ADC_Instance adc);
 
 /**
- * @brief Perform one blocking regular-group conversion sequence.
- * @param adc ADC instance.
- * @param value Destination for the latest raw conversion result.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
- * @pre CubeMX configures a single-channel, single-conversion regular group.
- * @note For multi-channel scan mode, use DMA. The regular-group interrupt
- *       reports only the last conversion of a scan sequence.
- * @note The conversion is stopped before returning.
+ * @brief 执行一次阻塞式规则组转换序列。
+ * @param adc ADC 实例。
+ * @param value 最近一次原始转换结果的目标地址。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
+ * @pre CubeMX 应配置为单通道、单次转换的规则组。
+ * @note 多通道扫描模式应使用 DMA。规则组中断只会报告扫描序列的最后一次
+ *       转换结果。
+ * @note 返回前会停止转换。
  */
 Platform_StatusTypeDef Platform_ADC_Read(
   Platform_ADC_Instance adc,
@@ -110,25 +110,25 @@ Platform_StatusTypeDef Platform_ADC_Read(
 );
 
 /**
- * @brief Start conversions using the regular-group interrupt.
- * @param adc ADC instance.
+ * @brief 使用规则组中断启动转换。
+ * @param adc ADC 实例。
  */
 Platform_StatusTypeDef Platform_ADC_Start_IT(Platform_ADC_Instance adc);
 
 /**
- * @brief Stop interrupt conversions.
- * @param adc ADC instance.
+ * @brief 停止中断方式转换。
+ * @param adc ADC 实例。
  */
 Platform_StatusTypeDef Platform_ADC_Stop_IT(Platform_ADC_Instance adc);
 
 /**
- * @brief Start regular-group DMA conversions.
- * @param adc ADC instance.
- * @param data Destination array of uint32_t conversion results.
- * @param length Number of conversions, not bytes.
- * @note data must remain valid until completion, error, or stop.
- * @note On STM32F1, only ADC1 has a DMA request. DMA start/stop on
- *       unsupported instances returns Platform_ERROR.
+ * @brief 启动规则组 DMA 转换。
+ * @param adc ADC 实例。
+ * @param data uint32_t 转换结果的目标数组。
+ * @param length 转换次数，不是字节数。
+ * @note 在完成、错误或停止前，data 必须保持有效。
+ * @note STM32F1 上只有 ADC1 具有 DMA 请求。对不支持的实例启动或停止 DMA
+ *       会返回 Platform_ERROR。
  */
 Platform_StatusTypeDef Platform_ADC_Start_DMA(
   Platform_ADC_Instance adc,
@@ -137,23 +137,23 @@ Platform_StatusTypeDef Platform_ADC_Start_DMA(
 );
 
 /**
- * @brief Stop DMA conversions.
- * @param adc ADC instance.
- * @note On STM32F1, stop is supported only for ADC1.
+ * @brief 停止 DMA 转换。
+ * @param adc ADC 实例。
+ * @note STM32F1 上只支持停止 ADC1。
  */
 Platform_StatusTypeDef Platform_ADC_Stop_DMA(Platform_ADC_Instance adc);
 
 /**
- * @brief Read the latest HAL ADC error snapshot.
- * @param adc ADC instance.
+ * @brief 读取最近一次 HAL ADC 错误快照。
+ * @param adc ADC 实例。
  */
 uint32_t Platform_ADC_GetLastError(Platform_ADC_Instance adc);
 
 /**
- * @brief Register ADC callbacks.
- * @param adc ADC instance.
- * @param callbacks Callback set to copy.
- * @note Call once during initialization before starting IT/DMA conversions.
+ * @brief 注册 ADC 回调。
+ * @param adc ADC 实例。
+ * @param callbacks 待复制的回调集合。
+ * @note 应在初始化阶段、启动 IT/DMA 转换前调用一次。
  */
 void Platform_ADC_RegisterCallbacks(
   Platform_ADC_Instance adc,

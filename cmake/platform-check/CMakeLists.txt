@@ -7,7 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-set(PLATFORM_CHECK_FAMILY "" CACHE STRING "Platform family to compile: F4 or F1")
+set(PLATFORM_CHECK_FAMILY "" CACHE STRING "要编译的 Platform 系列：F4 或 F1")
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
 set(PLATFORM_COMMON_INCLUDE_DIRS
@@ -285,5 +285,5 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       -Wall -Wextra -Werror
   )
 else()
-  message(FATAL_ERROR "Set PLATFORM_CHECK_FAMILY to F4 or F1")
+  message(FATAL_ERROR "请将 PLATFORM_CHECK_FAMILY 设置为 F4 或 F1")
 endif()

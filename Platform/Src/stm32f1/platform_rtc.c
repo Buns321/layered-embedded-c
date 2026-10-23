@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 #include "platform_rtc.h"
@@ -68,7 +68,7 @@ static Platform_StatusTypeDef platform_rtc_status(
 }
 
 static bool platform_rtc_wait_for_ready(void) {
-  /* Avoid HAL_GetTick timeout handling inside the RTC alarm ISR. */
+  /* 避免在 RTC 闹钟 ISR 中进入 HAL_GetTick 的超时处理路径。 */
   for (uint32_t spin = 0U; spin < PLATFORM_RTC_RTOFF_SPIN_LIMIT; ++spin) {
     if ((hrtc.Instance->CRL & RTC_CRL_RTOFF) != 0U) {
       return true;

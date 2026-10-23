@@ -76,7 +76,7 @@
 
 - 上层依赖 base 接口，不依赖具体驱动。
 - HAL 类型只能出现在 `Platform/Src/`。
-- Platform 公共头只放 HAL-free 的枚举、数据结构、回调和声明。
+- Platform 公共头只放不依赖 HAL 类型的枚举、数据结构、回调和声明。
 - Platform 不调用 `HAL_*_Init()`，外设结构配置归 CubeMX/Core；只有运行期
   不可逆启动的 IWDG/WWDG 例外。
 - 每个功能使用自己的实例类型，不复用定时器身份表示 PWM 和 Encoder。

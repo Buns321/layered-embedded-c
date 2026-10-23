@@ -15,7 +15,7 @@
 **架构**：Platform 层用枚举身份和静态映射函数把 HAL 类型封在实现文件内部，上层只接触 `Platform_*` 类型；同一套头文件对应 f1/f4 两份实现，构建时选用其一；状态码统一映射为 `Platform_StatusTypeDef`。
 - [x] 保留两个 `platform_tim.c`，作为 TIM 句柄/通道映射与基础定时器操作的落点
 - [x] 将 HAL 状态映射从公共头移到 Platform 私有的 `platform_hal_internal.h`
-- [x] 公共头文件只保留 HAL-free 枚举、普通数据结构、回调和函数声明
+- [x] 公共头文件只保留不依赖 HAL 类型的枚举、普通数据结构、回调和函数声明
 - [x] 新增 `platform_config.h`，按编译期开关暴露当前可用实例
 - [x] PWM 与 Encoder 拆分独立实例类型，PWM 通道不再接受 `ALL`
 - [x] 新增显式 `Platform_PWM_StartAll/StopAll`，消除 `ALL` 写入 CCR4 的风险

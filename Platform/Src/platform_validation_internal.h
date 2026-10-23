@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_validation_internal.h
- * @brief Pure validation and arithmetic helpers shared with native tests.
+ * @brief 与原生测试共用的纯校验与算术辅助函数。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_VALIDATION_INTERNAL_H
@@ -52,7 +52,7 @@ static inline bool platform_spi_transfer_values_are_valid(
 static inline uint32_t platform_rtc_next_daily_alarm(
   uint32_t alarm_counter
 ) {
-  /* The 32-bit RTC counter wraps naturally at the end of its range. */
+  /* 32 位 RTC 计数器到达范围末尾后会自然回绕。 */
   return alarm_counter + PLATFORM_SECONDS_PER_DAY;
 }
 

@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/8/23.
+// 由 Buns_ 创建于 2026/8/23。
 //
 
 /**
@@ -28,7 +28,7 @@ typedef enum {
 /**
  * @brief 定时器实例身份。
  */
-/* TIM5-TIM14 are omitted for STM32F1 builds. */
+/* STM32F1 构建中省略 TIM5-TIM14。 */
 typedef enum {
   PLATFORM_TIM_TIM1 = 0U,
   PLATFORM_TIM_TIM2,

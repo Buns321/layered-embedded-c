@@ -1,14 +1,14 @@
 //
-// Created by Buns_ on 2026/10/22.
+// 由 Buns_ 创建于 2026/10/22。
 //
 
 /**
  * @file platform_config.h
- * @brief Compile-time availability of Platform peripheral instances.
+ * @brief Platform 外设实例的编译期可用性配置。
  * @addtogroup platform
  * @{
- * @note CMake or the board configuration must define enabled instances.
- *       Disabled instances are omitted from the public identity enums.
+ * @note CMake 或板级配置必须定义启用的实例。未启用的实例不会出现在公共
+ *       身份枚举中。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_CONFIG_H
@@ -162,7 +162,7 @@
 #error "TIM3 cannot be enabled as both PWM and encoder"
 #endif
 
-/** @brief Number of possible UART identity slots on the supported MCU family. */
+/** @brief 所支持 MCU 系列中 UART 身份槽位的数量上限。 */
 #define PLATFORM_UART_INSTANCE_COUNT 6u
 
 /** @} */

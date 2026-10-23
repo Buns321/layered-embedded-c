@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 /**
  * @file system_watchdog.h
- * @brief IWDG 启动、任务 check-in 与统一喂狗策略。
+ * @brief IWDG 启动、任务报到与统一喂狗策略。
  * @addtogroup system
  * @{
  */
@@ -16,7 +16,7 @@
 #include <stdint.h>
 
 /**
- * @brief 参与看门狗 check-in 的任务。
+ * @brief 参与看门狗报到的任务。
  */
 typedef enum {
   SYS_WATCHDOG_TASK_CONTROL = 0,

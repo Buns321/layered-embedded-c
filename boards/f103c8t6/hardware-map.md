@@ -78,7 +78,7 @@
 
 ### Platform
 
-- 公共头文件只包含 HAL-free 枚举、普通数据结构、回调类型和函数声明。
+- 公共头文件只包含不依赖 HAL 类型的枚举、普通数据结构、回调类型和函数声明。
 - Platform 消费 CubeMX 生成的 HAL handle，不重复调用 `HAL_*_Init()`。
 - PWM、Encoder、USART、GPIO、EXTI 等功能使用各自的实例类型。
 - 未启用的实例由 `platform_config.h` 和 CMake 在编译期排除。

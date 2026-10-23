@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 /**
  * @file system_log_rtt.h
- * @brief SEGGER RTT implementation of the System log backend.
+ * @brief System 日志后端的 SEGGER RTT 实现。
  * @addtogroup system
  * @{
  */
@@ -16,8 +16,8 @@
 #include <stdint.h>
 
 /**
- * @brief RTT log backend object.
- * @note The object must be static or otherwise outlive the System log facade.
+ * @brief RTT 日志后端对象。
+ * @note 该对象必须是静态对象，或以其他方式保证生命周期长于 System 日志门面。
  */
 typedef struct {
   sys_log_base_t base;
@@ -25,10 +25,10 @@ typedef struct {
 } system_log_rtt_t;
 
 /**
- * @brief Initialize the RTT log backend.
- * @param this Backend object.
- * @param name Debug name.
- * @param channel RTT up-channel, normally 0.
+ * @brief 初始化 RTT 日志后端。
+ * @param this 后端对象。
+ * @param name 调试名称。
+ * @param channel RTT 上行通道，通常为 0。
  */
 void Sys_Log_RTT_Init(
   system_log_rtt_t *this,

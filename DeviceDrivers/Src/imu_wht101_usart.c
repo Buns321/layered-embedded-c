@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/9/1.
+// 由 Buns_ 创建于 2026/9/1。
 //
 
 #include "imu_wht101_usart.h"

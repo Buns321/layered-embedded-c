@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/17.
+// 由 Buns_ 创建于 2026/10/17。
 //
 
 #include "controller_linear.h"
@@ -133,7 +133,8 @@ void Ctrl_Linear_Init(
     deadzone          <  max_step
   );
 
-  // TODO 也许等100年我把 log 写好之后会把 assert 断言换成日志？当然也不好说，毕竟断言可以直接编译失败，并且断言也可以打印错误 by Buns_ at 2026/10/17 16:52
+  // TODO 由 Buns_ 于 2026/10/17 16:52 记录：待日志系统完善后，再评估是否把
+  // assert 断言替换为日志；断言可以直接阻止错误代码继续运行，也可能输出错误信息。
 
   Ctrl_Base_Init(&controller_linear->controller_base, name, &controller_ops_linear);
 

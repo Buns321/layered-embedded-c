@@ -1,13 +1,13 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_can.h
- * @brief HAL-free classic CAN interface.
+ * @brief 不依赖 HAL 类型的经典 CAN 接口。
  * @addtogroup platform
  * @{
- * @note CAN FD is outside this interface.
+ * @note 本接口不包含 CAN FD。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_CAN_H
@@ -22,7 +22,7 @@
 #error "At least one Platform CAN instance must be enabled"
 #endif
 
-/** @brief Available classic CAN instances. */
+/** @brief 可用的经典 CAN 实例。 */
 typedef enum {
 #if PLATFORM_ENABLE_CAN1
   PLATFORM_CAN_1 = 0U,
@@ -32,22 +32,22 @@ typedef enum {
 #endif
 } Platform_CAN_Instance;
 
-/** @brief Number of possible CAN identity slots. */
+/** @brief CAN 身份槽位数量上限。 */
 #define PLATFORM_CAN_INSTANCE_COUNT 2U
 
-/** @brief CAN identifier format. */
+/** @brief CAN 标识符格式。 */
 typedef enum {
   PLATFORM_CAN_ID_STANDARD = 0U,
   PLATFORM_CAN_ID_EXTENDED,
 } Platform_CAN_IdType;
 
-/** @brief CAN receive FIFO selection. */
+/** @brief CAN 接收 FIFO 选择。 */
 typedef enum {
   PLATFORM_CAN_FIFO_0 = 0U,
   PLATFORM_CAN_FIFO_1,
 } Platform_CAN_FIFO;
 
-/** @brief Classic CAN frame. */
+/** @brief 经典 CAN 帧。 */
 typedef struct {
   uint32_t id;
   uint8_t dlc;
@@ -56,19 +56,18 @@ typedef struct {
   uint8_t data[8];
 } Platform_CAN_Frame;
 
-/** @brief Filter matching mode. */
+/** @brief 过滤器匹配模式。 */
 typedef enum {
   PLATFORM_CAN_FILTER_MASK = 0U,
   PLATFORM_CAN_FILTER_LIST,
 } Platform_CAN_FilterMode;
 
 /**
- * @brief 32-bit filter configuration.
- * @note id and mask contain only CAN identifier bits. For a standard filter,
- *       bits 10:0 are used. For an extended filter, bits 28:0 are used.
- *       The implementation adds IDE and RTR fields to the hardware layout.
- * @note In mask mode, mask is the acceptance mask. In list mode, the two
- *       identifiers are id and id2; both use id_type and remote.
+ * @brief 32 位过滤器配置。
+ * @note id 和 mask 只包含 CAN 标识符位。标准帧过滤器使用 bit 10:0，扩展帧
+ *       过滤器使用 bit 28:0。实现层负责把 IDE 和 RTR 字段加入硬件布局。
+ * @note 掩码模式下，mask 是接受掩码；列表模式下，两个标识符分别是 id 和
+ *       id2，二者共用 id_type 和 remote。
  */
 typedef struct {
   uint32_t bank;
@@ -82,7 +81,7 @@ typedef struct {
   bool enabled;
 } Platform_CAN_FilterConfig;
 
-/** @brief CAN interrupt notification bits. */
+/** @brief CAN 中断通知位。 */
 typedef enum {
   PLATFORM_CAN_NOTIFY_RX_FIFO0_PENDING = (1u << 0),
   PLATFORM_CAN_NOTIFY_RX_FIFO1_PENDING = (1u << 1),
@@ -92,7 +91,7 @@ typedef enum {
   PLATFORM_CAN_NOTIFY_ERROR            = (1u << 5),
 } Platform_CAN_Notification;
 
-/** @brief CAN error flags. More than one bit may be set. */
+/** @brief CAN 错误标志，可同时置位多个位。 */
 typedef enum {
   PLATFORM_CAN_ERROR_NONE                = 0u,
   PLATFORM_CAN_ERROR_WARNING             = (1u << 0),
@@ -115,7 +114,7 @@ typedef enum {
   PLATFORM_CAN_ERROR_UNKNOWN             = (1u << 31),
 } Platform_CAN_Error;
 
-/** @brief Interrupt event type. */
+/** @brief 中断事件类型。 */
 typedef enum {
   PLATFORM_CAN_EVENT_TX_COMPLETE = 0U,
   PLATFORM_CAN_EVENT_TX_ABORT,
@@ -125,9 +124,8 @@ typedef enum {
 } Platform_CAN_EventType;
 
 /**
- * @brief Interrupt event delivered to the registered callback.
- * @note The event and its frame are valid only for the duration of the
- *       callback. Copy any required data before returning.
+ * @brief 传递给已注册回调的中断事件。
+ * @note 事件及其帧数据仅在回调执行期间有效。返回前应复制所需数据。
  */
 typedef struct {
   Platform_CAN_EventType type;
@@ -144,12 +142,12 @@ typedef void (*Platform_CAN_Callback)(
 );
 
 /**
- * @brief Configure one 32-bit filter bank.
- * @param can CAN instance.
- * @param config Filter configuration.
- * @pre Call before Platform_CAN_Start().
- * @note id and mask are CAN identifier bits, not raw hardware registers.
- * @retval Platform_ERROR Invalid instance, bank, mode, FIFO, or identifier.
+ * @brief 配置一个 32 位过滤器组。
+ * @param can CAN 实例。
+ * @param config 过滤器配置。
+ * @pre 必须在 Platform_CAN_Start() 之前调用。
+ * @note id 和 mask 是 CAN 标识符位，不是硬件寄存器原始值。
+ * @retval Platform_ERROR 实例、过滤器组、模式、FIFO 或标识符非法。
  */
 Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
   Platform_CAN_Instance can,
@@ -157,29 +155,27 @@ Platform_StatusTypeDef Platform_CAN_ConfigureFilter(
 );
 
 /**
- * @brief Start the CAN peripheral.
- * @param can CAN instance.
+ * @brief 启动 CAN 外设。
+ * @param can CAN 实例。
  */
 Platform_StatusTypeDef Platform_CAN_Start(Platform_CAN_Instance can);
 
 /**
- * @brief Stop the CAN peripheral.
- * @param can CAN instance.
+ * @brief 停止 CAN 外设。
+ * @param can CAN 实例。
  */
 Platform_StatusTypeDef Platform_CAN_Stop(Platform_CAN_Instance can);
 
 /**
- * @brief Enqueue one classic CAN frame.
- * @param can CAN instance.
- * @param frame Frame to enqueue.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE while
- *                waiting for a free transmit mailbox.
- * @retval Platform_OK Frame queued.
- * @retval Platform_BUSY HAL reported a busy state.
- * @retval Platform_TIMEOUT No mailbox became free.
- * @retval Platform_ERROR Invalid frame or peripheral state.
- * @note Call from task context. The implementation does not sleep while
- *       polling for a mailbox.
+ * @brief 将一个经典 CAN 帧加入发送队列。
+ * @param can CAN 实例。
+ * @param frame 待入队的帧。
+ * @param timeout 等待空闲发送邮箱的超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
+ * @retval Platform_OK 帧已入队。
+ * @retval Platform_BUSY HAL 报告忙状态。
+ * @retval Platform_TIMEOUT 没有邮箱变为空闲。
+ * @retval Platform_ERROR 帧或外设状态非法。
+ * @note 从任务上下文调用。实现轮询邮箱时不会主动休眠。
  */
 Platform_StatusTypeDef Platform_CAN_Transmit(
   Platform_CAN_Instance can,
@@ -188,16 +184,15 @@ Platform_StatusTypeDef Platform_CAN_Transmit(
 );
 
 /**
- * @brief Receive one frame from a FIFO.
- * @param can CAN instance.
- * @param fifo Receive FIFO.
- * @param frame Destination frame.
- * @param timeout Timeout in milliseconds or PLATFORM_TIMEOUT_INFINITE.
- * @retval Platform_OK Frame copied to frame.
- * @retval Platform_TIMEOUT No frame arrived before the timeout.
- * @retval Platform_ERROR Invalid argument or HAL failure.
- * @note Call from task context. The implementation does not sleep while
- *       polling for a frame.
+ * @brief 从 FIFO 接收一帧。
+ * @param can CAN 实例。
+ * @param fifo 接收 FIFO。
+ * @param frame 目标帧。
+ * @param timeout 超时时间（ms）或 PLATFORM_TIMEOUT_INFINITE。
+ * @retval Platform_OK 帧已复制到 frame。
+ * @retval Platform_TIMEOUT 超时前没有收到帧。
+ * @retval Platform_ERROR 参数非法或 HAL 失败。
+ * @note 从任务上下文调用。实现轮询帧时不会主动休眠。
  */
 Platform_StatusTypeDef Platform_CAN_Receive(
   Platform_CAN_Instance can,
@@ -207,9 +202,9 @@ Platform_StatusTypeDef Platform_CAN_Receive(
 );
 
 /**
- * @brief Enable selected CAN interrupt notifications.
- * @param can CAN instance.
- * @param notifications Platform_CAN_Notification bit mask.
+ * @brief 启用选定的 CAN 中断通知。
+ * @param can CAN 实例。
+ * @param notifications Platform_CAN_Notification 位掩码。
  */
 Platform_StatusTypeDef Platform_CAN_ActivateNotification(
   Platform_CAN_Instance can,
@@ -217,9 +212,9 @@ Platform_StatusTypeDef Platform_CAN_ActivateNotification(
 );
 
 /**
- * @brief Disable selected CAN interrupt notifications.
- * @param can CAN instance.
- * @param notifications Platform_CAN_Notification bit mask.
+ * @brief 禁用选定的 CAN 中断通知。
+ * @param can CAN 实例。
+ * @param notifications Platform_CAN_Notification 位掩码。
  */
 Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
   Platform_CAN_Instance can,
@@ -227,17 +222,17 @@ Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
 );
 
 /**
- * @brief Read the latest HAL CAN error snapshot.
- * @param can CAN instance.
+ * @brief 读取最近一次 HAL CAN 错误快照。
+ * @param can CAN 实例。
  */
 uint32_t Platform_CAN_GetLastError(Platform_CAN_Instance can);
 
 /**
- * @brief Register CAN event callback.
- * @param can CAN instance.
- * @param callback Event callback.
- * @param context Caller-owned callback context.
- * @note Call once during initialization before enabling notifications.
+ * @brief 注册 CAN 事件回调。
+ * @param can CAN 实例。
+ * @param callback 事件回调。
+ * @param context 调用方持有的回调上下文。
+ * @note 应在初始化阶段、启用通知前调用一次。
  */
 void Platform_CAN_RegisterCallbacks(
   Platform_CAN_Instance can,

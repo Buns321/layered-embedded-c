@@ -1,54 +1,54 @@
 cmake_minimum_required(VERSION 3.22)
 
 #
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
+# 本文件只在首次生成时创建，
+# 多次调用转换器也不会重新生成。
 #
-# User is free to modify the file as much as necessary
+# 用户可以根据需要自由修改本文件。
 #
 
-# Setup compiler settings
+# 配置编译器选项
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
 
-# Define the build type
+# 定义构建类型
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# Set the project name
+# 设置工程名称
 set(CMAKE_PROJECT_NAME f103c8t6)
 
-# Optional debug services
-option(SYS_LOG_USE_RTT "Enable the SEGGER RTT system log backend" ON)
-option(PLATFORM_BUILD_I2C "Compile the Platform I2C implementation" OFF)
-option(PLATFORM_BUILD_SPI "Compile the Platform SPI implementation" OFF)
-option(PLATFORM_BUILD_ADC "Compile the Platform ADC implementation" OFF)
-option(PLATFORM_BUILD_CAN "Compile the Platform CAN implementation" OFF)
-option(PLATFORM_BUILD_RTC "Compile the Platform RTC implementation" OFF)
-option(PLATFORM_BUILD_FLASH "Compile the Platform flash implementation" OFF)
+# 可选调试服务
+option(SYS_LOG_USE_RTT "启用 SEGGER RTT System 日志后端" ON)
+option(PLATFORM_BUILD_I2C "编译 Platform I2C 实现" OFF)
+option(PLATFORM_BUILD_SPI "编译 Platform SPI 实现" OFF)
+option(PLATFORM_BUILD_ADC "编译 Platform ADC 实现" OFF)
+option(PLATFORM_BUILD_CAN "编译 Platform CAN 实现" OFF)
+option(PLATFORM_BUILD_RTC "编译 Platform RTC 实现" OFF)
+option(PLATFORM_BUILD_FLASH "编译 Platform Flash 实现" OFF)
 
-# Enable compile command to ease indexing with e.g. clangd
+# 生成编译命令，便于 clangd 等工具建立索引
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-# Core project settings
+# 工程核心设置
 project(${CMAKE_PROJECT_NAME})
-message("Build type: " ${CMAKE_BUILD_TYPE})
+message("构建类型: " ${CMAKE_BUILD_TYPE})
 
-# Enable CMake support for ASM and C languages
+# 启用 CMake 对 C 和 ASM 语言的支持
 enable_language(C ASM)
 
-# Create an executable object type
+# 创建可执行目标
 add_executable(${CMAKE_PROJECT_NAME})
 
-# Add STM32CubeMX generated sources
+# 添加 STM32CubeMX 生成的源文件
 add_subdirectory(cmake/stm32cubemx)
 
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
-# Third-party sources may contain warnings outside this project's ownership.
+# 第三方源码可能产生本项目无法控制的告警。
 if(TARGET STM32_Drivers)
     target_compile_options(STM32_Drivers PRIVATE -Wno-unused-parameter)
 endif()
@@ -56,12 +56,12 @@ if(TARGET FreeRTOS)
     target_compile_options(FreeRTOS PRIVATE -Wno-unused-parameter)
 endif()
 
-# Link directories setup
+# 配置链接目录
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
+    # 在此添加用户自定义库搜索路径
 )
 
-# Add sources to executable
+# 向可执行目标添加源文件
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/App/Src/app_blink.c
     ${REPO_ROOT}/App/Src/app_motor_demo.c
@@ -135,7 +135,7 @@ if(PLATFORM_BUILD_FLASH)
     )
 endif()
 
-# Add include paths
+# 添加头文件搜索路径
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/App/Inc
     ${REPO_ROOT}/Controller/Base/Inc
@@ -152,7 +152,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/System/Inc
 )
 
-# Add project symbols (macros)
+# 添加工程符号（宏）
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     USE_FREERTOS
     STM32F1xx
@@ -179,12 +179,12 @@ if(SYS_LOG_USE_RTT)
     )
 endif()
 
-# Remove wrong libob.a library dependency when using cpp files
+# 使用 C++ 文件时移除错误的 libob.a 库依赖
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
-# Add linked libraries
+# 添加链接库
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
-    # Add user defined libraries
+    # 在此添加用户自定义库
 )

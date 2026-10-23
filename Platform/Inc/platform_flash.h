@@ -1,15 +1,14 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_flash.h
- * @brief HAL-free internal flash primitives.
+ * @brief 不依赖 HAL 类型的内部 Flash 基础操作。
  * @addtogroup platform
  * @{
- * @note This module owns only low-level read, program, and erase operations.
- *       Parameter layout, CRC validation, wear policy, and default-value
- *       fallback belong to the System parameter-storage layer.
+ * @note 本模块只负责底层读取、写入和擦除操作。参数布局、CRC 校验、磨损策略
+ *       以及默认值回退属于 System 参数存储层。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_FLASH_H
@@ -23,12 +22,12 @@
 #error "Platform flash must be enabled before including platform_flash.h"
 #endif
 
-/** @brief Available internal flash instance. */
+/** @brief 可用的内部 Flash 实例。 */
 typedef enum {
   PLATFORM_FLASH_1 = 0U,
 } Platform_FLASH_Instance;
 
-/** @brief Internal flash error flags. */
+/** @brief 内部 Flash 错误标志。 */
 typedef enum {
   PLATFORM_FLASH_ERROR_NONE          = 0u,
   PLATFORM_FLASH_ERROR_PROGRAM       = (1u << 0),
@@ -42,16 +41,16 @@ typedef enum {
 } Platform_FLASH_Error;
 
 /**
- * @brief Copy bytes from internal flash.
- * @param instance Internal flash instance.
- * @param address Start address in the MCU flash address space.
- * @param data Destination buffer.
- * @param size Byte count, greater than zero.
- * @retval Platform_OK Success.
- * @retval Platform_BUSY Another flash operation is active.
- * @retval Platform_ERROR Invalid range or null buffer.
- * @note Call from task context. All flash operations in the application must
- *       use this Platform instance so the busy guard is authoritative.
+ * @brief 从内部 Flash 复制字节。
+ * @param instance 内部 Flash 实例。
+ * @param address MCU Flash 地址空间中的起始地址。
+ * @param data 目标缓冲区。
+ * @param size 字节数，必须大于零。
+ * @retval Platform_OK 成功。
+ * @retval Platform_BUSY 另一个 Flash 操作正在进行。
+ * @retval Platform_ERROR 地址范围非法或缓冲区为空。
+ * @note 从任务上下文调用。应用中的所有 Flash 操作都必须使用这个 Platform
+ *       实例，以确保忙状态保护具有唯一权威性。
  */
 Platform_StatusTypeDef Platform_FLASH_Read(
   Platform_FLASH_Instance instance,
@@ -61,17 +60,16 @@ Platform_StatusTypeDef Platform_FLASH_Read(
 );
 
 /**
- * @brief Program 32-bit words into erased internal flash.
- * @param instance Internal flash instance.
- * @param address Destination address. Must be 4-byte aligned.
- * @param data Source buffer.
- * @param size Byte count. Must be a nonzero multiple of four.
- * @retval Platform_OK Success.
- * @retval Platform_BUSY Another flash operation is active.
- * @retval Platform_ERROR Invalid range, alignment, or HAL program failure.
- * @note Destination must already be erased. The caller owns erase policy.
- * @note Call from task context while interrupts or RTOS scheduling constraints
- *       required by the target MCU are respected.
+ * @brief 向已擦除的内部 Flash 写入 32 位字。
+ * @param instance 内部 Flash 实例。
+ * @param address 目标地址，必须按 4 字节对齐。
+ * @param data 源缓冲区。
+ * @param size 字节数，必须是四的非零整数倍。
+ * @retval Platform_OK 成功。
+ * @retval Platform_BUSY 另一个 Flash 操作正在进行。
+ * @retval Platform_ERROR 地址范围或对齐非法，或 HAL 写入失败。
+ * @note 目标区域必须已擦除，擦除策略由调用方负责。
+ * @note 从任务上下文调用，并遵守目标 MCU 对中断或 RTOS 调度的要求。
  */
 Platform_StatusTypeDef Platform_FLASH_Write(
   Platform_FLASH_Instance instance,
@@ -81,16 +79,16 @@ Platform_StatusTypeDef Platform_FLASH_Write(
 );
 
 /**
- * @brief Erase every flash erase unit intersecting a byte range.
- * @param instance Internal flash instance.
- * @param address Start address. Must be aligned to an erase-unit boundary.
- * @param size Byte count. Greater than zero.
- * @retval Platform_OK Success.
- * @retval Platform_BUSY Another flash operation is active.
- * @retval Platform_ERROR Invalid range or HAL erase failure.
- * @warning All pages or sectors intersecting the range are erased. Use
- *          Platform_FLASH_GetEraseUnitSize() before selecting a parameter slot.
- * @note Call from task context and do not execute from the erased region.
+ * @brief 擦除与给定字节范围相交的所有 Flash 擦除单元。
+ * @param instance 内部 Flash 实例。
+ * @param address 起始地址，必须按擦除单元边界对齐。
+ * @param size 字节数，必须大于零。
+ * @retval Platform_OK 成功。
+ * @retval Platform_BUSY 另一个 Flash 操作正在进行。
+ * @retval Platform_ERROR 地址范围非法或 HAL 擦除失败。
+ * @warning 与范围相交的所有页或扇区都会被擦除。选择参数槽位前应先调用
+ *          Platform_FLASH_GetEraseUnitSize()。
+ * @note 从任务上下文调用，且不能从正在被擦除的区域执行代码。
  */
 Platform_StatusTypeDef Platform_FLASH_Erase(
   Platform_FLASH_Instance instance,
@@ -99,10 +97,10 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
 );
 
 /**
- * @brief Get the erase-unit size covering an address.
- * @param instance Internal flash instance.
- * @param address Address to query.
- * @return Erase-unit size in bytes, or zero when the address is not in flash.
+ * @brief 获取覆盖指定地址的擦除单元大小。
+ * @param instance 内部 Flash 实例。
+ * @param address 待查询地址。
+ * @return 擦除单元大小（字节）；地址不在 Flash 中时返回零。
  */
 uint32_t Platform_FLASH_GetEraseUnitSize(
   Platform_FLASH_Instance instance,
@@ -110,8 +108,8 @@ uint32_t Platform_FLASH_GetEraseUnitSize(
 );
 
 /**
- * @brief Read the latest Platform flash error snapshot.
- * @param instance Internal flash instance.
+ * @brief 读取最近一次 Platform Flash 错误快照。
+ * @param instance 内部 Flash 实例。
  */
 uint32_t Platform_FLASH_GetLastError(Platform_FLASH_Instance instance);
 

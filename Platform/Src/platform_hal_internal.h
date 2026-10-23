@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/22.
+// 由 Buns_ 创建于 2026/10/22。
 //
 
 /**
  * @file platform_hal_internal.h
- * @brief Private HAL status translation helpers for Platform implementations.
+ * @brief 仅供 Platform 实现使用的 HAL 状态转换辅助函数。
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_HAL_INTERNAL_H

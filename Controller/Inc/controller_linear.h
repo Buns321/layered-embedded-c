@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/17.
+// 由 Buns_ 创建于 2026/10/17。
 //
 
 /**
@@ -36,7 +36,8 @@ typedef struct controller_linear {
   float min_step;              // 最小步长限幅 (duty)
   float deadzone;              // 死区         (duty)
 
-  // TODO 突然想到貌似应该要做一个文件里面存类似于 HAL_MAX_DELAY 的宏定义 by Buns_ at 2026/10/17 16:40
+  // TODO 由 Buns_ 于 2026/10/17 16:40 记录：应增加一个文件，集中存放
+  // 类似 HAL_MAX_DELAY 的通用宏定义。
 
   float last_out;              // 上次输出寄存器，用于单次控制限幅 (duty)
 } controller_linear_t;

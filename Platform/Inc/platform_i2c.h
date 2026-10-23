@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_i2c.h
- * @brief HAL-free I2C master transport interface.
+ * @brief 不依赖 HAL 类型的 I2C 主机传输接口。
  * @addtogroup platform
  * @{
  */
@@ -21,7 +21,7 @@
 #error "At least one Platform I2C instance must be enabled"
 #endif
 
-/** @brief Available I2C instances. */
+/** @brief 可用的 I2C 实例。 */
 typedef enum {
 #if PLATFORM_ENABLE_I2C1
   PLATFORM_I2C_1 = 0U,
@@ -34,10 +34,10 @@ typedef enum {
 #endif
 } Platform_I2C_Instance;
 
-/** @brief Number of possible I2C identity slots. */
+/** @brief I2C 身份槽位数量上限。 */
 #define PLATFORM_I2C_INSTANCE_COUNT 3U
 
-/** @brief I2C error flags. */
+/** @brief I2C 错误标志。 */
 typedef enum {
   PLATFORM_I2C_ERROR_NONE    = 0u,
   PLATFORM_I2C_ERROR_BERR    = (1u << 0),
@@ -57,9 +57,9 @@ typedef void (*Platform_I2C_Callback)(
 );
 
 /**
- * @brief I2C completion callbacks.
- * @note Callbacks run in interrupt context.
- * @note Registration copies this structure. One physical instance has one owner.
+ * @brief I2C 完成回调集合。
+ * @note 回调在中断上下文执行。
+ * @note 注册时会复制该结构体。一个物理实例只能有一个回调所有者。
  */
 typedef struct {
   Platform_I2C_Callback master_tx_cplt_cb;
@@ -72,13 +72,13 @@ typedef struct {
 } platform_i2c_callbacks_t;
 
 /**
- * @brief Blocking master transmit.
- * @param i2c I2C instance.
- * @param address 7-bit device address in 0x00..0x7F.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @param timeout Timeout in milliseconds.
- * @pre MX_I2Cx_Init() completed successfully.
+ * @brief 阻塞式主机发送。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址，范围 0x00..0x7F。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
+ * @pre MX_I2Cx_Init() 已成功完成。
  */
 Platform_StatusTypeDef Platform_I2C_MasterTransmit(
   Platform_I2C_Instance i2c,
@@ -89,12 +89,12 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit(
 );
 
 /**
- * @brief Blocking master receive.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param data Receive buffer.
- * @param size Byte count.
- * @param timeout Timeout in milliseconds.
+ * @brief 阻塞式主机接收。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
  */
 Platform_StatusTypeDef Platform_I2C_MasterReceive(
   Platform_I2C_Instance i2c,
@@ -105,14 +105,14 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive(
 );
 
 /**
- * @brief Blocking memory write.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes, normally 1 or 2.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @param timeout Timeout in milliseconds.
+ * @brief 阻塞式存储器写。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节），通常为 1 或 2。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
  */
 Platform_StatusTypeDef Platform_I2C_MemWrite(
   Platform_I2C_Instance i2c,
@@ -125,14 +125,14 @@ Platform_StatusTypeDef Platform_I2C_MemWrite(
 );
 
 /**
- * @brief Blocking memory read.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes, normally 1 or 2.
- * @param data Receive buffer.
- * @param size Byte count.
- * @param timeout Timeout in milliseconds.
+ * @brief 阻塞式存储器读。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节），通常为 1 或 2。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
  */
 Platform_StatusTypeDef Platform_I2C_MemRead(
   Platform_I2C_Instance i2c,
@@ -145,13 +145,13 @@ Platform_StatusTypeDef Platform_I2C_MemRead(
 );
 
 /**
- * @brief Interrupt master transmit.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The buffer must remain valid and unchanged until completion, error, or
- *       abort. The completion callback runs in interrupt context.
+ * @brief 中断方式主机发送。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效且内容不变。完成回调
+ *       在中断上下文执行。
  */
 Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
   Platform_I2C_Instance i2c,
@@ -161,13 +161,13 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_IT(
 );
 
 /**
- * @brief Interrupt master receive.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort. The
- *       completion callback runs in interrupt context.
+ * @brief 中断方式主机接收。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。完成回调在中断上下文
+ *       执行。
  */
 Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
   Platform_I2C_Instance i2c,
@@ -177,14 +177,14 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_IT(
 );
 
 /**
- * @brief Interrupt memory write.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The data buffer must remain valid until completion, error, or abort.
+ * @brief 中断方式存储器写。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节）。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
   Platform_I2C_Instance i2c,
@@ -196,14 +196,14 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_IT(
 );
 
 /**
- * @brief Interrupt memory read.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The data buffer must remain valid until completion, error, or abort.
+ * @brief 中断方式存储器读。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节）。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_I2C_MemRead_IT(
   Platform_I2C_Instance i2c,
@@ -215,13 +215,13 @@ Platform_StatusTypeDef Platform_I2C_MemRead_IT(
 );
 
 /**
- * @brief DMA master transmit.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The buffer must remain valid and unchanged until completion, error, or
- *       abort. The completion callback runs in interrupt context.
+ * @brief DMA 方式主机发送。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效且内容不变。完成回调
+ *       在中断上下文执行。
  */
 Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
   Platform_I2C_Instance i2c,
@@ -231,13 +231,13 @@ Platform_StatusTypeDef Platform_I2C_MasterTransmit_DMA(
 );
 
 /**
- * @brief DMA master receive.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The buffer must remain valid until completion, error, or abort. The
- *       completion callback runs in interrupt context.
+ * @brief DMA 方式主机接收。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，缓冲区必须保持有效。完成回调在中断上下文
+ *       执行。
  */
 Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
   Platform_I2C_Instance i2c,
@@ -247,14 +247,14 @@ Platform_StatusTypeDef Platform_I2C_MasterReceive_DMA(
 );
 
 /**
- * @brief DMA memory write.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes.
- * @param data Transmit buffer.
- * @param size Byte count.
- * @note The data buffer must remain valid until completion, error, or abort.
+ * @brief DMA 方式存储器写。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节）。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
   Platform_I2C_Instance i2c,
@@ -266,14 +266,14 @@ Platform_StatusTypeDef Platform_I2C_MemWrite_DMA(
 );
 
 /**
- * @brief DMA memory read.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @param mem_address Memory address inside the device.
- * @param mem_address_size Memory-address width in bytes.
- * @param data Receive buffer.
- * @param size Byte count.
- * @note The data buffer must remain valid until completion, error, or abort.
+ * @brief DMA 方式存储器读。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节）。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @note 在完成、错误或中止前，数据缓冲区必须保持有效。
  */
 Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
   Platform_I2C_Instance i2c,
@@ -285,11 +285,11 @@ Platform_StatusTypeDef Platform_I2C_MemRead_DMA(
 );
 
 /**
- * @brief Abort the active master transfer using interrupt mode.
- * @param i2c I2C instance.
- * @param address 7-bit device address.
- * @note The abort completion callback runs in interrupt context. A new
- *       transfer may be started only after completion or error handling.
+ * @brief 使用中断方式中止当前主机传输。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @note 中止完成回调在中断上下文执行。只有在完成或错误处理结束后，才能
+ *       启动新的传输。
  */
 Platform_StatusTypeDef Platform_I2C_Abort_IT(
   Platform_I2C_Instance i2c,
@@ -297,19 +297,19 @@ Platform_StatusTypeDef Platform_I2C_Abort_IT(
 );
 
 /**
- * @brief Read the latest HAL I2C error snapshot.
- * @param i2c I2C instance.
- * @return Platform_I2C_Error bit mask.
+ * @brief 读取最近一次 HAL I2C 错误快照。
+ * @param i2c I2C 实例。
+ * @return Platform_I2C_Error 位掩码。
  */
 uint32_t Platform_I2C_GetLastError(Platform_I2C_Instance i2c);
 
 /**
- * @brief Register I2C callbacks.
- * @param i2c I2C instance.
- * @param callbacks Callback set to copy.
- * @note The structure is copied. The context lifetime must cover all uses.
- * @note Call once during initialization, before starting IT/DMA transfers.
- *       One physical instance has one callback owner for its whole lifetime.
+ * @brief 注册 I2C 回调。
+ * @param i2c I2C 实例。
+ * @param callbacks 待复制的回调集合。
+ * @note 结构体会被复制。context 的生命周期必须覆盖所有使用过程。
+ * @note 应在初始化阶段、启动 IT/DMA 传输前调用一次。一个物理实例在整个
+ *       生命周期内只能有一个回调所有者。
  */
 void Platform_I2C_RegisterCallbacks(
   Platform_I2C_Instance i2c,

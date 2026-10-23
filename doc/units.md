@@ -6,19 +6,19 @@
 | --- | --- | --- | --- |
 | Platform PWM | `duty`, `max_duty` | CCR | `ccr = ARR * duty / max_duty` |
 | Platform Encoder | — | counts | 原始计数器 / 累计位置 |
-| Platform I2C | 7-bit address, bytes, ms timeout | bytes | IT/DMA 超时由设备层管理 |
-| Platform SPI | bytes; 16-bit mode 要求偶数长度 | bytes | HAL 帧数在实现内部换算 |
-| Platform ADC | 转换次数 | raw ADC code | DMA `length` 是转换次数 |
-| Platform DAC | raw sample | raw analog code | DMA `length` 是样本数 |
-| Platform CAN | classic frame, ms timeout | classic frame | DLC 为 `0..8` |
-| Platform RTC | binary date/time | binary date/time | 年份 2000..2099 |
-| Platform Flash | byte address/length | bytes | 写入要求 4 字节对齐 |
+| Platform I2C | 7 位地址、字节数、毫秒超时 | 字节数 | IT/DMA 超时由设备层管理 |
+| Platform SPI | 字节数；16 位模式要求偶数长度 | 字节数 | HAL 帧数在实现内部换算 |
+| Platform ADC | 转换次数 | 原始 ADC 码值 | DMA `length` 是转换次数 |
+| Platform DAC | 原始样本 | 原始模拟码值 | DMA `length` 是样本数 |
+| Platform CAN | 经典帧、毫秒超时 | 经典帧 | DLC 为 `0..8` |
+| Platform RTC | 二进制日期/时间 | 二进制日期/时间 | 年份 2000..2099 |
+| Platform Flash | 字节地址/长度 | 字节数 | 写入要求 4 字节对齐 |
 | Encoder | — | delta counts | 自上次读取以来的增量 |
 | Motor | target m/s | duty | `current = delta / (counts_per_meter * period)` |
 | Controller | target/measure m/s, dt s | duty | 输出范围由调用方/电机上限约束 |
 | Policy (omni) | v m/s, dir rad, yaw rad, omega rad/s | 四轮 m/s | 世界系平动 + 独立自转 |
 | Chassis (omni) | v m/s, dir rad, omega rad/s | 四轮目标 m/s | 只下发目标 |
-| IMU | raw accel m/s², gyro deg/s, attitude deg | 滤波后同单位 | 通道 0–8 固定 |
+| IMU | 原始加速度 m/s²、陀螺仪 deg/s、姿态 deg | 滤波后使用相同单位 | 通道 0–8 固定 |
 | Filter | 用户定义通道 | 用户定义通道 | `time_ms` 毫秒 |
 | System delay | us / ms | — | DWT / `osDelay` |
 
@@ -53,31 +53,31 @@ hal_size[frames] = 8-bit ? size[bytes] : size[bytes] / 2
 ADC 与 DAC：
 
 ```
-ADC DMA length = number_of_conversions
-DAC DMA length = number_of_samples
+ADC DMA length = 转换次数
+DAC DMA length = 样本数
 ```
 
 CAN：
 
 ```
-standard id range = 0..0x7FF
-extended id range = 0..0x1FFFFFFF
-dlc range = 0..8 bytes
+标准标识符范围 = 0..0x7FF
+扩展标识符范围 = 0..0x1FFFFFFF
+DLC 范围 = 0..8 字节
 ```
 
 RTC：
 
 ```
-year range = 2000..2099
-weekday range = 1..7 (Monday..Sunday)
+年份范围 = 2000..2099
+星期范围 = 1..7（周一到周日）
 ```
 
 Flash：
 
 ```
-F407 erase unit = sector (16 KiB, 64 KiB or 128 KiB)
-F103 erase unit = page (1 KiB)
-Platform_FLASH_Write alignment = 4 bytes
+F407 擦除单元 = 扇区（16 KiB、64 KiB 或 128 KiB）
+F103 擦除单元 = 页（1 KiB）
+Platform_FLASH_Write 对齐要求 = 4 字节
 ```
 
 ## 3. 常数归属

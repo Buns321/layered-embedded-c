@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/20.
+// 由 Buns_ 创建于 2026/10/20。
 //
 
 #include "filter_base.h"

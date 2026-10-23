@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 /**
  * @file system_log.h
- * @brief Non-blocking system log facade.
+ * @brief 非阻塞 System 日志门面。
  * @addtogroup system
  * @{
  */
@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 /**
- * @brief Log severity.
+ * @brief 日志严重等级。
  */
 typedef enum {
   SYS_LOG_LEVEL_ERROR = 0,
@@ -28,36 +28,35 @@ typedef enum {
 } Sys_Log_Level;
 
 /**
- * @brief Initialize the log facade.
- * @param sink Backend object, or NULL to disable output.
- * @note Call from task context after HAL initialization.
+ * @brief 初始化日志门面。
+ * @param sink 后端对象；传入 NULL 可关闭输出。
+ * @note 应在 HAL 初始化完成后，从任务上下文调用。
  */
 void Sys_Log_Init(sys_log_base_t *sink);
 
-/** @brief Replace the active backend. */
+/** @brief 替换当前生效的后端。 */
 void Sys_Log_SetSink(sys_log_base_t *sink);
 
 /**
- * @brief Set the runtime minimum severity.
- * @param level Minimum level; use SYS_LOG_LEVEL_NONE to disable logging.
+ * @brief 设置运行期最低输出等级。
+ * @param level 最低等级；使用 SYS_LOG_LEVEL_NONE 可关闭日志。
  */
 void Sys_Log_SetLevel(Sys_Log_Level level);
 
-/** @brief Read the configured minimum severity. */
+/** @brief 读取当前配置的最低输出等级。 */
 Sys_Log_Level Sys_Log_GetLevel(void);
 
-/** @brief Return true when a backend is configured. */
+/** @brief 后端已配置时返回 true。 */
 bool Sys_Log_IsReady(void);
 
 /**
- * @brief Format and submit one log entry.
- * @param level Entry severity.
- * @param tag Short static subsystem name.
- * @param format printf-style format string.
- * @note Task context only. The call is non-blocking and drops the entry when
- *       another task is formatting or the backend has no space.
- * @warning Avoid floating-point formatting in normal logs. Use telemetry for
- *          high-rate or floating-point data.
+ * @brief 格式化并提交一条日志。
+ * @param level 本条日志的严重等级。
+ * @param tag 简短的静态子系统名称。
+ * @param format printf 风格的格式字符串。
+ * @note 仅允许任务上下文调用。该调用非阻塞；其他任务正在格式化或后端
+ *       空间不足时会丢弃本条日志。
+ * @warning 常规日志中避免格式化浮点数。高频或浮点数据应使用遥测。
  */
 void Sys_Log_Write(
   Sys_Log_Level level,
@@ -67,15 +66,15 @@ void Sys_Log_Write(
 );
 
 /**
- * @brief Submit raw bytes without formatting or locking.
- * @note Intended for Fault and other last-resort paths.
+ * @brief 不经格式化和加锁，直接提交原始字节。
+ * @note 用于 Fault 等最后兜底路径。
  */
 void Sys_Log_EmergencyRaw(const void *data, uint32_t size);
 
-/** @brief Bytes rejected by the active backend. */
+/** @brief 当前后端拒绝的字节数。 */
 uint32_t Sys_Log_GetDropBytes(void);
 
-/** @brief Entries rejected because another writer held the facade. */
+/** @brief 因其他写入者占用日志门面而被拒绝的日志条数。 */
 uint32_t Sys_Log_GetContentionCount(void);
 
 #define SYS_LOG_ERROR(tag, format, ...) \

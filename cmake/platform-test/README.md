@@ -1,7 +1,7 @@
-# Native Tests
+# 原生测试
 
-These tests exercise HAL-free validation, arithmetic helpers, the unified IMU
-pipeline, and the MPU6050 driver through a fake Platform I2C transport.
+这些测试覆盖与 HAL 无关的校验逻辑、算术辅助函数、统一 IMU 管线，并通过伪
+Platform I2C 传输验证 MPU6050 驱动。
 
 ```powershell
 cmake -S cmake/platform-test -B build/platform-test -G Ninja `
@@ -10,4 +10,4 @@ cmake --build build/platform-test
 ctest --test-dir build/platform-test --output-on-failure
 ```
 
-Any native C11 compiler can be substituted with `CMAKE_C_COMPILER`.
+可以通过 `CMAKE_C_COMPILER` 改用任意支持 C11 的原生编译器。

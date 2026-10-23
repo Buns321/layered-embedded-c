@@ -1,8 +1,7 @@
-# Platform Compile Checks
+# Platform 编译检查
 
-These targets compile Platform implementations without changing either board's
-CubeMX pin mapping. Private handle stubs supply only the handles needed by the
-Platform translation units; they are not firmware initialization.
+这些目标用于编译 Platform 实现，同时不改变任何板级的 CubeMX 引脚映射。私有
+句柄桩只提供 Platform 编译单元所需的句柄，不代表固件初始化流程。
 
 ## F4
 
@@ -13,8 +12,8 @@ cmake --preset f4-release
 cmake --build --preset f4-release
 ```
 
-The F4 profile enables I2C1-3, SPI1-3, ADC1-3, DAC channels 1-2, CAN1-2, RTC, Flash,
-USART1-6, PWM TIM1, Encoder TIM2-5, CRC, RNG, IWDG, and WWDG.
+F4 配置启用 I2C1-3、SPI1-3、ADC1-3、DAC 通道 1-2、CAN1-2、RTC、Flash、
+USART1-6、PWM TIM1、编码器 TIM2-5、CRC、RNG、IWDG 和 WWDG。
 
 ## F1
 
@@ -25,22 +24,20 @@ cmake --preset f1-release
 cmake --build --preset f1-release
 ```
 
-The F103C8T6 profile enables only silicon-supported instances: USART1-3,
-PWM TIM1, Encoder TIM2-4, I2C1-2, SPI1-2, ADC1-2, CAN1, RTC, Flash, CRC,
-IWDG, and WWDG. It does not expose DAC, I2C3, CAN2, ADC3, SPI3, or USART4-6.
+F103C8T6 配置只启用芯片实际支持的实例：USART1-3、PWM TIM1、编码器 TIM2-4、
+I2C1-2、SPI1-2、ADC1-2、CAN1、RTC、Flash、CRC、IWDG 和 WWDG。不会暴露
+DAC、I2C3、CAN2、ADC3、SPI3 或 USART4-6。
 
-Both profiles are compiled with `-Wall -Wextra`. F4 and F1 use separate
-toolchains and build directories so Cortex-M4 floating-point flags never leak
-into the Cortex-M3 build.
+两套配置都使用 `-Wall -Wextra` 编译。F4 与 F1 使用独立工具链和构建目录，
+避免 Cortex-M4 浮点参数泄漏到 Cortex-M3 构建。
 
-The build also enables `-Werror` and compiles the alternative PWM TIM3,
-encoder TIM1, CAN1-only, and CAN2-only branches in separate object targets.
-The IMU base pipeline and MPU6050 I2C driver are compiled as family-specific
-object targets for both F4 and F1.
+构建还会启用 `-Werror`，并在独立对象目标中编译 PWM TIM3、编码器 TIM1、
+仅 CAN1 和仅 CAN2 等替代分支。IMU base 管线与 MPU6050 I2C 驱动会分别作为
+F4 和 F1 的系列专用对象目标编译。
 
-## Native tests
+## 原生测试
 
-The HAL-free validation helpers are exercised by a native C test:
+与 HAL 无关的校验辅助函数通过原生 C 测试验证：
 
 ```powershell
 cmake -S cmake/platform-test -B build/platform-test -G Ninja `

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
-# Enable CMake support for ASM and C languages
+# 启用 CMake 对 C 和 ASM 语言的支持
 enable_language(C ASM)
-# STM32CubeMX generated symbols (macros)
+# STM32CubeMX 生成的符号（宏）
 set(MX_Defines_Syms 
 	USE_HAL_DRIVER 
 	STM32F407xx
@@ -14,7 +14,7 @@ set(MX_Defines_Syms
     $<$<CONFIG:Debug>:DEBUG>
 )
 
-# STM32CubeMX generated include paths
+# STM32CubeMX 生成的头文件搜索路径
 set(MX_Include_Dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Inc
@@ -26,7 +26,7 @@ set(MX_Include_Dirs
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/CMSIS/Include
 )
 
-# STM32CubeMX generated application sources
+# STM32CubeMX 生成的应用源文件
 set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/main.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/crc.c
@@ -44,7 +44,7 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32f407xx.s
 )
 
-# STM32 HAL/LL Drivers
+# STM32 HAL/LL 驱动
 set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/system_stm32f4xx.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c
@@ -79,7 +79,7 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_wwdg.c
 )
 
-# Drivers Midllewares
+# 驱动与中间件
 
 
 set(FreeRTOS_Src
@@ -95,45 +95,45 @@ set(FreeRTOS_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
 )
 
-# Link directories setup
+# 配置链接目录
 set(MX_LINK_DIRS
 
 )
-# Project static libraries
+# 工程静态库
 set(MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
     FreeRTOS	
 )
-# Interface library for includes and symbols
+# 用于传递头文件路径和符号的接口库
 add_library(stm32cubemx INTERFACE)
 target_include_directories(stm32cubemx INTERFACE ${MX_Include_Dirs})
 target_compile_definitions(stm32cubemx INTERFACE ${MX_Defines_Syms})
 
-# Create STM32_Drivers static library
+# 创建 STM32_Drivers 对象库
 add_library(STM32_Drivers OBJECT)
 target_sources(STM32_Drivers PRIVATE ${STM32_Drivers_Src})
 target_link_libraries(STM32_Drivers PUBLIC stm32cubemx)
 
 
-# Create FreeRTOS static library
+# 创建 FreeRTOS 对象库
 add_library(FreeRTOS OBJECT)
 target_sources(FreeRTOS PRIVATE ${FreeRTOS_Src})
 target_link_libraries(FreeRTOS PUBLIC stm32cubemx)
 
-# Add STM32CubeMX generated application sources to the project
+# 将 STM32CubeMX 生成的应用源文件加入工程
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${MX_Application_Src})
 
-# Link directories setup
+# 配置链接目录
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${MX_LINK_DIRS})
 
-# Add libraries to the project
+# 将库加入工程
 target_link_libraries(${CMAKE_PROJECT_NAME} ${MX_LINK_LIBS})
 
-# Add the map file to the list of files to be removed with 'clean' target
+# 将 map 文件加入 clean 目标的清理列表
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES ADDITIONAL_CLEAN_FILES ${CMAKE_PROJECT_NAME}.map)
 
-# Validate that STM32CubeMX code is compatible with C standard
+# 校验 STM32CubeMX 生成代码与 C 标准兼容
 if((CMAKE_C_STANDARD EQUAL 90) OR (CMAKE_C_STANDARD EQUAL 99))
-    message(ERROR "Generated code requires C11 or higher")
+    message(ERROR "生成代码要求 C11 或更高版本")
 endif()

@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 /**
  * @file platform_rtc.h
- * @brief HAL-free RTC date, time, alarm, and wake-up interface.
+ * @brief 不依赖 HAL 类型的 RTC 日期、时间、闹钟与唤醒接口。
  * @addtogroup platform
  * @{
  */
@@ -20,12 +20,12 @@
 #error "Platform RTC must be enabled before including platform_rtc.h"
 #endif
 
-/** @brief Available RTC instance. */
+/** @brief 可用的 RTC 实例。 */
 typedef enum {
   PLATFORM_RTC_1 = 0U,
 } Platform_RTC_Instance;
 
-/** @brief Calendar date and 24-hour time in binary form. */
+/** @brief 二进制形式的日历日期与 24 小时时间。 */
 typedef struct {
   uint16_t year;
   uint8_t month;
@@ -36,7 +36,7 @@ typedef struct {
   uint8_t second;
 } Platform_RTC_DateTime;
 
-/** @brief Daily alarm time in binary form. */
+/** @brief 二进制形式的每日闹钟时间。 */
 typedef struct {
   uint8_t hour;
   uint8_t minute;
@@ -45,9 +45,9 @@ typedef struct {
 
 #if PLATFORM_RTC_HAS_WAKEUP_TIMER
 /**
- * @brief RTC wake-up timer clock source.
- * @note The period is (counter + 1) ticks of the selected clock unless the
- *       reference manual specifies a different reload behavior.
+ * @brief RTC 唤醒定时器时钟源。
+ * @note 除非参考手册规定了不同的重装行为，周期为所选时钟的
+ *       (counter + 1) 个时钟节拍。
  */
 typedef enum {
   PLATFORM_RTC_WAKEUP_DIV16 = 0U,
@@ -58,11 +58,11 @@ typedef enum {
   PLATFORM_RTC_WAKEUP_CK_SPRE_17_BITS,
 } Platform_RTC_WakeUpClock;
 
-/** @brief Largest value accepted by the STM32F4 wake-up reload counter. */
+/** @brief STM32F4 唤醒重装计数器可接受的最大值。 */
 #define PLATFORM_RTC_WAKEUP_COUNTER_MAX 0xFFFFU
 #endif
 
-/** @brief RTC error flags. */
+/** @brief RTC 错误标志。 */
 typedef enum {
   PLATFORM_RTC_ERROR_NONE        = 0u,
   PLATFORM_RTC_ERROR_INVALID     = (1u << 0),
@@ -86,7 +86,7 @@ typedef void (*Platform_RTC_Callback)(
   void *context
 );
 
-/** @brief RTC event callback owner. */
+/** @brief RTC 事件回调所有者。 */
 typedef struct {
   Platform_RTC_Callback alarm_cb;
 #if PLATFORM_RTC_HAS_WAKEUP_TIMER
@@ -96,10 +96,10 @@ typedef struct {
 } platform_rtc_callbacks_t;
 
 /**
- * @brief Set the complete binary date and 24-hour time.
- * @param rtc RTC instance.
- * @param date_time Year must be 2000..2099, weekday must be 1..7 where Monday
- *                  is 1 and Sunday is 7. Invalid fields are rejected.
+ * @brief 设置完整的二进制日期与 24 小时时间。
+ * @param rtc RTC 实例。
+ * @param date_time 年份必须在 2000..2099 内，weekday 必须在 1..7 内，
+ *                  其中周一到周日依次为 1..7。非法字段会被拒绝。
  */
 Platform_StatusTypeDef Platform_RTC_SetDateTime(
   Platform_RTC_Instance rtc,
@@ -107,11 +107,10 @@ Platform_StatusTypeDef Platform_RTC_SetDateTime(
 );
 
 /**
- * @brief Read the complete date and time.
- * @param rtc RTC instance.
- * @param date_time Destination date and time.
- * @note HAL reads time and date as one coherent calendar snapshot where
- *       supported.
+ * @brief 读取完整日期和时间。
+ * @param rtc RTC 实例。
+ * @param date_time 目标日期和时间。
+ * @note 在硬件支持时，HAL 会把日期和时间作为一个一致的日历快照读取。
  */
 Platform_StatusTypeDef Platform_RTC_GetDateTime(
   Platform_RTC_Instance rtc,
@@ -119,13 +118,12 @@ Platform_StatusTypeDef Platform_RTC_GetDateTime(
 );
 
 /**
- * @brief Enable the daily alarm interrupt.
- * @param rtc RTC instance.
- * @param alarm Daily alarm time.
- * @note The alarm compares hour, minute, and second. Calendar-date matching is
- *       not part of the cross-family Platform contract.
- * @note STM32F1 re-arms the counter alarm for the following day from the
- *       interrupt callback. RTC APIs must not be called from that callback.
+ * @brief 启用每日闹钟中断。
+ * @param rtc RTC 实例。
+ * @param alarm 每日闹钟时间。
+ * @note 闹钟只比较时、分、秒。跨系列 Platform 契约不包含日历日期匹配。
+ * @note STM32F1 会在中断回调中把计数器闹钟重装到第二天。禁止在该回调中
+ *       调用 RTC API。
  */
 Platform_StatusTypeDef Platform_RTC_SetAlarm(
   Platform_RTC_Instance rtc,
@@ -133,8 +131,8 @@ Platform_StatusTypeDef Platform_RTC_SetAlarm(
 );
 
 /**
- * @brief Disable the daily alarm interrupt.
- * @param rtc RTC instance.
+ * @brief 禁用每日闹钟中断。
+ * @param rtc RTC 实例。
  */
 Platform_StatusTypeDef Platform_RTC_DisableAlarm(
   Platform_RTC_Instance rtc
@@ -142,12 +140,11 @@ Platform_StatusTypeDef Platform_RTC_DisableAlarm(
 
 #if PLATFORM_RTC_HAS_WAKEUP_TIMER
 /**
- * @brief Start the RTC wake-up timer interrupt.
- * @param rtc RTC instance.
- * @param counter Reload counter in selected-clock ticks, 0..0xFFFF.
- * @param clock Wake-up timer clock source.
- * @note Wake-up timing is derived from the RTC clock; the effective period is
- *       documented by the selected clock and counter reload semantics.
+ * @brief 启动 RTC 唤醒定时器中断。
+ * @param rtc RTC 实例。
+ * @param counter 以所选时钟节拍表示的重装计数器，范围 0..0xFFFF。
+ * @param clock 唤醒定时器时钟源。
+ * @note 唤醒时序由 RTC 时钟推导；实际周期取决于所选时钟和计数器重装语义。
  */
 Platform_StatusTypeDef Platform_RTC_StartWakeUpTimer(
   Platform_RTC_Instance rtc,
@@ -156,8 +153,8 @@ Platform_StatusTypeDef Platform_RTC_StartWakeUpTimer(
 );
 
 /**
- * @brief Stop the RTC wake-up timer.
- * @param rtc RTC instance.
+ * @brief 停止 RTC 唤醒定时器。
+ * @param rtc RTC 实例。
  */
 Platform_StatusTypeDef Platform_RTC_StopWakeUpTimer(
   Platform_RTC_Instance rtc
@@ -165,16 +162,16 @@ Platform_StatusTypeDef Platform_RTC_StopWakeUpTimer(
 #endif
 
 /**
- * @brief Read the latest Platform RTC operation error snapshot.
- * @param rtc RTC instance.
+ * @brief 读取最近一次 Platform RTC 操作错误快照。
+ * @param rtc RTC 实例。
  */
 uint32_t Platform_RTC_GetLastError(Platform_RTC_Instance rtc);
 
 /**
- * @brief Register RTC event callbacks.
- * @param rtc RTC instance.
- * @param callbacks Callback set to copy.
- * @note Callbacks run in interrupt context. Call once during initialization.
+ * @brief 注册 RTC 事件回调。
+ * @param rtc RTC 实例。
+ * @param callbacks 待复制的回调集合。
+ * @note 回调在中断上下文执行。应在初始化阶段调用一次。
  */
 void Platform_RTC_RegisterCallbacks(
   Platform_RTC_Instance rtc,

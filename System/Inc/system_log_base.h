@@ -1,10 +1,10 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 /**
  * @file system_log_base.h
- * @brief System log output backend interface.
+ * @brief System 日志输出后端接口。
  * @addtogroup system
  * @{
  */
@@ -17,9 +17,9 @@
 typedef struct sys_log_base sys_log_base_t;
 
 /**
- * @brief Log backend operation table.
- * @note write must return before data becomes invalid, must not block, and
- *       returns the number of accepted bytes. A return of 0 drops the entry.
+ * @brief 日志后端操作表。
+ * @note write 必须在数据失效前返回，不得阻塞，并返回已接受的字节数；
+ *       返回 0 表示丢弃该条日志。
  */
 typedef struct sys_log_ops {
   uint32_t (*write)(
@@ -30,14 +30,14 @@ typedef struct sys_log_ops {
 } sys_log_ops_t;
 
 /**
- * @brief Log backend abstract object.
+ * @brief 日志后端抽象对象。
  */
 typedef struct sys_log_base {
   const sys_log_ops_t *ops;
   const char          *name;
 } sys_log_base_t;
 
-/** @brief Initialize a log backend and bind its static operation table. */
+/** @brief 初始化日志后端并绑定静态操作表。 */
 void Sys_Log_Base_Init(
   sys_log_base_t *this,
   const char *name,
@@ -45,11 +45,11 @@ void Sys_Log_Base_Init(
 );
 
 /**
- * @brief Write bytes to a log backend.
- * @param this Backend object.
- * @param data Byte buffer.
- * @param size Byte count.
- * @return Number of accepted bytes; 0 when unavailable or dropped.
+ * @brief 向日志后端写入字节。
+ * @param this 后端对象。
+ * @param data 字节缓冲区。
+ * @param size 字节数。
+ * @return 已接受的字节数；后端不可用或数据被丢弃时返回 0。
  */
 uint32_t Sys_Log_Base_Write(
   sys_log_base_t *this,

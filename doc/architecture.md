@@ -46,7 +46,7 @@ base 与 Platform；base 只依赖 System 和标准库。
 - CubeMX/Core 独占引脚、时钟、DMA、NVIC 和 `MX_*_Init()`。
 - Platform 只做运行期启动、传输、校准、状态读取和回调分发。
 - 每个平台实现内部做私有 handle 映射，非法枚举直接断言。
-- 对外只暴露 HAL-free 类型、`Platform_StatusTypeDef` 和回调契约。
+- 对外只暴露不依赖 HAL 类型的枚举、`Platform_StatusTypeDef` 和回调契约。
 - I2C、SPI、UART、ADC 和 DAC 的 IT/DMA 缓冲区在完成、错误或 abort 前
   由调用方保持有效。
 - F4 实现位于 `Platform/Src/stm32f4/`，F1 实现位于 `Platform/Src/stm32f1/`；
@@ -167,12 +167,12 @@ Chassis_Omni_SetMotion(v, dir, omega)
 ControlTask:
     Chassis_Base_Update(&chassis.base, now_ms)
         ├── sample = Dev_IMU_Base_GetSample(imu)
-        ├── reject invalid/stale yaw, then stop and brake
+        ├── 拒绝无效或过期的 yaw，然后停机并制动
         ├── yaw_rad = sample.yaw_deg * PI / 180
         ├── Omni_Policy_Base_Solve(policy, v, dir, yaw_rad, omega, wheel_mps[4])
-        └── for i: Dev_Motor_Base_SetTargetSpeed(wheel[i], wheel_mps[i])
+        └── 对每个 i：Dev_Motor_Base_SetTargetSpeed(wheel[i], wheel_mps[i])
 
-    for i: Dev_Motor_Base_Update(wheel[i])
+    对每个 i：Dev_Motor_Base_Update(wheel[i])
 ```
 
 底盘只负责解算和下发目标；电机闭环仍然在 `motor_base` 内。

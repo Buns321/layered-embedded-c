@@ -1,28 +1,28 @@
 /**
- * @defgroup platform Platform
+ * @defgroup platform Platform 平台层
  * @brief HAL 抽象层：用枚举身份替代 HAL handle。
  */
 
 /**
- * @defgroup drivers Device Drivers
+ * @defgroup drivers 设备驱动
  * @brief 设备抽象与具体驱动。
  * @{
  */
 
 /**
- * @defgroup drivers_base Base Interfaces
+ * @defgroup drivers_base 基础接口
  * @brief 设备抽象接口（LED、电机、编码器、USART、IMU、底盘、遥测）。
  * @ingroup drivers
  */
 
 /**
- * @defgroup drivers_concrete Concrete Drivers
+ * @defgroup drivers_concrete 具体驱动
  * @brief 基于 Platform 的具体设备实现，包括 USART 遥测协议设备。
  * @ingroup drivers
  */
 
 /**
- * @defgroup chassis Chassis
+ * @defgroup chassis 底盘
  * @brief 虚拟底盘设备与生命周期接口。
  * @ingroup drivers
  */
@@ -30,31 +30,31 @@
 /** @} */
 
 /**
- * @defgroup controller Controller
+ * @defgroup controller 控制器
  * @brief 轮级 SISO 控制律。
  */
 
 /**
- * @defgroup policy Policy
+ * @defgroup policy 运动策略
  * @brief 底盘级 MIMO 运动策略。
  */
 
 /**
- * @defgroup filter Filter
+ * @defgroup filter 滤波器
  * @brief 固定容量多通道滤波。
  */
 
 /**
- * @defgroup system System
+ * @defgroup system 系统服务
  * @brief 数学、检查、限幅、延时、临界区、Fault、看门狗与日志。
  */
 
 /**
- * @defgroup rtos RTOS
+ * @defgroup rtos RTOS 任务层
  * @brief FreeRTOS 任务骨架。
  */
 
 /**
- * @defgroup app App
+ * @defgroup app 应用层
  * @brief 业务逻辑（预留）。
  */

@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/23.
+// 由 Buns_ 创建于 2026/10/23。
 //
 
 #include "platform_can.h"

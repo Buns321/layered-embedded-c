@@ -4,8 +4,8 @@ set(CMAKE_SYSTEM_PROCESSOR          arm)
 set(CMAKE_C_COMPILER_ID GNU)
 set(CMAKE_CXX_COMPILER_ID GNU)
 
-# Some default GCC settings
-# arm-none-eabi- must be part of path environment
+# GCC 默认设置
+# arm-none-eabi- 必须位于 PATH 环境变量中
 set(TOOLCHAIN_PREFIX                arm-none-eabi-)
 
 set(CMAKE_C_COMPILER                ${TOOLCHAIN_PREFIX}gcc)
@@ -21,7 +21,7 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX     ".elf")
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# MCU specific flags
+# MCU 专用参数
 set(TARGET_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard ")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TARGET_FLAGS}")

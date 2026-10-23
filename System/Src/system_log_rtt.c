@@ -1,5 +1,5 @@
 //
-// Created by Buns_ on 2026/10/21.
+// 由 Buns_ 创建于 2026/10/21。
 //
 
 #include "system_log_rtt.h"
