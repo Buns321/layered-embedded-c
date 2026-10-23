@@ -141,6 +141,12 @@ typedef void (*Platform_CAN_Callback)(
   void *context
 );
 
+/** @brief CAN 回调所有者。 */
+typedef struct {
+  Platform_CAN_Callback callback;
+  void *context;
+} platform_can_callbacks_t;
+
 /**
  * @brief 配置一个 32 位过滤器组。
  * @param can CAN 实例。
@@ -222,22 +228,25 @@ Platform_StatusTypeDef Platform_CAN_DeactivateNotification(
 );
 
 /**
- * @brief 读取最近一次 HAL CAN 错误快照。
+ * @brief 读取最近一次 CAN 操作错误快照。
  * @param can CAN 实例。
+ * @return `Platform_CAN_Error` 与 `PLATFORM_COMMON_ERROR_*` 位掩码的组合。
+ * @note 参数错误也会写入通用 `PARAMETER` 位；读取不清除快照。
  */
 uint32_t Platform_CAN_GetLastError(Platform_CAN_Instance can);
 
 /**
  * @brief 注册 CAN 事件回调。
  * @param can CAN 实例。
- * @param callback 事件回调。
- * @param context 调用方持有的回调上下文。
+ * @param callbacks 回调与上下文，内容会被复制。
  * @note 应在初始化阶段、启用通知前调用一次。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调非法。
  */
-void Platform_CAN_RegisterCallbacks(
+Platform_StatusTypeDef Platform_CAN_RegisterCallbacks(
   Platform_CAN_Instance can,
-  Platform_CAN_Callback callback,
-  void *context
+  const platform_can_callbacks_t *callbacks
 );
 
 /** @} */

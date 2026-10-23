@@ -96,6 +96,7 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - [编码约定](doc/conventions.md)
 - [IMU 与 MPU6050](doc/imu.md)
 - [Platform 契约与能力矩阵](doc/platform.md)
+- [Platform 公共契约](doc/platform-contract.md)
 - Platform 全实例编译检查：`cmake/platform-check/README.md`
 - Platform/IMU 原生测试：`cmake/platform-test/README.md`
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
@@ -107,7 +108,7 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 
 | 目录 | 职责 |
 | --- | --- |
-| `Platform/` | HAL 封装，枚举身份 + 静态映射；F4 / F1 两套实现 |
+| `Platform/` | HAL-free 公共契约 + common 逻辑；F4 / F1 只保留 HAL backend |
 | `DeviceDrivers/` | 设备抽象 base + 具体驱动 |
 | `Controller/` | 轮级 SISO 控制律 |
 | `Policy/` | 底盘级 MIMO 运动策略 |

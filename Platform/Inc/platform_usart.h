@@ -47,28 +47,6 @@ typedef enum {
 #error "At least one Platform UART instance must be enabled"
 #endif
 
-typedef void (*Platform_UART_Callback)(Platform_UART_Instance uart, void *context);
-
-/**
- * @brief Platform UART 回调集合。
- * @note 回调在中断上下文执行，回调内不要做阻塞操作。
- * @note 注册时结构体内容会被复制，调用方无需保持其生命周期。
- * @note 一个物理 UART 只有一个回调所有者。必须在启动传输前完成注册，
- *       不支持运行期并发替换回调集合。
- * @note context 的生命周期必须覆盖整个外设使用周期。
- */
-typedef struct {
-  Platform_UART_Callback tx_cplt_cb;
-  Platform_UART_Callback tx_halfcplt_cb;
-  Platform_UART_Callback rx_cplt_cb;
-  Platform_UART_Callback rx_halfcplt_cb;
-  Platform_UART_Callback err_cb;
-  Platform_UART_Callback abort_cplt_cb;
-  Platform_UART_Callback abort_txcplt_cb;
-  Platform_UART_Callback abort_rxcplt_cb;
-  void *context;
-} platform_uart_callbacks_t;
-
 /**
  * @brief UART 错误位。
  * @note 多个位可以同时置位。
@@ -82,6 +60,41 @@ typedef enum {
   PLATFORM_UART_ERROR_DMA     = (1u << 5),
   PLATFORM_UART_ERROR_UNKNOWN = (1u << 7),
 } Platform_UART_Error;
+
+/** @brief UART 异步事件。 */
+typedef enum {
+  PLATFORM_UART_EVENT_TX_CPLT = 0U,
+  PLATFORM_UART_EVENT_TX_HALF,
+  PLATFORM_UART_EVENT_RX_CPLT,
+  PLATFORM_UART_EVENT_RX_HALF,
+  PLATFORM_UART_EVENT_ERROR,
+  PLATFORM_UART_EVENT_ABORT_CPLT,
+  PLATFORM_UART_EVENT_ABORT_TX_CPLT,
+  PLATFORM_UART_EVENT_ABORT_RX_CPLT,
+} Platform_UART_EventType;
+
+/** @brief UART 事件数据，只在回调期间有效。 */
+typedef struct {
+  Platform_UART_EventType type;
+  uint32_t error;
+} Platform_UART_Event;
+
+typedef void (*Platform_UART_Callback)(
+  Platform_UART_Instance uart,
+  const Platform_UART_Event *event,
+  void *context
+);
+
+/**
+ * @brief Platform UART 回调集合。
+ * @note 回调在中断上下文执行，回调内不要做阻塞操作。
+ * @note 注册时结构体内容会被复制。
+ * @note 一个物理 UART 只有一个回调所有者。
+ */
+typedef struct {
+  Platform_UART_Callback callback;
+  void *context;
+} platform_uart_callbacks_t;
 
 /**
  * @brief 阻塞接收。
@@ -208,8 +221,11 @@ uint32_t Platform_UART_GetLastError(
  * @param uart UART 实例。
  * @param cb 回调集合，内容会被复制。
  * @pre 必须在启动 IT/DMA 传输前调用，且一个实例只能有一个回调所有者。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_UART_RegisterCallbacks(
+Platform_StatusTypeDef Platform_UART_RegisterCallbacks(
   Platform_UART_Instance uart,
   const platform_uart_callbacks_t *cb
 );

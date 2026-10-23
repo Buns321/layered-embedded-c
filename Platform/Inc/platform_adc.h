@@ -46,20 +46,32 @@ typedef enum {
   PLATFORM_ADC_ERROR_UNKNOWN  = (1u << 7),
 } Platform_ADC_Error;
 
+/** @brief ADC 异步事件。 */
+typedef enum {
+  PLATFORM_ADC_EVENT_CONV_CPLT = 0U,
+  PLATFORM_ADC_EVENT_CONV_HALF,
+  PLATFORM_ADC_EVENT_ERROR,
+} Platform_ADC_EventType;
+
+/** @brief ADC 事件数据，只在回调期间有效。 */
+typedef struct {
+  Platform_ADC_EventType type;
+  uint32_t error;
+} Platform_ADC_Event;
+
 typedef void (*Platform_ADC_Callback)(
   Platform_ADC_Instance adc,
+  const Platform_ADC_Event *event,
   void *context
 );
 
 /**
- * @brief ADC 转换回调集合。
+ * @brief ADC 回调集合。
  * @note 回调在中断上下文执行。
  * @note 一个物理实例只能有一个回调所有者。
  */
 typedef struct {
-  Platform_ADC_Callback conv_cplt_cb;
-  Platform_ADC_Callback conv_half_cplt_cb;
-  Platform_ADC_Callback err_cb;
+  Platform_ADC_Callback callback;
   void *context;
 } platform_adc_callbacks_t;
 
@@ -89,9 +101,13 @@ Platform_StatusTypeDef Platform_ADC_PollForConversion(
 /**
  * @brief 读取最近一次规则组转换结果。
  * @param adc ADC 实例。
+ * @param value 转换结果输出。
  * @note 除非 CubeMX 另行配置，该值是原始 ADC 码值。
  */
-uint32_t Platform_ADC_GetValue(Platform_ADC_Instance adc);
+Platform_StatusTypeDef Platform_ADC_GetValue(
+  Platform_ADC_Instance adc,
+  uint32_t *value
+);
 
 /**
  * @brief 执行一次阻塞式规则组转换序列。
@@ -154,8 +170,11 @@ uint32_t Platform_ADC_GetLastError(Platform_ADC_Instance adc);
  * @param adc ADC 实例。
  * @param callbacks 待复制的回调集合。
  * @note 应在初始化阶段、启动 IT/DMA 转换前调用一次。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_ADC_RegisterCallbacks(
+Platform_StatusTypeDef Platform_ADC_RegisterCallbacks(
   Platform_ADC_Instance adc,
   const platform_adc_callbacks_t *callbacks
 );

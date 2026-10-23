@@ -58,6 +58,14 @@ add_executable(${CMAKE_PROJECT_NAME}
         Platform/Inc/platform_wwdg.h
         Platform/Src/platform_hal_internal.h
         Platform/Src/stm32f4/platform_gpio.c
+        Platform/Src/common/platform_gpio_common.c
+        Platform/Src/common/platform_exti_common.c
+        Platform/Src/common/platform_crc_common.c
+        Platform/Src/common/platform_iwdg_common.c
+        Platform/Src/common/platform_rng_common.c
+        Platform/Src/common/platform_encoder_common.c
+        Platform/Src/common/platform_pwm_common.c
+        Platform/Src/common/platform_wwdg_common.c
         Platform/Src/stm32f4/platform_crc.c
         Platform/Src/stm32f4/platform_iwdg.c
         Platform/Src/stm32f4/platform_rng.c
@@ -98,6 +106,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         DeviceDrivers/Base/Inc/motor_base.h
         Platform/Src/stm32f4/platform_encoder.c
         Platform/Inc/platform_encoder.h
+        Platform/Src/common/platform_uart_common.c
         Platform/Src/stm32f4/platform_usart.c
         Platform/Inc/platform_usart.h
         App/Src/app_motor_demo.c
@@ -160,37 +169,44 @@ add_executable(${CMAKE_PROJECT_NAME}
 
 if(PLATFORM_BUILD_I2C)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_i2c_common.c
         Platform/Src/stm32f4/platform_i2c.c
         DeviceDrivers/Src/mpu6050_i2c.c
     )
 endif()
 if(PLATFORM_BUILD_SPI)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_spi_common.c
         Platform/Src/stm32f4/platform_spi.c
     )
 endif()
 if(PLATFORM_BUILD_ADC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_adc_common.c
         Platform/Src/stm32f4/platform_adc.c
     )
 endif()
 if(PLATFORM_BUILD_DAC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_dac_common.c
         Platform/Src/stm32f4/platform_dac.c
     )
 endif()
 if(PLATFORM_BUILD_CAN)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_can_common.c
         Platform/Src/stm32f4/platform_can.c
     )
 endif()
 if(PLATFORM_BUILD_RTC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_rtc_common.c
         Platform/Src/stm32f4/platform_rtc.c
     )
 endif()
 if(PLATFORM_BUILD_FLASH)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        Platform/Src/common/platform_flash_common.c
         Platform/Src/stm32f4/platform_flash.c
     )
 endif()

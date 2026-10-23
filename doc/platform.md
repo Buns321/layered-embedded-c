@@ -1,5 +1,11 @@
 # Platform 层契约
 
+公共状态、错误、回调和异步生命周期细则见
+[Platform 公共契约](platform-contract.md)。本文保留外设能力矩阵和具体传输约束。
+
+F1/F4 的公共校验、状态机和错误策略放在 `Platform/Src/common/`，系列目录只负责
+HAL handle、时钟、位宽和能力适配。
+
 ## 1. 职责边界
 
 Platform 是静态 HAL 适配层。上层通过枚举身份调用外设，不接触 HAL handle。
@@ -99,6 +105,13 @@ PLATFORM_ENABLE_WWDG=1
 - 回调必须在启动 IT/DMA 传输前注册。
 - 注册时复制回调结构，context 本身不被 Platform 拥有。
 - 回调在中断上下文执行，不能阻塞。
+
+UART、I2C、SPI、CAN、ADC、DAC 统一使用 typed event 回调：
+
+- 每个实例只有一个 `callback + context` 所有者。
+- 完成、错误和 abort 通过 `Platform_X_Event.type` 区分。
+- 错误事件在 `event.error` 中携带模块错误位。
+- 重复注册返回 `Platform_BUSY`。
 
 ## 7. UART 缓冲区契约
 
@@ -200,7 +213,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 - `Platform_ADC_Read()` 只适用于单通道、单次转换配置。
 - 多通道扫描必须使用 DMA；常规组中断只会在序列结束时报告最后一次转换。
 - STM32F1 的独立 DMA 请求仅属于 ADC1，ADC2 的 DMA 启动请求返回
-  `Platform_ERROR`。
+  `Platform_UNSUPPORTED`。
 - ADC DMA 的 `length` 是转换次数，不是字节数。
 - DAC DMA 的 `length` 是样本数，样本对齐方式必须与传入的
   `Platform_DAC_Alignment` 一致。
@@ -211,7 +224,8 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 - 日期时间使用二进制字段，不向调用方暴露 BCD。
 - 年份范围为 2000..2099，weekday 为 1..7。
 - 跨系列闹钟契约是每日闹钟，只比较时、分、秒。
-- F4 唤醒定时器使用 RTC 唤醒时钟和计数值，具体周期由所选时钟决定。
+- F4 唤醒定时器使用 RTC 唤醒时钟和计数值，具体周期由所选时钟决定；
+  F1 保留相同公共 API，但返回 `Platform_UNSUPPORTED`。
 - RTC 时钟源、备份域访问和 `MX_RTC_Init()` 由 CubeMX/Core 负责。
 
 ### Flash

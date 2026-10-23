@@ -87,9 +87,14 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_crc.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_exti.c
+    ${REPO_ROOT}/Platform/Src/common/platform_exti_common.c
+    ${REPO_ROOT}/Platform/Src/common/platform_crc_common.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_gpio.c
+    ${REPO_ROOT}/Platform/Src/common/platform_gpio_common.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_iwdg.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_wwdg.c
+    ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
+    ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
     ${REPO_ROOT}/Policy/Base/Src/omni_policy_base.c
     ${REPO_ROOT}/Policy/Src/policy_omni_kinematics.c
     ${REPO_ROOT}/RTOS/Src/rtos_control.c
@@ -105,32 +110,38 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 if(PLATFORM_BUILD_I2C)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_i2c.c
         ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
     )
 endif()
 if(PLATFORM_BUILD_SPI)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_spi_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_spi.c
     )
 endif()
 if(PLATFORM_BUILD_ADC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_adc_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
     )
 endif()
 if(PLATFORM_BUILD_CAN)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_can_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_can.c
     )
 endif()
 if(PLATFORM_BUILD_RTC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_rtc_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_rtc.c
     )
 endif()
 if(PLATFORM_BUILD_FLASH)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${REPO_ROOT}/Platform/Src/common/platform_flash_common.c
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_flash.c
     )
 endif()

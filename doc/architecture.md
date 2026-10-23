@@ -49,8 +49,9 @@ base 与 Platform；base 只依赖 System 和标准库。
 - 对外只暴露不依赖 HAL 类型的枚举、`Platform_StatusTypeDef` 和回调契约。
 - I2C、SPI、UART、ADC 和 DAC 的 IT/DMA 缓冲区在完成、错误或 abort 前
   由调用方保持有效。
-- F4 实现位于 `Platform/Src/stm32f4/`，F1 实现位于 `Platform/Src/stm32f1/`；
-  根目标选用 F4，`boards/f103c8t6/` 独立目标选用 F1。
+- 跨系列公共校验、策略和状态机位于 `Platform/Src/common/`；HAL handle、
+  时钟和位宽适配位于 `Platform/Src/stm32f4/` 或 `Platform/Src/stm32f1/`。
+  根目标选用 F4 backend，`boards/f103c8t6/` 独立目标选用 F1 backend。
 - F407 已实现 GPIO、PWM、Encoder、USART1–6、EXTI、I2C1–3、SPI1–3、
   ADC1–3、DAC、CAN1–2、RTC、Flash、CRC、RNG、IWDG、WWDG。
 - F103C8T6 已实现 GPIO、PWM、Encoder、USART1–3、EXTI、I2C1–2、SPI1–2、

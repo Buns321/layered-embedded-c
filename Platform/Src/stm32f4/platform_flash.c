@@ -1,45 +1,17 @@
-//
-// 由 Buns_ 创建于 2026/10/23。
-//
+/**
+ * @file platform_flash.c
+ * @brief STM32F4 HAL backend for the common Flash implementation.
+ */
 
-#include "platform_flash.h"
+#include "platform_flash_backend.h"
 #include "platform_hal_internal.h"
 #include "stm32f4xx_hal.h"
-#include "system_critical.h"
-#include <assert.h>
-#include <stdbool.h>
 #include <string.h>
 
 #define PLATFORM_F4_FLASH_START FLASH_BASE
 #define PLATFORM_F4_FLASH_END   (FLASH_BASE + 0x0007FFFFUL)
 
-static volatile bool flash_busy;
-static uint32_t flash_error = PLATFORM_FLASH_ERROR_NONE;
-
-static bool platform_flash_acquire(void) {
-  bool acquired = false;
-  Sys_Critical_Enter();
-  if (!flash_busy) {
-    flash_busy = true;
-    acquired = true;
-  }
-  Sys_Critical_Exit();
-  return acquired;
-}
-
-static void platform_flash_release(void) {
-  Sys_Critical_Enter();
-  flash_busy = false;
-  Sys_Critical_Exit();
-}
-
-static bool platform_flash_range_valid(uint32_t address, uint32_t size) {
-  if (size == 0U || address < PLATFORM_F4_FLASH_START ||
-      address > PLATFORM_F4_FLASH_END) {
-    return false;
-  }
-  return size <= (PLATFORM_F4_FLASH_END - address + 1UL);
-}
+static uint32_t flash_backend_error;
 
 static uint32_t platform_flash_sector_start(uint32_t sector) {
   switch (sector) {
@@ -74,15 +46,17 @@ static uint32_t platform_flash_sector_size(uint32_t sector) {
 }
 
 static uint32_t platform_flash_find_sector(uint32_t address) {
-  if (address < PLATFORM_F4_FLASH_START ||
-      address > PLATFORM_F4_FLASH_END) {
+  if (
+    address < PLATFORM_F4_FLASH_START ||
+    address > PLATFORM_F4_FLASH_END
+  ) {
     return UINT32_MAX;
   }
 
   for (uint32_t sector = FLASH_SECTOR_0; sector <= FLASH_SECTOR_7;
        ++sector) {
-    uint32_t start = platform_flash_sector_start(sector);
-    uint32_t size = platform_flash_sector_size(sector);
+    const uint32_t start = platform_flash_sector_start(sector);
+    const uint32_t size = platform_flash_sector_size(sector);
     if (address >= start && address < start + size) {
       return sector;
     }
@@ -133,57 +107,48 @@ static uint32_t platform_flash_map_hal_error(uint32_t hal_error) {
 }
 
 static void platform_flash_capture_error(uint32_t operation_error) {
-  uint32_t mapped = platform_flash_map_hal_error(HAL_FLASH_GetError());
-  if (mapped == PLATFORM_FLASH_ERROR_NONE) {
-    mapped = PLATFORM_FLASH_ERROR_UNKNOWN;
+  uint32_t error = platform_flash_map_hal_error(HAL_FLASH_GetError());
+  if (error == PLATFORM_FLASH_ERROR_NONE) {
+    error = PLATFORM_FLASH_ERROR_UNKNOWN;
   }
-  flash_error = operation_error | mapped;
+  flash_backend_error = operation_error | error;
 }
 
-Platform_StatusTypeDef Platform_FLASH_Read(
-  Platform_FLASH_Instance instance,
+bool platform_flash_backend_range_valid(uint32_t address, uint32_t size) {
+  if (
+    size == 0U ||
+    address < PLATFORM_F4_FLASH_START ||
+    address > PLATFORM_F4_FLASH_END
+  ) {
+    return false;
+  }
+  return size <= (PLATFORM_F4_FLASH_END - address + 1UL);
+}
+
+uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
+  const uint32_t sector = platform_flash_find_sector(address);
+  return sector == UINT32_MAX
+           ? 0U
+           : platform_flash_sector_size(sector);
+}
+
+Platform_StatusTypeDef platform_flash_backend_read(
   uint32_t address,
   void *data,
   uint32_t size
 ) {
-  assert(instance == PLATFORM_FLASH_1);
-  (void)instance;
-  if (data == NULL || !platform_flash_range_valid(address, size)) {
-    flash_error = PLATFORM_FLASH_ERROR_RANGE;
-    return Platform_ERROR;
-  }
-  if (!platform_flash_acquire()) {
-    return Platform_BUSY;
-  }
-
   (void)memcpy(data, (const void *)address, size);
-  flash_error = PLATFORM_FLASH_ERROR_NONE;
-  platform_flash_release();
   return Platform_OK;
 }
 
-Platform_StatusTypeDef Platform_FLASH_Write(
-  Platform_FLASH_Instance instance,
+Platform_StatusTypeDef platform_flash_backend_write(
   uint32_t address,
   const void *data,
   uint32_t size
 ) {
-  assert(instance == PLATFORM_FLASH_1);
-  (void)instance;
-  if (data == NULL || !platform_flash_range_valid(address, size)) {
-    flash_error = PLATFORM_FLASH_ERROR_RANGE;
-    return Platform_ERROR;
-  }
-  if (((address & 3UL) != 0UL) || ((size & 3UL) != 0UL)) {
-    flash_error = PLATFORM_FLASH_ERROR_ALIGNMENT;
-    return Platform_ERROR;
-  }
-  if (!platform_flash_acquire()) {
-    return Platform_BUSY;
-  }
-
   HAL_StatusTypeDef status = HAL_OK;
   const uint8_t *bytes = (const uint8_t *)data;
+
   HAL_FLASH_Unlock();
   for (uint32_t offset = 0U; offset < size; offset += 4UL) {
     uint32_t word;
@@ -202,35 +167,22 @@ Platform_StatusTypeDef Platform_FLASH_Write(
   if (status != HAL_OK) {
     platform_flash_capture_error(PLATFORM_FLASH_ERROR_PROGRAM);
   } else {
-    flash_error = PLATFORM_FLASH_ERROR_NONE;
+    flash_backend_error = PLATFORM_FLASH_ERROR_NONE;
   }
-
-  platform_flash_release();
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef Platform_FLASH_Erase(
-  Platform_FLASH_Instance instance,
+Platform_StatusTypeDef platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
 ) {
-  assert(instance == PLATFORM_FLASH_1);
-  (void)instance;
-  uint32_t first_sector = platform_flash_find_sector(address);
-  uint32_t last_sector = platform_flash_find_sector(
-    platform_flash_range_valid(address, size) ? address + size - 1UL : 0U
+  const uint32_t first_sector = platform_flash_find_sector(address);
+  const uint32_t last_sector = platform_flash_find_sector(
+    address + size - 1UL
   );
-  if (!platform_flash_range_valid(address, size) ||
-      first_sector == UINT32_MAX || last_sector == UINT32_MAX) {
-    flash_error = PLATFORM_FLASH_ERROR_RANGE;
-    return Platform_ERROR;
-  }
-  if (address != platform_flash_sector_start(first_sector)) {
-    flash_error = PLATFORM_FLASH_ERROR_ALIGNMENT;
-    return Platform_ERROR;
-  }
-  if (!platform_flash_acquire()) {
-    return Platform_BUSY;
+  if (first_sector == UINT32_MAX || last_sector == UINT32_MAX) {
+    flash_backend_error = PLATFORM_FLASH_ERROR_RANGE;
+    return Platform_INVALID_ARGUMENT;
   }
 
   FLASH_EraseInitTypeDef erase = {0};
@@ -248,32 +200,15 @@ Platform_StatusTypeDef Platform_FLASH_Erase(
   if (status != HAL_OK || sector_error != UINT32_MAX) {
     platform_flash_capture_error(PLATFORM_FLASH_ERROR_ERASE);
     if (sector_error != UINT32_MAX) {
-      flash_error |= PLATFORM_FLASH_ERROR_INTERNAL;
+      flash_backend_error |= PLATFORM_FLASH_ERROR_INTERNAL;
     }
     status = HAL_ERROR;
   } else {
-    flash_error = PLATFORM_FLASH_ERROR_NONE;
+    flash_backend_error = PLATFORM_FLASH_ERROR_NONE;
   }
-
-  platform_flash_release();
   return platform_from_hal_status(status);
 }
 
-uint32_t Platform_FLASH_GetEraseUnitSize(
-  Platform_FLASH_Instance instance,
-  uint32_t address
-) {
-  assert(instance == PLATFORM_FLASH_1);
-  (void)instance;
-  uint32_t sector = platform_flash_find_sector(address);
-  if (sector == UINT32_MAX) {
-    return 0U;
-  }
-  return platform_flash_sector_size(sector);
-}
-
-uint32_t Platform_FLASH_GetLastError(Platform_FLASH_Instance instance) {
-  assert(instance == PLATFORM_FLASH_1);
-  (void)instance;
-  return flash_error;
+uint32_t platform_flash_backend_get_error(void) {
+  return flash_backend_error;
 }

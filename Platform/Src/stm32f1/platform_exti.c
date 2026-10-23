@@ -1,28 +1,11 @@
-//
-// 由 Buns_ 创建于 2026/8/27。
-//
+/**
+ * @file platform_exti.c
+ * @brief STM32F1 HAL entry for the common EXTI dispatcher.
+ */
 
-#include "platform_exti.h"
-#include <assert.h>
-
-static platform_exti_callbacks_t exti_cb[16] = {{0}};
-
-static uint8_t pin_to_index(uint16_t pin) {
-  assert(pin != 0u);
-  assert((pin & (uint16_t)(pin - 1u)) == 0u);
-  uint8_t idx = 0;
-  while (pin >>= 1) idx++;
-  assert(idx < TOTAL_EXTI_NUM);
-  return idx;
-}
-
-void Platform_EXTI_RegisterCallbacks(uint16_t GPIO_Pin, const platform_exti_callbacks_t *cb) {
-  assert(cb);
-  uint8_t idx = pin_to_index(GPIO_Pin);
-  exti_cb[idx] = *cb;
-}
+#include "platform_exti_backend.h"
+#include "stm32f1xx_hal.h"
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  uint8_t idx = pin_to_index(GPIO_Pin);
-  if (exti_cb[idx].exti_cb) exti_cb[idx].exti_cb(GPIO_Pin, exti_cb[idx].context);
+  platform_exti_dispatch_event(GPIO_Pin);
 }

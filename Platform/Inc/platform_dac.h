@@ -50,9 +50,24 @@ typedef enum {
   PLATFORM_DAC_ERROR_UNKNOWN       = (1u << 7),
 } Platform_DAC_Error;
 
+/** @brief DAC 异步事件。 */
+typedef enum {
+  PLATFORM_DAC_EVENT_CONV_CPLT = 0U,
+  PLATFORM_DAC_EVENT_CONV_HALF,
+  PLATFORM_DAC_EVENT_ERROR,
+  PLATFORM_DAC_EVENT_UNDERRUN,
+} Platform_DAC_EventType;
+
+/** @brief DAC 事件数据，只在回调期间有效。 */
+typedef struct {
+  Platform_DAC_EventType type;
+  Platform_DAC_Channel channel;
+  uint32_t error;
+} Platform_DAC_Event;
+
 typedef void (*Platform_DAC_Callback)(
   Platform_DAC_Instance dac,
-  Platform_DAC_Channel channel,
+  const Platform_DAC_Event *event,
   void *context
 );
 
@@ -62,10 +77,7 @@ typedef void (*Platform_DAC_Callback)(
  * @note 一个物理 DAC 实例只能有一个回调所有者。
  */
 typedef struct {
-  Platform_DAC_Callback conv_cplt_cb;
-  Platform_DAC_Callback conv_half_cplt_cb;
-  Platform_DAC_Callback err_cb;
-  Platform_DAC_Callback underrun_cb;
+  Platform_DAC_Callback callback;
   void *context;
 } platform_dac_callbacks_t;
 
@@ -142,8 +154,11 @@ uint32_t Platform_DAC_GetLastError(Platform_DAC_Instance dac);
  * @param dac DAC 实例。
  * @param callbacks 待复制的回调集合。
  * @note 应在初始化阶段、启动 DMA 输出前调用一次。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_DAC_RegisterCallbacks(
+Platform_StatusTypeDef Platform_DAC_RegisterCallbacks(
   Platform_DAC_Instance dac,
   const platform_dac_callbacks_t *callbacks
 );

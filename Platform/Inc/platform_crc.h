@@ -13,6 +13,7 @@
 #define LAYERED_EMBEDDED_C_PLATFORM_CRC_H
 
 #include "platform_config.h"
+#include "platform_def.h"
 #include <stdint.h>
 
 #if !PLATFORM_ENABLE_CRC
@@ -29,20 +30,21 @@ typedef enum {
  * @param crc CRC 实例。
  * @pre MX_CRC_Init() 已成功完成。
  */
-void Platform_CRC_Reset(Platform_CRC_Instance crc);
+Platform_StatusTypeDef Platform_CRC_Reset(Platform_CRC_Instance crc);
 
 /**
  * @brief 在不复位 CRC 单元的情况下累积计算 32 位字。
  * @param crc CRC 实例。
  * @param words 输入字数组。
  * @param word_count 32 位字数量，必须大于 0。
- * @return 累积计算后的 CRC 数据寄存器值。
+ * @param result 累积计算后的 CRC 数据寄存器值输出。
  * @note STM32F4 的 CRC 单元按 32 位字处理数据。
  */
-uint32_t Platform_CRC_AccumulateWords(
+Platform_StatusTypeDef Platform_CRC_AccumulateWords(
   Platform_CRC_Instance crc,
   const uint32_t *words,
-  uint32_t word_count
+  uint32_t word_count,
+  uint32_t *result
 );
 
 /**
@@ -50,13 +52,17 @@ uint32_t Platform_CRC_AccumulateWords(
  * @param crc CRC 实例。
  * @param words 输入字数组。
  * @param word_count 32 位字数量，必须大于 0。
- * @return 计算得到的 CRC 数据寄存器值。
+ * @param result 计算得到的 CRC 数据寄存器值输出。
  */
-uint32_t Platform_CRC_CalculateWords(
+Platform_StatusTypeDef Platform_CRC_CalculateWords(
   Platform_CRC_Instance crc,
   const uint32_t *words,
-  uint32_t word_count
+  uint32_t word_count,
+  uint32_t *result
 );
+
+/** @brief 读取最近一次 CRC 操作错误快照。 */
+uint32_t Platform_CRC_GetLastError(Platform_CRC_Instance crc);
 
 /** @} */
 

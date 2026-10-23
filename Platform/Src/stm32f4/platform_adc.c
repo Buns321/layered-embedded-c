@@ -1,16 +1,12 @@
-//
-// 由 Buns_ 创建于 2026/10/23。
-//
+/**
+ * @file platform_adc.c
+ * @brief STM32F4 HAL backend for the common ADC implementation.
+ */
 
-#include "platform_adc.h"
-#include "platform_hal_internal.h"
 #include "adc.h"
+#include "platform_adc_backend.h"
+#include "platform_hal_internal.h"
 #include "stm32f4xx_hal.h"
-#include <assert.h>
-#include <stdbool.h>
-
-static platform_adc_callbacks_t adc_cb[PLATFORM_ADC_INSTANCE_COUNT];
-static bool adc_cb_registered[PLATFORM_ADC_INSTANCE_COUNT];
 
 static ADC_HandleTypeDef *platform_adc_to_hal(Platform_ADC_Instance adc) {
   switch (adc) {
@@ -23,7 +19,7 @@ static ADC_HandleTypeDef *platform_adc_to_hal(Platform_ADC_Instance adc) {
 #if PLATFORM_ENABLE_ADC3
     case PLATFORM_ADC_3: return &hadc3;
 #endif
-    default: assert(0); return NULL;
+    default: return NULL;
   }
 }
 
@@ -31,7 +27,9 @@ static bool platform_hal_to_adc(
   ADC_HandleTypeDef *hadc,
   Platform_ADC_Instance *adc
 ) {
-  assert(hadc != NULL && adc != NULL);
+  if (hadc == NULL || adc == NULL) {
+    return false;
+  }
 #if PLATFORM_ENABLE_ADC1
   if (hadc == &hadc1) {
     *adc = PLATFORM_ADC_1;
@@ -64,7 +62,6 @@ static uint32_t platform_adc_map_error(uint32_t hal_error) {
   if ((hal_error & HAL_ADC_ERROR_DMA) != 0U) {
     error |= PLATFORM_ADC_ERROR_DMA;
   }
-
   const uint32_t known_errors =
     HAL_ADC_ERROR_INTERNAL |
     HAL_ADC_ERROR_OVR |
@@ -75,155 +72,110 @@ static uint32_t platform_adc_map_error(uint32_t hal_error) {
   return error;
 }
 
-Platform_StatusTypeDef Platform_ADC_Start(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Start(hadc));
+bool platform_adc_backend_is_valid(Platform_ADC_Instance adc) {
+  return (uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT &&
+         platform_adc_to_hal(adc) != NULL;
 }
 
-Platform_StatusTypeDef Platform_ADC_Stop(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Stop(hadc));
+bool platform_adc_backend_supports_dma(Platform_ADC_Instance adc) {
+  return platform_adc_backend_is_valid(adc);
 }
 
-Platform_StatusTypeDef Platform_ADC_PollForConversion(
+Platform_StatusTypeDef platform_adc_backend_start(Platform_ADC_Instance adc) {
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Start(h));
+}
+
+Platform_StatusTypeDef platform_adc_backend_stop(Platform_ADC_Instance adc) {
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop(h));
+}
+
+Platform_StatusTypeDef platform_adc_backend_poll(
   Platform_ADC_Instance adc,
   uint32_t timeout
 ) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_PollForConversion(hadc, timeout));
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(
+                       HAL_ADC_PollForConversion(h, timeout)
+                     );
 }
 
-uint32_t Platform_ADC_GetValue(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return HAL_ADC_GetValue(hadc);
-}
-
-Platform_StatusTypeDef Platform_ADC_Read(
+Platform_StatusTypeDef platform_adc_backend_get_value(
   Platform_ADC_Instance adc,
-  uint32_t *value,
-  uint32_t timeout
+  uint32_t *value
 ) {
-  assert(value != NULL);
-  Platform_StatusTypeDef status = Platform_ADC_Start(adc);
-  if (status != Platform_OK) {
-    return status;
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  if (h == NULL || value == NULL) {
+    return Platform_INVALID_ARGUMENT;
   }
-  status = Platform_ADC_PollForConversion(adc, timeout);
-  if (status == Platform_OK) {
-    *value = Platform_ADC_GetValue(adc);
-  }
-  Platform_StatusTypeDef stop_status = Platform_ADC_Stop(adc);
-  return status == Platform_OK ? stop_status : status;
+  *value = HAL_ADC_GetValue(h);
+  return Platform_OK;
 }
 
-Platform_StatusTypeDef Platform_ADC_Start_IT(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Start_IT(hadc));
+Platform_StatusTypeDef platform_adc_backend_start_it(
+  Platform_ADC_Instance adc
+) {
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Start_IT(h));
 }
 
-Platform_StatusTypeDef Platform_ADC_Stop_IT(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Stop_IT(hadc));
+Platform_StatusTypeDef platform_adc_backend_stop_it(
+  Platform_ADC_Instance adc
+) {
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop_IT(h));
 }
 
-Platform_StatusTypeDef Platform_ADC_Start_DMA(
+Platform_StatusTypeDef platform_adc_backend_start_dma(
   Platform_ADC_Instance adc,
   uint32_t *data,
   uint32_t length
 ) {
-  assert(
-    (uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT &&
-    data != NULL &&
-    length != 0U
-  );
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Start_DMA(hadc, data, length));
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(
+                       HAL_ADC_Start_DMA(h, data, length)
+                     );
 }
 
-Platform_StatusTypeDef Platform_ADC_Stop_DMA(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_from_hal_status(HAL_ADC_Stop_DMA(hadc));
-}
-
-uint32_t Platform_ADC_GetLastError(Platform_ADC_Instance adc) {
-  assert((uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT);
-  ADC_HandleTypeDef *hadc = platform_adc_to_hal(adc);
-  assert(hadc != NULL);
-  return platform_adc_map_error(HAL_ADC_GetError(hadc));
-}
-
-void Platform_ADC_RegisterCallbacks(
-  Platform_ADC_Instance adc,
-  const platform_adc_callbacks_t *callbacks
+Platform_StatusTypeDef platform_adc_backend_stop_dma(
+  Platform_ADC_Instance adc
 ) {
-  assert(
-    (uint32_t)adc < PLATFORM_ADC_INSTANCE_COUNT &&
-    callbacks != NULL &&
-    !adc_cb_registered[adc] &&
-    platform_adc_to_hal(adc) != NULL
-  );
-  adc_cb[adc] = *callbacks;
-  adc_cb_registered[adc] = true;
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_ADC_Stop_DMA(h));
 }
 
-typedef enum {
-  PLATFORM_ADC_EVENT_CONV_CPLT = 0,
-  PLATFORM_ADC_EVENT_CONV_HALF,
-  PLATFORM_ADC_EVENT_ERROR,
-} platform_adc_event_t;
+uint32_t platform_adc_backend_get_error(Platform_ADC_Instance adc) {
+  ADC_HandleTypeDef *h = platform_adc_to_hal(adc);
+  return h == NULL ? PLATFORM_ADC_ERROR_UNKNOWN
+                   : platform_adc_map_error(HAL_ADC_GetError(h));
+}
 
-static void platform_adc_dispatch(
+static void platform_adc_dispatch_hal_event(
   ADC_HandleTypeDef *hadc,
-  platform_adc_event_t event
+  Platform_ADC_EventType type
 ) {
   Platform_ADC_Instance adc;
-  if (!platform_hal_to_adc(hadc, &adc)) {
-    return;
-  }
-
-  Platform_ADC_Callback callback = NULL;
-  switch (event) {
-    case PLATFORM_ADC_EVENT_CONV_CPLT:
-      callback = adc_cb[adc].conv_cplt_cb;
-      break;
-    case PLATFORM_ADC_EVENT_CONV_HALF:
-      callback = adc_cb[adc].conv_half_cplt_cb;
-      break;
-    case PLATFORM_ADC_EVENT_ERROR:
-      callback = adc_cb[adc].err_cb;
-      break;
-    default:
-      assert(0);
-      break;
-  }
-  if (callback != NULL) {
-    callback(adc, adc_cb[adc].context);
+  if (platform_hal_to_adc(hadc, &adc)) {
+    platform_adc_dispatch_event(adc, type);
   }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch(hadc, PLATFORM_ADC_EVENT_CONV_CPLT);
+  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_CONV_CPLT);
 }
 
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch(hadc, PLATFORM_ADC_EVENT_CONV_HALF);
+  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_CONV_HALF);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
-  platform_adc_dispatch(hadc, PLATFORM_ADC_EVENT_ERROR);
+  platform_adc_dispatch_hal_event(hadc, PLATFORM_ADC_EVENT_ERROR);
 }

@@ -130,14 +130,6 @@
 #define PLATFORM_ENABLE_FLASH 0
 #endif
 
-#ifndef PLATFORM_RTC_HAS_WAKEUP_TIMER
-#if defined(STM32F4xx)
-#define PLATFORM_RTC_HAS_WAKEUP_TIMER 1
-#else
-#define PLATFORM_RTC_HAS_WAKEUP_TIMER 0
-#endif
-#endif
-
 #ifndef PLATFORM_ENABLE_CRC
 #define PLATFORM_ENABLE_CRC 0
 #endif

@@ -36,7 +36,9 @@
 
 ## 4. 错误处理
 
-- `assert` 用于编程错误：空指针、非法枚举、非法数量、`dt <= 0`、base 首成员假设等。
+- `assert` 只用于内部不变量和不可恢复的代码缺陷。Platform 公共输入的参数错误
+  统一返回 `Platform_INVALID_ARGUMENT`，不得依赖 `assert`，详见
+  [Platform 公共契约](platform-contract.md)。
 - 运行时错误用状态枚举或返回值：`Platform_StatusTypeDef`、`Dev_USART_Status`、
   `controller_status_t`。
 - 对外部输入（传感器、串口、命令）做有限值检查；非有限值清零或返回 ERROR。

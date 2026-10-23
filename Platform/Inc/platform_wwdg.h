@@ -30,22 +30,30 @@ typedef enum {
 #define PLATFORM_WWDG_WINDOW_MIN 0x40u
 /** @brief 有效的原始窗口最大值。 */
 #define PLATFORM_WWDG_WINDOW_MAX 0x7Fu
-/** @brief 当前 PCLK1 为 42 MHz 时的保守最大超时。 */
-#define PLATFORM_WWDG_MAX_TIMEOUT_MS 49u
 
 /**
  * @brief WWDG 运行期配置。
  */
 typedef struct {
-  uint32_t timeout_ms; /**< 请求的超时时间，范围 1..PLATFORM_WWDG_MAX_TIMEOUT_MS。 */
+  uint32_t timeout_ms; /**< 请求超时，范围 1..Platform_WWDG_GetMaxTimeoutMs()。 */
   uint8_t window;      /**< 原始刷新窗口，范围 PLATFORM_WWDG_WINDOW_MIN..MAX。 */
 } Platform_WWDG_Config;
+
+/**
+ * @brief 查询当前时钟下的最大可配置超时。
+ * @param wwdg WWDG 实例。
+ * @return 最大超时（ms）；实例非法或时钟不可用时返回 0。
+ * @note 该值取决于真实 PCLK1，不能假设 F1/F4 相同。
+ */
+uint32_t Platform_WWDG_GetMaxTimeoutMs(Platform_WWDG_Instance wwdg);
 
 /**
  * @brief 启动窗口看门狗。
  * @param wwdg WWDG 实例。
  * @param config 运行期配置。
- * @return Platform 状态。
+ * @retval Platform_OK 启动成功。
+ * @retval Platform_BUSY WWDG 已启动。
+ * @retval Platform_INVALID_ARGUMENT 实例、窗口或超时范围非法。
  * @note 这是运行期策略操作，会立即启动看门狗。
  * @note 调用后无法停止 WWDG。
  * @note 应在计数器低于 window 后、到达 0x3F 前刷新。
@@ -57,7 +65,9 @@ Platform_StatusTypeDef Platform_WWDG_Start(
 
 /**
  * @brief 刷新已启动的 WWDG。
- * @return 成功返回 Platform_OK；WWDG 尚未启动时返回 Platform_ERROR。
+ * @retval Platform_OK 刷新成功。
+ * @retval Platform_INVALID_ARGUMENT 实例非法。
+ * @retval Platform_ERROR WWDG 尚未启动或 HAL 刷新失败。
  */
 Platform_StatusTypeDef Platform_WWDG_Refresh(
   Platform_WWDG_Instance wwdg
@@ -66,6 +76,7 @@ Platform_StatusTypeDef Platform_WWDG_Refresh(
 /**
  * @brief 读取并清除 WWDG 复位标志。
  * @return 最近一次复位由 WWDG 触发时返回 true。
+ * @note 非法实例返回 false，不访问硬件。
  * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
  */
 bool Platform_WWDG_WasReset(Platform_WWDG_Instance wwdg);

@@ -9,7 +9,7 @@
 
 static void Dev_LED_PWM_WriteBrightness(led_pwm_t *self, uint16_t brightness) {
   assert(self);
-  Platform_PWM_SetDuty(
+  (void)Platform_PWM_SetDuty(
     self->pwm_instance,
     self->pwm_channel,
     LED_PWM_BRIGHTNESS_MAX,

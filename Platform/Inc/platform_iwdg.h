@@ -39,7 +39,9 @@ typedef enum {
  * @brief 启动独立看门狗。
  * @param iwdg IWDG 实例。
  * @param timeout_ms 请求的超时时间（ms），范围 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
- * @return Platform 状态。
+ * @retval Platform_OK 启动成功。
+ * @retval Platform_BUSY IWDG 已启动。
+ * @retval Platform_INVALID_ARGUMENT 实例、超时范围或计算参数非法。
  * @note 这是运行期策略操作，会立即启动看门狗。
  * @note 调用后无法停止 IWDG。
  * @note 超时时间会向上取整，并受 LSI 频率容差影响。
@@ -51,7 +53,9 @@ Platform_StatusTypeDef Platform_IWDG_Start(
 
 /**
  * @brief 刷新已启动的 IWDG。
- * @return 成功返回 Platform_OK；IWDG 尚未启动时返回 Platform_ERROR。
+ * @retval Platform_OK 刷新成功。
+ * @retval Platform_INVALID_ARGUMENT 实例非法。
+ * @retval Platform_ERROR IWDG 尚未启动或 HAL 刷新失败。
  */
 Platform_StatusTypeDef Platform_IWDG_Refresh(
   Platform_IWDG_Instance iwdg
@@ -60,6 +64,7 @@ Platform_StatusTypeDef Platform_IWDG_Refresh(
 /**
  * @brief 读取并清除 IWDG 复位标志。
  * @return 最近一次复位由 IWDG 触发时返回 true。
+ * @note 非法实例返回 false，不访问硬件。
  * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
  */
 bool Platform_IWDG_WasReset(Platform_IWDG_Instance iwdg);

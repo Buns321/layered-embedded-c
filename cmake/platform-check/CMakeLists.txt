@@ -17,6 +17,22 @@ set(PLATFORM_COMMON_INCLUDE_DIRS
 
 if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
   add_library(platform_f4_check OBJECT
+      ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_exti_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_crc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_gpio_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_adc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_dac_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_flash_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_can_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_rtc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_rng_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_encoder_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_pwm_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_spi_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_uart_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_adc.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_can.c
       ${REPO_ROOT}/Platform/Src/stm32f4/platform_crc.c
@@ -173,6 +189,20 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
   )
 elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
   add_library(platform_f1_check OBJECT
+      ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_exti_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_crc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_gpio_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_adc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_flash_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_can_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_rtc_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_encoder_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_pwm_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_spi_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_uart_common.c
+      ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_can.c
       ${REPO_ROOT}/Platform/Src/stm32f1/platform_crc.c

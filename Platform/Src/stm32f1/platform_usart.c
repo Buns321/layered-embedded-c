@@ -1,16 +1,12 @@
-//
-// 由 Buns_ 创建于 2026/8/24。
-//
+/**
+ * @file platform_usart.c
+ * @brief STM32F1 HAL backend for the common UART implementation.
+ */
 
-#include "platform_usart.h"
 #include "platform_hal_internal.h"
+#include "platform_uart_backend.h"
 #include "stm32f1xx_hal.h"
 #include "usart.h"
-#include <assert.h>
-#include <stdbool.h>
-
-static platform_uart_callbacks_t uart_cb[PLATFORM_UART_INSTANCE_COUNT] = {{0}};
-static bool uart_cb_registered[PLATFORM_UART_INSTANCE_COUNT];
 
 static UART_HandleTypeDef *platform_uart_to_hal(
   Platform_UART_Instance uart
@@ -34,7 +30,7 @@ static UART_HandleTypeDef *platform_uart_to_hal(
 #if PLATFORM_ENABLE_UART6
     case PLATFORM_USART_6: return &huart6;
 #endif
-    default: assert(0); return NULL;
+    default: return NULL;
   }
 }
 
@@ -42,7 +38,9 @@ static bool platform_hal_to_uart(
   UART_HandleTypeDef *huart,
   Platform_UART_Instance *uart
 ) {
-  assert(huart != NULL && uart != NULL);
+  if (huart == NULL || uart == NULL) {
+    return false;
+  }
 
 #if PLATFORM_ENABLE_UART1
   if (huart == &huart1) {
@@ -108,11 +106,9 @@ static uint32_t platform_uart_map_error(uint32_t hal_error) {
     HAL_UART_ERROR_FE |
     HAL_UART_ERROR_ORE |
     HAL_UART_ERROR_DMA;
-
   if ((hal_error & ~known_errors) != 0U) {
     error |= PLATFORM_UART_ERROR_UNKNOWN;
   }
-
   return error;
 }
 
@@ -123,270 +119,189 @@ static void platform_uart_clear_rx_flags(UART_HandleTypeDef *huart) {
   __HAL_UART_CLEAR_PEFLAG(huart);
 }
 
-static void platform_uart_validate(
-  Platform_UART_Instance uart,
-  const void *data,
-  uint16_t size
-) {
-  assert(
-    data != NULL &&
-    size != 0U &&
-    (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT
-  );
-  (void)data;
-  (void)size;
-  (void)uart;
+bool platform_uart_backend_is_valid(Platform_UART_Instance uart) {
+  return (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT &&
+         platform_uart_to_hal(uart) != NULL;
 }
 
-Platform_StatusTypeDef Platform_UART_Receive(
+Platform_StatusTypeDef platform_uart_backend_receive(
   Platform_UART_Instance uart,
-  uint8_t *pdata,
+  uint8_t *data,
   uint16_t size,
   uint32_t timeout
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Receive(huart, pdata, size, timeout)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Receive(huart, data, size, timeout)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit(
+Platform_StatusTypeDef platform_uart_backend_transmit(
   Platform_UART_Instance uart,
-  const uint8_t *pdata,
+  const uint8_t *data,
   uint16_t size,
   uint32_t timeout
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Transmit(huart, pdata, size, timeout)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Transmit(huart, (uint8_t *)data, size, timeout)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_Receive_IT(
+Platform_StatusTypeDef platform_uart_backend_receive_it(
   Platform_UART_Instance uart,
-  uint8_t *pdata,
+  uint8_t *data,
   uint16_t size
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Receive_IT(huart, pdata, size)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Receive_IT(huart, data, size)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit_IT(
+Platform_StatusTypeDef platform_uart_backend_transmit_it(
   Platform_UART_Instance uart,
-  const uint8_t *pdata,
+  const uint8_t *data,
   uint16_t size
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Transmit_IT(huart, pdata, size)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Transmit_IT(huart, (uint8_t *)data, size)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_Receive_DMA(
+Platform_StatusTypeDef platform_uart_backend_receive_dma(
   Platform_UART_Instance uart,
-  uint8_t *pdata,
+  uint8_t *data,
   uint16_t size
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Receive_DMA(huart, pdata, size)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Receive_DMA(huart, data, size)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_Transmit_DMA(
+Platform_StatusTypeDef platform_uart_backend_transmit_dma(
   Platform_UART_Instance uart,
-  const uint8_t *pdata,
+  const uint8_t *data,
   uint16_t size
 ) {
-  platform_uart_validate(uart, pdata, size);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-
-  return platform_from_hal_status(
-    HAL_UART_Transmit_DMA(huart, pdata, size)
-  );
+  return huart == NULL
+           ? Platform_INVALID_ARGUMENT
+           : platform_from_hal_status(
+               HAL_UART_Transmit_DMA(huart, (uint8_t *)data, size)
+             );
 }
 
-Platform_StatusTypeDef Platform_UART_AbortReceive(
+Platform_StatusTypeDef platform_uart_backend_abort_receive(
   Platform_UART_Instance uart
 ) {
-  assert((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
+  if (huart == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
 
   HAL_StatusTypeDef status = HAL_UART_AbortReceive(huart);
   if (status == HAL_OK) {
     platform_uart_clear_rx_flags(huart);
     huart->ErrorCode = HAL_UART_ERROR_NONE;
   }
-
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef Platform_UART_AbortTransmit(
+Platform_StatusTypeDef platform_uart_backend_abort_transmit(
   Platform_UART_Instance uart
 ) {
-  assert((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
+  if (huart == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
 
   HAL_StatusTypeDef status = HAL_UART_AbortTransmit(huart);
   if (status == HAL_OK) {
     huart->ErrorCode = HAL_UART_ERROR_NONE;
   }
-
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef Platform_UART_Abort(
+Platform_StatusTypeDef platform_uart_backend_abort(
   Platform_UART_Instance uart
 ) {
-  assert((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT);
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
+  if (huart == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
 
   HAL_StatusTypeDef status = HAL_UART_Abort(huart);
   if (status == HAL_OK) {
     platform_uart_clear_rx_flags(huart);
     huart->ErrorCode = HAL_UART_ERROR_NONE;
   }
-
   return platform_from_hal_status(status);
 }
 
-Platform_StatusTypeDef Platform_UART_ClearBuffer(
-  Platform_UART_Instance uart
-) {
-  return Platform_UART_AbortReceive(uart);
-}
-
-uint32_t Platform_UART_GetLastError(
-  Platform_UART_Instance uart
-) {
-  assert((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT);
+uint32_t platform_uart_backend_get_error(Platform_UART_Instance uart) {
   UART_HandleTypeDef *huart = platform_uart_to_hal(uart);
-  assert(huart != NULL);
-  return platform_uart_map_error(huart->ErrorCode);
+  return huart == NULL
+           ? PLATFORM_UART_ERROR_UNKNOWN
+           : platform_uart_map_error(huart->ErrorCode);
 }
 
-void Platform_UART_RegisterCallbacks(
-  Platform_UART_Instance uart,
-  const platform_uart_callbacks_t *cb
-) {
-  assert(
-    (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT &&
-    cb != NULL &&
-    !uart_cb_registered[uart] &&
-    platform_uart_to_hal(uart) != NULL
-  );
-
-  uart_cb[uart] = *cb;
-  uart_cb_registered[uart] = true;
-}
-
-typedef enum {
-  PLATFORM_UART_EVENT_TX_CPLT = 0,
-  PLATFORM_UART_EVENT_TX_HALF,
-  PLATFORM_UART_EVENT_RX_CPLT,
-  PLATFORM_UART_EVENT_RX_HALF,
-  PLATFORM_UART_EVENT_ERROR,
-  PLATFORM_UART_EVENT_ABORT_CPLT,
-  PLATFORM_UART_EVENT_ABORT_TX_CPLT,
-  PLATFORM_UART_EVENT_ABORT_RX_CPLT,
-} platform_uart_event_t;
-
-static void platform_uart_dispatch(
+static void platform_uart_dispatch_hal_event(
   UART_HandleTypeDef *huart,
-  platform_uart_event_t event
+  Platform_UART_EventType type
 ) {
-  assert(huart != NULL);
-
   Platform_UART_Instance uart;
-  if (!platform_hal_to_uart(huart, &uart)) {
-    return;
-  }
-
-  Platform_UART_Callback callback = NULL;
-  switch (event) {
-    case PLATFORM_UART_EVENT_TX_CPLT:
-      callback = uart_cb[uart].tx_cplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_TX_HALF:
-      callback = uart_cb[uart].tx_halfcplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_RX_CPLT:
-      callback = uart_cb[uart].rx_cplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_RX_HALF:
-      callback = uart_cb[uart].rx_halfcplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_ERROR:
-      callback = uart_cb[uart].err_cb;
-      break;
-    case PLATFORM_UART_EVENT_ABORT_CPLT:
-      callback = uart_cb[uart].abort_cplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_ABORT_TX_CPLT:
-      callback = uart_cb[uart].abort_txcplt_cb;
-      break;
-    case PLATFORM_UART_EVENT_ABORT_RX_CPLT:
-      callback = uart_cb[uart].abort_rxcplt_cb;
-      break;
-    default:
-      assert(0);
-      break;
-  }
-
-  if (callback != NULL) {
-    callback(uart, uart_cb[uart].context);
+  if (platform_hal_to_uart(huart, &uart)) {
+    platform_uart_dispatch_event(uart, type);
   }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_TX_CPLT);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_TX_CPLT);
 }
 
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_TX_HALF);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_TX_HALF);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_RX_CPLT);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_RX_CPLT);
 }
 
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_RX_HALF);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_RX_HALF);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_ERROR);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_ERROR);
 }
 
 void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_ABORT_CPLT);
+  platform_uart_dispatch_hal_event(huart, PLATFORM_UART_EVENT_ABORT_CPLT);
 }
 
 void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_ABORT_TX_CPLT);
+  platform_uart_dispatch_hal_event(
+    huart,
+    PLATFORM_UART_EVENT_ABORT_TX_CPLT
+  );
 }
 
 void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef *huart) {
-  platform_uart_dispatch(huart, PLATFORM_UART_EVENT_ABORT_RX_CPLT);
+  platform_uart_dispatch_hal_event(
+    huart,
+    PLATFORM_UART_EVENT_ABORT_RX_CPLT
+  );
 }

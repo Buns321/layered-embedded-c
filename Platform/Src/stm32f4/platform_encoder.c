@@ -1,12 +1,12 @@
-//
-// 由 Buns_ 创建于 2026/8/24。
-//
+/**
+ * @file platform_encoder.c
+ * @brief STM32F4 HAL backend for the common encoder implementation.
+ */
 
-#include "platform_encoder.h"
+#include "platform_encoder_backend.h"
 #include "platform_hal_internal.h"
 #include "stm32f4xx_hal.h"
 #include "tim.h"
-#include <assert.h>
 
 static TIM_HandleTypeDef *platform_encoder_to_hal(
   Platform_Encoder_Instance encoder
@@ -27,57 +27,83 @@ static TIM_HandleTypeDef *platform_encoder_to_hal(
 #if PLATFORM_ENABLE_ENCODER_TIM5
     case PLATFORM_ENCODER_TIM5: return &htim5;
 #endif
-    default: assert(0); return NULL;
+    default: return NULL;
   }
 }
 
-Platform_StatusTypeDef Platform_Encoder_Start(
+bool platform_encoder_backend_is_valid(
   Platform_Encoder_Instance encoder
 ) {
-  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
-  assert(htim != NULL);
-
-  return platform_from_hal_status(
-    HAL_TIM_Encoder_Start(htim, TIM_CHANNEL_ALL)
-  );
+  return platform_encoder_to_hal(encoder) != NULL;
 }
 
-uint32_t Platform_Encoder_GetCounter(
+Platform_StatusTypeDef platform_encoder_backend_start(
   Platform_Encoder_Instance encoder
 ) {
-  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
-  assert(htim != NULL);
-  return __HAL_TIM_GET_COUNTER(htim);
+  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(
+                       HAL_TIM_Encoder_Start(h, TIM_CHANNEL_ALL)
+                     );
 }
 
-void Platform_Encoder_SetCounter(
+Platform_StatusTypeDef platform_encoder_backend_stop(
+  Platform_Encoder_Instance encoder
+) {
+  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
+  return h == NULL ? Platform_INVALID_ARGUMENT
+                   : platform_from_hal_status(
+                       HAL_TIM_Encoder_Stop(h, TIM_CHANNEL_ALL)
+                     );
+}
+
+Platform_StatusTypeDef platform_encoder_backend_get_counter(
+  Platform_Encoder_Instance encoder,
+  uint32_t *counter
+) {
+  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
+  if (h == NULL || counter == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
+  *counter = __HAL_TIM_GET_COUNTER(h);
+  return Platform_OK;
+}
+
+Platform_StatusTypeDef platform_encoder_backend_set_counter(
   Platform_Encoder_Instance encoder,
   uint32_t counter
 ) {
-  TIM_HandleTypeDef *htim = platform_encoder_to_hal(encoder);
-  assert(htim != NULL);
-  __HAL_TIM_SET_COUNTER(htim, counter);
+  TIM_HandleTypeDef *h = platform_encoder_to_hal(encoder);
+  if (h == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
+  __HAL_TIM_SET_COUNTER(h, counter);
+  return Platform_OK;
 }
 
-uint8_t Platform_Encoder_GetCounterBits(
-  Platform_Encoder_Instance encoder
+Platform_StatusTypeDef platform_encoder_backend_get_counter_bits(
+  Platform_Encoder_Instance encoder,
+  uint8_t *counter_bits
 ) {
+  if (counter_bits == NULL) {
+    return Platform_INVALID_ARGUMENT;
+  }
   switch (encoder) {
 #if PLATFORM_ENABLE_ENCODER_TIM1
-    case PLATFORM_ENCODER_TIM1: return 16U;
+    case PLATFORM_ENCODER_TIM1: *counter_bits = 16U; return Platform_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM2
-    case PLATFORM_ENCODER_TIM2: return 32U;
+    case PLATFORM_ENCODER_TIM2: *counter_bits = 32U; return Platform_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM3
-    case PLATFORM_ENCODER_TIM3: return 16U;
+    case PLATFORM_ENCODER_TIM3: *counter_bits = 16U; return Platform_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM4
-    case PLATFORM_ENCODER_TIM4: return 16U;
+    case PLATFORM_ENCODER_TIM4: *counter_bits = 16U; return Platform_OK;
 #endif
 #if PLATFORM_ENABLE_ENCODER_TIM5
-    case PLATFORM_ENCODER_TIM5: return 32U;
+    case PLATFORM_ENCODER_TIM5: *counter_bits = 32U; return Platform_OK;
 #endif
-    default: assert(0); return 0U;
+    default: return Platform_INVALID_ARGUMENT;
   }
 }

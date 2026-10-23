@@ -56,13 +56,19 @@ Platform_StatusTypeDef Platform_Encoder_Start(
   Platform_Encoder_Instance encoder
 );
 
+/** @brief 停止编码器接口。 */
+Platform_StatusTypeDef Platform_Encoder_Stop(
+  Platform_Encoder_Instance encoder
+);
+
 /**
  * @brief 读取硬件计数器。
  * @param encoder 编码器定时器身份。
- * @return 当前计数值。
+ * @param counter 当前计数值输出。
  */
-uint32_t Platform_Encoder_GetCounter(
-  Platform_Encoder_Instance encoder
+Platform_StatusTypeDef Platform_Encoder_GetCounter(
+  Platform_Encoder_Instance encoder,
+  uint32_t *counter
 );
 
 /**
@@ -70,7 +76,7 @@ uint32_t Platform_Encoder_GetCounter(
  * @param encoder 编码器定时器身份。
  * @param counter 目标计数值。
  */
-void Platform_Encoder_SetCounter(
+Platform_StatusTypeDef Platform_Encoder_SetCounter(
   Platform_Encoder_Instance encoder,
   uint32_t counter
 );
@@ -78,9 +84,15 @@ void Platform_Encoder_SetCounter(
 /**
  * @brief 查询定时器计数位宽。
  * @param encoder 编码器定时器身份。
- * @return 16 或 32。
+ * @param counter_bits 位宽输出，值为 16 或 32。
  */
-uint8_t Platform_Encoder_GetCounterBits(
+Platform_StatusTypeDef Platform_Encoder_GetCounterBits(
+  Platform_Encoder_Instance encoder,
+  uint8_t *counter_bits
+);
+
+/** @brief 读取最近一次编码器操作错误快照。 */
+uint32_t Platform_Encoder_GetLastError(
   Platform_Encoder_Instance encoder
 );
 

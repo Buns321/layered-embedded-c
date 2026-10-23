@@ -51,23 +51,35 @@ typedef enum {
   PLATFORM_I2C_ERROR_UNKNOWN = (1u << 7),
 } Platform_I2C_Error;
 
+/** @brief I2C 异步事件。 */
+typedef enum {
+  PLATFORM_I2C_EVENT_MASTER_TX_CPLT = 0U,
+  PLATFORM_I2C_EVENT_MASTER_RX_CPLT,
+  PLATFORM_I2C_EVENT_MEM_TX_CPLT,
+  PLATFORM_I2C_EVENT_MEM_RX_CPLT,
+  PLATFORM_I2C_EVENT_ERROR,
+  PLATFORM_I2C_EVENT_ABORT_CPLT,
+} Platform_I2C_EventType;
+
+/** @brief I2C 事件数据，只在回调期间有效。 */
+typedef struct {
+  Platform_I2C_EventType type;
+  uint32_t error;
+} Platform_I2C_Event;
+
 typedef void (*Platform_I2C_Callback)(
   Platform_I2C_Instance i2c,
+  const Platform_I2C_Event *event,
   void *context
 );
 
 /**
- * @brief I2C 完成回调集合。
+ * @brief I2C 回调集合。
  * @note 回调在中断上下文执行。
  * @note 注册时会复制该结构体。一个物理实例只能有一个回调所有者。
  */
 typedef struct {
-  Platform_I2C_Callback master_tx_cplt_cb;
-  Platform_I2C_Callback master_rx_cplt_cb;
-  Platform_I2C_Callback mem_tx_cplt_cb;
-  Platform_I2C_Callback mem_rx_cplt_cb;
-  Platform_I2C_Callback err_cb;
-  Platform_I2C_Callback abort_cplt_cb;
+  Platform_I2C_Callback callback;
   void *context;
 } platform_i2c_callbacks_t;
 
@@ -310,8 +322,11 @@ uint32_t Platform_I2C_GetLastError(Platform_I2C_Instance i2c);
  * @note 结构体会被复制。context 的生命周期必须覆盖所有使用过程。
  * @note 应在初始化阶段、启动 IT/DMA 传输前调用一次。一个物理实例在整个
  *       生命周期内只能有一个回调所有者。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_I2C_RegisterCallbacks(
+Platform_StatusTypeDef Platform_I2C_RegisterCallbacks(
   Platform_I2C_Instance i2c,
   const platform_i2c_callbacks_t *callbacks
 );

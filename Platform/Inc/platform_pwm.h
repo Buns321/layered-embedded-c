@@ -94,8 +94,10 @@ Platform_StatusTypeDef Platform_PWM_StopAll(Platform_PWM_Instance pwm);
  * @param pwm PWM 定时器身份。
  * @param channel 通道身份。
  * @param compare 比较值，内部会夹紧到 ARR。
+ * @retval Platform_OK 设置成功。
+ * @retval Platform_INVALID_ARGUMENT 实例或通道非法。
  */
-void Platform_PWM_SetCompare(
+Platform_StatusTypeDef Platform_PWM_SetCompare(
   Platform_PWM_Instance pwm,
   Platform_PWM_Channel channel,
   uint32_t compare
@@ -108,13 +110,18 @@ void Platform_PWM_SetCompare(
  * @param max_duty 占空比量程，必须大于 0。
  * @param duty 目标占空比，内部会夹紧到 max_duty。
  * @note 实际 CCR = ARR * duty / max_duty，使用 64 位中间量避免溢出。
+ * @retval Platform_OK 设置成功。
+ * @retval Platform_INVALID_ARGUMENT 实例、通道或量程非法。
  */
-void Platform_PWM_SetDuty(
+Platform_StatusTypeDef Platform_PWM_SetDuty(
   Platform_PWM_Instance pwm,
   Platform_PWM_Channel channel,
   uint32_t max_duty,
   uint32_t duty
 );
+
+/** @brief 读取最近一次 PWM 操作错误快照。 */
+uint32_t Platform_PWM_GetLastError(Platform_PWM_Instance pwm);
 
 /** @} */
 

@@ -74,6 +74,9 @@ void Platform_GPIO_TogglePin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin);
  */
 Platform_StatusTypeDef Platform_GPIO_LockPin(Platform_GPIO_Port GPIOx, uint16_t GPIO_Pin);
 
+/** @brief 读取最近一次 GPIO 操作错误快照。 */
+uint32_t Platform_GPIO_GetLastError(Platform_GPIO_Port GPIOx);
+
 /** @} */
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_GPIO_H

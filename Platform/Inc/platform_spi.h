@@ -56,34 +56,48 @@ typedef enum {
   PLATFORM_SPI_ERROR_UNKNOWN = (1u << 7),
 } Platform_SPI_Error;
 
+/** @brief SPI 异步事件。 */
+typedef enum {
+  PLATFORM_SPI_EVENT_TX_CPLT = 0U,
+  PLATFORM_SPI_EVENT_RX_CPLT,
+  PLATFORM_SPI_EVENT_TXRX_CPLT,
+  PLATFORM_SPI_EVENT_ERROR,
+  PLATFORM_SPI_EVENT_ABORT_CPLT,
+} Platform_SPI_EventType;
+
+/** @brief SPI 事件数据，只在回调期间有效。 */
+typedef struct {
+  Platform_SPI_EventType type;
+  uint32_t error;
+} Platform_SPI_Event;
+
 typedef void (*Platform_SPI_Callback)(
   Platform_SPI_Instance spi,
+  const Platform_SPI_Event *event,
   void *context
 );
 
 /**
- * @brief SPI 完成回调集合。
+ * @brief SPI 回调集合。
  * @note 回调在中断上下文执行。
  * @note 一个物理实例在整个生命周期内只能有一个回调所有者。
  */
 typedef struct {
-  Platform_SPI_Callback tx_cplt_cb;
-  Platform_SPI_Callback rx_cplt_cb;
-  Platform_SPI_Callback txrx_cplt_cb;
-  Platform_SPI_Callback err_cb;
-  Platform_SPI_Callback abort_cplt_cb;
+  Platform_SPI_Callback callback;
   void *context;
 } platform_spi_callbacks_t;
 
 /**
  * @brief 读取 CubeMX 配置的数据宽度。
  * @param spi SPI 实例。
+ * @param data_width 输出数据宽度。
  * @note 即使工作在 16 位模式，传输函数中的长度仍以字节为单位。
- * @note 空指针、长度为零、16 位模式下长度为奇数、16 位数据未对齐以及
- *       非法实例都会返回 Platform_ERROR。
+ * @retval Platform_OK 查询成功。
+ * @retval Platform_INVALID_ARGUMENT 实例、输出指针或 CubeMX 数据宽度非法。
  */
-Platform_SPI_DataWidth Platform_SPI_GetDataWidth(
-  Platform_SPI_Instance spi
+Platform_StatusTypeDef Platform_SPI_GetDataWidth(
+  Platform_SPI_Instance spi,
+  Platform_SPI_DataWidth *data_width
 );
 
 /**
@@ -238,8 +252,11 @@ uint32_t Platform_SPI_GetLastError(Platform_SPI_Instance spi);
  * @param spi SPI 实例。
  * @param callbacks 待复制的回调集合。
  * @note 结构体会被复制。应在初始化阶段、启动 IT/DMA 传输前调用一次。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_SPI_RegisterCallbacks(
+Platform_StatusTypeDef Platform_SPI_RegisterCallbacks(
   Platform_SPI_Instance spi,
   const platform_spi_callbacks_t *callbacks
 );

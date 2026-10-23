@@ -14,6 +14,7 @@
 
 #include "platform_config.h"
 #include "platform_def.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #if !PLATFORM_ENABLE_RTC
@@ -43,7 +44,6 @@ typedef struct {
   uint8_t second;
 } Platform_RTC_AlarmConfig;
 
-#if PLATFORM_RTC_HAS_WAKEUP_TIMER
 /**
  * @brief RTC 唤醒定时器时钟源。
  * @note 除非参考手册规定了不同的重装行为，周期为所选时钟的
@@ -60,7 +60,6 @@ typedef enum {
 
 /** @brief STM32F4 唤醒重装计数器可接受的最大值。 */
 #define PLATFORM_RTC_WAKEUP_COUNTER_MAX 0xFFFFU
-#endif
 
 /** @brief RTC 错误标志。 */
 typedef enum {
@@ -75,9 +74,7 @@ typedef enum {
 
 typedef enum {
   PLATFORM_RTC_EVENT_ALARM = 0U,
-#if PLATFORM_RTC_HAS_WAKEUP_TIMER
   PLATFORM_RTC_EVENT_WAKEUP,
-#endif
 } Platform_RTC_Event;
 
 typedef void (*Platform_RTC_Callback)(
@@ -89,11 +86,16 @@ typedef void (*Platform_RTC_Callback)(
 /** @brief RTC 事件回调所有者。 */
 typedef struct {
   Platform_RTC_Callback alarm_cb;
-#if PLATFORM_RTC_HAS_WAKEUP_TIMER
   Platform_RTC_Callback wakeup_cb;
-#endif
   void *context;
 } platform_rtc_callbacks_t;
+
+/**
+ * @brief 查询当前系列是否支持 RTC 唤醒定时器。
+ * @param rtc RTC 实例。
+ * @return 支持返回 true；F1 或不支持实例返回 false。
+ */
+bool Platform_RTC_HasWakeUpTimer(Platform_RTC_Instance rtc);
 
 /**
  * @brief 设置完整的二进制日期与 24 小时时间。
@@ -138,12 +140,12 @@ Platform_StatusTypeDef Platform_RTC_DisableAlarm(
   Platform_RTC_Instance rtc
 );
 
-#if PLATFORM_RTC_HAS_WAKEUP_TIMER
 /**
  * @brief 启动 RTC 唤醒定时器中断。
  * @param rtc RTC 实例。
  * @param counter 以所选时钟节拍表示的重装计数器，范围 0..0xFFFF。
  * @param clock 唤醒定时器时钟源。
+ * @retval Platform_UNSUPPORTED 当前系列不支持唤醒定时器。
  * @note 唤醒时序由 RTC 时钟推导；实际周期取决于所选时钟和计数器重装语义。
  */
 Platform_StatusTypeDef Platform_RTC_StartWakeUpTimer(
@@ -159,11 +161,12 @@ Platform_StatusTypeDef Platform_RTC_StartWakeUpTimer(
 Platform_StatusTypeDef Platform_RTC_StopWakeUpTimer(
   Platform_RTC_Instance rtc
 );
-#endif
 
 /**
  * @brief 读取最近一次 Platform RTC 操作错误快照。
  * @param rtc RTC 实例。
+ * @return `Platform_RTC_Error` 与 `PLATFORM_COMMON_ERROR_*` 位掩码的组合。
+ * @note 读取不清除快照。
  */
 uint32_t Platform_RTC_GetLastError(Platform_RTC_Instance rtc);
 
@@ -172,8 +175,11 @@ uint32_t Platform_RTC_GetLastError(Platform_RTC_Instance rtc);
  * @param rtc RTC 实例。
  * @param callbacks 待复制的回调集合。
  * @note 回调在中断上下文执行。应在初始化阶段调用一次。
+ * @retval Platform_OK 注册成功。
+ * @retval Platform_BUSY 该实例已注册回调。
+ * @retval Platform_INVALID_ARGUMENT 实例或回调集合非法。
  */
-void Platform_RTC_RegisterCallbacks(
+Platform_StatusTypeDef Platform_RTC_RegisterCallbacks(
   Platform_RTC_Instance rtc,
   const platform_rtc_callbacks_t *callbacks
 );

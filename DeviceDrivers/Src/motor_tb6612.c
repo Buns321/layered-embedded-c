@@ -55,7 +55,7 @@ static void Dev_Motor_TB6612_SetPower(motor_base_t *this, float power) {
 
 
   if (next_direction != self->last_direction) {
-    Platform_PWM_SetDuty(
+    (void)Platform_PWM_SetDuty(
       self->pwm_instance,
       self->pwm_channel,
       self->motor_base.max_duty,
@@ -75,7 +75,7 @@ static void Dev_Motor_TB6612_SetPower(motor_base_t *this, float power) {
   }
   uint32_t duty = (uint32_t)(power < 0.0f ? -power : power);
 
-  Platform_PWM_SetDuty(
+  (void)Platform_PWM_SetDuty(
     self->pwm_instance,
     self->pwm_channel,
     self->motor_base.max_duty,
@@ -88,7 +88,7 @@ static void Dev_Motor_TB6612_Brake(motor_base_t *this) {
 
   motor_tb6612_t *self = (motor_tb6612_t *)this;
 
-  Platform_PWM_SetDuty(
+  (void)Platform_PWM_SetDuty(
     self->pwm_instance,
     self->pwm_channel,
     self->motor_base.max_duty,
@@ -108,7 +108,7 @@ static void Dev_Motor_TB6612_Brake(motor_base_t *this) {
 
   self->last_direction = DEV_TB6612_DIRECTION_BRAKE;
 
-  Platform_PWM_SetDuty(
+  (void)Platform_PWM_SetDuty(
     self->pwm_instance,
     self->pwm_channel,
     self->motor_base.max_duty,

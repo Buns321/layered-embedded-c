@@ -14,11 +14,13 @@ static Dev_USART_Status Dev_USART_Port_MapStatus(
   Platform_StatusTypeDef status
 ) {
   switch (status) {
-    case Platform_OK:      return DEV_USART_OK;
-    case Platform_BUSY:    return DEV_USART_BUSY;
-    case Platform_TIMEOUT: return DEV_USART_TIMEOUT;
-    case Platform_ERROR:   return DEV_USART_ERROR;
-    default:               assert(0); return DEV_USART_ERROR;
+    case Platform_OK:               return DEV_USART_OK;
+    case Platform_BUSY:             return DEV_USART_BUSY;
+    case Platform_TIMEOUT:          return DEV_USART_TIMEOUT;
+    case Platform_ERROR:            return DEV_USART_ERROR;
+    case Platform_INVALID_ARGUMENT: return DEV_USART_ERROR;
+    case Platform_UNSUPPORTED:      return DEV_USART_ERROR;
+    default:                        assert(0); return DEV_USART_ERROR;
   }
 }
 
@@ -99,79 +101,46 @@ static const usart_ops_t usart_ops_port = {
   .transmit_dma = Dev_USART_Port_TransmitDMA,
 };
 
-static void Dev_USART_Port_OnTxCplt(
+static void Dev_USART_Port_OnEvent(
   Platform_UART_Instance instance,
+  const Platform_UART_Event *event,
   void *context
 ) {
   usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnTxCplt(&self->usart_base);
+  assert(self && event && instance == self->instance);
+
+  switch (event->type) {
+    case PLATFORM_UART_EVENT_TX_CPLT:
+      Dev_USART_Base_OnTxCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_TX_HALF:
+      Dev_USART_Base_OnTxHalfCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_RX_CPLT:
+      Dev_USART_Base_OnRxCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_RX_HALF:
+      Dev_USART_Base_OnRxHalfCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_ERROR:
+      Dev_USART_Base_OnError(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_ABORT_CPLT:
+      Dev_USART_Base_OnAbortCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_ABORT_TX_CPLT:
+      Dev_USART_Base_OnAbortTxCplt(&self->usart_base);
+      break;
+    case PLATFORM_UART_EVENT_ABORT_RX_CPLT:
+      Dev_USART_Base_OnAbortRxCplt(&self->usart_base);
+      break;
+    default:
+      assert(0);
+      break;
+  }
 }
 
-static void Dev_USART_Port_OnTxHalfCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnTxHalfCplt(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnRxCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnRxCplt(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnRxHalfCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnRxHalfCplt(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnError(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnError(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnAbortCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnAbortCplt(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnAbortTxCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnAbortTxCplt(&self->usart_base);
-}
-
-static void Dev_USART_Port_OnAbortRxCplt(
-  Platform_UART_Instance instance,
-  void *context
-) {
-  usart_port_t *self = (usart_port_t *)context;
-  assert(self && instance == self->instance);
-  Dev_USART_Base_OnAbortRxCplt(&self->usart_base);
-}
-
-void Dev_USART_Port_Init(
+Platform_StatusTypeDef Dev_USART_Port_Init(
   usart_port_t *this,
   const char *name,
   Platform_UART_Instance instance
@@ -182,16 +151,9 @@ void Dev_USART_Port_Init(
   this->instance = instance;
 
   platform_uart_callbacks_t callbacks = {
-    .tx_cplt_cb      = Dev_USART_Port_OnTxCplt,
-    .tx_halfcplt_cb  = Dev_USART_Port_OnTxHalfCplt,
-    .rx_cplt_cb      = Dev_USART_Port_OnRxCplt,
-    .rx_halfcplt_cb  = Dev_USART_Port_OnRxHalfCplt,
-    .err_cb          = Dev_USART_Port_OnError,
-    .abort_cplt_cb   = Dev_USART_Port_OnAbortCplt,
-    .abort_txcplt_cb = Dev_USART_Port_OnAbortTxCplt,
-    .abort_rxcplt_cb = Dev_USART_Port_OnAbortRxCplt,
-    .context         = this,
+    .callback = Dev_USART_Port_OnEvent,
+    .context  = this,
   };
 
-  Platform_UART_RegisterCallbacks(instance, &callbacks);
+  return Platform_UART_RegisterCallbacks(instance, &callbacks);
 }

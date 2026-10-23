@@ -9,7 +9,11 @@
 static int32_t dev_encoder_tim_readdelta(encoder_base_t *this) {
   assert(this);
   encoder_tim_t *self = (encoder_tim_t*)this;
-  uint32_t now = Platform_Encoder_GetCounter(self->tim);
+  uint32_t now = 0u;
+  if (Platform_Encoder_GetCounter(self->tim, &now) != Platform_OK) {
+    self->overflow = true;
+    return 0;
+  }
   if (self->has_base_count == false) {
     self->last_count = now;
     self->has_base_count = true;
@@ -63,7 +67,10 @@ static int64_t Dev_Encoder_TIM_GetPosition(encoder_base_t *this) {
 static void Dev_Encoder_TIM_SetZero(encoder_base_t *this) {
   assert(this);
   encoder_tim_t *self = (encoder_tim_t*)this;
-  Platform_Encoder_SetCounter(self->tim, 0);
+  if (Platform_Encoder_SetCounter(self->tim, 0u) != Platform_OK) {
+    self->overflow = true;
+    return;
+  }
   self->last_count = 0;
   self->has_base_count = true;
   self->overflow = false;
@@ -78,7 +85,12 @@ static int32_t Dev_Encoder_TIM_GetDelta(encoder_base_t *this) {
 static void Dev_Encoder_TIM_Resync(encoder_base_t *this) {
   assert(this);
   encoder_tim_t *self = (encoder_tim_t*)this;
-  self->last_count = Platform_Encoder_GetCounter(self->tim);
+  uint32_t counter = 0u;
+  if (Platform_Encoder_GetCounter(self->tim, &counter) != Platform_OK) {
+    self->overflow = true;
+    return;
+  }
+  self->last_count = counter;
   self->has_base_count = true;
   self->overflow = false;
 }
@@ -98,7 +110,13 @@ Platform_StatusTypeDef Dev_Encoder_TIM_Init(
   assert(this && name);
 
   this->tim = tim;
-  this->bit_width = Platform_Encoder_GetCounterBits(this->tim);
+  Platform_StatusTypeDef status = Platform_Encoder_GetCounterBits(
+    this->tim,
+    &this->bit_width
+  );
+  if (status != Platform_OK) {
+    return status;
+  }
 
   assert(this->bit_width == 16U || this->bit_width == 32U);
 

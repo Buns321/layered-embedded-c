@@ -16,6 +16,7 @@ INPUT                  = README.md \
                          doc/architecture.md \
                          doc/imu.md \
                          doc/platform.md \
+                         doc/platform-contract.md \
                          doc/units.md \
                          doc/conventions.md \
                          doc/telemetry.md \
@@ -80,7 +81,6 @@ PREDEFINED             = USE_FREERTOS STM32F4xx \
                          PLATFORM_ENABLE_CAN2=1 \
                          PLATFORM_ENABLE_RTC=1 \
                          PLATFORM_ENABLE_FLASH=1 \
-                         PLATFORM_RTC_HAS_WAKEUP_TIMER=1 \
                          PLATFORM_ENABLE_CRC=1 \
                          PLATFORM_ENABLE_RNG=1 \
                          PLATFORM_ENABLE_IWDG=1 \

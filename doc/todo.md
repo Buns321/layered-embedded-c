@@ -11,8 +11,70 @@
 - [ ] 轮速 PID、参数标定和板上验证
 - [ ] 遥测通道 schema、周期发送与 USART2 高速配置
 
+## Platform · 统一契约重构
+**目标**：F1/F4 只允许在实例数量、位宽、能力集合和 HAL 后端上不同；公共参数
+校验、状态机、错误快照、回调所有权和异步生命周期保持一致。平行外设按
+transfer / converter / timer / registry 分组，同组接口采用同一设计模式。
+
+**规则冻结**
+- [x] 新增 `doc/platform-contract.md`，冻结状态码、错误位、参数校验、timeout、
+  回调、abort、缓冲区和跨系列能力规则
+- [x] `Platform_StatusTypeDef` 增加参数错误和硬件不支持状态
+- [x] 定义跨外设通用错误位，模块专用 HAL 错误使用独立高位
+- [x] 明确公共参数错误不在 Debug/Release 间采用不同行为
+- [x] 明确 `assert` 只用于内部不变量，不用于可返回错误的公共输入
+- [ ] 所有错误快照统一为“操作开始时清零，记录最近一次公共操作，读取不清零”
+
+**公共基础设施**
+- [x] 提取公共错误快照辅助函数
+- [ ] 提取公共实例校验和状态转换辅助函数
+- [x] 回调注册统一返回 `Platform_StatusTypeDef`
+- [x] 每个物理实例只允许注册一次；重复注册统一返回 `Platform_BUSY`
+- [x] EXTI 取消特殊覆盖语义，与其他外设统一回调所有权
+- [x] 增加原生 fake-backend watchdog/RTC/Flash 契约测试，覆盖能力、状态和错误差异
+- [ ] 扩展 `cmake/platform-check`，验证两系列公共 API 签名和行为可编译
+
+**第一批确定性修复**
+- [x] IWDG 仅在 HAL 启动成功后设置 started 状态
+- [x] WWDG 根据实际 PCLK1 返回可用最大超时，修正 F103 的 49 ms 声明
+- [x] RTC 的非法实例、空指针和参数错误在 F1/F4 采用相同返回与错误位
+- [x] `Platform_SPI_GetDataWidth` 改为 `status + out`，不再用 8-bit 表示失败
+- [x] CAN 参数错误、状态错误和 HAL 错误统一写入 `GetLastError`
+- [x] 消除同一公共错误条件同时 `assert` 和返回错误的混合实现
+
+**分组重构**
+- [x] watchdog 组：先完成公共状态机和双平台行为一致
+- [x] watchdog 试点：公共逻辑位于 `Platform/Src/common/`，F1/F4 仅保留 backend
+- [x] service 组：RTC、Flash 统一参数校验、错误快照和复位/擦除语义
+- [x] transfer 组：UART、I2C、SPI、CAN 统一 typed event、回调所有权、
+  参数错误和错误快照
+- [x] transfer 组已完成 UART/I2C/SPI/CAN 的 common/backend 拆分
+- [ ] transfer abort 能力差异仍需在能力查询和板上恢复流程中验证
+- [x] converter 组：ADC、DAC 统一启动、停止、DMA、缓冲区和能力错误
+- [x] timer 组：PWM、Encoder 统一 start/stop、计数器/比较值和非法实例处理
+- [x] registry 组：GPIO、EXTI 公共逻辑统一；GPIO 保持明确的无状态快速路径
+- [x] transfer 组已统一使用 typed event 结构
+- [x] converter 组已统一使用 typed event 结构
+
+**F1/F4 去重**
+- [x] Public headers 只保留一份，能力差异通过配置、查询或 `Platform_UNSUPPORTED`
+  表达，不改变普通函数签名
+- [x] 公共参数校验、状态机、错误映射和回调分发迁入 `Platform/Src/common/`
+- [x] F1/F4 目录只保留 handle 映射、HAL 调用、时钟和硬件能力差异
+- [x] 已完成 watchdog、RTC、Flash、UART、I2C、SPI、CAN、ADC、DAC、
+  PWM、Encoder、GPIO、EXTI、CRC、RNG 的 common/backend 拆分
+- [ ] CMake 拆出 `platform_common` 与 `platform_f1/f4_backend` 目标
+- [x] 每个分组成员完成后同时构建 F4/F103 Debug、Release 与 `-Werror`
+
+**验收**
+- [x] 同一输入通过同一组 fake-backend 契约测试验证状态和通用错误位
+- [x] 同类外设的事件、abort、回调和错误快照语义一致
+- [x] 公共输入在 Debug/Release 下不会因 `assert` 开关改变行为
+- [x] Platform 公共头不泄漏 HAL 类型，公共实现不重复维护两份业务逻辑
+- [x] App/RTOS 接线前完成 Platform 契约冻结和双平台编译/主机侧验收
+
 ## Platform
-**架构**：Platform 层用枚举身份和静态映射函数把 HAL 类型封在实现文件内部，上层只接触 `Platform_*` 类型；同一套头文件对应 f1/f4 两份实现，构建时选用其一；状态码统一映射为 `Platform_StatusTypeDef`。
+**架构**：Platform 层用枚举身份和静态映射函数把 HAL 类型封在实现文件内部，上层只接触 `Platform_*` 类型；公共状态、校验和策略逐步迁入 `Platform/Src/common/`，f1/f4 只保留 HAL backend。
 - [x] 保留两个 `platform_tim.c`，作为 TIM 句柄/通道映射与基础定时器操作的落点
 - [x] 将 HAL 状态映射从公共头移到 Platform 私有的 `platform_hal_internal.h`
 - [x] 公共头文件只保留不依赖 HAL 类型的枚举、普通数据结构、回调和函数声明
@@ -22,7 +84,7 @@
 - [x] Encoder 去掉冗余 channel 参数，固定使用两输入编码器模式
 - [x] UART 发送接口改为 const 缓冲区，并增加 TX/RX abort 与错误快照 API
 - [x] 文档补充 CubeMX 所有权、回调所有权和 DMA 缓冲区生命周期契约
-- [x] 确认 Platform 边界继续使用 `assert` 处理非法枚举，不回退为 `Platform_StatusTypeDef` 返回
+- [x] 历史策略已由“Platform 统一契约重构”替代；公共参数错误统一返回状态
 - [x] `Platform_UART_*` 各入口校验指针、长度和 UART 枚举
 - [x] 修正 `Platform_UART_ClearBuffer`：改为中止接收并清除 UART 错误/状态标志
 - [x] 修正 EXTI 回调传递引脚索引而非 GPIO Pin 的问题，并校验单 bit、范围和空 Pin
