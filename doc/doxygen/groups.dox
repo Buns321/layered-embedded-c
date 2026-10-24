@@ -60,6 +60,11 @@
  */
 
 /**
+ * @defgroup board 板级支持
+ * @brief 板级引脚、自检与硬件集成入口。
+ */
+
+/**
  * @defgroup tests 测试
  * @brief 主机侧公共契约、管线与编译验证。
  */

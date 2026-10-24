@@ -23,12 +23,17 @@ set(CMAKE_PROJECT_NAME f103c8t6)
 
 # 可选调试服务
 option(SYS_LOG_USE_RTT "启用 SEGGER RTT System 日志后端" ON)
+option(BOARD_SELFTEST "启动时运行非破坏性板载自检" ${SYS_LOG_USE_RTT})
 option(PLATFORM_BUILD_I2C "编译 Platform I2C 实现" OFF)
 option(PLATFORM_BUILD_SPI "编译 Platform SPI 实现" OFF)
 option(PLATFORM_BUILD_ADC "编译 Platform ADC 实现" OFF)
 option(PLATFORM_BUILD_CAN "编译 Platform CAN 实现" OFF)
 option(PLATFORM_BUILD_RTC "编译 Platform RTC 实现" OFF)
 option(PLATFORM_BUILD_FLASH "编译 Platform Flash 实现" OFF)
+
+if(BOARD_SELFTEST AND NOT SYS_LOG_USE_RTT)
+    message(FATAL_ERROR "BOARD_SELFTEST 需要可用的 System 日志后端；请同时启用 SYS_LOG_USE_RTT")
+endif()
 
 # 生成编译命令，便于 clangd 等工具建立索引
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -108,6 +113,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/System/Src/system_watchdog.c
 )
 
+if(BOARD_SELFTEST)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc/board_selftest.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_selftest.c
+    )
+endif()
+
 if(PLATFORM_BUILD_I2C)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
@@ -161,6 +173,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/Policy/Inc
     ${REPO_ROOT}/RTOS/Inc
     ${REPO_ROOT}/System/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc
 )
 
 # 添加工程符号（宏）
@@ -173,6 +186,12 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     PLATFORM_ENABLE_IWDG=1
     PLATFORM_ENABLE_WWDG=1
 )
+
+if(BOARD_SELFTEST)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        BOARD_SELFTEST=1
+    )
+endif()
 
 if(SYS_LOG_USE_RTT)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE

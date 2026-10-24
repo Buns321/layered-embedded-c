@@ -1,6 +1,6 @@
 # 原生测试
 
-这些测试覆盖与 HAL 无关的校验逻辑、算术辅助函数、统一 IMU 管线、
+这些测试覆盖与 HAL 无关的校验逻辑、算术辅助函数、System 日志门面、统一 IMU 管线、
 watchdog/RTC/Flash/UART/I2C/SPI/CAN/ADC/DAC/PWM/Encoder/EXTI/GPIO/CRC/RNG
 公共状态机，并通过伪 Platform I2C 传输验证 MPU6050 驱动。
 

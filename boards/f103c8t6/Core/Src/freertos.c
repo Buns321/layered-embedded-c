@@ -28,6 +28,9 @@
 #if defined(SYS_LOG_USE_RTT)
 #include "system_log.h"
 #endif
+#if defined(BOARD_SELFTEST)
+#include "board_selftest.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,7 +56,7 @@
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -119,6 +122,19 @@ void StartDefaultTask(void *argument)
   (void)argument;
 #if defined(SYS_LOG_USE_RTT)
   SYS_LOG_INFO("RTOS", "scheduler started");
+#endif
+#if defined(BOARD_SELFTEST)
+  uint32_t selftest_tick_start_ms = osKernelGetTickCount();
+  osDelay(5u);
+  uint32_t selftest_tick_elapsed_ms =
+    osKernelGetTickCount() - selftest_tick_start_ms;
+  bool selftest_tick_ok =
+    selftest_tick_elapsed_ms >= 4u &&
+    selftest_tick_elapsed_ms <= 50u;
+  (void)Board_SelfTest_RunAll(
+    selftest_tick_ok,
+    selftest_tick_elapsed_ms
+  );
 #endif
   uint32_t last_log_ms = osKernelGetTickCount();
   /* Infinite loop */

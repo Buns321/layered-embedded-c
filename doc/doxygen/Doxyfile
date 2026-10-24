@@ -26,6 +26,8 @@ INPUT                  = README.md \
                          doc/doxygen/groups.dox \
                          boards/f103c8t6/README.md \
                          boards/f103c8t6/hardware-map.md \
+                         boards/f103c8t6/Board \
+                         tools/rtt/README.md \
                          cmake/platform-check/README.md \
                          cmake/platform-test \
                          Platform \
@@ -98,4 +100,5 @@ INCLUDE_PATH           = Platform/Inc \
                          Filter/Base/Inc \
                          Filter/Inc \
                          System/Inc \
-                         RTOS/Inc
+                         RTOS/Inc \
+                         boards/f103c8t6/Board/Inc

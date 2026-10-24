@@ -115,7 +115,7 @@ cmake --build --preset f1-release
 关闭 RTT 日志的 Debug 构建：
 
 ```powershell
-cmake --preset Debug -DSYS_LOG_USE_RTT=OFF
+cmake --preset Debug -DSYS_LOG_USE_RTT=OFF -DBOARD_SELFTEST=OFF
 cmake --build --preset Debug
 ```
 
@@ -137,8 +137,34 @@ openocd -f interface/stlink.cfg -f target/stm32f1x.cfg `
   -c "program build/Debug/f103c8t6.elf verify reset exit"
 ```
 
-RTT 通过 SWD 通道工作。使用 J-Link RTT Viewer 时选择 J-Link GDB Server；
-使用 OpenOCD 时在调试配置中启用 RTT。
+RTT 通过 SWD 通道工作。烧录带 RTT 的固件后，在仓库根目录运行：
+
+```powershell
+$env:OPENOCD_EXE = "D:\path\to\openocd.exe"
+.\tools\rtt\Receive-Rtt.ps1 -Board f103c8t6
+```
+
+脚本会自动查找 `SEGGER RTT` 控制块并输出日志，不执行烧录。
+详细参数见 [`tools/rtt/README.md`](../../tools/rtt/README.md)。
+
+### 板载自检
+
+F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出：
+
+```text
+[5][I][TEST] BEGIN board=f103c8t6
+[5][I][TEST] clock PASS
+[5][I][TEST] tick elapsed=5 ms
+[5][I][TEST] tick PASS
+[5][I][TEST] log PASS
+[5][I][TEST] crc PASS
+[5][I][TEST] SUMMARY pass=4 fail=0
+```
+
+当前覆盖 72 MHz 内核时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC。
+测试不操作继电器、电机、舵机、蜂鸣器和灯。可通过 `-DBOARD_SELFTEST=OFF` 关闭。
+该选项默认跟随 `SYS_LOG_USE_RTT`；关闭 RTT 时默认关闭自检，显式强制二者冲突会
+在配置阶段失败。
 
 ## 当前验证状态
 
@@ -146,6 +172,8 @@ RTT 通过 SWD 通道工作。使用 J-Link RTT Viewer 时选择 J-Link GDB Serv
 - F103 目标已接入共享 System、Platform F1、DeviceDrivers base、Controller、
   Policy、Filter、RTOS 和 App 占位入口。
 - F1 支持的全部 Platform 外设已通过 Debug、Release 独立编译检查。
+- 板上非破坏性自检已通过：72 MHz 时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC，
+  结果为 `SUMMARY pass=4 fail=0`。
 - 板上时钟、RTT、FreeRTOS 调度、CRC、IWDG、WWDG 以及硬件接口验证按
   [硬件与接口规范](hardware-map.md)第 11 节执行。
 

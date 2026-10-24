@@ -103,6 +103,12 @@ add_executable(platform_gpio_contract_test
     ${REPO_ROOT}/Platform/Src/common/platform_gpio_common.c
 )
 
+add_executable(system_log_contract_test
+    system_log_contract_test.c
+    ${REPO_ROOT}/System/Src/system_log.c
+    ${REPO_ROOT}/System/Src/system_log_base.c
+)
+
 target_include_directories(platform_validation_test PRIVATE
     ${REPO_ROOT}/Platform/Src
 )
@@ -263,6 +269,14 @@ target_include_directories(platform_gpio_contract_test PRIVATE
     ${REPO_ROOT}/Platform/Src
 )
 
+target_include_directories(system_log_contract_test PRIVATE
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(system_log_contract_test PRIVATE
+    SYS_LOG_EXTERNAL_TIME_SOURCE=Sys_Log_TestGetTimeMs
+)
+
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(platform_validation_test PRIVATE
         -Wall
@@ -349,6 +363,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(system_log_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
 endif()
 
 if(NOT MSVC)
@@ -423,4 +442,8 @@ add_test(
 add_test(
     NAME platform_gpio_contract_test
     COMMAND platform_gpio_contract_test
+)
+add_test(
+    NAME system_log_contract_test
+    COMMAND system_log_contract_test
 )
