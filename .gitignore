@@ -55,6 +55,7 @@ rules.ninja
 # ---- 编辑器 / IDE ----
 .idea/
 .vscode/
+.obsidian/
 .cache/
 .ccls-cache/
 *.swp
