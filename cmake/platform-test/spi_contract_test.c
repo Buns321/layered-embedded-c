@@ -1,3 +1,9 @@
+/**
+ * @file spi_contract_test.c
+ * @brief SPI Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_spi_backend.h"
 #include "platform_spi.h"
 #include <assert.h>

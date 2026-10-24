@@ -1,6 +1,7 @@
 /**
  * @file platform_wwdg_common.c
- * @brief Family-independent WWDG policy and state management.
+ * @brief 与芯片系列无关的 WWDG 策略与状态管理。
+ * @ingroup platform
  */
 
 #include "platform_wwdg_backend.h"

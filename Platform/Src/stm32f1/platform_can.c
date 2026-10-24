@@ -1,6 +1,7 @@
 /**
  * @file platform_can.c
- * @brief STM32F1 HAL backend for the common CAN implementation.
+ * @brief STM32F1 公共 CAN 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "can.h"

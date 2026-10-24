@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file filter_base.c
+ * @brief 滤波器抽象接口实现。
+ * @ingroup filter
+ */
+
 #include "filter_base.h"
 #include <assert.h>
 

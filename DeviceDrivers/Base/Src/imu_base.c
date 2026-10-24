@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/9/1。
 //
 
+/**
+ * @file imu_base.c
+ * @brief IMU 抽象与统一滤波管线实现。
+ * @ingroup drivers_base
+ */
+
 #include "imu_base.h"
 #include "system_critical.h"
 #include "system_math.h"

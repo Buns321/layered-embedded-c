@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file policy_omni_kinematics.c
+ * @brief Omni 运动学策略实现。
+ * @ingroup policy
+ */
+
 #include "policy_omni_kinematics.h"
 #include "system_math.h"
 #include <assert.h>

@@ -1,6 +1,7 @@
 /**
  * @file platform_adc.c
- * @brief STM32F1 HAL backend for the common ADC implementation.
+ * @brief STM32F1 公共 ADC 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "adc.h"

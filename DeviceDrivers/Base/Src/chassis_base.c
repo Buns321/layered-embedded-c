@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file chassis_base.c
+ * @brief 底盘生命周期抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "chassis_base.h"
 #include <assert.h>
 

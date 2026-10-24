@@ -1,6 +1,7 @@
 /**
  * @file platform_rng.c
- * @brief STM32F4 HAL backend for the common RNG implementation.
+ * @brief STM32F4 公共 RNG 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_hal_internal.h"

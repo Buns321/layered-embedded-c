@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file filter_lowpass.c
+ * @brief 多通道一阶低通滤波器实现。
+ * @ingroup filter
+ */
+
 #include "filter_lowpass.h"
 #include "system_math.h"
 #include <assert.h>

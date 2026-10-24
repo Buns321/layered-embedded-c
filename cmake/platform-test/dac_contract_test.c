@@ -1,3 +1,9 @@
+/**
+ * @file dac_contract_test.c
+ * @brief DAC Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_dac_backend.h"
 #include "platform_dac.h"
 #include <assert.h>

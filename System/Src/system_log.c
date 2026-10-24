@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_log.c
+ * @brief System 日志门面实现。
+ * @ingroup system
+ */
+
 #include "system_log.h"
 #include <stdarg.h>
 #include <stdbool.h>

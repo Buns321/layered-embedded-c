@@ -1,6 +1,7 @@
 /**
  * @file platform_exti_common.c
- * @brief Family-independent EXTI ownership and callback dispatch.
+ * @brief 与芯片系列无关的 EXTI 所有权管理和回调分发。
+ * @ingroup platform
  */
 
 #include "platform_exti.h"

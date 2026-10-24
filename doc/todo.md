@@ -22,6 +22,15 @@
 - [x] Policy、RTOS、System 数学 API 和文件名统一词序
 - [x] F4/F103 Debug、Release、`-Werror` 与全实例检查通过
 
+## 文档与 Doxygen 规范
+**目标**：项目自有 C/H、Markdown 和 Doxygen 文档使用中文说明、统一文件头和明确分组。
+- [x] 192 个生产及主机测试 C/H 文件补齐 `@file`、中文 `@brief` 和分组
+- [x] Platform 公共实现、HAL 后端与私有接口的英文说明完成汉化
+- [x] 文件头、语言、API 注释、Doxygen 输入和排除范围写入编码契约
+- [x] Doxygen 增加测试分组并纳入 `cmake/platform-test`
+- [x] 文档索引补齐 IMU、Platform 编译检查和主机测试入口
+- [ ] 将文件头与中文注释检查接入 CMake 命名/文档门禁
+
 ## Platform · 统一契约重构
 **目标**：F1/F4 只允许在实例数量、位宽、能力集合和 HAL 后端上不同；公共参数
 校验、状态机、错误快照、回调所有权和异步生命周期保持一致。平行外设按

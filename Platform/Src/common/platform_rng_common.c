@@ -1,6 +1,7 @@
 /**
  * @file platform_rng_common.c
- * @brief Family-independent RNG validation and error snapshot.
+ * @brief 与芯片系列无关的 RNG 参数校验与错误快照。
+ * @ingroup platform
  */
 
 #include "platform_error_internal.h"

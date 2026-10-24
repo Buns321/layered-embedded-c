@@ -1,6 +1,7 @@
 /**
  * @file platform_dac_common.c
- * @brief Family-independent DAC validation, errors and callback dispatch.
+ * @brief 与芯片系列无关的 DAC 参数校验、错误管理和回调分发。
+ * @ingroup platform
  */
 
 #include "platform_dac_backend.h"

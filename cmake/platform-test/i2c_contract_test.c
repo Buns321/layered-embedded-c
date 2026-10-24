@@ -1,3 +1,9 @@
+/**
+ * @file i2c_contract_test.c
+ * @brief I2C Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_i2c_backend.h"
 #include "platform_i2c.h"
 #include <assert.h>

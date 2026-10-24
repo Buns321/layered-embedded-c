@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_fault.c
+ * @brief System Fault 诊断与快照实现。
+ * @ingroup system
+ */
+
 #include "system_fault.h"
 
 #if defined(STM32F4xx)

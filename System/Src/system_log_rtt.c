@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_log_rtt.c
+ * @brief SEGGER RTT 日志后端实现。
+ * @ingroup system
+ */
+
 #include "system_log_rtt.h"
 #include "SEGGER_RTT.h"
 #include <assert.h>

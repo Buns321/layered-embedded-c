@@ -1,6 +1,7 @@
 /**
  * @file platform_rng_backend.h
- * @brief Private STM32-family backend for the common RNG implementation.
+ * @brief STM32 系列公共 RNG 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_RNG_BACKEND_H

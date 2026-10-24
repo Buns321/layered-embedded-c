@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/17。
 //
 
+/**
+ * @file controller_linear.c
+ * @brief 线性控制律实现。
+ * @ingroup controller
+ */
+
 #include "controller_linear.h"
 #include "system_math.h"
 #include <assert.h>

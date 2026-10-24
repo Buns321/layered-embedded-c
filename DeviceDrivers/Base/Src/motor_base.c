@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/24。
 //
 
+/**
+ * @file motor_base.c
+ * @brief 闭环电机抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "motor_base.h"
 #include "controller_base.h"
 #include "encoder_base.h"

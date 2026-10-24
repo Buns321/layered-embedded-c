@@ -1,6 +1,7 @@
 /**
  * @file platform_flash_common.c
- * @brief Family-independent Flash validation, busy state and error handling.
+ * @brief 与芯片系列无关的 Flash 参数校验、忙状态和错误处理。
+ * @ingroup platform
  */
 
 #include "platform_error_internal.h"

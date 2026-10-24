@@ -1,6 +1,7 @@
 /**
  * @file platform_rtc.c
- * @brief STM32F1 HAL backend for the common RTC implementation.
+ * @brief STM32F1 公共 RTC 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_hal_internal.h"

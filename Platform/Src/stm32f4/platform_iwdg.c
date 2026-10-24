@@ -1,6 +1,7 @@
 /**
  * @file platform_iwdg.c
- * @brief STM32F4 HAL backend for the common IWDG implementation.
+ * @brief STM32F4 公共 IWDG 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_hal_internal.h"

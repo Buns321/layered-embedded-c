@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file controller_compose.c
+ * @brief 控制器级联组合实现。
+ * @ingroup controller
+ */
+
 #include "controller_compose.h"
 #include "system_math.h"
 #include <assert.h>

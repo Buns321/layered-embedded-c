@@ -1,6 +1,7 @@
 /**
  * @file platform_flash_backend.h
- * @brief Private STM32-family backend for the common Flash implementation.
+ * @brief STM32 系列公共 Flash 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_FLASH_BACKEND_H

@@ -1,6 +1,7 @@
 /**
  * @file platform_encoder.c
- * @brief STM32F4 HAL backend for the common encoder implementation.
+ * @brief STM32F4 公共 encoder 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_encoder_backend.h"

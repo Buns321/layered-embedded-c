@@ -1,3 +1,9 @@
+/**
+ * @file encoder_contract_test.c
+ * @brief Encoder Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_encoder_backend.h"
 #include "platform_encoder.h"
 #include <assert.h>

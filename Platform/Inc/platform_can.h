@@ -230,7 +230,7 @@ platform_status_t Platform_CAN_DeactivateNotification(
 /**
  * @brief 读取最近一次 CAN 操作错误快照。
  * @param can CAN 实例。
- * @return `platform_can_error_t` 与 `PLATFORM_COMMON_ERROR_*` 位掩码的组合。
+ * @return `platform_can_error_t` 与 `PLATFORM_ERROR_*` 位掩码的组合。
  * @note 参数错误也会写入通用 `PARAMETER` 位；读取不清除快照。
  */
 uint32_t Platform_CAN_GetLastError(platform_can_instance_t can);

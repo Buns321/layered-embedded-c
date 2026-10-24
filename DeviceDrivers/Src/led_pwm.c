@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file led_pwm.c
+ * @brief PWM LED 驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "led_pwm.h"
 #include <assert.h>
 

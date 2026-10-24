@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_critical.c
+ * @brief System 临界区实现。
+ * @ingroup system
+ */
+
 #include "system_critical.h"
 #include <assert.h>
 

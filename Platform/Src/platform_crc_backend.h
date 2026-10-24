@@ -1,6 +1,7 @@
 /**
  * @file platform_crc_backend.h
- * @brief Private STM32-family backend for the common CRC implementation.
+ * @brief STM32 系列公共 CRC 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_CRC_BACKEND_H

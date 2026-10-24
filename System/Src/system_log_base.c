@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_log_base.c
+ * @brief System 日志后端抽象实现。
+ * @ingroup system
+ */
+
 #include "system_log_base.h"
 #include <assert.h>
 #include <stddef.h>

@@ -1,6 +1,7 @@
 /**
  * @file platform_adc_common.c
- * @brief Family-independent ADC validation, errors and callback dispatch.
+ * @brief 与芯片系列无关的 ADC 参数校验、错误管理和回调分发。
+ * @ingroup platform
  */
 
 #include "platform_adc_backend.h"

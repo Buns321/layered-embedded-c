@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/30。
 //
 
+/**
+ * @file encoder_tim.c
+ * @brief 基于 TIM 的编码器驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "encoder_tim.h"
 #include "platform_encoder.h"
 #include "assert.h"

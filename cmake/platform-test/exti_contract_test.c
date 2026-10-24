@@ -1,3 +1,9 @@
+/**
+ * @file exti_contract_test.c
+ * @brief EXTI Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_exti.h"
 #include "platform_exti_backend.h"
 #include <assert.h>

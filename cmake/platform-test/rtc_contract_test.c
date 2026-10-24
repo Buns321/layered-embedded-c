@@ -1,3 +1,9 @@
+/**
+ * @file rtc_contract_test.c
+ * @brief RTC Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_rtc_backend.h"
 #include "platform_rtc.h"
 #include <assert.h>

@@ -1,6 +1,7 @@
 /**
  * @file platform_rtc_backend.h
- * @brief Private STM32-family backend for the common RTC implementation.
+ * @brief STM32 系列公共 RTC 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_RTC_BACKEND_H

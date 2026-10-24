@@ -1,6 +1,7 @@
 /**
  * @file platform_i2c.c
- * @brief STM32F4 HAL backend for the common I2C implementation.
+ * @brief STM32F4 公共 I2C 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "i2c.h"

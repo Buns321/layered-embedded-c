@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file chassis_omni.c
+ * @brief Omni 底盘实现。
+ * @ingroup chassis
+ */
+
 #include "chassis_omni.h"
 #include "system_math.h"
 #include <assert.h>

@@ -109,16 +109,60 @@
 - C11；使用 `_Static_assert` 做编译期检查。
 - 使用 `_Generic` 的数学宏，避免函数重载。
 - 2 空格缩进；回调首参使用 `<role>_h`。
-- 头文件使用 include guard，保留文件头注释。
+- 头文件使用 include guard；文件头遵守第 8.1 节的 Doxygen 模板。
 - 源码与注释统一 UTF-8。
 
 ## 8. 注释与 Doxygen
 
-- 公共头文件写 Doxygen 注释；C 源文件只在算法或状态机复杂时写块注释。
-- 注释至少说明：单位、范围、所有权、调用上下文、失败行为。
-- 使用 `@brief` / `@param` / `@retval` / `@note` / `@warning`。
-- 用 `@defgroup` / `@ingroup` 给模块分组。
-- 不写“显然”的注释；注释解释契约和原因。
+### 8.1 文件头
+
+- 项目维护的每个 `.c/.h` 文件都必须有 Doxygen 文件头，至少包含
+  `@file`、中文 `@brief` 和所属分组。
+- 文件头位于可选的创建信息之后、include 之前；`@file` 只写文件名，不写路径。
+- 公共头文件用 `@addtogroup` 引入模块分组，并在文件末尾用 `/** @} */` 关闭：
+
+  ```c
+  /**
+   * @file led_base.h
+   * @brief LED 抽象接口：开关与调光。
+   * @addtogroup drivers_base
+   * @{
+   */
+  ```
+
+- 实现文件和私有头文件使用 `@ingroup`，不重复打开公共分组：
+
+  ```c
+  /**
+   * @file led_base.c
+   * @brief LED 抽象接口实现。
+   * @ingroup drivers_base
+   */
+  ```
+
+- 新增分组必须先写入 `doc/doxygen/groups.dox`；新增文档或维护中的测试目录必须
+  同步加入 `doc/doxygen/Doxyfile` 的 `INPUT`。
+
+### 8.2 语言与内容
+
+- 项目自有注释、文档和 Doxygen 描述统一使用简体中文。
+- 类型名、函数名、参数名、宏、协议名、芯片外设名和通用缩写保留原文，例如
+  `platform_status_t`、UART、DMA、I2C、MPU6050。
+- 禁止保留整句英文说明；引用数据手册原文时，应在中文说明后附最小必要原文。
+- 注释至少说明：单位、范围、所有权、调用上下文、失败行为和并发限制。
+- 公共 API 必须按需使用 `@brief`、`@param`、`@retval`、`@pre`、`@post`、
+  `@note` 和 `@warning`；每个参数和每种预期状态都应有说明。
+- 普通 `//` 注释只用于解释实现原因、状态机步骤或数据手册约束，不替代文件头、
+  类型和公共 API 的 Doxygen 文档。
+- 不写“显然”的注释；注释解释契约、原因和边界，不复述代码。
+
+### 8.3 检查与排除
+
+- 提交前至少重新生成一次 Doxygen；生成警告必须为零，并检查分组归属。
+- 契约适用于 `App/`、`Controller/`、`DeviceDrivers/`、`Filter/`、`Policy/`、
+  `Platform/`、`RTOS/`、`System/` 及项目维护的主机测试。
+- `Drivers/`、`Middlewares/`、CubeMX 生成文件和第三方源码不套用本契约，也不得
+  为统一格式而手工修改。
 
 ## 9. 依赖规则
 

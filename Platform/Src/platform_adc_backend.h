@@ -1,6 +1,7 @@
 /**
  * @file platform_adc_backend.h
- * @brief Private STM32-family backend for the common ADC implementation.
+ * @brief STM32 系列公共 ADC 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_ADC_BACKEND_H

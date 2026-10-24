@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file firewater_uart.c
+ * @brief FireWater UART 遥测协议实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "firewater_uart.h"
 #include "system_math.h"
 #include <assert.h>

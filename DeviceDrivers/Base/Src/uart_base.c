@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/26。
 //
 
+/**
+ * @file uart_base.c
+ * @brief UART 抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "uart_base.h"
 #include <assert.h>
 

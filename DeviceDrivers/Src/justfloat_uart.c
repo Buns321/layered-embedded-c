@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file justfloat_uart.c
+ * @brief JustFloat UART 遥测协议实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "justfloat_uart.h"
 #include <assert.h>
 #include <math.h>

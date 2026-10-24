@@ -1,6 +1,7 @@
 /**
  * @file platform_pwm.c
- * @brief STM32F1 HAL backend for the common PWM implementation.
+ * @brief STM32F1 公共 PWM 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_hal_internal.h"

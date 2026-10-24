@@ -1,3 +1,9 @@
+/**
+ * @file platform_validation_test.c
+ * @brief Platform 纯校验与算术辅助函数测试。
+ * @ingroup tests
+ */
+
 #include "platform_validation_internal.h"
 
 #include <stdint.h>

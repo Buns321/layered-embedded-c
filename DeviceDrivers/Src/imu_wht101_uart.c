@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/9/1。
 //
 
+/**
+ * @file imu_wht101_uart.c
+ * @brief WHT101 UART IMU 驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "imu_wht101_uart.h"
 #include <assert.h>
 #include <stdint.h>

@@ -1,6 +1,7 @@
 /**
  * @file platform_exti_backend.h
- * @brief Private STM32-family backend entry for the common EXTI dispatcher.
+ * @brief STM32 系列公共 EXTI 分发器的私有后端入口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_EXTI_BACKEND_H

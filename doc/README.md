@@ -6,10 +6,13 @@
 - [Platform 契约](platform.md)：CubeMX 边界、实例可用性、回调、DMA 与错误。
 - [Platform 公共契约](platform-contract.md)：跨 F1/F4 状态、错误、回调和
   异步生命周期规则。
+- [IMU 与 MPU6050](imu.md)：统一 IMU 管线、WHT101 与 MPU6050 驱动说明。
 - [F103 板级工程](../boards/f103c8t6/README.md)：构建、接入状态和验证入口。
 - [F103 硬件与接口规范](../boards/f103c8t6/hardware-map.md)：完整引脚、资源、
   电源、驱动契约与风险边界。
 - [日志与遥测](telemetry.md)：RTT 日志、FireWater、JustFloat、UART/DMA。
+- [Platform 编译检查](../cmake/platform-check/README.md)：F4/F1 全实例编译验证。
+- [主机测试说明](../cmake/platform-test/README.md)：公共契约与管线测试入口。
 - [TODO](todo.md)：已完成与待办事项。
 - [Doxygen 主页](doxygen/mainpage.md)：API 文档入口。
 

@@ -58,3 +58,8 @@
  * @defgroup app 应用层
  * @brief 业务逻辑（预留）。
  */
+
+/**
+ * @defgroup tests 测试
+ * @brief 主机侧公共契约、管线与编译验证。
+ */

@@ -1,6 +1,7 @@
 /**
  * @file platform_rtc_common.c
- * @brief Family-independent RTC validation, errors and callback dispatch.
+ * @brief 与芯片系列无关的 RTC 参数校验、错误管理和回调分发。
+ * @ingroup platform
  */
 
 #include "platform_error_internal.h"

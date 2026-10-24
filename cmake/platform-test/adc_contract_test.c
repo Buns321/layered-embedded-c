@@ -1,3 +1,9 @@
+/**
+ * @file adc_contract_test.c
+ * @brief ADC Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_adc_backend.h"
 #include "platform_adc.h"
 #include <assert.h>

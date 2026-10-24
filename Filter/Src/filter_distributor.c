@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file filter_distributor.c
+ * @brief 多路滤波器分发器实现。
+ * @ingroup filter
+ */
+
 #include "filter_distributor.h"
 #include "system_math.h"
 #include <assert.h>

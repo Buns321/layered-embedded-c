@@ -5,6 +5,7 @@
 /**
  * @file platform_validation_internal.h
  * @brief 与原生测试共用的纯校验与算术辅助函数。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_VALIDATION_INTERNAL_H

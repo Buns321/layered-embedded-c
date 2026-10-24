@@ -1,6 +1,7 @@
 /**
  * @file platform_error_internal.h
- * @brief Common error snapshot helpers for Platform implementations.
+ * @brief Platform 实现共用的错误快照辅助函数。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_ERROR_INTERNAL_H

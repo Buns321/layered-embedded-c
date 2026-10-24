@@ -1,3 +1,9 @@
+/**
+ * @file flash_contract_test.c
+ * @brief Flash Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_flash_backend.h"
 #include "platform_flash.h"
 #include "system_critical.h"

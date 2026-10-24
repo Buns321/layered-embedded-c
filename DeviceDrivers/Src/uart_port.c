@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file uart_port.c
+ * @brief Platform UART 到设备 UART 抽象层的适配实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "uart_port.h"
 #include <assert.h>
 

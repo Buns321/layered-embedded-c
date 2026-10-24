@@ -1,6 +1,7 @@
 /**
  * @file platform_exti.c
- * @brief STM32F4 HAL entry for the common EXTI dispatcher.
+ * @brief STM32F4 公共 EXTI 分发器的 HAL 入口。
+ * @ingroup platform
  */
 
 #include "platform_exti_backend.h"

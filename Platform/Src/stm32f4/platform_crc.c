@@ -1,6 +1,7 @@
 /**
  * @file platform_crc.c
- * @brief STM32F4 HAL backend for the common CRC implementation.
+ * @brief STM32F4 公共 CRC 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "crc.h"

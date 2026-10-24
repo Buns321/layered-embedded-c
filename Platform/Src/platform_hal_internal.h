@@ -5,6 +5,7 @@
 /**
  * @file platform_hal_internal.h
  * @brief 仅供 Platform 实现使用的 HAL 状态转换辅助函数。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_HAL_INTERNAL_H

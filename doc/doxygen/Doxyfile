@@ -21,10 +21,13 @@ INPUT                  = README.md \
                          doc/conventions.md \
                          doc/telemetry.md \
                          doc/todo.md \
+                         doc/README.md \
                          doc/doxygen/mainpage.md \
                          doc/doxygen/groups.dox \
                          boards/f103c8t6/README.md \
                          boards/f103c8t6/hardware-map.md \
+                         cmake/platform-check/README.md \
+                         cmake/platform-test \
                          Platform \
                          DeviceDrivers \
                          Controller \
@@ -35,7 +38,7 @@ INPUT                  = README.md \
                          App
 FILE_PATTERNS          = *.c *.h *.md *.dox
 RECURSIVE              = YES
-EXCLUDE                = build Drivers Middlewares Core cmake
+EXCLUDE                = build Drivers Middlewares Core cmake/stm32cubemx
 EXCLUDE_PATTERNS       = */build/*
 INPUT_ENCODING         = UTF-8
 SEARCH_INCLUDES        = NO

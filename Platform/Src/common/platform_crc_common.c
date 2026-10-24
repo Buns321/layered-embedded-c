@@ -1,6 +1,7 @@
 /**
  * @file platform_crc_common.c
- * @brief Family-independent CRC validation and error snapshot.
+ * @brief 与芯片系列无关的 CRC 参数校验与错误快照。
+ * @ingroup platform
  */
 
 #include "platform_crc_backend.h"

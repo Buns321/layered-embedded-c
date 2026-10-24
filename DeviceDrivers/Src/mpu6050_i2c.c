@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/23。
 //
 
+/**
+ * @file mpu6050_i2c.c
+ * @brief MPU6050 I2C IMU 驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "mpu6050_i2c.h"
 #include "system_critical.h"
 #include <assert.h>

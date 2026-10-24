@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file filter_chain.c
+ * @brief 固定容量滤波器链实现。
+ * @ingroup filter
+ */
+
 #include "filter_chain.h"
 #include <stddef.h>
 #include <assert.h>

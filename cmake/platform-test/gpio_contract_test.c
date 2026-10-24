@@ -1,3 +1,9 @@
+/**
+ * @file gpio_contract_test.c
+ * @brief GPIO Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_gpio_backend.h"
 #include "platform_gpio.h"
 #include <assert.h>

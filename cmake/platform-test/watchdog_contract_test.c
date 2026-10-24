@@ -1,3 +1,9 @@
+/**
+ * @file watchdog_contract_test.c
+ * @brief IWDG/WWDG Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_iwdg_backend.h"
 #include "platform_wwdg_backend.h"
 #include <assert.h>

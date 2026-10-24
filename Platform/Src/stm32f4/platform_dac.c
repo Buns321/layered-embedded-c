@@ -1,6 +1,7 @@
 /**
  * @file platform_dac.c
- * @brief STM32F4 HAL backend for the common DAC implementation.
+ * @brief STM32F4 公共 DAC 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "dac.h"

@@ -1,6 +1,7 @@
 /**
  * @file platform_i2c_backend.h
- * @brief Private STM32-family backend for the common I2C implementation.
+ * @brief STM32 系列公共 I2C 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_I2C_BACKEND_H

@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/15。
 //
 
+/**
+ * @file led_base.c
+ * @brief LED 抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "led_base.h"
 #include <assert.h>
 

@@ -1,6 +1,7 @@
 /**
  * @file platform_gpio_backend.h
- * @brief Private STM32-family backend for the common GPIO implementation.
+ * @brief STM32 系列公共 GPIO 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_GPIO_BACKEND_H

@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/20。
 //
 
+/**
+ * @file filter_passthrough.c
+ * @brief 多通道透传滤波器实现。
+ * @ingroup filter
+ */
+
 #include "filter_passthrough.h"
 #include <assert.h>
 

@@ -1,3 +1,9 @@
+/**
+ * @file imu_pipeline_test.c
+ * @brief IMU 滤波管线与具体驱动测试。
+ * @ingroup tests
+ */
+
 #include "filter_passthrough.h"
 #include "imu_wht101_uart.h"
 #include "mpu6050_i2c.h"

@@ -1,3 +1,9 @@
+/**
+ * @file pwm_contract_test.c
+ * @brief PWM Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_pwm_backend.h"
 #include "platform_pwm.h"
 #include <assert.h>

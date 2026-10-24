@@ -1,3 +1,9 @@
+/**
+ * @file crc_contract_test.c
+ * @brief CRC Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_crc_backend.h"
 #include "platform_crc.h"
 #include <assert.h>

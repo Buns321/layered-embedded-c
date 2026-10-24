@@ -165,7 +165,7 @@ platform_status_t Platform_RTC_StopWakeUpTimer(
 /**
  * @brief 读取最近一次 Platform RTC 操作错误快照。
  * @param rtc RTC 实例。
- * @return `platform_rtc_error_t` 与 `PLATFORM_COMMON_ERROR_*` 位掩码的组合。
+ * @return `platform_rtc_error_t` 与 `PLATFORM_ERROR_*` 位掩码的组合。
  * @note 读取不清除快照。
  */
 uint32_t Platform_RTC_GetLastError(platform_rtc_instance_t rtc);

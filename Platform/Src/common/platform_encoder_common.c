@@ -1,6 +1,7 @@
 /**
  * @file platform_encoder_common.c
- * @brief Family-independent encoder validation and error snapshot.
+ * @brief 与芯片系列无关的编码器参数校验与错误快照。
+ * @ingroup platform
  */
 
 #include "platform_encoder_backend.h"

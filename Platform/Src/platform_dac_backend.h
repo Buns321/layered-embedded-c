@@ -1,6 +1,7 @@
 /**
  * @file platform_dac_backend.h
- * @brief Private STM32-family backend for the common DAC implementation.
+ * @brief STM32 系列公共 DAC 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_DAC_BACKEND_H

@@ -30,8 +30,8 @@ typedef enum platform_status_e {
 } platform_status_t;
 
 /**
- * @brief Error flags shared by every Platform module.
- * @note Module-specific error bits must not overlap these flags.
+ * @brief 所有 Platform 模块共用的错误标志。
+ * @note 模块专用错误位不得与这些标志重叠。
  */
 #define PLATFORM_ERROR_NONE        0u
 #define PLATFORM_ERROR_INVALID_ARGUMENT   (1u << 20)

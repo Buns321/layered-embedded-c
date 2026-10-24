@@ -1,6 +1,7 @@
 /**
  * @file platform_encoder_backend.h
- * @brief Private STM32-family backend for the common encoder implementation.
+ * @brief STM32 系列公共 encoder 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_ENCODER_BACKEND_H

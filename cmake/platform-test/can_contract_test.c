@@ -1,3 +1,9 @@
+/**
+ * @file can_contract_test.c
+ * @brief CAN Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_can_backend.h"
 #include "platform_can.h"
 #include <assert.h>

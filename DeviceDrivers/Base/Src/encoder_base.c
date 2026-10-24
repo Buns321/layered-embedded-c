@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/30。
 //
 
+/**
+ * @file encoder_base.c
+ * @brief 编码器抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "encoder_base.h"
 #include  <assert.h>
 

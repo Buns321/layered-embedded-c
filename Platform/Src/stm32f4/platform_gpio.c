@@ -1,6 +1,7 @@
 /**
  * @file platform_gpio.c
- * @brief STM32F4 HAL backend for the common GPIO implementation.
+ * @brief STM32F4 公共 GPIO 实现的 HAL 后端。
+ * @ingroup platform
  */
 
 #include "platform_gpio_backend.h"

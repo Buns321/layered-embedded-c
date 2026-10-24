@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file system_watchdog.c
+ * @brief System 看门狗策略实现。
+ * @ingroup system
+ */
+
 #include "system_watchdog.h"
 #include "platform_iwdg.h"
 #include "system_critical.h"

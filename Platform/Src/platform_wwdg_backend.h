@@ -1,6 +1,7 @@
 /**
  * @file platform_wwdg_backend.h
- * @brief Private STM32-family backend for the common WWDG implementation.
+ * @brief STM32 系列公共 WWDG 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_WWDG_BACKEND_H

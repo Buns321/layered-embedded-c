@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/21。
 //
 
+/**
+ * @file telemetry_base.c
+ * @brief 遥测设备抽象接口实现。
+ * @ingroup drivers_base
+ */
+
 #include "telemetry_base.h"
 #include "system_math.h"
 #include <assert.h>

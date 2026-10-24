@@ -1,6 +1,7 @@
 /**
  * @file platform_can_backend.h
- * @brief Private STM32-family backend for the common CAN implementation.
+ * @brief STM32 系列公共 CAN 实现的私有后端接口。
+ * @ingroup platform
  */
 
 #ifndef LAYERED_EMBEDDED_C_PLATFORM_CAN_BACKEND_H

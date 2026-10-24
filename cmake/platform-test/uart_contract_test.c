@@ -1,3 +1,9 @@
+/**
+ * @file uart_contract_test.c
+ * @brief UART Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_uart_backend.h"
 #include "platform_uart.h"
 #include <assert.h>

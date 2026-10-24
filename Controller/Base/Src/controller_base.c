@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/10/17。
 //
 
+/**
+ * @file controller_base.c
+ * @brief Controller 抽象接口的通用转发实现。
+ * @ingroup controller
+ */
+
 #include "controller_base.h"
 #include "system_math.h"
 #include <assert.h>

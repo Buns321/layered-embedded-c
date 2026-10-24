@@ -1,3 +1,9 @@
+/**
+ * @file rng_contract_test.c
+ * @brief RNG Platform 公共契约测试。
+ * @ingroup tests
+ */
+
 #include "platform_rng_backend.h"
 #include "platform_rng.h"
 #include <assert.h>

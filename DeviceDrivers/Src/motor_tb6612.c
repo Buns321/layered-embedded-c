@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/24。
 //
 
+/**
+ * @file motor_tb6612.c
+ * @brief TB6612 电机驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "motor_tb6612.h"
 #include "system_math.h"
 #include <assert.h>

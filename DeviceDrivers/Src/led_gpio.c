@@ -2,6 +2,12 @@
 // 由 Buns_ 创建于 2026/8/15。
 //
 
+/**
+ * @file led_gpio.c
+ * @brief GPIO LED 驱动实现。
+ * @ingroup drivers_concrete
+ */
+
 #include "led_gpio.h"
 #include <assert.h>
 
