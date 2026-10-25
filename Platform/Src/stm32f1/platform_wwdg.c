@@ -12,13 +12,20 @@
 
 static WWDG_HandleTypeDef s_wwdg_h;
 
-static uint32_t platform_wwdg_hal_prescaler(uint32_t divisor) {
+static bool platform_wwdg_hal_prescaler(
+  uint32_t divisor,
+  uint32_t *prescaler
+) {
+  if (prescaler == NULL) {
+    return false;
+  }
+
   switch (divisor) {
-    case 1u: return WWDG_PRESCALER_1;
-    case 2u: return WWDG_PRESCALER_2;
-    case 4u: return WWDG_PRESCALER_4;
-    case 8u: return WWDG_PRESCALER_8;
-    default: return 0U;
+    case 1u: *prescaler = WWDG_PRESCALER_1; return true;
+    case 2u: *prescaler = WWDG_PRESCALER_2; return true;
+    case 4u: *prescaler = WWDG_PRESCALER_4; return true;
+    case 8u: *prescaler = WWDG_PRESCALER_8; return true;
+    default: return false;
   }
 }
 
@@ -30,8 +37,8 @@ platform_status_t platform_wwdg_backend_start(
   uint32_t divisor,
   uint8_t window
 ) {
-  const uint32_t prescaler = platform_wwdg_hal_prescaler(divisor);
-  if (prescaler == 0U) {
+  uint32_t prescaler;
+  if (!platform_wwdg_hal_prescaler(divisor, &prescaler)) {
     return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 

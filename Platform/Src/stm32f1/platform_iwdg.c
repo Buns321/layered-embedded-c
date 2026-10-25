@@ -12,16 +12,23 @@
 
 static IWDG_HandleTypeDef s_iwdg_h;
 
-static uint32_t platform_iwdg_hal_prescaler(uint32_t divisor) {
+static bool platform_iwdg_hal_prescaler(
+  uint32_t divisor,
+  uint32_t *prescaler
+) {
+  if (prescaler == NULL) {
+    return false;
+  }
+
   switch (divisor) {
-    case 4u:   return IWDG_PRESCALER_4;
-    case 8u:   return IWDG_PRESCALER_8;
-    case 16u:  return IWDG_PRESCALER_16;
-    case 32u:  return IWDG_PRESCALER_32;
-    case 64u:  return IWDG_PRESCALER_64;
-    case 128u: return IWDG_PRESCALER_128;
-    case 256u: return IWDG_PRESCALER_256;
-    default:   return 0U;
+    case 4u:   *prescaler = IWDG_PRESCALER_4; return true;
+    case 8u:   *prescaler = IWDG_PRESCALER_8; return true;
+    case 16u:  *prescaler = IWDG_PRESCALER_16; return true;
+    case 32u:  *prescaler = IWDG_PRESCALER_32; return true;
+    case 64u:  *prescaler = IWDG_PRESCALER_64; return true;
+    case 128u: *prescaler = IWDG_PRESCALER_128; return true;
+    case 256u: *prescaler = IWDG_PRESCALER_256; return true;
+    default:   return false;
   }
 }
 
@@ -33,8 +40,8 @@ platform_status_t platform_iwdg_backend_start(
   uint32_t divisor,
   uint32_t reload
 ) {
-  const uint32_t prescaler = platform_iwdg_hal_prescaler(divisor);
-  if (prescaler == 0U) {
+  uint32_t prescaler;
+  if (!platform_iwdg_hal_prescaler(divisor, &prescaler)) {
     return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
 

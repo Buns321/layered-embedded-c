@@ -109,6 +109,12 @@ add_executable(system_log_contract_test
     ${REPO_ROOT}/System/Src/system_log_base.c
 )
 
+add_executable(stm32f1_watchdog_backend_test
+    stm32f1_watchdog_backend_test.c
+    ${REPO_ROOT}/Platform/Src/stm32f1/platform_iwdg.c
+    ${REPO_ROOT}/Platform/Src/stm32f1/platform_wwdg.c
+)
+
 target_include_directories(platform_validation_test PRIVATE
     ${REPO_ROOT}/Platform/Src
 )
@@ -280,6 +286,18 @@ target_compile_definitions(system_log_contract_test PRIVATE
     SYS_LOG_EXTERNAL_TIME_SOURCE=Sys_Log_TestGetTimeMs
 )
 
+target_include_directories(stm32f1_watchdog_backend_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/stm32f1_hal_stub
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/Platform/Src
+)
+
+target_compile_definitions(stm32f1_watchdog_backend_test PRIVATE
+    STM32F1xx=1
+    PLATFORM_ENABLE_IWDG=1
+    PLATFORM_ENABLE_WWDG=1
+)
+
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(platform_validation_test PRIVATE
         -Wall
@@ -371,6 +389,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(stm32f1_watchdog_backend_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
 endif()
 
 if(NOT MSVC)
@@ -449,4 +472,8 @@ add_test(
 add_test(
     NAME system_log_contract_test
     COMMAND system_log_contract_test
+)
+add_test(
+    NAME stm32f1_watchdog_backend_test
+    COMMAND stm32f1_watchdog_backend_test
 )
