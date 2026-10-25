@@ -114,9 +114,29 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 if(BOARD_SELFTEST)
+    set(BOARD_SELFTEST_PLATFORM_SOURCES
+        ${REPO_ROOT}/Platform/Src/common/platform_adc_common.c
+        ${REPO_ROOT}/Platform/Src/common/platform_encoder_common.c
+        ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
+        ${REPO_ROOT}/Platform/Src/common/platform_pwm_common.c
+        ${REPO_ROOT}/Platform/Src/common/platform_uart_common.c
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_adc.c
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_encoder.c
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_i2c.c
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_pwm.c
+        ${REPO_ROOT}/Platform/Src/stm32f1/platform_uart.c
+    )
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        ${BOARD_SELFTEST_PLATFORM_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc/board_hardware_test.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_hardware_test.c
         ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc/board_selftest.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_selftest.c
+    )
+    set_source_files_properties(
+        ${BOARD_SELFTEST_PLATFORM_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_hardware_test.c
+        PROPERTIES COMPILE_OPTIONS "-Os"
     )
 endif()
 
@@ -190,6 +210,14 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 if(BOARD_SELFTEST)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
         BOARD_SELFTEST=1
+        PLATFORM_ENABLE_ADC1=1
+        PLATFORM_ENABLE_ENCODER_TIM1=1
+        PLATFORM_ENABLE_I2C1=1
+        PLATFORM_ENABLE_PWM_TIM2=1
+        PLATFORM_ENABLE_PWM_TIM3=1
+        PLATFORM_ENABLE_PWM_TIM4=1
+        PLATFORM_ENABLE_UART2=1
+        PLATFORM_ENABLE_UART3=1
     )
 endif()
 

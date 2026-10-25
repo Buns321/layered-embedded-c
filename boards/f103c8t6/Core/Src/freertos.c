@@ -29,6 +29,7 @@
 #include "system_log.h"
 #endif
 #if defined(BOARD_SELFTEST)
+#include "board_hardware_test.h"
 #include "board_selftest.h"
 #endif
 /* USER CODE END Includes */
@@ -124,6 +125,7 @@ void StartDefaultTask(void *argument)
   SYS_LOG_INFO("RTOS", "scheduler started");
 #endif
 #if defined(BOARD_SELFTEST)
+  Board_HardwareTest_Init();
   uint32_t selftest_tick_start_ms = osKernelGetTickCount();
   osDelay(5u);
   uint32_t selftest_tick_elapsed_ms =
@@ -135,6 +137,7 @@ void StartDefaultTask(void *argument)
     selftest_tick_ok,
     selftest_tick_elapsed_ms
   );
+  (void)Board_HardwareTest_RunAll();
 #endif
   uint32_t last_log_ms = osKernelGetTickCount();
   /* Infinite loop */
@@ -148,6 +151,9 @@ void StartDefaultTask(void *argument)
       SYS_LOG_INFO("RTOS", "alive at %lu ms", (unsigned long)now_ms);
 #endif
     }
+#if defined(BOARD_SELFTEST)
+    Board_HardwareTest_Process();
+#endif
     osDelay(100u);
   }
   /* USER CODE END StartDefaultTask */
