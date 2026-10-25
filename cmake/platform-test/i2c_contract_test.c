@@ -12,8 +12,10 @@
 #include <stdint.h>
 
 static platform_status_t s_transmit_status;
+static platform_status_t s_probe_status;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
+static uint32_t s_probe_trials;
 
 bool platform_i2c_backend_is_valid(platform_i2c_instance_t i2c) {
   return i2c == PLATFORM_I2C_1;
@@ -85,6 +87,19 @@ platform_status_t platform_i2c_backend_mem_read(
   (void)size;
   (void)timeout;
   return PLATFORM_STATUS_OK;
+}
+
+platform_status_t platform_i2c_backend_probe(
+  platform_i2c_instance_t i2c,
+  uint16_t address,
+  uint32_t trials,
+  uint32_t timeout
+) {
+  (void)i2c;
+  (void)address;
+  (void)timeout;
+  s_probe_trials = trials;
+  return s_probe_status;
 }
 
 platform_status_t platform_i2c_backend_master_transmit_it(
@@ -235,8 +250,10 @@ static void i2c_callback(
 static void test_i2c_contract(void) {
   uint8_t byte = 0U;
   s_transmit_status = PLATFORM_STATUS_OK;
+  s_probe_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_I2C_ERROR_NONE;
   s_event_count = 0U;
+  s_probe_trials = 0U;
 
   assert(Platform_I2C_MasterTransmit(
            PLATFORM_I2C_1,
@@ -257,6 +274,34 @@ static void test_i2c_contract(void) {
            1U,
            10U
          ) == PLATFORM_STATUS_INVALID_ARGUMENT);
+
+  assert(Platform_I2C_Probe(
+           PLATFORM_I2C_1,
+           0x80U,
+           1U,
+           10U
+         ) == PLATFORM_STATUS_INVALID_ARGUMENT);
+  assert(Platform_I2C_Probe(
+           PLATFORM_I2C_1,
+           0x38U,
+           0U,
+           10U
+         ) == PLATFORM_STATUS_INVALID_ARGUMENT);
+  assert(Platform_I2C_Probe(
+           PLATFORM_I2C_1,
+           0x38U,
+           2U,
+           10U
+         ) == PLATFORM_STATUS_OK);
+  assert(s_probe_trials == 2U);
+
+  s_probe_status = PLATFORM_STATUS_TIMEOUT;
+  assert(Platform_I2C_Probe(
+           PLATFORM_I2C_1,
+           0x3DU,
+           2U,
+           10U
+         ) == PLATFORM_STATUS_TIMEOUT);
 
   s_transmit_status = PLATFORM_STATUS_ERROR;
   assert(Platform_I2C_MasterTransmit(

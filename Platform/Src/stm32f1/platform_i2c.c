@@ -182,6 +182,22 @@ platform_status_t platform_i2c_backend_mem_read(
                      ));
 }
 
+platform_status_t platform_i2c_backend_probe(
+  platform_i2c_instance_t i2c,
+  uint16_t address,
+  uint32_t trials,
+  uint32_t timeout
+) {
+  I2C_HandleTypeDef *i2c_h = platform_i2c_to_hal(i2c);
+  return i2c_h == NULL ? PLATFORM_STATUS_INVALID_ARGUMENT
+                   : platform_from_hal_status(HAL_I2C_IsDeviceReady(
+                       i2c_h,
+                       platform_i2c_hal_address(address),
+                       trials,
+                       timeout
+                     ));
+}
+
 platform_status_t platform_i2c_backend_master_transmit_it(
   platform_i2c_instance_t i2c,
   uint16_t address,

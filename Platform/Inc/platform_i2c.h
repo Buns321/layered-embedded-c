@@ -157,6 +157,27 @@ platform_status_t Platform_I2C_MemRead(
 );
 
 /**
+ * @brief 探测 I2C 设备是否响应。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址，范围 0x00..0x7F。
+ * @param trials 探测尝试次数，必须大于 0。
+ * @param timeout 每次尝试的超时时间（ms）。
+ * @pre MX_I2Cx_Init() 已成功完成。
+ * @retval PLATFORM_STATUS_OK 设备在任一尝试中响应。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、地址或尝试次数非法。
+ * @retval PLATFORM_STATUS_TIMEOUT 设备未在超时时间内响应。
+ * @retval PLATFORM_STATUS_BUSY 总线忙。
+ * @retval PLATFORM_STATUS_ERROR 探测执行失败。
+ * @note 该接口不读写设备寄存器，只验证地址应答。
+ */
+platform_status_t Platform_I2C_Probe(
+  platform_i2c_instance_t i2c,
+  uint16_t address,
+  uint32_t trials,
+  uint32_t timeout
+);
+
+/**
  * @brief 中断方式主机发送。
  * @param i2c I2C 实例。
  * @param address 7 位器件地址。

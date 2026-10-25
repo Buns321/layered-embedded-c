@@ -50,6 +50,13 @@ platform_status_t platform_i2c_backend_mem_read(
   uint32_t timeout
 );
 
+platform_status_t platform_i2c_backend_probe(
+  platform_i2c_instance_t i2c,
+  uint16_t address,
+  uint32_t trials,
+  uint32_t timeout
+);
+
 platform_status_t platform_i2c_backend_master_transmit_it(
   platform_i2c_instance_t i2c,
   uint16_t address,

@@ -190,6 +190,29 @@ platform_status_t Platform_I2C_MemRead(
   );
 }
 
+platform_status_t Platform_I2C_Probe(
+  platform_i2c_instance_t i2c,
+  uint16_t address,
+  uint32_t trials,
+  uint32_t timeout
+) {
+  if ((uint32_t)i2c < PLATFORM_I2C_INSTANCE_COUNT) {
+    platform_error_reset(&i2c_error[i2c]);
+  }
+  if (
+    (uint32_t)i2c >= PLATFORM_I2C_INSTANCE_COUNT ||
+    !platform_i2c_backend_is_valid(i2c) ||
+    address > 0x7FU ||
+    trials == 0U
+  ) {
+    return platform_i2c_invalid(i2c);
+  }
+  return platform_i2c_finish(
+    i2c,
+    platform_i2c_backend_probe(i2c, address, trials, timeout)
+  );
+}
+
 platform_status_t Platform_I2C_MasterTransmitIT(
   platform_i2c_instance_t i2c,
   uint16_t address,
