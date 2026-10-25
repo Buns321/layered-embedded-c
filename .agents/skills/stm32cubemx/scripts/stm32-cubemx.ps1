@@ -565,12 +565,12 @@ function Assert-ElfIsFresh {
   )
 
   $sourceRoots = @(
-    (Join-Path $RepoRoot "App"),
+    (Join-Path $BoardRoot "App"),
     (Join-Path $RepoRoot "Controller"),
     (Join-Path $RepoRoot "DeviceDrivers"),
     (Join-Path $RepoRoot "Filter"),
     (Join-Path $RepoRoot "Policy"),
-    (Join-Path $RepoRoot "RTOS"),
+    (Join-Path $BoardRoot "RTOS"),
     (Join-Path $RepoRoot "System"),
     (Join-Path $RepoRoot "Platform"),
     (Join-Path $BoardRoot "Core"),
@@ -591,8 +591,7 @@ function Assert-ElfIsFresh {
   foreach ($file in @(
     $IocPath,
     (Join-Path $BoardRoot ".mxproject"),
-    (Join-Path $BoardRoot "CMakeLists.txt"),
-    (Join-Path $RepoRoot "CMakeLists.txt")
+    (Join-Path $BoardRoot "CMakeLists.txt")
   )) {
     if (Test-Path -LiteralPath $file -PathType Leaf) {
       $sourceFiles.Add((Get-Item -LiteralPath $file)) | Out-Null

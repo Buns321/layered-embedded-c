@@ -26,7 +26,13 @@ INPUT                  = README.md \
                          doc/doxygen/groups.dox \
                          boards/f103c8t6/README.md \
                          boards/f103c8t6/hardware-map.md \
-                         boards/f103c8t6/Board \
+                         boards/f103c8t6/App \
+                         boards/f103c8t6/RTOS \
+                         boards/f103c8t6/Test \
+                         boards/f407vet6/README.md \
+                         boards/f407vet6/hardware-map.md \
+                         boards/f407vet6/App \
+                         boards/f407vet6/RTOS \
                          tools/rtt/README.md \
                          cmake/platform-check/README.md \
                          cmake/platform-test \
@@ -35,9 +41,7 @@ INPUT                  = README.md \
                          Controller \
                          Policy \
                          Filter \
-                         System \
-                         RTOS \
-                         App
+                         System
 FILE_PATTERNS          = *.c *.h *.md *.dox
 RECURSIVE              = YES
 EXCLUDE                = build Drivers Middlewares Core cmake/stm32cubemx
@@ -103,5 +107,8 @@ INCLUDE_PATH           = Platform/Inc \
                          Filter/Base/Inc \
                          Filter/Inc \
                          System/Inc \
-                         RTOS/Inc \
-                         boards/f103c8t6/Board/Inc
+                         boards/f103c8t6/App/Inc \
+                         boards/f103c8t6/RTOS/Inc \
+                         boards/f103c8t6/Test/Inc \
+                         boards/f407vet6/App/Inc \
+                         boards/f407vet6/RTOS/Inc

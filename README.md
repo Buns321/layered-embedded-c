@@ -14,15 +14,17 @@
 - **Chassis**：底盘生命周期基类 + omni 底盘。
 - **Filter**：样本、base、低通、透传、chain、distributor。
 - **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、日志 base 与 SEGGER RTT。
-- **RTOS**：F407 目标已创建四个任务骨架，控制任务和串口任务体待实现；F103 当前保留 CubeMX 默认任务。
-- **App**：预留空文件，业务逻辑待实现。
-- **Boards**：`boards/f103c8t6/` 提供 Cortex-M3 / 72 MHz / CMSIS-RTOS2 / RTT 日志构建目标，硬件映射见 [F103 板级说明](boards/f103c8t6/README.md)。
+- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已建立四个
+  CMSIS-RTOS2 任务骨架，F103 继续使用自己的 CubeMX 任务配置。
+- **Boards**：`boards/f103c8t6/` 和 `boards/f407vet6/` 是两个平级、独立的
+  固件工程，各自持有 CubeMX、HAL、FreeRTOS、App、RTOS、启动文件、链接脚本和
+  CMake presets。共享的 Platform、DeviceDrivers、Controller、Policy、Filter、
+  System 仍位于仓库根目录。
 
 尚未完成或暂缓：
 
 - `controller_pid_t`（PID）
-- App / RTOS 接线
-- Board 层（四轮编号、引脚拓扑、STBY 分组、统一初始化、故障切电机）
+- 板级 App / RTOS 的设备装配、任务接线与故障联锁
 - 参数标定
 - Filter 单元测试、统一单调时间源、Kalman 姿态实现、MPU6050 板上验证
 - Platform 新增外设的板上电气与时序验证
@@ -30,9 +32,9 @@
 
 ## 构建
 
-根目录 F4 目标依赖：
+两块板级固件依赖：
 
-- `arm-none-eabi-gcc`（Cortex-M4F，硬浮点）
+- `arm-none-eabi-gcc`（F407 Cortex-M4F 硬浮点，F103 Cortex-M3）
 - CMake ≥ 3.22
 - Ninja
 
@@ -40,16 +42,18 @@
 工程默认启用 `-Wall -Wextra`；第三方 HAL/FreeRTOS 目标单独关闭其不拥有的
 `unused-parameter` 告警。
 
-```bash
+```powershell
+cd boards/f407vet6
 cmake --preset Debug
 cmake --build --preset Debug
 ```
 
-产物位于 `build/Debug/`，包括 `layered-embedded-c.elf` 和 `layered-embedded-c.map`。
+F407 产物位于 `boards/f407vet6/build/Debug/`，包括 `f407vet6.elf` 和
+`f407vet6.map`。完整说明见 [F407 板级工程](boards/f407vet6/README.md)。
 
 Release 构建：
 
-```bash
+```powershell
 cmake --preset Release
 cmake --build --preset Release
 ```
@@ -66,7 +70,7 @@ cmake --build --preset f1-debug
 
 Release 检查和详细能力矩阵见 [Platform 契约](doc/platform.md)。
 
-F103 使用板级目录中的独立 presets：
+F103 同样使用板级目录中的独立 presets：
 
 ```powershell
 cd boards/f103c8t6
@@ -84,7 +88,7 @@ F103 产物位于 `boards/f103c8t6/build/Debug/`，包括 `f103c8t6.elf` 和
 
 ```bash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
-  -c "program build/Debug/layered-embedded-c.elf verify reset exit"
+  -c "program boards/f407vet6/build/Debug/f407vet6.elf verify reset exit"
 ```
 
 实际接口配置按你的调试器与板卡调整。
@@ -111,11 +115,14 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 - [Platform 公共契约](doc/platform-contract.md)
 - Platform 全实例编译检查：`cmake/platform-check/README.md`
 - Platform/IMU 原生测试：`cmake/platform-test/README.md`
+- [F407 板级工程](boards/f407vet6/README.md)
+- [F407 硬件与接口规范](boards/f407vet6/hardware-map.md)
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [RTT 日志接收](tools/rtt/README.md)
 - [TODO](doc/todo.md)
-- Doxygen：`doxygen doc/doxygen/Doxyfile`，或 `cmake --build build/Debug --target docs`
+- Doxygen：`doxygen doc/doxygen/Doxyfile`，或在 F407 板级构建目录执行
+  `cmake --build --preset Debug --target docs`
 
 ## 目录
 
@@ -127,12 +134,9 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 | `Policy/` | 底盘级 MIMO 运动策略 |
 | `Filter/` | 固定容量多通道滤波 |
 | `System/` | 数学、检查、延时 |
-| `RTOS/` | FreeRTOS 任务骨架 |
-| `App/` | 业务逻辑（待实现） |
-| `Core/` | CubeMX 生成代码 |
-| `Drivers/`、`Middlewares/` | ST HAL / CMSIS、FreeRTOS |
+| `Middlewares/Third_Party/SEGGER_RTT/` | 两块板共享的可选 RTT 日志后端 |
 | `doc/` | 文档 |
-| `boards/` | 各 MCU 板级的 CubeMX、HAL、启动文件和链接脚本 |
+| `boards/<board>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、App、RTOS、启动文件和链接脚本 |
 
 ## 设计要点
 

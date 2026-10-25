@@ -23,7 +23,7 @@ set(CMAKE_PROJECT_NAME f103c8t6)
 
 # 可选调试服务
 option(SYS_LOG_USE_RTT "启用 SEGGER RTT System 日志后端" ON)
-option(BOARD_SELFTEST "启动时运行非破坏性板载自检" ${SYS_LOG_USE_RTT})
+option(F103_TEST "构建 F103 自检与 Platform API 硬件测试固件" ${SYS_LOG_USE_RTT})
 option(PLATFORM_BUILD_I2C "编译 Platform I2C 实现" OFF)
 option(PLATFORM_BUILD_SPI "编译 Platform SPI 实现" OFF)
 option(PLATFORM_BUILD_ADC "编译 Platform ADC 实现" OFF)
@@ -31,8 +31,8 @@ option(PLATFORM_BUILD_CAN "编译 Platform CAN 实现" OFF)
 option(PLATFORM_BUILD_RTC "编译 Platform RTC 实现" OFF)
 option(PLATFORM_BUILD_FLASH "编译 Platform Flash 实现" OFF)
 
-if(BOARD_SELFTEST AND NOT SYS_LOG_USE_RTT)
-    message(FATAL_ERROR "BOARD_SELFTEST 需要可用的 System 日志后端；请同时启用 SYS_LOG_USE_RTT")
+if(F103_TEST AND NOT SYS_LOG_USE_RTT)
+    message(FATAL_ERROR "F103_TEST 需要可用的 System 日志后端；请同时启用 SYS_LOG_USE_RTT")
 endif()
 
 # 生成编译命令，便于 clangd 等工具建立索引
@@ -68,8 +68,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # 向可执行目标添加源文件
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    ${REPO_ROOT}/App/Src/app_blink.c
-    ${REPO_ROOT}/App/Src/app_motor_demo.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_blink.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_motor_demo.c
     ${REPO_ROOT}/Controller/Base/Src/controller_base.c
     ${REPO_ROOT}/Controller/Src/controller_compose.c
     ${REPO_ROOT}/Controller/Src/controller_linear.c
@@ -102,10 +102,10 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
     ${REPO_ROOT}/Policy/Base/Src/policy_omni_base.c
     ${REPO_ROOT}/Policy/Src/policy_omni_kinematics.c
-    ${REPO_ROOT}/RTOS/Src/rtos_control.c
-    ${REPO_ROOT}/RTOS/Src/rtos_monitor.c
-    ${REPO_ROOT}/RTOS/Src/rtos_shared.c
-    ${REPO_ROOT}/RTOS/Src/rtos_uart.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_control.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_monitor.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_shared.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_uart.c
     ${REPO_ROOT}/System/Src/system_critical.c
     ${REPO_ROOT}/System/Src/system_fault.c
     ${REPO_ROOT}/System/Src/system_log_base.c
@@ -113,8 +113,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/System/Src/system_watchdog.c
 )
 
-if(BOARD_SELFTEST)
-    set(BOARD_SELFTEST_PLATFORM_SOURCES
+if(F103_TEST)
+    set(F103_TEST_PLATFORM_SOURCES
         ${REPO_ROOT}/Platform/Src/common/platform_adc_common.c
         ${REPO_ROOT}/Platform/Src/common/platform_encoder_common.c
         ${REPO_ROOT}/Platform/Src/common/platform_i2c_common.c
@@ -127,15 +127,15 @@ if(BOARD_SELFTEST)
         ${REPO_ROOT}/Platform/Src/stm32f1/platform_uart.c
     )
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-        ${BOARD_SELFTEST_PLATFORM_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc/board_hardware_test.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_hardware_test.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc/board_selftest.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_selftest.c
+        ${F103_TEST_PLATFORM_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Test/Inc/f103_hardware_test.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Test/Src/f103_hardware_test.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/Test/Inc/f103_selftest.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Test/Src/f103_selftest.c
     )
     set_source_files_properties(
-        ${BOARD_SELFTEST_PLATFORM_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/Board/Src/board_hardware_test.c
+        ${F103_TEST_PLATFORM_SOURCES}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Test/Src/f103_hardware_test.c
         PROPERTIES COMPILE_OPTIONS "-Os"
     )
 endif()
@@ -180,7 +180,7 @@ endif()
 
 # 添加头文件搜索路径
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    ${REPO_ROOT}/App/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
     ${REPO_ROOT}/Controller/Base/Inc
     ${REPO_ROOT}/Controller/Inc
     ${REPO_ROOT}/DeviceDrivers/Base/Inc
@@ -191,9 +191,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${REPO_ROOT}/Platform/Src
     ${REPO_ROOT}/Policy/Base/Inc
     ${REPO_ROOT}/Policy/Inc
-    ${REPO_ROOT}/RTOS/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
     ${REPO_ROOT}/System/Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/Board/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Test/Inc
 )
 
 # 添加工程符号（宏）
@@ -207,9 +207,9 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     PLATFORM_ENABLE_WWDG=1
 )
 
-if(BOARD_SELFTEST)
+if(F103_TEST)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-        BOARD_SELFTEST=1
+        F103_TEST=1
         PLATFORM_ENABLE_ADC1=1
         PLATFORM_ENABLE_ENCODER_TIM1=1
         PLATFORM_ENABLE_I2C1=1

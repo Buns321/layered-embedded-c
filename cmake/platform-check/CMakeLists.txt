@@ -1,18 +1,51 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(layered_embedded_platform_check C ASM)
+project(layered_embedded_layer_check C ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-set(PLATFORM_CHECK_FAMILY "" CACHE STRING "要编译的 Platform 系列：F4 或 F1")
+set(PLATFORM_CHECK_FAMILY "" CACHE STRING "要编译的目标系列：F4 或 F1")
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+
+if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
+  set(BOARD_ROOT ${REPO_ROOT}/boards/f407vet6)
+elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
+  set(BOARD_ROOT ${REPO_ROOT}/boards/f103c8t6)
+else()
+  message(FATAL_ERROR "PLATFORM_CHECK_FAMILY must be F4 or F1")
+endif()
 
 set(PLATFORM_COMMON_INCLUDE_DIRS
     ${REPO_ROOT}/Platform/Inc
     ${REPO_ROOT}/Platform/Src
+)
+
+file(GLOB_RECURSE APP_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${BOARD_ROOT}/App/*.c
+)
+file(GLOB_RECURSE CONTROLLER_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/Controller/*.c
+)
+file(GLOB_RECURSE DEVICE_BASE_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/*.c
+)
+file(GLOB_RECURSE DEVICE_DRIVER_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/DeviceDrivers/Src/*.c
+)
+file(GLOB_RECURSE FILTER_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/Filter/*.c
+)
+file(GLOB_RECURSE POLICY_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/Policy/*.c
+)
+file(GLOB_RECURSE RTOS_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${BOARD_ROOT}/RTOS/Src/*.c
+)
+file(GLOB_RECURSE SYSTEM_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${REPO_ROOT}/System/Src/*.c
 )
 
 if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
@@ -55,11 +88,11 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       ${CMAKE_CURRENT_SOURCE_DIR}/handles/f4
       ${PLATFORM_COMMON_INCLUDE_DIRS}
       ${REPO_ROOT}/System/Inc
-      ${REPO_ROOT}/Core/Inc
-      ${REPO_ROOT}/Drivers/STM32F4xx_HAL_Driver/Inc
-      ${REPO_ROOT}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
-      ${REPO_ROOT}/Drivers/CMSIS/Device/ST/STM32F4xx/Include
-      ${REPO_ROOT}/Drivers/CMSIS/Include
+      ${BOARD_ROOT}/Core/Inc
+      ${BOARD_ROOT}/Drivers/STM32F4xx_HAL_Driver/Inc
+      ${BOARD_ROOT}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy
+      ${BOARD_ROOT}/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+      ${BOARD_ROOT}/Drivers/CMSIS/Include
   )
 
   target_compile_definitions(platform_f4_check PRIVATE
@@ -109,6 +142,31 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       platform_f4_check INCLUDE_DIRECTORIES)
   get_target_property(PLATFORM_F4_DEFINITIONS
       platform_f4_check COMPILE_DEFINITIONS)
+  set(LAYER_CHECK_FAMILY f4)
+  set(LAYER_CHECK_INCLUDE_DIRS
+      ${PLATFORM_F4_INCLUDE_DIRS}
+      ${BOARD_ROOT}/App/Inc
+      ${REPO_ROOT}/Controller/Base/Inc
+      ${REPO_ROOT}/Controller/Inc
+      ${REPO_ROOT}/DeviceDrivers/Base/Inc
+      ${REPO_ROOT}/DeviceDrivers/Inc
+      ${REPO_ROOT}/Filter/Base/Inc
+      ${REPO_ROOT}/Filter/Inc
+      ${REPO_ROOT}/Policy/Base/Inc
+      ${REPO_ROOT}/Policy/Inc
+      ${BOARD_ROOT}/RTOS/Inc
+      ${REPO_ROOT}/System/Inc
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/include
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
+      ${REPO_ROOT}/Middlewares/Third_Party/SEGGER_RTT/Config
+      ${REPO_ROOT}/Middlewares/Third_Party/SEGGER_RTT/RTT
+  )
+  set(LAYER_CHECK_DEFINITIONS
+      ${PLATFORM_F4_DEFINITIONS}
+      USE_FREERTOS
+      SYS_LOG_USE_RTT=1
+  )
   set(PLATFORM_F4_ALT_TIM_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
   list(REMOVE_ITEM PLATFORM_F4_ALT_TIM_DEFINITIONS
       PLATFORM_ENABLE_PWM_TIM1=1
@@ -252,11 +310,11 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       ${CMAKE_CURRENT_SOURCE_DIR}/handles/f1
       ${PLATFORM_COMMON_INCLUDE_DIRS}
       ${REPO_ROOT}/System/Inc
-      ${REPO_ROOT}/boards/f103c8t6/Core/Inc
-      ${REPO_ROOT}/boards/f103c8t6/Drivers/STM32F1xx_HAL_Driver/Inc
-      ${REPO_ROOT}/boards/f103c8t6/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
-      ${REPO_ROOT}/boards/f103c8t6/Drivers/CMSIS/Device/ST/STM32F1xx/Include
-      ${REPO_ROOT}/boards/f103c8t6/Drivers/CMSIS/Include
+      ${BOARD_ROOT}/Core/Inc
+      ${BOARD_ROOT}/Drivers/STM32F1xx_HAL_Driver/Inc
+      ${BOARD_ROOT}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
+      ${BOARD_ROOT}/Drivers/CMSIS/Device/ST/STM32F1xx/Include
+      ${BOARD_ROOT}/Drivers/CMSIS/Include
   )
 
   target_compile_definitions(platform_f1_check PRIVATE
@@ -299,6 +357,31 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       platform_f1_check INCLUDE_DIRECTORIES)
   get_target_property(PLATFORM_F1_DEFINITIONS
       platform_f1_check COMPILE_DEFINITIONS)
+  set(LAYER_CHECK_FAMILY f1)
+  set(LAYER_CHECK_INCLUDE_DIRS
+      ${PLATFORM_F1_INCLUDE_DIRS}
+      ${BOARD_ROOT}/App/Inc
+      ${REPO_ROOT}/Controller/Base/Inc
+      ${REPO_ROOT}/Controller/Inc
+      ${REPO_ROOT}/DeviceDrivers/Base/Inc
+      ${REPO_ROOT}/DeviceDrivers/Inc
+      ${REPO_ROOT}/Filter/Base/Inc
+      ${REPO_ROOT}/Filter/Inc
+      ${REPO_ROOT}/Policy/Base/Inc
+      ${REPO_ROOT}/Policy/Inc
+      ${BOARD_ROOT}/RTOS/Inc
+      ${REPO_ROOT}/System/Inc
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/include
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+      ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3
+      ${REPO_ROOT}/Middlewares/Third_Party/SEGGER_RTT/Config
+      ${REPO_ROOT}/Middlewares/Third_Party/SEGGER_RTT/RTT
+  )
+  set(LAYER_CHECK_DEFINITIONS
+      ${PLATFORM_F1_DEFINITIONS}
+      USE_FREERTOS
+      SYS_LOG_USE_RTT=1
+  )
   set(PLATFORM_F1_ALT_TIM_DEFINITIONS ${PLATFORM_F1_DEFINITIONS})
   list(REMOVE_ITEM PLATFORM_F1_ALT_TIM_DEFINITIONS
       PLATFORM_ENABLE_PWM_TIM1=1
@@ -374,3 +457,53 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
 else()
   message(FATAL_ERROR "请将 PLATFORM_CHECK_FAMILY 设置为 F4 或 F1")
 endif()
+
+add_library(layer_${LAYER_CHECK_FAMILY}_check_config INTERFACE)
+target_include_directories(layer_${LAYER_CHECK_FAMILY}_check_config INTERFACE
+    ${LAYER_CHECK_INCLUDE_DIRS}
+)
+target_compile_definitions(layer_${LAYER_CHECK_FAMILY}_check_config INTERFACE
+    ${LAYER_CHECK_DEFINITIONS}
+)
+
+function(add_layer_check layer_name)
+  if(ARGC LESS 2)
+    message(FATAL_ERROR "编译检查层 ${layer_name} 没有源文件")
+  endif()
+
+  set(target_name "${layer_name}_${LAYER_CHECK_FAMILY}_check")
+  add_library(${target_name} OBJECT ${ARGN})
+  target_link_libraries(
+      ${target_name}
+      PRIVATE
+      layer_${LAYER_CHECK_FAMILY}_check_config
+  )
+  target_compile_options(${target_name} PRIVATE
+      -Wall
+      -Wextra
+      -Werror
+  )
+endfunction()
+
+add_layer_check(device_base ${DEVICE_BASE_CHECK_SOURCES})
+add_layer_check(device_drivers ${DEVICE_DRIVER_CHECK_SOURCES})
+add_layer_check(controller ${CONTROLLER_CHECK_SOURCES})
+add_layer_check(policy ${POLICY_CHECK_SOURCES})
+add_layer_check(filter ${FILTER_CHECK_SOURCES})
+add_layer_check(system ${SYSTEM_CHECK_SOURCES})
+add_layer_check(rtos ${RTOS_CHECK_SOURCES})
+add_layer_check(app ${APP_CHECK_SOURCES})
+
+foreach(source_group
+    APP_CHECK_SOURCES
+    CONTROLLER_CHECK_SOURCES
+    DEVICE_BASE_CHECK_SOURCES
+    DEVICE_DRIVER_CHECK_SOURCES
+    FILTER_CHECK_SOURCES
+    POLICY_CHECK_SOURCES
+    RTOS_CHECK_SOURCES
+    SYSTEM_CHECK_SOURCES
+)
+  list(LENGTH ${source_group} source_count)
+  message(STATUS "${source_group}: ${source_count}")
+endforeach()

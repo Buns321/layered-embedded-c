@@ -40,8 +40,9 @@
 - Controller
 - Policy
 - Filter
-- RTOS
-- App 占位入口
+
+本板独立持有 `App/`、`RTOS/`、`Core/`、`Drivers/`、`Middlewares/` 和
+构建配置，不复制共享层。
 
 ## CubeMX 基线
 
@@ -69,7 +70,7 @@
 - IWDG
 - WWDG
 
-`BOARD_SELFTEST=ON` 时额外启用并实测：
+`F103_TEST=ON` 时额外启用并实测：
 
 - ADC1、I2C1、UART2 / UART3
 - PWM TIM2 / TIM3 / TIM4
@@ -119,7 +120,7 @@ cmake --build --preset f1-release
 关闭 RTT 日志的 Debug 构建：
 
 ```powershell
-cmake --preset Debug -DSYS_LOG_USE_RTT=OFF -DBOARD_SELFTEST=OFF
+cmake --preset Debug -DSYS_LOG_USE_RTT=OFF -DF103_TEST=OFF
 cmake --build --preset Debug
 ```
 
@@ -151,7 +152,7 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 脚本会自动查找 `SEGGER RTT` 控制块并输出日志，不执行烧录。
 详细参数见 [`tools/rtt/README.md`](../../tools/rtt/README.md)。
 
-### 板载自检
+### F103 测试固件
 
 F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出：
 
@@ -167,7 +168,7 @@ F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出�
 
 当前覆盖 72 MHz 内核时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC。
 基础自检不操作继电器、电机、舵机、蜂鸣器和灯。可通过
-`-DBOARD_SELFTEST=OFF` 关闭。
+`-DF103_TEST=OFF` 关闭。
 该选项默认跟随 `SYS_LOG_USE_RTT`；关闭 RTT 时默认关闭自检，显式强制二者冲突会
 在配置阶段失败。
 

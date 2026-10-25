@@ -90,10 +90,10 @@ Platform_FLASH_Write 对齐要求 = 4 字节
 | `wheel_theta[4]` | policy | 轮子滚动方向与车头夹角，单位 rad |
 | `wheel_sign[4]` | policy | 安装方向符号，通常 ±1 |
 | `wheel_distance` | policy | 轮子到车体中心距离，单位 m |
-| MPU6050 `axis_source/sign` | Board / MPU6050 配置 | 芯片轴到车体轴的映射 |
+| MPU6050 `axis_source/sign` | 板级 App / MPU6050 配置 | 芯片轴到车体轴的映射 |
 | RTC 唤醒计数 | Platform RTC | 所选 RTC 唤醒时钟的 tick 数 |
 | Flash 擦除粒度 | Platform Flash | F4 sector / F1 page，单位 byte |
-| 引脚 / STBY 分组 | Board | 待集中到 Board 层 |
+| 引脚 / STBY 分组 | 板级 App 设备装配 | 由各板 App 持有并注入具体设备 |
 
 ## 4. 符号约定
 

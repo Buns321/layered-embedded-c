@@ -1,10 +1,10 @@
 /**
- * @file board_hardware_test.c
+ * @file f103_hardware_test.c
  * @brief F103C8T6 基于 Platform API 的板载外设实测与 USART2 自检命令。
- * @ingroup board
+ * @ingroup tests
  */
 
-#include "board_hardware_test.h"
+#include "f103_hardware_test.h"
 
 #include "platform_adc.h"
 #include "platform_encoder.h"
@@ -19,60 +19,60 @@
 
 #include <string.h>
 
-#define BOARD_HW_I2C_AHT20_ADDRESS   0x38u
-#define BOARD_HW_I2C_OLED_ADDRESS    0x3Du
-#define BOARD_HW_I2C_TRIALS          2u
-#define BOARD_HW_I2C_TIMEOUT_MS      10u
-#define BOARD_HW_ADC_TIMEOUT_MS      20u
-#define BOARD_HW_UART_TIMEOUT_MS     100u
-#define BOARD_HW_UART_RING_SIZE      64u
-#define BOARD_HW_UART_TX_SIZE        192u
-#define BOARD_HW_COMMAND_SIZE        64u
-#define BOARD_HW_UART_DMA_TEST_SIZE  8u
-#define BOARD_HW_IWDG_TIMEOUT_MS     100u
-#define BOARD_HW_WWDG_TIMEOUT_MS     5u
+#define F103_TEST_I2C_AHT20_ADDRESS   0x38u
+#define F103_TEST_I2C_OLED_ADDRESS    0x3Du
+#define F103_TEST_I2C_TRIALS          2u
+#define F103_TEST_I2C_TIMEOUT_MS      10u
+#define F103_TEST_ADC_TIMEOUT_MS      20u
+#define F103_TEST_UART_TIMEOUT_MS     100u
+#define F103_TEST_UART_RING_SIZE      64u
+#define F103_TEST_UART_TX_SIZE        192u
+#define F103_TEST_COMMAND_SIZE        64u
+#define F103_TEST_UART_DMA_TEST_SIZE  8u
+#define F103_TEST_IWDG_TIMEOUT_MS     100u
+#define F103_TEST_WWDG_TIMEOUT_MS     5u
 
-#define BOARD_HW_GPIO_PIN_0  0x0001u
-#define BOARD_HW_GPIO_PIN_5  0x0020u
-#define BOARD_HW_GPIO_PIN_7  0x0080u
-#define BOARD_HW_GPIO_PIN_9  0x0200u
-#define BOARD_HW_GPIO_PIN_11 0x0800u
+#define F103_TEST_GPIO_PIN_0  0x0001u
+#define F103_TEST_GPIO_PIN_5  0x0020u
+#define F103_TEST_GPIO_PIN_7  0x0080u
+#define F103_TEST_GPIO_PIN_9  0x0200u
+#define F103_TEST_GPIO_PIN_11 0x0800u
 
-typedef enum board_hardware_test_result_e {
-  BOARD_HW_RESULT_PASS = 0,
-  BOARD_HW_RESULT_FAIL,
-  BOARD_HW_RESULT_SKIP,
-} board_hardware_test_result_t;
+typedef enum f103_hardware_test_result_e {
+  F103_TEST_RESULT_PASS = 0,
+  F103_TEST_RESULT_FAIL,
+  F103_TEST_RESULT_SKIP,
+} f103_hardware_test_result_t;
 
-typedef struct board_hardware_test_output_s {
+typedef struct f103_hardware_test_output_s {
   platform_gpio_port_t port;
   uint16_t pin;
-} board_hardware_test_output_t;
+} f103_hardware_test_output_t;
 
-typedef struct board_hardware_test_text_s {
+typedef struct f103_hardware_test_text_s {
   char *data;
   size_t capacity;
   size_t length;
-} board_hardware_test_text_t;
+} f103_hardware_test_text_t;
 
-static const board_hardware_test_output_t s_hw_outputs[] = {
-  {PLATFORM_GPIO_PORT_A, BOARD_HW_GPIO_PIN_7},
-  {PLATFORM_GPIO_PORT_B, BOARD_HW_GPIO_PIN_0},
-  {PLATFORM_GPIO_PORT_B, BOARD_HW_GPIO_PIN_5},
-  {PLATFORM_GPIO_PORT_B, BOARD_HW_GPIO_PIN_9},
-  {PLATFORM_GPIO_PORT_A, BOARD_HW_GPIO_PIN_11},
+static const f103_hardware_test_output_t s_hw_outputs[] = {
+  {PLATFORM_GPIO_PORT_A, F103_TEST_GPIO_PIN_7},
+  {PLATFORM_GPIO_PORT_B, F103_TEST_GPIO_PIN_0},
+  {PLATFORM_GPIO_PORT_B, F103_TEST_GPIO_PIN_5},
+  {PLATFORM_GPIO_PORT_B, F103_TEST_GPIO_PIN_9},
+  {PLATFORM_GPIO_PORT_A, F103_TEST_GPIO_PIN_11},
 };
 
 static uint8_t s_uart_rx_byte;
-static volatile uint8_t s_uart_ring[BOARD_HW_UART_RING_SIZE];
+static volatile uint8_t s_uart_ring[F103_TEST_UART_RING_SIZE];
 static volatile uint16_t s_uart_ring_head;
 static volatile uint16_t s_uart_ring_tail;
 static volatile bool s_uart_rearm_pending;
 static volatile bool s_uart_tx_busy;
-static char s_uart_tx[BOARD_HW_UART_TX_SIZE];
-static char s_uart_command[BOARD_HW_COMMAND_SIZE];
+static char s_uart_tx[F103_TEST_UART_TX_SIZE];
+static char s_uart_command[F103_TEST_COMMAND_SIZE];
 static uint16_t s_uart_command_length;
-static uint8_t s_uart_dma_test[BOARD_HW_UART_DMA_TEST_SIZE];
+static uint8_t s_uart_dma_test[F103_TEST_UART_DMA_TEST_SIZE];
 static volatile bool s_uart_rx_dma_active;
 static volatile bool s_uart_rx_dma_complete;
 
@@ -82,8 +82,8 @@ static volatile bool s_adc_dma_complete;
 static bool s_boot_iwdg_reset;
 static bool s_boot_wwdg_reset;
 
-static void Board_HardwareTest_Append(
-  board_hardware_test_text_t *text,
+static void F103_HardwareTest_Append(
+  f103_hardware_test_text_t *text,
   const char *value
 ) {
   while (
@@ -98,8 +98,8 @@ static void Board_HardwareTest_Append(
   text->data[text->length] = '\0';
 }
 
-static void Board_HardwareTest_AppendUint(
-  board_hardware_test_text_t *text,
+static void F103_HardwareTest_AppendUint(
+  f103_hardware_test_text_t *text,
   uint32_t value
 ) {
   char digits[10];
@@ -114,21 +114,21 @@ static void Board_HardwareTest_AppendUint(
   while (count > 0u) {
     count--;
     const char digit[2] = {digits[count], '\0'};
-    Board_HardwareTest_Append(text, digit);
+    F103_HardwareTest_Append(text, digit);
   }
 }
 
-static void Board_HardwareTest_Report(
+static void F103_HardwareTest_Report(
   const char *name,
-  board_hardware_test_result_t result,
-  board_hardware_test_summary_t *summary
+  f103_hardware_test_result_t result,
+  f103_hardware_test_summary_t *summary
 ) {
   switch (result) {
-    case BOARD_HW_RESULT_PASS:
+    case F103_TEST_RESULT_PASS:
       summary->passed++;
       SYS_LOG_INFO("HW", "%s PASS", name);
       break;
-    case BOARD_HW_RESULT_SKIP:
+    case F103_TEST_RESULT_SKIP:
       summary->skipped++;
       SYS_LOG_WARN("HW", "%s SKIP", name);
       break;
@@ -139,7 +139,7 @@ static void Board_HardwareTest_Report(
   }
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckGpio(void) {
+static f103_hardware_test_result_t F103_HardwareTest_CheckGpio(void) {
   bool passed = true;
 
   for (
@@ -182,23 +182,23 @@ static board_hardware_test_result_t Board_HardwareTest_CheckGpio(void) {
     );
   }
 
-  return passed ? BOARD_HW_RESULT_PASS : BOARD_HW_RESULT_FAIL;
+  return passed ? F103_TEST_RESULT_PASS : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckI2cAddress(
+static f103_hardware_test_result_t F103_HardwareTest_CheckI2cAddress(
   uint16_t address
 ) {
   return Platform_I2C_Probe(
            PLATFORM_I2C_1,
            address,
-           BOARD_HW_I2C_TRIALS,
-           BOARD_HW_I2C_TIMEOUT_MS
+           F103_TEST_I2C_TRIALS,
+           F103_TEST_I2C_TIMEOUT_MS
          ) == PLATFORM_STATUS_OK
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckAdc(void) {
+static f103_hardware_test_result_t F103_HardwareTest_CheckAdc(void) {
   s_adc_dma[0] = 0u;
   s_adc_dma[1] = 0u;
   s_adc_dma_complete = false;
@@ -214,12 +214,12 @@ static board_hardware_test_result_t Board_HardwareTest_CheckAdc(void) {
       "adc start status=%lu",
       (unsigned long)status
     );
-    return BOARD_HW_RESULT_FAIL;
+    return F103_TEST_RESULT_FAIL;
   }
 
   for (
     uint32_t elapsed_ms = 0u;
-    !s_adc_dma_complete && elapsed_ms < BOARD_HW_ADC_TIMEOUT_MS;
+    !s_adc_dma_complete && elapsed_ms < F103_TEST_ADC_TIMEOUT_MS;
     elapsed_ms++
   ) {
     Sys_DelayMs(1u);
@@ -241,14 +241,14 @@ static board_hardware_test_result_t Board_HardwareTest_CheckAdc(void) {
   return s_adc_dma_complete &&
          values_valid &&
          Platform_ADC_GetLastError(PLATFORM_ADC_1) == PLATFORM_ADC_ERROR_NONE
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckEncoder(void) {
+static f103_hardware_test_result_t F103_HardwareTest_CheckEncoder(void) {
   platform_status_t status = Platform_Encoder_Start(PLATFORM_ENCODER_TIM1);
   if (status != PLATFORM_STATUS_OK) {
-    return BOARD_HW_RESULT_FAIL;
+    return F103_TEST_RESULT_FAIL;
   }
 
   status = Platform_Encoder_SetCounter(PLATFORM_ENCODER_TIM1, 1234u);
@@ -273,11 +273,11 @@ static board_hardware_test_result_t Board_HardwareTest_CheckEncoder(void) {
          counter_bits == 16u &&
          Platform_Encoder_GetLastError(PLATFORM_ENCODER_TIM1) ==
            PLATFORM_ERROR_NONE
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_ExercisePwm(
+static f103_hardware_test_result_t F103_HardwareTest_ExercisePwm(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel,
   uint32_t max_duty,
@@ -307,35 +307,35 @@ static board_hardware_test_result_t Board_HardwareTest_ExercisePwm(
          stop_status == PLATFORM_STATUS_OK &&
          clear_status == PLATFORM_STATUS_OK &&
          Platform_PWM_GetLastError(pwm) == PLATFORM_ERROR_NONE
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckTim2(void) {
-  const board_hardware_test_result_t channel_1 =
-    Board_HardwareTest_ExercisePwm(
+static f103_hardware_test_result_t F103_HardwareTest_CheckTim2(void) {
+  const f103_hardware_test_result_t channel_1 =
+    F103_HardwareTest_ExercisePwm(
       PLATFORM_PWM_TIM2,
       PLATFORM_PWM_CHANNEL_1,
       3599u,
       0u,
       2u
     );
-  const board_hardware_test_result_t channel_2 =
-    Board_HardwareTest_ExercisePwm(
+  const f103_hardware_test_result_t channel_2 =
+    F103_HardwareTest_ExercisePwm(
       PLATFORM_PWM_TIM2,
       PLATFORM_PWM_CHANNEL_2,
       3599u,
       0u,
       2u
     );
-  return channel_1 == BOARD_HW_RESULT_PASS &&
-         channel_2 == BOARD_HW_RESULT_PASS
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+  return channel_1 == F103_TEST_RESULT_PASS &&
+         channel_2 == F103_TEST_RESULT_PASS
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckTim3(void) {
-  return Board_HardwareTest_ExercisePwm(
+static f103_hardware_test_result_t F103_HardwareTest_CheckTim3(void) {
+  return F103_HardwareTest_ExercisePwm(
     PLATFORM_PWM_TIM3,
     PLATFORM_PWM_CHANNEL_1,
     89u,
@@ -344,8 +344,8 @@ static board_hardware_test_result_t Board_HardwareTest_CheckTim3(void) {
   );
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckTim4(void) {
-  return Board_HardwareTest_ExercisePwm(
+static f103_hardware_test_result_t F103_HardwareTest_CheckTim4(void) {
+  return F103_HardwareTest_ExercisePwm(
     PLATFORM_PWM_TIM4,
     PLATFORM_PWM_CHANNEL_3,
     20000u,
@@ -354,7 +354,7 @@ static board_hardware_test_result_t Board_HardwareTest_CheckTim4(void) {
   );
 }
 
-static board_hardware_test_result_t Board_HardwareTest_CheckUsart3(void) {
+static f103_hardware_test_result_t F103_HardwareTest_CheckUsart3(void) {
   static const uint8_t probe[] = {'A', 'T', '\r', '\n'};
   uint8_t response[32] = {0};
 
@@ -362,28 +362,28 @@ static board_hardware_test_result_t Board_HardwareTest_CheckUsart3(void) {
     PLATFORM_UART_3,
     probe,
     sizeof(probe),
-    BOARD_HW_UART_TIMEOUT_MS
+    F103_TEST_UART_TIMEOUT_MS
   );
   if (status != PLATFORM_STATUS_OK) {
-    return BOARD_HW_RESULT_FAIL;
+    return F103_TEST_RESULT_FAIL;
   }
 
   status = Platform_UART_Receive(
     PLATFORM_UART_3,
     response,
     sizeof(response),
-    BOARD_HW_UART_TIMEOUT_MS
+    F103_TEST_UART_TIMEOUT_MS
   );
   if (status == PLATFORM_STATUS_TIMEOUT) {
     (void)Platform_UART_AbortReceive(PLATFORM_UART_3);
-    return BOARD_HW_RESULT_SKIP;
+    return F103_TEST_RESULT_SKIP;
   }
   return status == PLATFORM_STATUS_OK
-           ? BOARD_HW_RESULT_PASS
-           : BOARD_HW_RESULT_FAIL;
+           ? F103_TEST_RESULT_PASS
+           : F103_TEST_RESULT_FAIL;
 }
 
-static void Board_HardwareTest_Send(const char *text) {
+static void F103_HardwareTest_Send(const char *text) {
   if (text == NULL || s_uart_tx_busy) {
     return;
   }
@@ -406,7 +406,7 @@ static void Board_HardwareTest_Send(const char *text) {
   }
 }
 
-static void Board_HardwareTest_ArmUartReceive(void) {
+static void F103_HardwareTest_ArmUartReceive(void) {
   s_uart_rearm_pending = false;
   if (
     Platform_UART_ReceiveIT(
@@ -419,40 +419,40 @@ static void Board_HardwareTest_ArmUartReceive(void) {
   }
 }
 
-static bool Board_HardwareTest_CommandIs(
+static bool F103_HardwareTest_CommandIs(
   const char *command,
   const char *expected
 ) {
   return strncmp(command, expected, strlen(expected)) == 0;
 }
 
-static void Board_HardwareTest_HandleCommand(const char *command) {
-  if (Board_HardwareTest_CommandIs(command, "PING")) {
-    Board_HardwareTest_Send("PONG\r\n");
+static void F103_HardwareTest_HandleCommand(const char *command) {
+  if (F103_HardwareTest_CommandIs(command, "PING")) {
+    F103_HardwareTest_Send("PONG\r\n");
     return;
   }
 
-  if (Board_HardwareTest_CommandIs(command, "TEST")) {
-    board_hardware_test_summary_t summary = Board_HardwareTest_RunAll();
+  if (F103_HardwareTest_CommandIs(command, "TEST")) {
+    f103_hardware_test_summary_t summary = F103_HardwareTest_RunAll();
     char response[96];
-    board_hardware_test_text_t text = {
+    f103_hardware_test_text_t text = {
       .data = response,
       .capacity = sizeof(response),
       .length = 0u,
     };
     response[0] = '\0';
-    Board_HardwareTest_Append(&text, "TEST pass=");
-    Board_HardwareTest_AppendUint(&text, summary.passed);
-    Board_HardwareTest_Append(&text, " fail=");
-    Board_HardwareTest_AppendUint(&text, summary.failed);
-    Board_HardwareTest_Append(&text, " skip=");
-    Board_HardwareTest_AppendUint(&text, summary.skipped);
-    Board_HardwareTest_Append(&text, "\r\n");
-    Board_HardwareTest_Send(response);
+    F103_HardwareTest_Append(&text, "TEST pass=");
+    F103_HardwareTest_AppendUint(&text, summary.passed);
+    F103_HardwareTest_Append(&text, " fail=");
+    F103_HardwareTest_AppendUint(&text, summary.failed);
+    F103_HardwareTest_Append(&text, " skip=");
+    F103_HardwareTest_AppendUint(&text, summary.skipped);
+    F103_HardwareTest_Append(&text, "\r\n");
+    F103_HardwareTest_Send(response);
     return;
   }
 
-  if (Board_HardwareTest_CommandIs(command, "RX_DMA")) {
+  if (F103_HardwareTest_CommandIs(command, "RX_DMA")) {
     (void)Platform_UART_AbortReceive(PLATFORM_UART_2);
     memset(s_uart_dma_test, 0, sizeof(s_uart_dma_test));
     s_uart_rx_dma_complete = false;
@@ -463,42 +463,42 @@ static void Board_HardwareTest_HandleCommand(const char *command) {
       sizeof(s_uart_dma_test)
     );
     if (status == PLATFORM_STATUS_OK) {
-      Board_HardwareTest_Send("DMA READY\r\n");
+      F103_HardwareTest_Send("DMA READY\r\n");
     } else {
       s_uart_rx_dma_active = false;
-      Board_HardwareTest_Send("RX_DMA START FAILED\r\n");
-      Board_HardwareTest_ArmUartReceive();
+      F103_HardwareTest_Send("RX_DMA START FAILED\r\n");
+      F103_HardwareTest_ArmUartReceive();
     }
     return;
   }
 
-  if (Board_HardwareTest_CommandIs(command, "RESETFLAGS")) {
+  if (F103_HardwareTest_CommandIs(command, "RESETFLAGS")) {
     char response[96];
-    board_hardware_test_text_t text = {
+    f103_hardware_test_text_t text = {
       .data = response,
       .capacity = sizeof(response),
       .length = 0u,
     };
     response[0] = '\0';
-    Board_HardwareTest_Append(&text, "RESETFLAGS iwdg=");
-    Board_HardwareTest_AppendUint(&text, s_boot_iwdg_reset ? 1u : 0u);
-    Board_HardwareTest_Append(&text, " wwdg=");
-    Board_HardwareTest_AppendUint(&text, s_boot_wwdg_reset ? 1u : 0u);
-    Board_HardwareTest_Append(&text, "\r\n");
-    Board_HardwareTest_Send(response);
+    F103_HardwareTest_Append(&text, "RESETFLAGS iwdg=");
+    F103_HardwareTest_AppendUint(&text, s_boot_iwdg_reset ? 1u : 0u);
+    F103_HardwareTest_Append(&text, " wwdg=");
+    F103_HardwareTest_AppendUint(&text, s_boot_wwdg_reset ? 1u : 0u);
+    F103_HardwareTest_Append(&text, "\r\n");
+    F103_HardwareTest_Send(response);
     return;
   }
 
-  if (Board_HardwareTest_CommandIs(command, "IWDG")) {
+  if (F103_HardwareTest_CommandIs(command, "IWDG")) {
     (void)Platform_UART_Transmit(
       PLATFORM_UART_2,
       (const uint8_t *)"IWDG ARMED\r\n",
       12u,
-      BOARD_HW_UART_TIMEOUT_MS
+      F103_TEST_UART_TIMEOUT_MS
     );
     const platform_status_t status = Platform_IWDG_Start(
       PLATFORM_IWDG_1,
-      BOARD_HW_IWDG_TIMEOUT_MS
+      F103_TEST_IWDG_TIMEOUT_MS
     );
     SYS_LOG_INFO("HW", "iwdg start status=%lu", (unsigned long)status);
     if (status == PLATFORM_STATUS_OK) {
@@ -507,29 +507,29 @@ static void Board_HardwareTest_HandleCommand(const char *command) {
     }
 
     char response[64];
-    board_hardware_test_text_t text = {
+    f103_hardware_test_text_t text = {
       .data = response,
       .capacity = sizeof(response),
       .length = 0u,
     };
     response[0] = '\0';
-    Board_HardwareTest_Append(&text, "IWDG START FAILED status=");
-    Board_HardwareTest_AppendUint(&text, status);
-    Board_HardwareTest_Append(&text, "\r\n");
-    Board_HardwareTest_Send(response);
+    F103_HardwareTest_Append(&text, "IWDG START FAILED status=");
+    F103_HardwareTest_AppendUint(&text, status);
+    F103_HardwareTest_Append(&text, "\r\n");
+    F103_HardwareTest_Send(response);
     return;
   }
 
-  if (Board_HardwareTest_CommandIs(command, "WWDG")) {
+  if (F103_HardwareTest_CommandIs(command, "WWDG")) {
     const platform_wwdg_config_t config = {
-      .timeout_ms = BOARD_HW_WWDG_TIMEOUT_MS,
+      .timeout_ms = F103_TEST_WWDG_TIMEOUT_MS,
       .window = 0x50u,
     };
     (void)Platform_UART_Transmit(
       PLATFORM_UART_2,
       (const uint8_t *)"WWDG ARMED\r\n",
       12u,
-      BOARD_HW_UART_TIMEOUT_MS
+      F103_TEST_UART_TIMEOUT_MS
     );
     const platform_status_t status = Platform_WWDG_Start(
       PLATFORM_WWDG_1,
@@ -542,20 +542,20 @@ static void Board_HardwareTest_HandleCommand(const char *command) {
     }
 
     char response[64];
-    board_hardware_test_text_t text = {
+    f103_hardware_test_text_t text = {
       .data = response,
       .capacity = sizeof(response),
       .length = 0u,
     };
     response[0] = '\0';
-    Board_HardwareTest_Append(&text, "WWDG START FAILED status=");
-    Board_HardwareTest_AppendUint(&text, status);
-    Board_HardwareTest_Append(&text, "\r\n");
-    Board_HardwareTest_Send(response);
+    F103_HardwareTest_Append(&text, "WWDG START FAILED status=");
+    F103_HardwareTest_AppendUint(&text, status);
+    F103_HardwareTest_Append(&text, "\r\n");
+    F103_HardwareTest_Send(response);
   }
 }
 
-static void Board_HardwareTest_UartCallback(
+static void F103_HardwareTest_UartCallback(
   platform_uart_instance_t uart,
   const platform_uart_event_t *event,
   void *context
@@ -578,7 +578,7 @@ static void Board_HardwareTest_UartCallback(
     }
 
     const uint16_t next =
-      (uint16_t)((s_uart_ring_head + 1u) % BOARD_HW_UART_RING_SIZE);
+      (uint16_t)((s_uart_ring_head + 1u) % F103_TEST_UART_RING_SIZE);
     if (next != s_uart_ring_tail) {
       s_uart_ring[s_uart_ring_head] = s_uart_rx_byte;
       s_uart_ring_head = next;
@@ -603,7 +603,7 @@ static void Board_HardwareTest_UartCallback(
   }
 }
 
-static void Board_HardwareTest_AdcCallback(
+static void F103_HardwareTest_AdcCallback(
   platform_adc_instance_t adc,
   const platform_adc_event_t *event,
   void *context
@@ -618,16 +618,16 @@ static void Board_HardwareTest_AdcCallback(
   }
 }
 
-void Board_HardwareTest_Init(void) {
+void F103_HardwareTest_Init(void) {
   s_boot_iwdg_reset = Platform_IWDG_WasReset(PLATFORM_IWDG_1);
   s_boot_wwdg_reset = Platform_WWDG_WasReset(PLATFORM_WWDG_1);
 
   const platform_uart_callback_binding_t uart_callbacks = {
-    .callback = Board_HardwareTest_UartCallback,
+    .callback = F103_HardwareTest_UartCallback,
     .context = NULL,
   };
   const platform_adc_callback_binding_t adc_callbacks = {
-    .callback = Board_HardwareTest_AdcCallback,
+    .callback = F103_HardwareTest_AdcCallback,
     .context = NULL,
   };
   const platform_status_t uart_status = Platform_UART_RegisterCallback(
@@ -645,30 +645,30 @@ void Board_HardwareTest_Init(void) {
     (unsigned long)adc_status
   );
 
-  Board_HardwareTest_ArmUartReceive();
+  F103_HardwareTest_ArmUartReceive();
   char boot_message[96];
-  board_hardware_test_text_t boot_text = {
+  f103_hardware_test_text_t boot_text = {
     .data = boot_message,
     .capacity = sizeof(boot_message),
     .length = 0u,
   };
   boot_message[0] = '\0';
-  Board_HardwareTest_Append(&boot_text, "F103 READY iwdg=");
-  Board_HardwareTest_AppendUint(
+  F103_HardwareTest_Append(&boot_text, "F103 READY iwdg=");
+  F103_HardwareTest_AppendUint(
     &boot_text,
     s_boot_iwdg_reset ? 1u : 0u
   );
-  Board_HardwareTest_Append(&boot_text, " wwdg=");
-  Board_HardwareTest_AppendUint(
+  F103_HardwareTest_Append(&boot_text, " wwdg=");
+  F103_HardwareTest_AppendUint(
     &boot_text,
     s_boot_wwdg_reset ? 1u : 0u
   );
-  Board_HardwareTest_Append(&boot_text, "\r\n");
-  Board_HardwareTest_Send(boot_message);
+  F103_HardwareTest_Append(&boot_text, "\r\n");
+  F103_HardwareTest_Send(boot_message);
 }
 
-board_hardware_test_summary_t Board_HardwareTest_RunAll(void) {
-  board_hardware_test_summary_t summary = {0u, 0u, 0u};
+f103_hardware_test_summary_t F103_HardwareTest_RunAll(void) {
+  f103_hardware_test_summary_t summary = {0u, 0u, 0u};
 
   SYS_LOG_INFO(
     "HW",
@@ -677,49 +677,49 @@ board_hardware_test_summary_t Board_HardwareTest_RunAll(void) {
     s_boot_wwdg_reset ? 1u : 0u
   );
 
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_gpio_readback",
-    Board_HardwareTest_CheckGpio(),
+    F103_HardwareTest_CheckGpio(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_i2c_aht20",
-    Board_HardwareTest_CheckI2cAddress(BOARD_HW_I2C_AHT20_ADDRESS),
+    F103_HardwareTest_CheckI2cAddress(F103_TEST_I2C_AHT20_ADDRESS),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_i2c_oled",
-    Board_HardwareTest_CheckI2cAddress(BOARD_HW_I2C_OLED_ADDRESS),
+    F103_HardwareTest_CheckI2cAddress(F103_TEST_I2C_OLED_ADDRESS),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_adc_dma",
-    Board_HardwareTest_CheckAdc(),
+    F103_HardwareTest_CheckAdc(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_encoder_tim1",
-    Board_HardwareTest_CheckEncoder(),
+    F103_HardwareTest_CheckEncoder(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_pwm_tim2",
-    Board_HardwareTest_CheckTim2(),
+    F103_HardwareTest_CheckTim2(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_pwm_tim3",
-    Board_HardwareTest_CheckTim3(),
+    F103_HardwareTest_CheckTim3(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_pwm_tim4",
-    Board_HardwareTest_CheckTim4(),
+    F103_HardwareTest_CheckTim4(),
     &summary
   );
-  Board_HardwareTest_Report(
+  F103_HardwareTest_Report(
     "platform_uart3_probe",
-    Board_HardwareTest_CheckUsart3(),
+    F103_HardwareTest_CheckUsart3(),
     &summary
   );
 
@@ -733,28 +733,28 @@ board_hardware_test_summary_t Board_HardwareTest_RunAll(void) {
   return summary;
 }
 
-void Board_HardwareTest_Process(void) {
+void F103_HardwareTest_Process(void) {
   if (s_uart_rx_dma_complete) {
     s_uart_rx_dma_complete = false;
     if (memcmp(s_uart_dma_test, "12345678", sizeof(s_uart_dma_test)) == 0) {
-      Board_HardwareTest_Send("RX_DMA PASS\r\n");
+      F103_HardwareTest_Send("RX_DMA PASS\r\n");
       SYS_LOG_INFO("HW", "platform_uart2_rx_dma PASS");
     } else {
-      Board_HardwareTest_Send("RX_DMA FAIL\r\n");
+      F103_HardwareTest_Send("RX_DMA FAIL\r\n");
       SYS_LOG_WARN("HW", "platform_uart2_rx_dma FAIL");
     }
-    Board_HardwareTest_ArmUartReceive();
+    F103_HardwareTest_ArmUartReceive();
   }
 
   if (s_uart_rearm_pending) {
     (void)Platform_UART_AbortReceive(PLATFORM_UART_2);
-    Board_HardwareTest_ArmUartReceive();
+    F103_HardwareTest_ArmUartReceive();
   }
 
   while (s_uart_ring_tail != s_uart_ring_head) {
     const char byte = (char)s_uart_ring[s_uart_ring_tail];
     s_uart_ring_tail =
-      (uint16_t)((s_uart_ring_tail + 1u) % BOARD_HW_UART_RING_SIZE);
+      (uint16_t)((s_uart_ring_tail + 1u) % F103_TEST_UART_RING_SIZE);
 
     if (byte == '\r') {
       continue;
@@ -763,7 +763,7 @@ void Board_HardwareTest_Process(void) {
       if (s_uart_command_length != 0u) {
         s_uart_command[s_uart_command_length] = '\0';
         SYS_LOG_INFO("HW", "usart2 command=%s", s_uart_command);
-        Board_HardwareTest_HandleCommand(s_uart_command);
+        F103_HardwareTest_HandleCommand(s_uart_command);
         s_uart_command_length = 0u;
       }
       continue;

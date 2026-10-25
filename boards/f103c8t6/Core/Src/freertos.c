@@ -28,9 +28,9 @@
 #if defined(SYS_LOG_USE_RTT)
 #include "system_log.h"
 #endif
-#if defined(BOARD_SELFTEST)
-#include "board_hardware_test.h"
-#include "board_selftest.h"
+#if defined(F103_TEST)
+#include "f103_hardware_test.h"
+#include "f103_selftest.h"
 #endif
 /* USER CODE END Includes */
 
@@ -124,8 +124,8 @@ void StartDefaultTask(void *argument)
 #if defined(SYS_LOG_USE_RTT)
   SYS_LOG_INFO("RTOS", "scheduler started");
 #endif
-#if defined(BOARD_SELFTEST)
-  Board_HardwareTest_Init();
+#if defined(F103_TEST)
+  F103_HardwareTest_Init();
   uint32_t selftest_tick_start_ms = osKernelGetTickCount();
   osDelay(5u);
   uint32_t selftest_tick_elapsed_ms =
@@ -133,11 +133,11 @@ void StartDefaultTask(void *argument)
   bool selftest_tick_ok =
     selftest_tick_elapsed_ms >= 4u &&
     selftest_tick_elapsed_ms <= 50u;
-  (void)Board_SelfTest_RunAll(
+  (void)F103_SelfTest_RunAll(
     selftest_tick_ok,
     selftest_tick_elapsed_ms
   );
-  (void)Board_HardwareTest_RunAll();
+  (void)F103_HardwareTest_RunAll();
 #endif
   uint32_t last_log_ms = osKernelGetTickCount();
   /* Infinite loop */
@@ -151,8 +151,8 @@ void StartDefaultTask(void *argument)
       SYS_LOG_INFO("RTOS", "alive at %lu ms", (unsigned long)now_ms);
 #endif
     }
-#if defined(BOARD_SELFTEST)
-    Board_HardwareTest_Process();
+#if defined(F103_TEST)
+    F103_HardwareTest_Process();
 #endif
     osDelay(100u);
   }

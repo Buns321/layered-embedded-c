@@ -1,7 +1,19 @@
-# Platform 编译检查
+# 分层编译检查
 
-这些目标用于编译 Platform 实现，同时不改变任何板级的 CubeMX 引脚映射。私有
-句柄桩只提供 Platform 编译单元所需的句柄，不代表固件初始化流程。
+这些目标用 F4/F1 两套真实芯片头文件和编译宏检查全部共享层及对应板内 App/RTOS，
+同时不改变任何板级的 CubeMX 引脚映射。私有句柄桩只提供 Platform 编译单元所需的
+句柄，不代表固件初始化流程。
+
+当前覆盖：
+
+- Platform common 与 F1/F4 backend
+- DeviceDrivers Base 与具体驱动
+- Controller、Policy、Filter
+- System、RTOS、App
+- IMU base、MPU6050 和滤波组合
+
+每层使用独立对象目标并启用 `-Wall -Wextra -Werror`。源文件按层递归收集，
+`CONFIGURE_DEPENDS` 会在新增 `.c` 文件后自动重新配置，避免新增模块漏出编译检查。
 
 ## F4
 
@@ -33,9 +45,8 @@ SPI3 或 USART4-6。
 两套配置都使用 `-Wall -Wextra` 编译。F4 与 F1 使用独立工具链和构建目录，
 避免 Cortex-M4 浮点参数泄漏到 Cortex-M3 构建。
 
-构建还会启用 `-Werror`，并在独立对象目标中编译 PWM TIM3、编码器 TIM1、
-仅 CAN1 和仅 CAN2 等替代分支。IMU base 管线与 MPU6050 I2C 驱动会分别作为
-F4 和 F1 的系列专用对象目标编译。
+构建还会在独立对象目标中编译 PWM TIM3、编码器 TIM1、PWM TIM2–4 编码器 TIM1、
+仅 CAN1 和仅 CAN2 等替代分支。
 
 ## 原生测试
 

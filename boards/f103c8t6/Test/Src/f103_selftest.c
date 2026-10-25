@@ -1,20 +1,20 @@
 /**
- * @file board_selftest.c
+ * @file f103_selftest.c
  * @brief F103C8T6 非破坏性板载自检实现。
- * @ingroup board
+ * @ingroup tests
  */
 
-#include "board_selftest.h"
+#include "f103_selftest.h"
 
 #include "main.h"
 #include "platform_crc.h"
 #include "system_log.h"
 
-#define BOARD_SELFTEST_EXPECTED_CLOCK_HZ 72000000u
-#define BOARD_SELFTEST_CRC_ZERO_WORD     0x00000000u
-#define BOARD_SELFTEST_CRC_ZERO_RESULT   0xC704DD7Bu
+#define F103_TEST_EXPECTED_CLOCK_HZ 72000000u
+#define F103_TEST_CRC_ZERO_WORD     0x00000000u
+#define F103_TEST_CRC_ZERO_RESULT   0xC704DD7Bu
 
-static void Board_SelfTest_Report(
+static void F103_SelfTest_Report(
   const char *name,
   bool passed,
   uint32_t *passed_count,
@@ -29,21 +29,21 @@ static void Board_SelfTest_Report(
   }
 }
 
-static bool Board_SelfTest_CheckClock(void) {
-  bool passed = SystemCoreClock == BOARD_SELFTEST_EXPECTED_CLOCK_HZ;
+static bool F103_SelfTest_CheckClock(void) {
+  bool passed = SystemCoreClock == F103_TEST_EXPECTED_CLOCK_HZ;
 
   if (!passed) {
     SYS_LOG_WARN(
       "TEST",
       "clock expected=%lu actual=%lu",
-      (unsigned long)BOARD_SELFTEST_EXPECTED_CLOCK_HZ,
+      (unsigned long)F103_TEST_EXPECTED_CLOCK_HZ,
       (unsigned long)SystemCoreClock
     );
   }
   return passed;
 }
 
-static bool Board_SelfTest_CheckLog(void) {
+static bool F103_SelfTest_CheckLog(void) {
   bool is_ready = Sys_Log_IsReady();
   uint32_t drop_bytes = Sys_Log_GetDropBytes();
   uint32_t contention_count = Sys_Log_GetContentionCount();
@@ -64,8 +64,8 @@ static bool Board_SelfTest_CheckLog(void) {
   return passed;
 }
 
-static bool Board_SelfTest_CheckCrc(void) {
-  const uint32_t words[] = {BOARD_SELFTEST_CRC_ZERO_WORD};
+static bool F103_SelfTest_CheckCrc(void) {
+  const uint32_t words[] = {F103_TEST_CRC_ZERO_WORD};
   uint32_t result = 0u;
   platform_status_t status = Platform_CRC_CalculateWords(
     PLATFORM_CRC_1,
@@ -75,21 +75,21 @@ static bool Board_SelfTest_CheckCrc(void) {
   );
   bool passed =
     status == PLATFORM_STATUS_OK &&
-    result == BOARD_SELFTEST_CRC_ZERO_RESULT;
+    result == F103_TEST_CRC_ZERO_RESULT;
 
   if (!passed) {
     SYS_LOG_WARN(
       "TEST",
       "crc status=%lu expected=0x%08lX actual=0x%08lX",
       (unsigned long)status,
-      (unsigned long)BOARD_SELFTEST_CRC_ZERO_RESULT,
+      (unsigned long)F103_TEST_CRC_ZERO_RESULT,
       (unsigned long)result
     );
   }
   return passed;
 }
 
-bool Board_SelfTest_RunAll(
+bool F103_SelfTest_RunAll(
   bool scheduler_tick_ok,
   uint32_t scheduler_tick_elapsed_ms
 ) {
@@ -98,9 +98,9 @@ bool Board_SelfTest_RunAll(
 
   SYS_LOG_INFO("TEST", "BEGIN board=f103c8t6");
 
-  Board_SelfTest_Report(
+  F103_SelfTest_Report(
     "clock",
-    Board_SelfTest_CheckClock(),
+    F103_SelfTest_CheckClock(),
     &passed_count,
     &failed_count
   );
@@ -109,21 +109,21 @@ bool Board_SelfTest_RunAll(
     "tick elapsed=%lu ms",
     (unsigned long)scheduler_tick_elapsed_ms
   );
-  Board_SelfTest_Report(
+  F103_SelfTest_Report(
     "tick",
     scheduler_tick_ok,
     &passed_count,
     &failed_count
   );
-  Board_SelfTest_Report(
+  F103_SelfTest_Report(
     "log",
-    Board_SelfTest_CheckLog(),
+    F103_SelfTest_CheckLog(),
     &passed_count,
     &failed_count
   );
-  Board_SelfTest_Report(
+  F103_SelfTest_Report(
     "crc",
-    Board_SelfTest_CheckCrc(),
+    F103_SelfTest_CheckCrc(),
     &passed_count,
     &failed_count
   );

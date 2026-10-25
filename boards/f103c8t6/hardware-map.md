@@ -44,7 +44,7 @@
   FreeRTOS 可调用 API 的中断优先级阈值为 5。
 
 外设接入时，引脚模式、复用映射、时钟、DMA、NVIC 和全部 `MX_*_Init()`
-继续由 CubeMX/Core 生成。Board 和 Platform 只消费已初始化的实例。
+继续由 CubeMX/Core 生成。板内 App 和 Platform 只消费已初始化的实例。
 
 ## 2. 接口总表
 
@@ -74,7 +74,7 @@
 | 三色灯 B | PB6 | GPIO | 推挽输出 | 与 I2C1_SCL 共用 PB6 |
 | 继电器 | PB5 | GPIO | 推挽输出，初始低 | 高电平吸合 |
 
-## 3. CubeMX、Platform 与 Board 边界
+## 3. CubeMX、Platform 与 App 边界
 
 ### CubeMX / Core
 
@@ -95,9 +95,9 @@
 - 中断回调只做状态更新、事件通知和最小数据搬运。
 - 粗粒度结果使用 `platform_status_t`，外设细节通过错误快照或错误回调提供。
 
-### Board / App
+### App / 板级装配
 
-- Board 负责固定引脚语义、设备所属关系和初始化顺序。
+- 板内 App 负责固定引脚语义、设备所属关系和初始化顺序。
 - App 只使用设备接口下发功能命令。
 - 每个具体设备拥有独立对象和独立回调上下文。
 - 控制任务、传感器任务、显示任务和通信任务之间通过静态对象或 RTOS 原语交换数据。

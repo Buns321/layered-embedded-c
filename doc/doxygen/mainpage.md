@@ -39,8 +39,8 @@ HAL / CMSIS / FreeRTOS
 Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、System。
 
-待完成或暂缓：PID、App / RTOS 接线、Board 层、F103 板级外设接线与验证、参数标定、
-Filter 单测 / 统一时间源 / Kalman。
+待完成或暂缓：PID、板级 App / RTOS 接线与故障联锁、F103 板级外设接线与验证、
+参数标定、Filter 单测 / 统一时间源 / Kalman。
 
 ## 文档
 
@@ -49,4 +49,6 @@ Filter 单测 / 统一时间源 / Kalman。
 - [编码约定](../conventions.md)
 - [F103 板级工程](../../boards/f103c8t6/README.md)
 - [F103 硬件与接口规范](../../boards/f103c8t6/hardware-map.md)
+- [F407 板级工程](../../boards/f407vet6/README.md)
+- [F407 硬件与接口规范](../../boards/f407vet6/hardware-map.md)
 - [TODO](../todo.md)

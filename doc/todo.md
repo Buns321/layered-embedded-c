@@ -7,7 +7,7 @@
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
 - [x] FireWater / JustFloat 遥测设备与 UART DMA 发送
-- [ ] Board 层与 App / RTOS 运行链路的完整接线
+- [ ] App 对象装配与 RTOS 运行链路的完整接线
 - [ ] 轮速 PID、参数标定和板上验证
 - [ ] 遥测通道 schema、周期发送与 USART2 高速配置
 
@@ -151,7 +151,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] `stm32f4/platform_uart.c` 补齐 USART3 / UART4 / UART5 / USART6 映射
 
 **F1 与构建**
-- [x] F103 目标接入共享 App / Controller / Policy / Filter / DeviceDrivers base / RTOS
+- [x] F103 目标接入板内 App / RTOS 与共享 Controller / Policy / Filter / DeviceDrivers base
 - [x] F1 GPIO、EXTI、CRC、IWDG、WWDG 实现
 - [x] F1 USART1–3、PWM TIM1、Encoder TIM2–4、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC、Flash 实现
 - [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
@@ -369,15 +369,15 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [ ] 评估 SWO/ITM 与 DBGMCU freeze，补齐调试日志与暂停策略
 - [ ] 新增参数存储层：Flash 参数区 + CRC 校验 + 默认值回退
 
-## Core / Board
-**架构**：Core 保持 CubeMX 生成内容，板级对象、引脚拓扑、STBY 分组和统一初始化入口应移入 Board 层。
+## Core / App 装配
+**架构**：Core 保持 CubeMX 生成内容；具体设备对象、依赖注入和运行链路由 App 装配层负责。
 - [x] `Core/Src/main.c` 不再直接依赖 `RTOS/Inc/rtos_shared.h`
-- [ ] 建立统一的 `Board_Init()` / `System_Init()` 初始化入口
+- [ ] 建立统一的 `App_Init()` / `System_Init()` 初始化入口
 - [x] USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
 - [ ] 将 USART2 波特率从 9600 提升到遥测所需速率
-- [ ] `Error_Handler` 在停机前通过 Board 接口切断电机输出
-- [ ] 在 Board 层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
-- [ ] 定义 Board NVIC 优先级表（`BOARD_IRQ_PRIO_*`），在 CubeMX MSP 中引用
+- [ ] `Error_Handler` 在停机前通过设备抽象切断电机输出
+- [ ] 在 App 装配层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
+- [ ] 定义板级 NVIC 优先级配置常量，在 CubeMX MSP 中引用
 - [ ] 明确 STBY 硬件下拉与复位安全状态，确保看门狗/复位时电机不会保持使能
 - [x] 启动时读取并记录 IWDG/WWDG 复位原因
 - [ ] 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
@@ -385,8 +385,8 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [ ] 为使用的 EXTI 引脚建立板级映射
 
 ## 构建
-**说明**：CubeMX 生成的构建骨架与手写模块统一在顶层 `CMakeLists.txt` 注册，新增模块随源文件加入编译。
-- [ ] 按 Platform、DeviceDrivers、Controller、Policy、Board、RTOS、App 拆分目标，用构建系统约束依赖方向
+**说明**：CubeMX 生成的构建骨架与手写模块统一在板级 `CMakeLists.txt` 注册，新增模块随源文件加入编译。
+- [ ] 按 Platform、DeviceDrivers、Controller、Policy、RTOS、App 拆分目标，用构建系统约束依赖方向
 - [x] 将新增的 policy、chassis 源文件加入 `CMakeLists.txt`
 - [x] 同步 `motor_base` 新接口到 `motor_tb6612`
 - [ ] 更新 App/RTOS 调用点并完成运行链路接线（工程链接已通过）

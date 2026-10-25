@@ -52,7 +52,7 @@ base 与 Platform；base 只依赖 System 和标准库。
   由调用方保持有效。
 - 跨系列公共校验、策略和状态机位于 `Platform/Src/common/`；HAL handle、
   时钟和位宽适配位于 `Platform/Src/stm32f4/` 或 `Platform/Src/stm32f1/`。
-  根目标选用 F4 backend，`boards/f103c8t6/` 独立目标选用 F1 backend。
+  `boards/f407vet6/` 目标选用 F4 backend，`boards/f103c8t6/` 目标选用 F1 backend。
 - F407 已实现 GPIO、PWM、Encoder、USART1–6、EXTI、I2C1–3、SPI1–3、
   ADC1–3、DAC、CAN1–2、RTC、Flash、CRC、RNG、IWDG、WWDG。
 - F103C8T6 已实现 GPIO、PWM、Encoder、USART1–3、EXTI、I2C1–2、SPI1–2、
@@ -214,7 +214,7 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 
 ## 7. F407 任务模型
 
-`Core/Src/freertos.c` 已创建四个 CMSIS-RTOS2 任务：
+`boards/f407vet6/Core/Src/freertos.c` 已创建四个 CMSIS-RTOS2 任务：
 
 | 任务 | 栈 | 优先级 | 当前状态 |
 | --- | --- | --- | --- |
@@ -266,7 +266,7 @@ Controller 契约 + 线性 + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
 System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
 
-待完成或暂缓：PID、App / RTOS 接线、Board 层、F103 板级外设接线与验证、参数标定、
+待完成或暂缓：PID、各板 App / RTOS 接线与对象装配、F103 板级外设接线与验证、参数标定、
 Filter/Kalman 姿态实现、MPU6050 板上验证、Platform 新增外设板上验证、
 MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
 遥测对象与任务接线、USART2 高波特率配置、RTT 主机侧实测。

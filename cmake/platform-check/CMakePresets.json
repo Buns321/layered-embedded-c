@@ -5,7 +5,7 @@
       "name": "f4-debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f4",
-      "toolchainFile": "${sourceDir}/../gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../boards/f407vet6/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "PLATFORM_CHECK_FAMILY": "F4"
@@ -25,7 +25,7 @@
       "name": "f4-release",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f4-release",
-      "toolchainFile": "${sourceDir}/../gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../boards/f407vet6/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "PLATFORM_CHECK_FAMILY": "F4"

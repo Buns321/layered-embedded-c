@@ -48,7 +48,7 @@ WHT101 注册 `filter_passthrough_t`：
 ## 4. MPU6050
 
 MPU6050 通过 Platform I2C 使用 7 位地址和逻辑实例。具体 I2C 外设、SCL/SDA、
-总线频率与 NVIC 由 CubeMX/Board 配置，驱动不包含引脚信息。
+总线频率与 NVIC 由 CubeMX 配置，驱动不包含引脚信息。
 
 初始化配置包括：
 
@@ -78,7 +78,7 @@ MPU6050 通过 Platform I2C 使用 7 位地址和逻辑实例。具体 I2C 外�
 - CubeMX 生成实际 `i2c.c` / `i2c.h`、引脚、时钟和 handle。
 - CMake 打开 `PLATFORM_BUILD_I2C` 并定义至少一个
   `PLATFORM_ENABLE_I2Cx=1`。
-- Board/App 静态定义 MPU6050、滤波器和采样任务归属。
+- App 装配层静态定义 MPU6050、滤波器和采样任务归属。
 
 F103 与 F407 使用同一驱动源码，不包含 MCU 家族条件编译。
 
