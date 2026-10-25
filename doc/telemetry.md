@@ -74,9 +74,17 @@ SYS_LOG_INFO("CTRL", "entered closed-loop mode");
 - `SEGGER_RTT_MODE_NO_BLOCK_SKIP`
 - 使用 C 实现，不编译 RTT 汇编文件
 
-调试器必须能够发现 ELF 中的 `_SEGGER_RTT` 符号。当前 VS Code 配置使用
-OpenOCD；OpenOCD 需要额外执行 RTT setup/start 并启动 RTT server。若使用
-J-Link RTT Viewer，应改用 J-Link GDB Server，而不是当前的 OpenOCD 服务类型。
+调试器必须能够发现 ELF 中的 `_SEGGER_RTT` 符号。仓库提供 OpenOCD 主机接收
+脚本，烧录带 RTT 的固件后运行：
+
+```powershell
+$env:OPENOCD_EXE = "D:\path\to\openocd.exe"
+.\tools\rtt\Receive-Rtt.ps1 -Board f103c8t6
+```
+
+脚本在目标 RAM 中查找 `SEGGER RTT` 控制块，启动本地 RTT server，并将日志
+显示到当前终端。脚本只短暂 halt 目标完成 RTT 初始化，随后恢复运行。
+若使用 J-Link RTT Viewer，应改用 J-Link GDB Server。
 
 ## 3. 遥测设备
 
@@ -143,8 +151,8 @@ Dev_JustFloat_UART_Init(
 约束：
 
 - TX 缓冲由具体设备对象持有，DMA 完成前不能被下一帧覆盖。
-- USART2 当前只启用 DMA 和 DMA IRQ，USART2 NVIC 未启用。
-- 只发送遥测时不需要 USART2 NVIC；需要接收命令和错误回调时必须启用。
+- USART2 当前启用 DMA、DMA IRQ 和 USART2 NVIC，支持命令接收与 DMA 发送。
+- 只发送遥测时可关闭 USART2 NVIC；需要接收命令和错误回调时必须启用。
 - 当前 `uart_base_t` 每个实例只有一套回调。`firewater_uart` 或
   `justfloat_uart` 初始化后会接管该 UART 的回调槽，不能和另一个独立回调用户
   同时使用。
@@ -152,8 +160,8 @@ Dev_JustFloat_UART_Init(
 
 ### 3.5 速率和波特率
 
-USART2 当前配置仍为 9600 baud。使用遥测前应在 CubeMX 中改为 `921600` 或
-`1 Mbps`，并同步修改上位机配置。
+USART2 当前配置为 115200 baud，可作为首轮调试和命令通道。提高遥测速率前应在
+CubeMX 中改为 `921600` 或 `1 Mbps`，并同步修改上位机配置。
 
 参考带宽：
 
@@ -194,6 +202,7 @@ cmake --build --preset Debug
 - Telemetry base
 - FireWater / JustFloat UART DMA 协议设备
 - Debug、Release 和无 RTT 构建
+- F103 板上 RTT 控制块发现、启动日志、并发运行日志与主机端接收
 
 尚未完成：
 
@@ -201,4 +210,4 @@ cmake --build --preset Debug
 - 从电机、IMU、底盘生成固定通道快照
 - 在 MonitorTask 中周期性发送
 - 将 USART2 波特率提高到遥测速率
-- 在 OpenOCD 或 J-Link 工具链中实际验证主机端接收
+- 在 J-Link 工具链中实际验证主机端接收

@@ -62,6 +62,9 @@ QUIET                  = YES
 
 PREDEFINED             = USE_FREERTOS STM32F4xx \
                          PLATFORM_ENABLE_PWM_TIM1=1 \
+                         PLATFORM_ENABLE_PWM_TIM2=1 \
+                         PLATFORM_ENABLE_PWM_TIM3=1 \
+                         PLATFORM_ENABLE_PWM_TIM4=1 \
                          PLATFORM_ENABLE_ENCODER_TIM2=1 \
                          PLATFORM_ENABLE_ENCODER_TIM3=1 \
                          PLATFORM_ENABLE_ENCODER_TIM4=1 \

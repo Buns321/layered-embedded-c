@@ -62,6 +62,9 @@ Controller、Policy、Filter、RTOS 或 App 包含。
 
 ```text
 PLATFORM_ENABLE_PWM_TIM1=1
+PLATFORM_ENABLE_PWM_TIM2=1
+PLATFORM_ENABLE_PWM_TIM3=1
+PLATFORM_ENABLE_PWM_TIM4=1
 PLATFORM_ENABLE_ENCODER_TIM2=1
 PLATFORM_ENABLE_ENCODER_TIM3=1
 PLATFORM_ENABLE_ENCODER_TIM4=1
@@ -179,6 +182,7 @@ IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
 ### I2C
 
 - 只提供主机模式，公共地址为 7 位 `0x00..0x7F`，实现内部左移一位。
+- `Platform_I2C_Probe()` 只验证地址应答，不读写设备寄存器。
 - 阻塞接口超时单位为毫秒；IT/DMA 传输没有内部超时。
 - 一次只允许一个活动传输，一个实例只有一个回调所有者。
 - 缓冲区在完成、错误或 abort 前必须保持有效。

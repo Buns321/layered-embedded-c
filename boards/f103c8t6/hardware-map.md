@@ -31,9 +31,17 @@
 - SYS：SWD 调试和 SysTick 时基。
 - GPIO：已生成独立 `gpio.c` / `gpio.h`。
 - CRC：已生成独立 `crc.c` / `crc.h`，由 `MX_CRC_Init()` 初始化。
+- USART2：PA2 / PA3，115200 8N1，DMA1_Channel6 / 7。
+- USART3：PB10 / PB11，9600 8N1，中断收发。
+- I2C1：PB6 / PB7，标准模式 100 kHz。
+- ADC1：PA4 / PA5 双通道扫描，DMA1_Channel1 循环采样。
+- TIM1：PA8 / PA9 编码器；TIM2：PA0 / PA1 PWM；TIM3：PB4 WS2812；
+  TIM4：PB8 舵机 PWM。
+- DMA1：ADC1、USART2 RX/TX 和 TIM3_UP 四个请求。
 - FreeRTOS：已生成独立 `freertos.c` / `freertos.h`，AUTOSAR 兼容关闭，
   CMSIS-RTOS V2 开启。
-- NVIC：使用 4 位抢占优先级，FreeRTOS 可调用 API 的中断优先级阈值为 5。
+- NVIC：使用 4 位抢占优先级，DMA、USART、I2C1 和 EXTI15_10 使用优先级 5；
+  FreeRTOS 可调用 API 的中断优先级阈值为 5。
 
 外设接入时，引脚模式、复用映射、时钟、DMA、NVIC 和全部 `MX_*_Init()`
 继续由 CubeMX/Core 生成。Board 和 Platform 只消费已初始化的实例。

@@ -51,9 +51,9 @@
 - SWD 调试，保留 PA13 / PA14。
 - SysTick 作为 HAL 与 FreeRTOS 时基。
 - CRC 独立外设初始化。
+- USART2 / USART3、I2C1、ADC1、TIM1–4、DMA1 和对应 NVIC。
 - FreeRTOS CMSIS-RTOS V2 和默认任务。
-- 独立 `gpio.c` / `gpio.h`、`crc.c` / `crc.h`、`freertos.c` /
-  `freertos.h`。
+- 每个外设生成独立的 `*.c` / `*.h`。
 
 板级接口的目标资源和引脚分配以
 [硬件与接口规范](hardware-map.md)为准。新增外设时继续由 CubeMX 生成
@@ -61,7 +61,7 @@
 
 ## Platform 外设状态
 
-正式板级构建当前启用：
+正式板级构建始终启用：
 
 - GPIO
 - EXTI
@@ -69,14 +69,18 @@
 - IWDG
 - WWDG
 
-F1 的 PWM、Encoder、USART1–3、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC
-和 Flash 实现已位于共享 Platform 层。I2C、SPI、ADC、CAN、RTC、UART
-和 TIM 的 HAL 头文件与源文件也已补入本板级驱动目录。
+`BOARD_SELFTEST=ON` 时额外启用并实测：
 
-这些实现通过 `cmake/platform-check/` 的 F1 全实例目标编译验证。正式板上
-启用某个实例时，仍需由 CubeMX 在 `.ioc` 中生成引脚、时钟、DMA、NVIC、
-`MX_*_Init()` 和 HAL handle，并在板级 CMake 中选择对应实例与
-`PLATFORM_BUILD_*` 开关。未配置实例不会出现在正式目标的公共枚举中。
+- ADC1、I2C1、UART2 / UART3
+- PWM TIM2 / TIM3 / TIM4
+- Encoder TIM1
+
+F1 的 USART1–3、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和 Flash 实现位于
+共享 Platform 层。正式产品构建启用其他实例时，仍需同时选择对应
+`PLATFORM_BUILD_*` 开关和实例宏。
+
+这些实现通过 `cmake/platform-check/` 的 F1 全实例目标编译验证。
+未配置实例不会出现在正式目标的公共枚举中。
 
 ## 构建
 
@@ -162,9 +166,22 @@ F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出�
 ```
 
 当前覆盖 72 MHz 内核时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC。
-测试不操作继电器、电机、舵机、蜂鸣器和灯。可通过 `-DBOARD_SELFTEST=OFF` 关闭。
+基础自检不操作继电器、电机、舵机、蜂鸣器和灯。可通过
+`-DBOARD_SELFTEST=OFF` 关闭。
 该选项默认跟随 `SYS_LOG_USE_RTT`；关闭 RTT 时默认关闭自检，显式强制二者冲突会
 在配置阶段失败。
+
+板载硬件实测还会检查 GPIO 输出回读、I2C1 的 `0x38` / `0x3D` 设备、ADC1 双通道
+DMA、TIM1 编码器、TIM2 / TIM3 / TIM4 定时器、USART3 探测，并通过 USART2
+验证 CH343P 收发、IWDG 和 WWDG 复位。定时器和执行器测试使用零占空比、短时
+中位脉冲或零数据 DMA，结束后恢复安全状态。运行：
+
+```powershell
+.\tools\test\Invoke-F103HardwareTest.ps1
+```
+
+脚本默认自动选择 CH343P 串口。IWDG 和 WWDG 测试会让 MCU 主动复位；只测试常规项时
+使用 `-SkipResetTests`。
 
 ## 当前验证状态
 
@@ -174,8 +191,12 @@ F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出�
 - F1 支持的全部 Platform 外设已通过 Debug、Release 独立编译检查。
 - 板上非破坏性自检已通过：72 MHz 时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC，
   结果为 `SUMMARY pass=4 fail=0`。
-- 板上时钟、RTT、FreeRTOS 调度、CRC、IWDG、WWDG 以及硬件接口验证按
-  [硬件与接口规范](hardware-map.md)第 11 节执行。
+- 板载硬件实测已通过：GPIO 回读、I2C1 的 AHT20 / CH1116 地址、ADC1 DMA、
+  TIM1 编码器、TIM2 / TIM3 / TIM4、USART2 PING / TEST、IWDG 复位和 WWDG
+  复位，结果为 `TEST pass=8 fail=0 skip=1`。USART3 因未观察到 DX-BT24 响应而
+  跳过，需连接模块后复测。
+- 定时器占空比、总线时序、WS2812 光输出、舵机运动、继电器和电机实际负载仍需
+  按 [硬件与接口规范](hardware-map.md)第 11 节结合示波器或实际负载确认。
 
 ## 相关文档
 

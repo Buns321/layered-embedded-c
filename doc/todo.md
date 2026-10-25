@@ -113,7 +113,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 为 `Platform_PWM_SetCompare` 增加 AUTORELOAD 夹紧
 - [x] 保留 f1 平台
 - [x] 为 STM32F103C8T6 建立独立 CMake 目标、F1 HAL、CM3 FreeRTOS、启动文件和链接脚本
-- [ ] 完成 STM32F103C8T6 板上时钟、RTT、FreeRTOS、CRC、IWDG、WWDG 验证
+- [x] 完成 STM32F103C8T6 板上时钟、RTT、FreeRTOS、CRC、IWDG、WWDG 验证
 
 ## Platform · 外设扩展
 **架构**：每个外设按“接口 / F4 实现 / F1 实现”拆分。`Platform/Inc/platform_xxx.h` 只定义枚举身份、状态码和 API，不包含 HAL 类型；`Platform/Src/stm32f4/platform_xxx.c` 负责 F4 HAL 映射与回调；F1 实现按需补，未实现时构建不选入。CubeMX 继续负责外设初始化，HAL 源文件单独注册。
@@ -156,8 +156,9 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] F1 USART1–3、PWM TIM1、Encoder TIM2–4、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC、Flash 实现
 - [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
 - [x] F4/F1 独立 Platform 全实例 Debug、Release 构建通过 `-Wall -Wextra`
-- [ ] F103 CubeMX 配置实际 UART/TIM/I2C/SPI/ADC/CAN/RTC 实例、DMA 和 NVIC
-- [ ] 每个实际启用的 F103 实例同步 CubeMX handle、初始化和板级 CMake 开关
+- [x] F103 CubeMX 配置实际 USART2/3、TIM1–4、I2C1、ADC1、DMA 和 NVIC
+- [x] 每个实际启用的 F103 实例同步 CubeMX handle、初始化和板级 CMake 开关
+- [ ] 按最终硬件需要继续配置和验证 F103 SPI/CAN/RTC 等未启用实例
 - [ ] 板上验证新增 I2C / SPI / ADC / DAC / CAN / RTC / Flash 的电气与时序行为
 - [ ] 评估 I2S / USB / SDIO / ETH / DCMI / FSMC，按项目需要启用
 
@@ -360,8 +361,9 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [x] RTT 使用非阻塞 skip 模式并统计丢弃字节与竞争次数
 - [x] `main()` 在调度器启动前安全初始化 RTT 日志
 - [ ] 在 Fault 强钩子中输出固定的紧急二进制快照
-- [ ] 补充 OpenOCD RTT 启动脚本或 J-Link RTT 调试配置
-- [ ] 在真实板卡和主机端验证 RTT 连接、并发日志与缓冲丢弃行为
+- [x] 补充 `tools/rtt/Receive-Rtt.ps1` OpenOCD RTT 启动与接收脚本
+- [ ] 补充 J-Link RTT 调试配置
+- [x] 在真实 F103 板卡和主机端验证 RTT 控制块发现、启动日志和并发运行日志
 - [ ] 新增 `system_power`：PVD/BOR 状态与低功耗模式入口
 - [ ] 评估 MPU：栈/堆/关键数据区保护
 - [ ] 评估 SWO/ITM 与 DBGMCU freeze，补齐调试日志与暂停策略
@@ -371,15 +373,15 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 **架构**：Core 保持 CubeMX 生成内容，板级对象、引脚拓扑、STBY 分组和统一初始化入口应移入 Board 层。
 - [x] `Core/Src/main.c` 不再直接依赖 `RTOS/Inc/rtos_shared.h`
 - [ ] 建立统一的 `Board_Init()` / `System_Init()` 初始化入口
-- [ ] USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
+- [x] USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
 - [ ] 将 USART2 波特率从 9600 提升到遥测所需速率
 - [ ] `Error_Handler` 在停机前通过 Board 接口切断电机输出
 - [ ] 在 Board 层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
 - [ ] 定义 Board NVIC 优先级表（`BOARD_IRQ_PRIO_*`），在 CubeMX MSP 中引用
 - [ ] 明确 STBY 硬件下拉与复位安全状态，确保看门狗/复位时电机不会保持使能
-- [ ] 启动时读取并记录复位原因（IWDG/WWDG/软件/上电/欠压）
+- [x] 启动时读取并记录 IWDG/WWDG 复位原因
 - [ ] 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
-- [ ] 统一 `.ioc` 中 25 MHz HSE 配置与当前 `main.c` 使用 HSI PLL 的差异
+- [x] 统一 `.ioc` 与 `main.c` 的 8 MHz HSE、PLL x9 和 72 MHz 配置
 - [ ] 为使用的 EXTI 引脚建立板级映射
 
 ## 构建

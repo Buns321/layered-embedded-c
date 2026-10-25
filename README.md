@@ -89,6 +89,18 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 
 实际接口配置按你的调试器与板卡调整。
 
+### RTT 日志
+
+F103 或 F407 构建时保持 `SYS_LOG_USE_RTT=ON`，烧录后运行：
+
+```powershell
+$env:OPENOCD_EXE = "D:\path\to\openocd.exe"
+.\tools\rtt\Receive-Rtt.ps1 -Board f103c8t6
+```
+
+脚本通过 ST-Link 启动 OpenOCD RTT server，并把日志输出到当前终端。
+按 `Ctrl+C` 结束。详细参数见 [RTT 日志接收](tools/rtt/README.md)。
+
 ## 文档
 
 - [架构说明](doc/architecture.md)
@@ -101,6 +113,7 @@ openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 - Platform/IMU 原生测试：`cmake/platform-test/README.md`
 - [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
+- [RTT 日志接收](tools/rtt/README.md)
 - [TODO](doc/todo.md)
 - Doxygen：`doxygen doc/doxygen/Doxyfile`，或 `cmake --build build/Debug --target docs`
 
