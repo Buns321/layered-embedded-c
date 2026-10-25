@@ -24,10 +24,19 @@ typedef enum platform_pwm_instance_e {
 #if PLATFORM_ENABLE_PWM_TIM1
   PLATFORM_PWM_TIM1 = 0,
 #endif
+#if PLATFORM_ENABLE_PWM_TIM2
+  PLATFORM_PWM_TIM2 = 2,
+#endif
 #if PLATFORM_ENABLE_PWM_TIM3
   PLATFORM_PWM_TIM3 = 3,
 #endif
+#if PLATFORM_ENABLE_PWM_TIM4
+  PLATFORM_PWM_TIM4 = 4,
+#endif
 } platform_pwm_instance_t;
+
+/** @brief PWM 身份槽位数量上限。 */
+#define PLATFORM_PWM_INSTANCE_COUNT 5u
 
 /**
  * @brief PWM 通道身份。
@@ -39,7 +48,8 @@ typedef enum platform_pwm_channel_e {
   PLATFORM_PWM_CHANNEL_4,
 } platform_pwm_channel_t;
 
-#if !PLATFORM_ENABLE_PWM_TIM1 && !PLATFORM_ENABLE_PWM_TIM3
+#if !PLATFORM_ENABLE_PWM_TIM1 && !PLATFORM_ENABLE_PWM_TIM2 && \
+    !PLATFORM_ENABLE_PWM_TIM3 && !PLATFORM_ENABLE_PWM_TIM4
 #error "At least one Platform PWM instance must be enabled"
 #endif
 

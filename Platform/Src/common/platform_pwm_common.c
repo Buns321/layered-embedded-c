@@ -7,10 +7,10 @@
 #include "platform_error_internal.h"
 #include "platform_pwm_backend.h"
 
-static volatile uint32_t pwm_error[2];
+static volatile uint32_t pwm_error[PLATFORM_PWM_INSTANCE_COUNT];
 
 static uint32_t platform_pwm_error_index(platform_pwm_instance_t pwm) {
-  return pwm == PLATFORM_PWM_TIM1 ? 0U : 1U;
+  return (uint32_t)pwm;
 }
 
 static platform_status_t platform_pwm_finish(

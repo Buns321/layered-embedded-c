@@ -26,8 +26,16 @@
 #define PLATFORM_ENABLE_PWM_TIM1 0
 #endif
 
+#ifndef PLATFORM_ENABLE_PWM_TIM2
+#define PLATFORM_ENABLE_PWM_TIM2 0
+#endif
+
 #ifndef PLATFORM_ENABLE_PWM_TIM3
 #define PLATFORM_ENABLE_PWM_TIM3 0
+#endif
+
+#ifndef PLATFORM_ENABLE_PWM_TIM4
+#define PLATFORM_ENABLE_PWM_TIM4 0
 #endif
 
 #ifndef PLATFORM_ENABLE_ENCODER_TIM1
@@ -150,8 +158,16 @@
 #error "TIM1 cannot be enabled as both PWM and encoder"
 #endif
 
+#if PLATFORM_ENABLE_PWM_TIM2 && PLATFORM_ENABLE_ENCODER_TIM2
+#error "TIM2 cannot be enabled as both PWM and encoder"
+#endif
+
 #if PLATFORM_ENABLE_PWM_TIM3 && PLATFORM_ENABLE_ENCODER_TIM3
 #error "TIM3 cannot be enabled as both PWM and encoder"
+#endif
+
+#if PLATFORM_ENABLE_PWM_TIM4 && PLATFORM_ENABLE_ENCODER_TIM4
+#error "TIM4 cannot be enabled as both PWM and encoder"
 #endif
 
 /** @brief 所支持 MCU 系列中 UART 身份槽位的数量上限。 */

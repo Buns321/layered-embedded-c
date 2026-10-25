@@ -14,8 +14,14 @@ static TIM_HandleTypeDef *platform_pwm_to_hal(platform_pwm_instance_t pwm) {
 #if PLATFORM_ENABLE_PWM_TIM1
     case PLATFORM_PWM_TIM1: return &htim1;
 #endif
+#if PLATFORM_ENABLE_PWM_TIM2
+    case PLATFORM_PWM_TIM2: return &htim2;
+#endif
 #if PLATFORM_ENABLE_PWM_TIM3
     case PLATFORM_PWM_TIM3: return &htim3;
+#endif
+#if PLATFORM_ENABLE_PWM_TIM4
+    case PLATFORM_PWM_TIM4: return &htim4;
 #endif
     default: return NULL;
   }

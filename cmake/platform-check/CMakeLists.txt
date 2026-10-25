@@ -133,6 +133,35 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       -Wall -Wextra -Werror
   )
 
+  set(PLATFORM_F4_BOARD_TIM_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F4_BOARD_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM1=1
+      PLATFORM_ENABLE_ENCODER_TIM2=1
+      PLATFORM_ENABLE_ENCODER_TIM3=1
+      PLATFORM_ENABLE_ENCODER_TIM4=1
+      PLATFORM_ENABLE_ENCODER_TIM5=1
+  )
+  list(APPEND PLATFORM_F4_BOARD_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM2=1
+      PLATFORM_ENABLE_PWM_TIM3=1
+      PLATFORM_ENABLE_PWM_TIM4=1
+      PLATFORM_ENABLE_ENCODER_TIM1=1
+  )
+
+  add_library(platform_f4_board_tim_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_encoder.c
+      ${REPO_ROOT}/Platform/Src/stm32f4/platform_pwm.c
+  )
+  target_include_directories(platform_f4_board_tim_check PRIVATE
+      ${PLATFORM_F4_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f4_board_tim_check PRIVATE
+      ${PLATFORM_F4_BOARD_TIM_DEFINITIONS}
+  )
+  target_compile_options(platform_f4_board_tim_check PRIVATE
+      -Wall -Wextra -Werror
+  )
+
   set(PLATFORM_F4_CAN1_ONLY_DEFINITIONS ${PLATFORM_F4_DEFINITIONS})
   list(REMOVE_ITEM PLATFORM_F4_CAN1_ONLY_DEFINITIONS
       PLATFORM_ENABLE_CAN2=1
@@ -291,6 +320,34 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       ${PLATFORM_F1_ALT_TIM_DEFINITIONS}
   )
   target_compile_options(platform_f1_alt_tim_check PRIVATE
+      -Wall -Wextra -Werror
+  )
+
+  set(PLATFORM_F1_BOARD_TIM_DEFINITIONS ${PLATFORM_F1_DEFINITIONS})
+  list(REMOVE_ITEM PLATFORM_F1_BOARD_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM1=1
+      PLATFORM_ENABLE_ENCODER_TIM2=1
+      PLATFORM_ENABLE_ENCODER_TIM3=1
+      PLATFORM_ENABLE_ENCODER_TIM4=1
+  )
+  list(APPEND PLATFORM_F1_BOARD_TIM_DEFINITIONS
+      PLATFORM_ENABLE_PWM_TIM2=1
+      PLATFORM_ENABLE_PWM_TIM3=1
+      PLATFORM_ENABLE_PWM_TIM4=1
+      PLATFORM_ENABLE_ENCODER_TIM1=1
+  )
+
+  add_library(platform_f1_board_tim_check OBJECT
+      ${REPO_ROOT}/Platform/Src/stm32f1/platform_encoder.c
+      ${REPO_ROOT}/Platform/Src/stm32f1/platform_pwm.c
+  )
+  target_include_directories(platform_f1_board_tim_check PRIVATE
+      ${PLATFORM_F1_INCLUDE_DIRS}
+  )
+  target_compile_definitions(platform_f1_board_tim_check PRIVATE
+      ${PLATFORM_F1_BOARD_TIM_DEFINITIONS}
+  )
+  target_compile_options(platform_f1_board_tim_check PRIVATE
       -Wall -Wextra -Werror
   )
 

@@ -226,6 +226,9 @@ target_include_directories(platform_pwm_contract_test PRIVATE
 
 target_compile_definitions(platform_pwm_contract_test PRIVATE
     PLATFORM_ENABLE_PWM_TIM1=1
+    PLATFORM_ENABLE_PWM_TIM2=1
+    PLATFORM_ENABLE_PWM_TIM3=1
+    PLATFORM_ENABLE_PWM_TIM4=1
     STM32F4xx=1
 )
 
