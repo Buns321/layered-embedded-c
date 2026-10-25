@@ -6,7 +6,7 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
+/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __CRC_H__
 #define __CRC_H__
 
@@ -14,11 +14,24 @@
 extern "C" {
 #endif
 
+/* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
+/* USER CODE BEGIN Includes */
+
+/* USER CODE END Includes */
 
 extern CRC_HandleTypeDef hcrc;
 
+/* USER CODE BEGIN Private defines */
+
+/* USER CODE END Private defines */
+
 void MX_CRC_Init(void);
+
+/* USER CODE BEGIN Prototypes */
+
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
