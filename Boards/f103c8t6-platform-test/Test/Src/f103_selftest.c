@@ -14,7 +14,7 @@
 #define F103_TEST_CRC_ZERO_WORD     0x00000000u
 #define F103_TEST_CRC_ZERO_RESULT   0xC704DD7Bu
 
-static void F103_SelfTest_Report(
+static void f103_selftest_report(
   const char *name,
   bool passed,
   uint32_t *passed_count,
@@ -29,7 +29,7 @@ static void F103_SelfTest_Report(
   }
 }
 
-static bool F103_SelfTest_CheckClock(void) {
+static bool f103_selftest_checkclock(void) {
   bool passed = SystemCoreClock == F103_TEST_EXPECTED_CLOCK_HZ;
 
   if (!passed) {
@@ -43,7 +43,7 @@ static bool F103_SelfTest_CheckClock(void) {
   return passed;
 }
 
-static bool F103_SelfTest_CheckLog(void) {
+static bool f103_selftest_checklog(void) {
   bool is_ready = Sys_Log_IsReady();
   uint32_t drop_bytes = Sys_Log_GetDropBytes();
   uint32_t contention_count = Sys_Log_GetContentionCount();
@@ -64,7 +64,7 @@ static bool F103_SelfTest_CheckLog(void) {
   return passed;
 }
 
-static bool F103_SelfTest_CheckCrc(void) {
+static bool f103_selftest_checkcrc(void) {
   const uint32_t words[] = {F103_TEST_CRC_ZERO_WORD};
   uint32_t result = 0u;
   platform_status_t status = Platform_CRC_CalculateWords(
@@ -98,9 +98,9 @@ bool F103_SelfTest_RunAll(
 
   SYS_LOG_INFO("TEST", "BEGIN board=f103c8t6");
 
-  F103_SelfTest_Report(
+  f103_selftest_report(
     "clock",
-    F103_SelfTest_CheckClock(),
+    f103_selftest_checkclock(),
     &passed_count,
     &failed_count
   );
@@ -109,21 +109,21 @@ bool F103_SelfTest_RunAll(
     "tick elapsed=%lu ms",
     (unsigned long)scheduler_tick_elapsed_ms
   );
-  F103_SelfTest_Report(
+  f103_selftest_report(
     "tick",
     scheduler_tick_ok,
     &passed_count,
     &failed_count
   );
-  F103_SelfTest_Report(
+  f103_selftest_report(
     "log",
-    F103_SelfTest_CheckLog(),
+    f103_selftest_checklog(),
     &passed_count,
     &failed_count
   );
-  F103_SelfTest_Report(
+  f103_selftest_report(
     "crc",
-    F103_SelfTest_CheckCrc(),
+    f103_selftest_checkcrc(),
     &passed_count,
     &failed_count
   );

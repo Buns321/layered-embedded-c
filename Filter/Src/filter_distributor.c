@@ -12,7 +12,7 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Filter_Distributor_Reset(filter_base_t *filter_h) {
+static void filter_distributor_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
 
@@ -27,7 +27,7 @@ static void Filter_Distributor_Reset(filter_base_t *filter_h) {
   }
 }
 
-static void Filter_Distributor_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output
+static void filter_distributor_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output
 ) {
   assert(filter_h && input && output);
   filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
@@ -92,8 +92,8 @@ static void Filter_Distributor_Update(filter_base_t *filter_h, const filter_samp
 }
 
 static const filter_ops_t filter_ops_distributor = {
-  .update = Filter_Distributor_Update,
-  .reset  = Filter_Distributor_Reset,
+  .update = filter_distributor_update,
+  .reset  = filter_distributor_reset,
 };
 
 void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count

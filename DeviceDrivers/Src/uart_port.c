@@ -11,12 +11,12 @@
 #include "uart_port.h"
 #include <assert.h>
 
-static uart_port_t *Dev_UART_Port_FromBase(uart_base_t *uart_h) {
+static uart_port_t *dev_uart_port_frombase(uart_base_t *uart_h) {
   assert(uart_h);
   return (uart_port_t *)uart_h;
 }
 
-static dev_uart_status_t Dev_UART_Port_MapStatus(
+static dev_uart_status_t dev_uart_port_mapstatus(
   platform_status_t status
 ) {
   switch (status) {
@@ -30,84 +30,84 @@ static dev_uart_status_t Dev_UART_Port_MapStatus(
   }
 }
 
-static dev_uart_status_t Dev_UART_Port_Receive(
+static dev_uart_status_t dev_uart_port_receive(
   uart_base_t *uart_h,
   uint8_t *buf,
   uint16_t size,
   uint32_t timeout
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_Receive(uart_port_h->instance, buf, size, timeout)
   );
 }
 
-static dev_uart_status_t Dev_UART_Port_Transmit(
+static dev_uart_status_t dev_uart_port_transmit(
   uart_base_t *uart_h,
   const uint8_t *data,
   uint16_t size,
   uint32_t timeout
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_Transmit(uart_port_h->instance, data, size, timeout)
   );
 }
 
-static dev_uart_status_t Dev_UART_Port_ReceiveIT(
+static dev_uart_status_t dev_uart_port_receiveit(
   uart_base_t *uart_h,
   uint8_t *pdata,
   uint16_t size
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_ReceiveIT(uart_port_h->instance, pdata, size)
   );
 }
 
-static dev_uart_status_t Dev_UART_Port_TransmitIT(
+static dev_uart_status_t dev_uart_port_transmitit(
   uart_base_t *uart_h,
   const uint8_t *pdata,
   uint16_t size
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_TransmitIT(uart_port_h->instance, pdata, size)
   );
 }
 
-static dev_uart_status_t Dev_UART_Port_ReceiveDMA(
+static dev_uart_status_t dev_uart_port_receivedma(
   uart_base_t *uart_h,
   uint8_t *pdata,
   uint16_t size
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_ReceiveDMA(uart_port_h->instance, pdata, size)
   );
 }
 
-static dev_uart_status_t Dev_UART_Port_TransmitDMA(
+static dev_uart_status_t dev_uart_port_transmitdma(
   uart_base_t *uart_h,
   const uint8_t *pdata,
   uint16_t size
 ) {
-  uart_port_t *uart_port_h = Dev_UART_Port_FromBase(uart_h);
-  return Dev_UART_Port_MapStatus(
+  uart_port_t *uart_port_h = dev_uart_port_frombase(uart_h);
+  return dev_uart_port_mapstatus(
     Platform_UART_TransmitDMA(uart_port_h->instance, pdata, size)
   );
 }
 
 static const uart_ops_t uart_ops_port = {
-  .receive      = Dev_UART_Port_Receive,
-  .transmit     = Dev_UART_Port_Transmit,
-  .receive_it   = Dev_UART_Port_ReceiveIT,
-  .transmit_it  = Dev_UART_Port_TransmitIT,
-  .receive_dma  = Dev_UART_Port_ReceiveDMA,
-  .transmit_dma = Dev_UART_Port_TransmitDMA,
+  .receive      = dev_uart_port_receive,
+  .transmit     = dev_uart_port_transmit,
+  .receive_it   = dev_uart_port_receiveit,
+  .transmit_it  = dev_uart_port_transmitit,
+  .receive_dma  = dev_uart_port_receivedma,
+  .transmit_dma = dev_uart_port_transmitdma,
 };
 
-static void Dev_UART_Port_OnEvent(
+static void dev_uart_port_onevent(
   platform_uart_instance_t instance,
   const platform_uart_event_t *event,
   void *context
@@ -157,7 +157,7 @@ platform_status_t Dev_UART_Port_Init(
   uart_h->instance = instance;
 
   platform_uart_callback_binding_t callbacks = {
-    .callback = Dev_UART_Port_OnEvent,
+    .callback = dev_uart_port_onevent,
     .context  = uart_h,
   };
 

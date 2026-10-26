@@ -15,13 +15,40 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#if defined(STM32F4xx)
+#include "stm32f4xx.h"
+#elif defined(STM32F1xx)
+#include "stm32f1xx.h"
+#else
+#error "Unsupported STM32 family"
+#endif
+
+static uint32_t s_boot_critical_nesting;
+static uint32_t s_boot_primask;
 
 void Sys_Critical_Enter(void) {
-  taskENTER_CRITICAL();
+  if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+    uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    if (s_boot_critical_nesting == 0u) {
+      s_boot_primask = primask;
+    }
+    s_boot_critical_nesting++;
+  } else {
+    configASSERT(s_boot_critical_nesting == 0u);
+    taskENTER_CRITICAL();
+  }
 }
 
 void Sys_Critical_Exit(void) {
-  taskEXIT_CRITICAL();
+  if (s_boot_critical_nesting > 0u) {
+    s_boot_critical_nesting--;
+    if (s_boot_critical_nesting == 0u) {
+      __set_PRIMASK(s_boot_primask);
+    }
+  } else {
+    taskEXIT_CRITICAL();
+  }
 }
 
 sys_critical_state_t Sys_Critical_EnterFromISR(void) {

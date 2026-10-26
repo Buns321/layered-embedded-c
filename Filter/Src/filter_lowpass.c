@@ -12,7 +12,7 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Filter_Lowpass_Reset(filter_base_t *filter_h) {
+static void filter_lowpass_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_lowpass_t *filter_lowpass_h = (filter_lowpass_t *)filter_h;
 
@@ -24,7 +24,7 @@ static void Filter_Lowpass_Reset(filter_base_t *filter_h) {
   }
 }
 
-static void Filter_Lowpass_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
+static void filter_lowpass_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(filter_h && input && output);
   filter_lowpass_t *filter_lowpass_h = (filter_lowpass_t *)filter_h;
 
@@ -85,8 +85,8 @@ static void Filter_Lowpass_Update(filter_base_t *filter_h, const filter_sample_t
 }
 
 static const filter_ops_t filter_ops_lowpass = {
-  .update = Filter_Lowpass_Update,
-  .reset  = Filter_Lowpass_Reset,
+  .update = filter_lowpass_update,
+  .reset  = filter_lowpass_reset,
 };
 
 void Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name, float default_time_constant_s) {

@@ -27,6 +27,45 @@ add_executable(imu_pipeline_test
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
 )
 
+add_executable(filter_imu_calibration_contract_test
+    filter_imu_calibration_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_imu_calibration.c
+)
+
+add_executable(app_calibration_contract_test
+    app_calibration_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_calibration.c
+)
+
+add_executable(app_command_parser_contract_test
+    app_command_parser_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_command_parser.c
+)
+
+add_executable(app_uart_link_contract_test
+    app_uart_link_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_uart_link.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_command_parser.c
+)
+
+add_executable(filter_ekf_contract_test
+    filter_ekf_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_ekf.c
+)
+
+add_executable(system_record_store_contract_test
+    system_record_store_contract_test.c
+    ${REPO_ROOT}/System/Src/system_record_store.c
+    ${REPO_ROOT}/Platform/Src/common/platform_flash_common.c
+)
+
+add_executable(system_critical_contract_test
+    system_critical_contract_test.c
+    ${REPO_ROOT}/System/Src/system_critical.c
+)
+
 add_executable(platform_watchdog_contract_test
     watchdog_contract_test.c
     ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
@@ -143,6 +182,62 @@ target_include_directories(imu_pipeline_test PRIVATE
 
 target_compile_definitions(imu_pipeline_test PRIVATE
     PLATFORM_ENABLE_I2C1=1
+)
+
+target_include_directories(filter_imu_calibration_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(app_calibration_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(app_command_parser_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+)
+
+target_include_directories(app_uart_link_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Platform/Inc
+)
+
+target_compile_definitions(app_uart_link_contract_test PRIVATE
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_I2C1=1
+    TELEMETRY_CHANNEL_CAPACITY=32
+)
+
+target_include_directories(filter_ekf_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(system_record_store_contract_test PRIVATE
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/Platform/Src
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(system_record_store_contract_test PRIVATE
+    PLATFORM_ENABLE_FLASH=1
+    STM32F4xx=1
+)
+
+target_include_directories(system_critical_contract_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/system_critical_stub
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(system_critical_contract_test PRIVATE
+    USE_FREERTOS=1
+    STM32F1xx=1
 )
 
 target_include_directories(platform_watchdog_contract_test PRIVATE
@@ -334,6 +429,41 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(filter_imu_calibration_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_calibration_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_command_parser_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_uart_link_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(filter_ekf_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(system_record_store_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(system_critical_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
     target_compile_options(platform_watchdog_contract_test PRIVATE
         -Wall
         -Wextra
@@ -433,6 +563,11 @@ endif()
 
 if(NOT MSVC)
     target_link_libraries(imu_pipeline_test PRIVATE m)
+    target_link_libraries(filter_imu_calibration_contract_test PRIVATE m)
+    target_link_libraries(app_calibration_contract_test PRIVATE m)
+    target_link_libraries(app_command_parser_contract_test PRIVATE m)
+    target_link_libraries(app_uart_link_contract_test PRIVATE m)
+    target_link_libraries(filter_ekf_contract_test PRIVATE m)
 endif()
 
 enable_testing()
@@ -443,6 +578,34 @@ add_test(
 add_test(
     NAME imu_pipeline_test
     COMMAND imu_pipeline_test
+)
+add_test(
+    NAME filter_imu_calibration_contract_test
+    COMMAND filter_imu_calibration_contract_test
+)
+add_test(
+    NAME app_calibration_contract_test
+    COMMAND app_calibration_contract_test
+)
+add_test(
+    NAME app_command_parser_contract_test
+    COMMAND app_command_parser_contract_test
+)
+add_test(
+    NAME app_uart_link_contract_test
+    COMMAND app_uart_link_contract_test
+)
+add_test(
+    NAME filter_ekf_contract_test
+    COMMAND filter_ekf_contract_test
+)
+add_test(
+    NAME system_record_store_contract_test
+    COMMAND system_record_store_contract_test
+)
+add_test(
+    NAME system_critical_contract_test
+    COMMAND system_critical_contract_test
 )
 add_test(
     NAME platform_watchdog_contract_test

@@ -12,7 +12,7 @@
 #include "system_math.h"
 #include <assert.h>
 
-static controller_status_t Ctrl_Compose_Update(
+static controller_status_t ctrl_compose_update(
   controller_base_t *controller_h,
   float target,
   float measure,
@@ -61,7 +61,7 @@ static controller_status_t Ctrl_Compose_Update(
   return status;
 }
 
-static void Ctrl_Compose_Reset(controller_base_t *controller_h) {
+static void ctrl_compose_reset(controller_base_t *controller_h) {
   assert(controller_h);
 
   controller_compose_t *controller_compose_h = (controller_compose_t *)controller_h;
@@ -75,8 +75,8 @@ static void Ctrl_Compose_Reset(controller_base_t *controller_h) {
 }
 
 static const controller_ops_t controller_ops_compose = {
-  .update = Ctrl_Compose_Update,
-  .reset  = Ctrl_Compose_Reset,
+  .update = ctrl_compose_update,
+  .reset  = ctrl_compose_reset,
 };
 
 void Ctrl_Compose_Init(

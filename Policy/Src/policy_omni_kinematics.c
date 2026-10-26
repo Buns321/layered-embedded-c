@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <math.h>
 
-static void Policy_Omni_Kinematics_Solve(
+static void policy_omni_kinematics_solve(
   policy_omni_base_t *policy_h,
   float v,
   float dir,
@@ -47,7 +47,7 @@ static void Policy_Omni_Kinematics_Solve(
 }
 
 static const policy_omni_ops_t policy_omni_ops = {
-  .solve = Policy_Omni_Kinematics_Solve,
+  .solve = policy_omni_kinematics_solve,
 };
 
 void Policy_Omni_Kinematics_Init(

@@ -22,6 +22,7 @@ typedef uint32_t sys_critical_state_t;
 /**
  * @brief 进入任务上下文临界区。
  * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
  * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
  */
 void Sys_Critical_Enter(void);

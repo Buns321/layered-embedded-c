@@ -12,7 +12,7 @@
 #include "system_math.h"
 #include <assert.h>
 
-static controller_status_t Ctrl_Linear_Update(
+static controller_status_t ctrl_linear_update(
   controller_base_t *controller_h,
   float target,
   float measure,
@@ -91,15 +91,15 @@ static controller_status_t Ctrl_Linear_Update(
   return saturated ? CONTROLLER_STATUS_SATURATED : CONTROLLER_STATUS_OK;
 }
 
-static void Ctrl_Linear_Reset(controller_base_t *controller_h) {
+static void ctrl_linear_reset(controller_base_t *controller_h) {
   assert(controller_h);
   controller_linear_t *controller_linear_h = (controller_linear_t *) controller_h;
   controller_linear_h->last_out = 0;
 }
 
 static const controller_ops_t controller_ops_linear = {
-  .update = Ctrl_Linear_Update,
-  .reset  = Ctrl_Linear_Reset,
+  .update = ctrl_linear_update,
+  .reset  = ctrl_linear_reset,
 };
 
 void Ctrl_Linear_Init(

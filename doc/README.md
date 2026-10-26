@@ -10,6 +10,10 @@
 - [F103 板级工程](../Boards/f103c8t6-platform-test/README.md)：构建、接入状态和验证入口。
 - [F103 硬件与接口规范](../Boards/f103c8t6-platform-test/hardware-map.md)：完整引脚、资源、
   电源、驱动契约与风险边界。
+- [F103 速通赛道任务一](../Boards/f103c8t6-fast-channel-task-1/README.md)：
+  MPU6050 自动标定、Flash 记录、EKF 壳层、JustFloat 与 USART1 命令。
+- [F103 速通任务一硬件规范](../Boards/f103c8t6-fast-channel-task-1/hardware-map.md)：
+  引脚、Flash 分区、标定门限和电气风险。
 - [F407 板级工程](../Boards/f407vet6-omni-car/README.md)：构建、目录和验证入口。
 - [F407 硬件与接口规范](../Boards/f407vet6-omni-car/hardware-map.md)：当前 CubeMX 引脚、
   时钟与外设分配。

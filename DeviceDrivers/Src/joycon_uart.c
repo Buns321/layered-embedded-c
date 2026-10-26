@@ -18,18 +18,18 @@
 #define JOYCON_UART_VALUE_COUNT 4u
 #define JOYCON_UART_VALUE_LIMIT 100.0f
 
-static bool Dev_JoyCon_UART_GetInputOp(
+static bool dev_joycon_uart_getinputop(
   joycon_base_t *joycon_h,
   joycon_input_t *input
 );
-static void Dev_JoyCon_UART_GetStatusOp(
+static void dev_joycon_uart_getstatusop(
   joycon_base_t *joycon_h,
   joycon_status_t *status
 );
 
 static const joycon_ops_t joycon_ops_uart = {
-  .get_input = Dev_JoyCon_UART_GetInputOp,
-  .get_status = Dev_JoyCon_UART_GetStatusOp,
+  .get_input = dev_joycon_uart_getinputop,
+  .get_status = dev_joycon_uart_getstatusop,
 };
 
 static bool joycon_char_is_space(char value) {
@@ -360,7 +360,7 @@ bool Dev_JoyCon_UART_GetInput(
   return Dev_JoyCon_Base_GetInput(&joycon_h->base, input);
 }
 
-static bool Dev_JoyCon_UART_GetInputOp(
+static bool dev_joycon_uart_getinputop(
   joycon_base_t *joycon_h,
   joycon_input_t *input
 ) {
@@ -385,7 +385,7 @@ void Dev_JoyCon_UART_GetStatus(
   Dev_JoyCon_Base_GetStatus(&joycon_h->base, status);
 }
 
-static void Dev_JoyCon_UART_GetStatusOp(
+static void dev_joycon_uart_getstatusop(
   joycon_base_t *joycon_h,
   joycon_status_t *status
 ) {

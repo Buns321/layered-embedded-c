@@ -12,13 +12,16 @@
 - **Controller**：轮级 SISO 控制契约、线性控制律、PID、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
-- **Filter**：样本、base、低通、透传、chain、distributor。
-- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、日志 base 与 SEGGER RTT。
+- **Filter**：样本、base、低通、透传、chain、distributor、IMU 六轴校正和
+  七状态 EKF 接口壳层。
+- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、
+  日志 base、SEGGER RTT、DWT 时间辅助和双页 Flash 记录存储。
 - **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已接入 100 Hz
   四轮 PID、WHT101 上电归零、JoyCon 命令、50 Hz JustFloat 和 RTT 监控，
   F103 继续使用自己的 CubeMX 任务配置。
-- **Boards**：`Boards/f103c8t6-platform-test/` 和
-  `Boards/f407vet6-omni-car/` 是两个平级、独立的
+- **Boards**：`Boards/f103c8t6-platform-test/`、
+  `Boards/f103c8t6-fast-channel-task-1/` 和
+  `Boards/f407vet6-omni-car/` 是三个平级、独立的
   固件工程，各自持有 CubeMX、HAL、FreeRTOS、App、RTOS、启动文件、链接脚本和
   CMake presets。共享的 Platform、DeviceDrivers、Controller、Policy、Filter、
   System 仍位于仓库根目录。工程目录统一采用 `<mcu>-<name>` 命名。
@@ -27,7 +30,7 @@
 
 - F407 蓝牙/JoyCon/JustFloat 和 WHT101 的实板联调
 - 参数标定
-- Filter 单元测试、统一单调时间源、Kalman 姿态实现、MPU6050 板上验证
+- EKF 核心姿态算法、速通板完整六面翻转与蜂鸣器听测
 - Platform 新增外设的板上电气与时序验证
 - MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
 
@@ -84,6 +87,17 @@ F103 产物位于 `Boards/f103c8t6-platform-test/build/Debug/`，包括 `f103c8t
 `f103c8t6.map`。完整命令和当前接入状态见
 [F103 板级说明](Boards/f103c8t6-platform-test/README.md)。
 
+速通赛道任务一工程：
+
+```powershell
+cd Boards/f103c8t6-fast-channel-task-1
+cmake --preset Debug
+cmake --build --preset Debug
+```
+
+说明见
+[F103 速通任务一](Boards/f103c8t6-fast-channel-task-1/README.md)。
+
 ## 烧录 / 调试
 
 工程使用 ST-Link + OpenOCD 即可，例如：
@@ -120,6 +134,8 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 - [F407 板级工程](Boards/f407vet6-omni-car/README.md)
 - [F407 硬件与接口规范](Boards/f407vet6-omni-car/hardware-map.md)
 - [F103 硬件与接口规范](Boards/f103c8t6-platform-test/hardware-map.md)
+- [F103 速通赛道任务一](Boards/f103c8t6-fast-channel-task-1/README.md)
+- [F103 速通赛道任务一硬件规范](Boards/f103c8t6-fast-channel-task-1/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [RTT 日志接收](tools/rtt/README.md)
 - [TODO](doc/todo.md)

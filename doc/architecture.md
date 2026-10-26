@@ -132,6 +132,12 @@ controller_status_t update(
   或 Kalman 输出，驱动本身不内置滤波算法。
 - 低通、透传、chain、distributor 都依赖这个预复制语义。
 - Distributor 的路由输出会覆盖预复制通道；跨路由写同一输出通道在 Init 阶段拒绝。
+- `filter_imu_calibration_t` 在统一 IMU schema 上应用陀螺零偏和加速度
+  offset/scale，原始帧由 `imu_base.raw_sample` 保留。
+- `filter_ekf_t` 使用七状态四元数加陀螺零偏接口。框架边界输入为
+  `deg/s`、输出姿态为 `deg`，EKF 核心、在线参数和状态读取使用 SI。
+- 速通任务一的 EKF 核心当前是占位实现，只发布单位四元数、零姿态和
+  `PLACEHOLDER` 状态，不得把该姿态用于闭环。
 - 整层不使用动态内存。
 
 ### System
@@ -146,6 +152,11 @@ controller_status_t update(
   已下沉到 Platform。
 - `system_log_base.h` 提供日志输出后端接口，`system_log.h` 提供非阻塞日志门面，
   `system_log_rtt.h` 是 SEGGER RTT 具体后端。
+- `system_time.h` 用 DWT CYCCNT 提供周期/微秒差值和任务执行时间换算。
+- `system_record_store_t` 使用双 Flash 页追加带 CRC32 的固定槽位记录；
+  参数布局与应用 Magic/版本仍由上层定义。
+- `Sys_Critical_Enter()` 在调度器启动前使用 PRIMASK 保存/恢复，启动后使用
+  FreeRTOS 任务临界区，避免板级初始化阶段残留 BASEPRI 屏蔽 SysTick。
 - SEGGER RTT 原始源码位于 `Middlewares/Third_Party/SEGGER_RTT/`，只有
   `system_log_rtt.c` 可以直接包含其头文件。
 
@@ -199,6 +210,38 @@ MonitorTask
 遥测发送不阻塞控制任务。UART DMA 忙时整帧丢弃，并通过
 `telemetry_status_t` 暴露发送、丢弃和错误计数。
 
+### F103 速通任务一
+
+```
+MPU6050
+    └── imu_base.raw_sample
+          └── Filter Chain
+                ├── imu_calibration
+                └── ekf
+                      └── imu_base.sample + EKF 状态接口
+
+ImuEkfTask
+    ├── 六面自动标定状态机
+    ├── 双页 Flash 校准记录
+    ├── 直接加速度姿态与陀螺积分参考
+    └── 双缓冲遥测快照
+
+VofaTask
+    ├── 32 通道 JustFloat
+    └── USART1 RX 参数命令
+```
+
+标定前六轴校正参数为恒等变换。每个面成功后由 `Sys_RecordStore_Append()`
+追加完整工作记录，回读校验成功后才更新活动参数并双短鸣。超时或进入主程序时
+丢弃未成功提交的面进度，恢复最近一次 Flash 有效记录。
+
+USART1 的物理回调由板级 Link 独占，JustFloat 使用转发到该 Link 的虚拟
+`uart_base_t`。RX 字节只进入环形缓冲，命令解析和 EKF 参数提交在 VofaTask
+执行；TX 不插入文本应答。
+
+F103 板级 I2C1 初始化前使用 PB6/PB7 输出 9 个恢复时钟和 STOP，防止 MCU
+在事务中被复位后从设备持续拉低 SDA。
+
 ## 6. F407 初始化顺序
 
 1. `App_Car_Init()` 初始化 USART1 WHT101、USART2 JustFloat 和 USART3 JoyCon。
@@ -227,12 +270,24 @@ MonitorTask
 - **MonitorTask**：以 50 Hz 发送 JustFloat，检查控制心跳和控制律故障，
   负责安全停机。
 
+## 7.1 F103 速通任务一任务模型
+
+| 任务 | 栈 | 优先级 | 职责 |
+| --- | --- | --- | --- |
+| ImuEkfTask | 3 KB 静态栈 | AboveNormal | 100 Hz 采样、标定、EKF、蜂鸣器和 LED |
+| VofaTask | 3 KB CubeMX 栈 | Normal | 50 Hz JustFloat、USART1 命令和状态日志 |
+
+EKF 核心占位期间仍发布零姿态，但状态标记为 `PLACEHOLDER`。进入主程序前会
+重置 EKF，避免标定期间的部分校正污染主程序起始状态。
+
 ## 8. 所有权与内存
 
 - 所有设备、控制律、policy、chassis 对象都是静态定义。
 - base 视图是非 owning 指针，生命周期跟随具体静态对象。
 - chassis 只保存 motor / imu / policy 的指针，不复制对象。
 - 不使用 `malloc` / `free`。
+- F103 速通任务一的 ImuEkfTask 使用静态 TCB 和栈；CubeMX 生成的 defaultTask
+  槽位承载 VofaTask，应用对象、记录、环形缓冲和遥测帧均为静态内存。
 
 ## 9. 约束与不变量
 
@@ -262,9 +317,11 @@ MonitorTask
 统一 IMU 滤波管线、WHT101、JoyCon UART、MPU6050 I2C 驱动、
 Controller 契约 + 线性 + PID + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
-System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
+IMU 六轴校正、EKF 接口壳层、F103 速通任务一标定与 JustFloat、
+System（数学/延时/临界区/Fault/看门狗/RTT 日志/DWT 时间/双页 Flash 记录）。
+F103 速通任务一已实板验证 MPU6050、I2C 总线恢复、USART1、Flash 和 RTT。
 
 待完成或暂缓：F103 板级外设接线与验证、参数标定、
-Filter/Kalman 姿态实现、MPU6050 板上验证、Platform 新增外设板上验证、
-MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
+EKF 核心姿态算法、速通任务一完整六面人工翻转与蜂鸣器听测、Platform 新增外设板上验证、
+MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM）、
 F407 蓝牙/JoyCon/JustFloat 实板验证、RTT 主机侧实测。

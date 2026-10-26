@@ -13,7 +13,7 @@
 
 #define LED_PWM_BRIGHTNESS_MAX UINT16_MAX
 
-static void Dev_LED_PWM_WriteBrightness(led_pwm_t *led_pwm_h, uint16_t brightness) {
+static void dev_led_pwm_writebrightness(led_pwm_t *led_pwm_h, uint16_t brightness) {
   assert(led_pwm_h);
   (void)Platform_PWM_SetDuty(
     led_pwm_h->pwm_instance,
@@ -23,25 +23,25 @@ static void Dev_LED_PWM_WriteBrightness(led_pwm_t *led_pwm_h, uint16_t brightnes
   );
 }
 
-static void Dev_LED_PWM_TurnOn(led_base_t *led_h) {
+static void dev_led_pwm_turnon(led_base_t *led_h) {
   assert(led_h);
-  Dev_LED_PWM_WriteBrightness((led_pwm_t *)led_h, LED_PWM_BRIGHTNESS_MAX);
+  dev_led_pwm_writebrightness((led_pwm_t *)led_h, LED_PWM_BRIGHTNESS_MAX);
 }
 
-static void Dev_LED_PWM_TurnOff(led_base_t *led_h) {
+static void dev_led_pwm_turnoff(led_base_t *led_h) {
   assert(led_h);
-  Dev_LED_PWM_WriteBrightness((led_pwm_t *)led_h, 0u);
+  dev_led_pwm_writebrightness((led_pwm_t *)led_h, 0u);
 }
 
-static void Dev_LED_PWM_SetBrightness(led_base_t *led_h, uint16_t brightness) {
+static void dev_led_pwm_setbrightness(led_base_t *led_h, uint16_t brightness) {
   assert(led_h);
-  Dev_LED_PWM_WriteBrightness((led_pwm_t *)led_h, brightness);
+  dev_led_pwm_writebrightness((led_pwm_t *)led_h, brightness);
 }
 
 static const led_ops_t led_ops_pwm = {
-  .on             = Dev_LED_PWM_TurnOn,
-  .off            = Dev_LED_PWM_TurnOff,
-  .set_brightness = Dev_LED_PWM_SetBrightness,
+  .on             = dev_led_pwm_turnon,
+  .off            = dev_led_pwm_turnoff,
+  .set_brightness = dev_led_pwm_setbrightness,
 };
 
 platform_status_t Dev_LED_PWM_Init(
@@ -56,7 +56,7 @@ platform_status_t Dev_LED_PWM_Init(
   led_h->pwm_instance = pwm_instance;
   led_h->pwm_channel  = pwm_channel;
 
-  Dev_LED_PWM_WriteBrightness(led_h, 0u);
+  dev_led_pwm_writebrightness(led_h, 0u);
 
   return Platform_PWM_Start(pwm_instance, pwm_channel);
 }

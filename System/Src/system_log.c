@@ -45,7 +45,7 @@ static volatile bool s_log_locked;
 static volatile uint32_t s_drop_bytes;
 static volatile uint32_t s_contention_count;
 
-static uint32_t Sys_Log_EnterExclusive(void) {
+static uint32_t sys_log_enterexclusive(void) {
 #if defined(STM32F4xx) || defined(STM32F1xx)
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
@@ -55,7 +55,7 @@ static uint32_t Sys_Log_EnterExclusive(void) {
 #endif
 }
 
-static void Sys_Log_ExitExclusive(uint32_t primask) {
+static void sys_log_exitexclusive(uint32_t primask) {
 #if defined(STM32F4xx) || defined(STM32F1xx)
   __set_PRIMASK(primask);
 #else
@@ -63,7 +63,7 @@ static void Sys_Log_ExitExclusive(uint32_t primask) {
 #endif
 }
 
-static const char *Sys_Log_GetLevelTag(sys_log_level_t level) {
+static const char *sys_log_getleveltag(sys_log_level_t level) {
   switch (level) {
     case SYS_LOG_LEVEL_ERROR: return "E";
     case SYS_LOG_LEVEL_WARN:  return "W";
@@ -73,26 +73,26 @@ static const char *Sys_Log_GetLevelTag(sys_log_level_t level) {
   }
 }
 
-static bool Sys_Log_TryLock(void) {
+static bool sys_log_trylock(void) {
   bool acquired = false;
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
 
   if (!s_log_locked) {
     s_log_locked = true;
     acquired = true;
   }
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
 
   return acquired;
 }
 
-static void Sys_Log_Unlock(void) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+static void sys_log_unlock(void) {
+  uint32_t primask = sys_log_enterexclusive();
   s_log_locked = false;
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
 }
 
-static void Sys_Log_AddCounter(
+static void sys_log_addcounter(
   volatile uint32_t *counter,
   uint32_t amount
 ) {
@@ -100,26 +100,26 @@ static void Sys_Log_AddCounter(
     return;
   }
 
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
   *counter += amount;
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
 }
 
-static uint32_t Sys_Log_ReadCounter(volatile uint32_t *counter) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+static uint32_t sys_log_readcounter(volatile uint32_t *counter) {
+  uint32_t primask = sys_log_enterexclusive();
   uint32_t value = *counter;
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
   return value;
 }
 
-static sys_log_base_t *Sys_Log_GetSink(void) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+static sys_log_base_t *sys_log_getsink(void) {
+  uint32_t primask = sys_log_enterexclusive();
   sys_log_base_t *sink_h = s_log_sink;
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
   return sink_h;
 }
 
-static void Sys_Log_UpdateFastMaskLocked(void) {
+static void sys_log_updatefastmasklocked(void) {
   uint32_t mask = 0u;
 
   if (s_log_sink != NULL) {
@@ -135,37 +135,37 @@ static void Sys_Log_UpdateFastMaskLocked(void) {
 }
 
 void Sys_Log_Init(sys_log_base_t *sink_h) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
   s_log_sink = sink_h;
   s_drop_bytes = 0u;
   s_contention_count = 0u;
   s_log_locked = false;
-  Sys_Log_UpdateFastMaskLocked();
-  Sys_Log_ExitExclusive(primask);
+  sys_log_updatefastmasklocked();
+  sys_log_exitexclusive(primask);
 }
 
 void Sys_Log_SetSink(sys_log_base_t *sink_h) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
   s_log_sink = sink_h;
-  Sys_Log_UpdateFastMaskLocked();
-  Sys_Log_ExitExclusive(primask);
+  sys_log_updatefastmasklocked();
+  sys_log_exitexclusive(primask);
 }
 
 void Sys_Log_SetLevel(sys_log_level_t level) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
   if ((uint32_t)level <= (uint32_t)SYS_LOG_LEVEL_NONE) {
     s_log_level = level;
   } else {
     s_log_level = SYS_LOG_LEVEL_NONE;
   }
-  Sys_Log_UpdateFastMaskLocked();
-  Sys_Log_ExitExclusive(primask);
+  sys_log_updatefastmasklocked();
+  sys_log_exitexclusive(primask);
 }
 
 sys_log_level_t Sys_Log_GetLevel(void) {
-  uint32_t primask = Sys_Log_EnterExclusive();
+  uint32_t primask = sys_log_enterexclusive();
   sys_log_level_t level = s_log_level;
-  Sys_Log_ExitExclusive(primask);
+  sys_log_exitexclusive(primask);
   return level;
 }
 
@@ -190,14 +190,14 @@ void Sys_Log_Write(
     return;
   }
 
-  if (!Sys_Log_TryLock()) {
-    Sys_Log_AddCounter(&s_contention_count, 1u);
+  if (!sys_log_trylock()) {
+    sys_log_addcounter(&s_contention_count, 1u);
     return;
   }
 
-  sys_log_base_t *sink_h = Sys_Log_GetSink();
+  sys_log_base_t *sink_h = sys_log_getsink();
   if (sink_h == NULL) {
-    Sys_Log_Unlock();
+    sys_log_unlock();
     return;
   }
 
@@ -207,12 +207,12 @@ void Sys_Log_Write(
     sizeof(line),
     "[%lu][%s][%s] ",
     (unsigned long)now_ms,
-    Sys_Log_GetLevelTag(level),
+    sys_log_getleveltag(level),
     tag
   );
 
   if (length < 0 || (uint32_t)length >= sizeof(line)) {
-    Sys_Log_Unlock();
+    sys_log_unlock();
     return;
   }
 
@@ -227,7 +227,7 @@ void Sys_Log_Write(
   va_end(args);
 
   if (message_length < 0) {
-    Sys_Log_Unlock();
+    sys_log_unlock();
     return;
   }
 
@@ -246,14 +246,14 @@ void Sys_Log_Write(
   );
 
   if (accepted < used) {
-    Sys_Log_AddCounter(&s_drop_bytes, used - accepted);
+    sys_log_addcounter(&s_drop_bytes, used - accepted);
   }
 
-  Sys_Log_Unlock();
+  sys_log_unlock();
 }
 
 void Sys_Log_EmergencyRaw(const void *data, uint32_t size) {
-  sys_log_base_t *sink_h = Sys_Log_GetSink();
+  sys_log_base_t *sink_h = sys_log_getsink();
 
   if (
     sink_h == NULL ||
@@ -271,9 +271,9 @@ void Sys_Log_EmergencyRaw(const void *data, uint32_t size) {
 }
 
 uint32_t Sys_Log_GetDropBytes(void) {
-  return Sys_Log_ReadCounter(&s_drop_bytes);
+  return sys_log_readcounter(&s_drop_bytes);
 }
 
 uint32_t Sys_Log_GetContentionCount(void) {
-  return Sys_Log_ReadCounter(&s_contention_count);
+  return sys_log_readcounter(&s_contention_count);
 }

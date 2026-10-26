@@ -12,7 +12,7 @@
 #include "SEGGER_RTT.h"
 #include <assert.h>
 
-static uint32_t Sys_Log_RTT_Write(
+static uint32_t sys_log_rtt_write(
   sys_log_base_t *log_h,
   const uint8_t *data,
   uint32_t size
@@ -28,7 +28,7 @@ static uint32_t Sys_Log_RTT_Write(
 }
 
 static const sys_log_ops_t sys_log_ops_rtt = {
-  .write = Sys_Log_RTT_Write,
+  .write = sys_log_rtt_write,
 };
 
 void Sys_Log_RTT_Init(

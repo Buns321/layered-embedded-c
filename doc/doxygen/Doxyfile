@@ -29,6 +29,10 @@ INPUT                  = README.md \
                          Boards/f103c8t6-platform-test/App \
                          Boards/f103c8t6-platform-test/RTOS \
                          Boards/f103c8t6-platform-test/Test \
+                         Boards/f103c8t6-fast-channel-task-1/README.md \
+                         Boards/f103c8t6-fast-channel-task-1/hardware-map.md \
+                         Boards/f103c8t6-fast-channel-task-1/App \
+                         Boards/f103c8t6-fast-channel-task-1/RTOS \
                          Boards/f407vet6-omni-car/README.md \
                          Boards/f407vet6-omni-car/pinmap.md \
                          Boards/f407vet6-omni-car/hardware-map.md \
@@ -111,5 +115,7 @@ INCLUDE_PATH           = Platform/Inc \
                          Boards/f103c8t6-platform-test/App/Inc \
                          Boards/f103c8t6-platform-test/RTOS/Inc \
                          Boards/f103c8t6-platform-test/Test/Inc \
+                         Boards/f103c8t6-fast-channel-task-1/App/Inc \
+                         Boards/f103c8t6-fast-channel-task-1/RTOS/Inc \
                          Boards/f407vet6-omni-car/App/Inc \
                          Boards/f407vet6-omni-car/RTOS/Inc

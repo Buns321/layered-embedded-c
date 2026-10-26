@@ -8,7 +8,7 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Ctrl_PID_ClearState(controller_pid_t *controller_pid_h) {
+static void ctrl_pid_clearstate(controller_pid_t *controller_pid_h) {
   assert(controller_pid_h);
 
   controller_pid_h->integral = 0.0f;
@@ -18,7 +18,7 @@ static void Ctrl_PID_ClearState(controller_pid_t *controller_pid_h) {
   controller_pid_h->has_last_measure = false;
 }
 
-static controller_status_t Ctrl_PID_Update(
+static controller_status_t ctrl_pid_update(
   controller_base_t *controller_h,
   float target,
   float measure,
@@ -33,7 +33,7 @@ static controller_status_t Ctrl_PID_Update(
     !SYS_ISFINITE(target) ||
     !SYS_ISFINITE(measure)
   ) {
-    Ctrl_PID_ClearState(controller_pid_h);
+    ctrl_pid_clearstate(controller_pid_h);
     *out = 0.0f;
     return CONTROLLER_STATUS_ERROR;
   }
@@ -108,7 +108,7 @@ static controller_status_t Ctrl_PID_Update(
   }
 
   if (!SYS_ISFINITE(clamped_out)) {
-    Ctrl_PID_ClearState(controller_pid_h);
+    ctrl_pid_clearstate(controller_pid_h);
     *out = 0.0f;
     return CONTROLLER_STATUS_ERROR;
   }
@@ -121,15 +121,15 @@ static controller_status_t Ctrl_PID_Update(
   return saturated ? CONTROLLER_STATUS_SATURATED : CONTROLLER_STATUS_OK;
 }
 
-static void Ctrl_PID_Reset(controller_base_t *controller_h) {
+static void ctrl_pid_reset(controller_base_t *controller_h) {
   assert(controller_h);
 
-  Ctrl_PID_ClearState((controller_pid_t *)controller_h);
+  ctrl_pid_clearstate((controller_pid_t *)controller_h);
 }
 
 static const controller_ops_t controller_ops_pid = {
-  .update = Ctrl_PID_Update,
-  .reset  = Ctrl_PID_Reset,
+  .update = ctrl_pid_update,
+  .reset  = ctrl_pid_reset,
 };
 
 void Ctrl_PID_Init(
@@ -180,5 +180,5 @@ void Ctrl_PID_Init(
   controller_h->max_integral = max_integral;
   controller_h->derivative_filter_tau = derivative_filter_tau;
 
-  Ctrl_PID_ClearState(controller_h);
+  ctrl_pid_clearstate(controller_h);
 }

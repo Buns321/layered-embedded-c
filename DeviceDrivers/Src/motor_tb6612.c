@@ -33,19 +33,19 @@
  * - Init 返回 platform_status_t，PWM 启动失败时保持 STBY 为低。
  */
 
-static void Dev_Motor_TB6612_Enable(motor_base_t *motor_h) {
+static void dev_motor_tb6612_enable(motor_base_t *motor_h) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
   Platform_GPIO_WritePin(motor_tb6612_h->stby_port, motor_tb6612_h->stby_pin, PLATFORM_GPIO_PIN_SET);
 }
 
-static void Dev_Motor_TB6612_Disable(motor_base_t *motor_h) {
+static void dev_motor_tb6612_disable(motor_base_t *motor_h) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
   Platform_GPIO_WritePin(motor_tb6612_h->stby_port, motor_tb6612_h->stby_pin, PLATFORM_GPIO_PIN_RESET);
 }
 
-static void Dev_Motor_TB6612_SetPower(motor_base_t *motor_h, float power) {
+static void dev_motor_tb6612_setpower(motor_base_t *motor_h, float power) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
 
@@ -89,7 +89,7 @@ static void Dev_Motor_TB6612_SetPower(motor_base_t *motor_h, float power) {
   );
 }
 
-static void Dev_Motor_TB6612_Brake(motor_base_t *motor_h) {
+static void dev_motor_tb6612_brake(motor_base_t *motor_h) {
   assert(motor_h);
 
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
@@ -123,10 +123,10 @@ static void Dev_Motor_TB6612_Brake(motor_base_t *motor_h) {
 }
 
 static const motor_ops_t motor_ops_tb6612 = {
-  .enable    = Dev_Motor_TB6612_Enable,
-  .disable   = Dev_Motor_TB6612_Disable,
-  .set_power = Dev_Motor_TB6612_SetPower,
-  .brake     = Dev_Motor_TB6612_Brake,
+  .enable    = dev_motor_tb6612_enable,
+  .disable   = dev_motor_tb6612_disable,
+  .set_power = dev_motor_tb6612_setpower,
+  .brake     = dev_motor_tb6612_brake,
 };
 
 platform_status_t Dev_Motor_TB6612_Init(

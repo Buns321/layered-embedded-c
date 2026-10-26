@@ -19,6 +19,8 @@
 | Policy (omni) | v m/s, dir rad, yaw rad, omega rad/s | 四轮 m/s | 世界系平动 + 独立自转 |
 | Chassis (omni) | v m/s, dir rad, omega rad/s | 四轮目标 m/s | 只下发目标 |
 | IMU | 原始加速度 m/s²、陀螺仪 deg/s、姿态 deg | 滤波后使用相同单位 | 通道 0–8 固定 |
+| IMU 六轴校正 | offset m/s²、scale 无量纲、gyro bias deg/s | 标定后同一框架单位 | 原始通道由 `imu_base.raw_sample` 保留 |
+| EKF | 标定后六轴；核心内部 rad、rad/s | 状态 rad、rad/s；框架姿态 deg | 在线参数使用 SI |
 | JoyCon | ASCII 原始量 `[-100,100]` | 归一化 `[-1,1]` | 设备层不解释底盘单位 |
 | Filter | 用户定义通道 | 用户定义通道 | `time_ms` 毫秒 |
 | System delay | us / ms | — | DWT / `osDelay` |

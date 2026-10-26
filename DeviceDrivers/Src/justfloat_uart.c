@@ -17,7 +17,7 @@ static const uint8_t s_justfloat_tail[JUSTFLOAT_FRAME_TAIL_SIZE] = {
   0x00u, 0x00u, 0x80u, 0x7Fu,
 };
 
-static void Dev_JustFloat_UART_OnTxCplt(
+static void dev_justfloat_uart_ontxcplt(
   uart_base_t *uart_h,
   void *context
 ) {
@@ -29,7 +29,7 @@ static void Dev_JustFloat_UART_OnTxCplt(
   justfloat_uart_h->busy = false;
 }
 
-static void Dev_JustFloat_UART_StoreFloat(
+static void dev_justfloat_uart_storefloat(
   uint8_t *destination,
   float value
 ) {
@@ -42,7 +42,7 @@ static void Dev_JustFloat_UART_StoreFloat(
   destination[3] = (uint8_t)((bits >> 24) & 0xFFu);
 }
 
-static dev_telemetry_status_t Dev_JustFloat_UART_Send(
+static dev_telemetry_status_t dev_justfloat_uart_send(
   telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
 ) {
@@ -69,7 +69,7 @@ static dev_telemetry_status_t Dev_JustFloat_UART_Send(
       ? sample->value[channel]
       : NAN;
 
-    Dev_JustFloat_UART_StoreFloat(
+    dev_justfloat_uart_storefloat(
       &justfloat_uart_h->tx_buffer[(uint32_t)channel * 4u],
       value
     );
@@ -106,7 +106,7 @@ static dev_telemetry_status_t Dev_JustFloat_UART_Send(
   return DEV_TELEMETRY_OK;
 }
 
-static void Dev_JustFloat_UART_GetStatus(
+static void dev_justfloat_uart_getstatus(
   telemetry_base_t *telemetry_h,
   telemetry_status_t *status
 ) {
@@ -122,8 +122,8 @@ static void Dev_JustFloat_UART_GetStatus(
 }
 
 static const telemetry_ops_t telemetry_ops_justfloat = {
-  .send       = Dev_JustFloat_UART_Send,
-  .get_status = Dev_JustFloat_UART_GetStatus,
+  .send       = dev_justfloat_uart_send,
+  .get_status = dev_justfloat_uart_getstatus,
 };
 
 void Dev_JustFloat_UART_Init(
@@ -154,7 +154,7 @@ void Dev_JustFloat_UART_Init(
   telemetry_h->error_count = 0u;
 
   dev_uart_callbacks_t callbacks = {
-    .tx_complete_cb = Dev_JustFloat_UART_OnTxCplt,
+    .tx_complete_cb = dev_justfloat_uart_ontxcplt,
     .context = telemetry_h,
   };
   Dev_UART_RegisterCallback(uart_h, &callbacks);

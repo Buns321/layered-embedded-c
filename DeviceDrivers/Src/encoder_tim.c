@@ -64,13 +64,13 @@ static int32_t dev_encoder_tim_readdelta(encoder_base_t *encoder_h) {
   return delta;
 }
 
-static int64_t Dev_Encoder_TIM_GetPosition(encoder_base_t *encoder_h) {
+static int64_t dev_encoder_tim_getposition(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   return encoder_tim_h->position;
 }
 
-static void Dev_Encoder_TIM_SetZero(encoder_base_t *encoder_h) {
+static void dev_encoder_tim_setzero(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   if (Platform_Encoder_SetCounter(encoder_tim_h->tim, 0u) != PLATFORM_STATUS_OK) {
@@ -83,12 +83,12 @@ static void Dev_Encoder_TIM_SetZero(encoder_base_t *encoder_h) {
   encoder_tim_h->position = 0;
 }
 
-static int32_t Dev_Encoder_TIM_GetDelta(encoder_base_t *encoder_h) {
+static int32_t dev_encoder_tim_getdelta(encoder_base_t *encoder_h) {
   assert(encoder_h);
   return dev_encoder_tim_readdelta(encoder_h);
 }
 
-static void Dev_Encoder_TIM_Resync(encoder_base_t *encoder_h) {
+static void dev_encoder_tim_resync(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   uint32_t counter = 0u;
@@ -102,10 +102,10 @@ static void Dev_Encoder_TIM_Resync(encoder_base_t *encoder_h) {
 }
 
 static const encoder_ops_t encoder_ops_tim = {
-  .get_position = Dev_Encoder_TIM_GetPosition,
-  .set_zero = Dev_Encoder_TIM_SetZero,
-  .get_delta = Dev_Encoder_TIM_GetDelta,
-  .resync = Dev_Encoder_TIM_Resync,
+  .get_position = dev_encoder_tim_getposition,
+  .set_zero = dev_encoder_tim_setzero,
+  .get_delta = dev_encoder_tim_getdelta,
+  .resync = dev_encoder_tim_resync,
 };
 
 platform_status_t Dev_Encoder_TIM_Init(

@@ -92,7 +92,8 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 
 ### 3.1 Telemetry Base
 
-`telemetry_sample_t` 固定最多 16 个通道，包含：
+`telemetry_sample_t` 默认最多 16 个通道，可在板级构建中通过
+`TELEMETRY_CHANNEL_CAPACITY` 覆盖到最大 32。速通任务一使用 32 通道。每个样本包含：
 
 - `value[]`：通道值
 - `valid_mask`：有效通道位掩码
@@ -203,6 +204,19 @@ USART2 当前配置按板区分：
 - 不要在 ControlTask 中格式化文本或等待 DMA。
 - 不要为了遥测调用 `Dev_Encoder_Base_GetDelta()`，该接口会消费控制周期所需的增量。
 - 串口忙时接受整帧丢弃，通过 `telemetry_status_t` 暴露丢帧和错误计数。
+
+### 3.8 F103 速通任务一 USART1
+
+`Boards/f103c8t6-fast-channel-task-1/` 使用 USART1：
+
+- TX DMA1 Channel 4，115200 8N1，32 通道 JustFloat，50 Hz。
+- RX 单字节中断，进入 256 字节环形缓冲。
+- 板级 Link 是物理 UART 的唯一回调所有者。
+- `justfloat_uart_t` 使用 Link 提供的虚拟 `uart_base_t`，保持共享回调契约不变。
+- RX 支持 `SET <参数> <值>` 和 `RESET EKF`，TX 不输出 ASCII 应答。
+
+32 通道每帧 132 字节，50 Hz 时约 6600 B/s，占 115200 8N1 线路容量约 57%。
+命令结果显示在 JustFloat 第 31 通道。
 
 ## 4. 构建开关
 

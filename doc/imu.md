@@ -95,3 +95,30 @@ MPU6050 没有磁力计。只有注册滤波器提供 yaw 时，`IMU_CHANNEL_YAW
 - `GetSample()`、`GetRawSample()` 和便捷 getter 可以在其他任务读取。
 - 快照复制和合并使用 System 临界区保护。
 - 复杂滤波在临界区外执行。
+
+## 8. 速通任务一接线
+
+`Boards/f103c8t6-fast-channel-task-1/` 使用 I2C1 轮询 MPU6050，并把
+`mpu6050_config_t.calibration_samples` 设为 0。因此：
+
+- `imu_base.raw_sample` 保留轴映射后的原始工程单位六轴数据。
+- `Dev_MPU6050_I2C_GetRawSample()` 可用于原始曲线和六面标定采样。
+- 统一 IMU Filter Chain 固定为 `filter_imu_calibration_t` 后接
+  `filter_ekf_t`。
+- `imu_base.sample` 和 MPU 驱动提交的滤波帧包含标定后的六轴及 EKF 姿态。
+
+六面标定状态机属于板级 App，不写 MPU6050 寄存器做加速度校准。每个成功面追加
+一条 Flash 记录，记录包含陀螺零偏、已完成轴加速度 offset/scale、面掩码和
+CRC32。超时或初始 `-Z` 跳过时使用最近一次有效 Flash 记录。
+
+EKF 框架边界仍使用现有 IMU schema：
+
+- 输入陀螺：`deg/s`
+- 输出 roll/pitch/yaw：`deg`
+
+`filter_ekf_t` 内部预测/校正、协方差、在线参数和 `Filter_Ekf_GetState()` 使用
+`rad`、`rad/s`。当前 EKF 核心为占位实现，只发布零姿态且 `placeholder = true`。
+
+速通任务一在 I2C1 初始化前用 PB6/PB7 执行总线恢复脉冲。上电初始判断和陀螺
+零偏采集允许高达 10 deg/s 的未标定原始角速度；零偏应用后，六面流程改用
+3 deg/s 的校准后静止门限。

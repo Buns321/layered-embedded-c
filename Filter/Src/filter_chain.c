@@ -12,7 +12,7 @@
 #include <stddef.h>
 #include <assert.h>
 
-static void Filter_Chain_Reset(filter_base_t *filter_h) {
+static void filter_chain_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
 
@@ -25,7 +25,7 @@ static void Filter_Chain_Reset(filter_base_t *filter_h) {
   }
 }
 
-static void Filter_Chain_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
+static void filter_chain_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(filter_h && input && output);
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
 
@@ -49,8 +49,8 @@ static void Filter_Chain_Update(filter_base_t *filter_h, const filter_sample_t *
 }
 
 static const filter_ops_t filter_ops_chain = {
-  .update = Filter_Chain_Update,
-  .reset  = Filter_Chain_Reset,
+  .update = filter_chain_update,
+  .reset  = filter_chain_reset,
 };
 
 void Filter_Chain_Init(filter_chain_t *filter_h, const char *name, filter_base_t *const *filter_stage_h, uint8_t stage_count) {

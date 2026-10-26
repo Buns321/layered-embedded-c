@@ -158,9 +158,10 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
 - [x] F4/F1 独立 Platform 全实例 Debug、Release 构建通过 `-Wall -Wextra`
 - [x] F103 CubeMX 配置实际 USART2/3、TIM1–4、I2C1、ADC1、DMA 和 NVIC
+- [x] F103 速通任务一实板验证 I2C1 MPU6050、USART1、Flash 与 RTT
 - [x] 每个实际启用的 F103 实例同步 CubeMX handle、初始化和板级 CMake 开关
 - [ ] 按最终硬件需要继续配置和验证 F103 SPI/CAN/RTC 等未启用实例
-- [ ] 板上验证新增 I2C / SPI / ADC / DAC / CAN / RTC / Flash 的电气与时序行为
+- [ ] 板上验证新增 SPI / ADC / DAC / CAN / RTC 的电气与时序行为
 - [ ] 评估 I2S / USB / SDIO / ETH / DCMI / FSMC，按项目需要启用
 
 ## DeviceDrivers · 编码器
@@ -231,6 +232,9 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 确认 WHT101 模块内部完成卡尔曼滤波、校准和姿态解算，外部注册 passthrough
 - [ ] 为 Filter 的其他使用者提供统一单调时间源，支持可变采样周期
 - [x] WHT101 显式注册 passthrough，统一走 IMU 滤波管线
+- [x] 新增 `filter_imu_calibration_t`，覆盖陀螺零偏和加速度 offset/scale
+- [x] 新增七状态 `filter_ekf_t` 接口、占位输出和在线参数入口
+- [x] 新增六轴校正、EKF 壳层原生契约测试
 
 ## Policy
 **架构**：Policy 是独立的 MIMO 运动解算层，与 Controller 平级。按底盘种类拆分接口，每种底盘只接受对应类型的 Policy；具体 Policy 内嵌 base 并绑定静态 ops 表。
@@ -279,7 +283,8 @@ App/RTOS 仍需把 IMU 解析和采样接入任务。
 - [x] MPU6050 支持静止陀螺零偏标定、加速度模长检查和三轴映射
 - [x] MPU6050 与 F103/F407 Platform I2C API 共用同一实现
 - [x] 新增 IMU 管线与 MPU6050 假 I2C 主机测试
-- [ ] 在真实 F103/F407 上启用 I2C 实例并完成板上采样验证
+- [x] 在真实 F103 速通任务一启用 I2C1 并完成 MPU6050 板上采样验证
+- [x] 增加 I2C1 上电总线恢复，修复复位打断事务后的 SDA 占用
 - [ ] 实现低通/互补或 Kalman 姿态滤波器并输出 yaw/roll/pitch
 
 ## DeviceDrivers · LED
@@ -317,7 +322,8 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 
 ## RTOS
 **架构**：静态对象按索引接线，第 i 个电机配第 i 个编码器与控制律，四个电机挂在同一个底盘下。一个固定周期任务驱动整条回路：底盘解算并下发，再逐轮运行闭环。Monitor 通过心跳与堵转标志监控。
-**状态**：F407 已按 100 Hz 控制、2 ms UART 和 50 Hz 监控周期接入；F103 仍为占位。
+**状态**：F407 已按 100 Hz 控制、2 ms UART 和 50 Hz 监控周期接入；
+F103 速通任务一已接入 100 Hz ImuEkfTask、50 Hz VofaTask 和 USART1 命令链路。
 - [x] F407 App 静态定义电机、编码器、控制律、底盘、IMU、JoyCon、policy 对象
 - [x] `App_Car_Init` 按索引完成电机、编码器、控制律、底盘、policy 的接线
 - [x] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
@@ -335,10 +341,13 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [ ] 使用 `osThreadGetStackSpace` 做关键任务栈水位监控
 - [ ] 按需引入队列/信号量/事件组/任务通知
 - [ ] 评估 idle hook 与低功耗联动
+- [x] F103 速通任务一：ImuEkfTask 使用静态 TCB/栈，VofaTask 使用 CubeMX 槽位
+- [x] F103 速通任务一：双缓冲快照、执行时间、周期抖动和栈空间日志
 
 ## App
 **架构**：业务逻辑只通过底盘入口下发运动命令，不直接接触电机。
-**状态**：F407 已实现 JoyCon 到 omni 底盘的完整命令链；F103 仍为占位。
+**状态**：F407 已实现 JoyCon 到 omni 底盘的完整命令链；F103 速通任务一已实现
+MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFloat。
 - [x] F407 业务逻辑通过 `Chassis_Omni_SetMotion` 下发运动命令
 - [x] F407 建立 JoyCon ASCII 命令到世界系 `v/dir/omega` 的链路
 
@@ -368,7 +377,7 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [ ] 新增 `system_power`：PVD/BOR 状态与低功耗模式入口
 - [ ] 评估 MPU：栈/堆/关键数据区保护
 - [ ] 评估 SWO/ITM 与 DBGMCU freeze，补齐调试日志与暂停策略
-- [ ] 新增参数存储层：Flash 参数区 + CRC 校验 + 默认值回退
+- [x] 新增 `system_record_store`：双 Flash 页、CRC32、最新记录选择和默认回退
 
 ## Core / App 装配
 **架构**：Core 保持 CubeMX 生成内容；具体设备对象、依赖注入和运行链路由 App 装配层负责。

@@ -11,7 +11,7 @@
 #include "led_gpio.h"
 #include <assert.h>
 
-static void Dev_LED_GPIO_TurnOn(led_base_t *led_h) {
+static void dev_led_gpio_turnon(led_base_t *led_h) {
   assert(led_h);
   led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
   switch (led_gpio_h->active_level) {
@@ -25,7 +25,7 @@ static void Dev_LED_GPIO_TurnOn(led_base_t *led_h) {
   }
 }
 
-static void Dev_LED_GPIO_TurnOff(led_base_t *led_h) {
+static void dev_led_gpio_turnoff(led_base_t *led_h) {
   assert(led_h);
   led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
   switch (led_gpio_h->active_level) {
@@ -39,7 +39,7 @@ static void Dev_LED_GPIO_TurnOff(led_base_t *led_h) {
   }
 }
 
-static void Dev_LED_GPIO_SetBrightness(led_base_t *led_h, uint16_t brightness) {
+static void dev_led_gpio_setbrightness(led_base_t *led_h, uint16_t brightness) {
   // 空函数用于调用参数，防止编译(编译前期的语法/语义分析阶段)产生 unused parameter 警告
   // 由于优化器作用与编译后期，因此空语句被优化不影响防止产生 unused parameter 警告的作用
   // 不可使用 assert(led_h && brightness) 语句以求防止产生 unused parameter 警告，这是因为在发布阶段定义 NODEBUG(Release) 后，assert() 会被展开为 (void)0
@@ -47,9 +47,9 @@ static void Dev_LED_GPIO_SetBrightness(led_base_t *led_h, uint16_t brightness) {
 }
 
 static const led_ops_t led_ops_gpio = {
-  .on             = Dev_LED_GPIO_TurnOn,
-  .off            = Dev_LED_GPIO_TurnOff,
-  .set_brightness = Dev_LED_GPIO_SetBrightness,
+  .on             = dev_led_gpio_turnon,
+  .off            = dev_led_gpio_turnoff,
+  .set_brightness = dev_led_gpio_setbrightness,
 };
 
 void Dev_LED_GPIO_Init(led_gpio_t *led_h, const char *name, platform_gpio_port_t port, uint16_t pin, platform_gpio_pin_state_t active_level) {

@@ -11,7 +11,7 @@
 #include "filter_passthrough.h"
 #include <assert.h>
 
-static void Filter_Passthrough_Update(
+static void filter_passthrough_update(
   filter_base_t *filter_h,
   const filter_sample_t *input,
   filter_sample_t *output
@@ -23,15 +23,15 @@ static void Filter_Passthrough_Update(
   (void)output;
 }
 
-static void Filter_Passthrough_Reset(filter_base_t *filter_h) {
+static void filter_passthrough_reset(filter_base_t *filter_h) {
   assert(filter_h);
 
   (void)filter_h;
 }
 
 static const filter_ops_t filter_ops_passthrough = {
-  .update = Filter_Passthrough_Update,
-  .reset  = Filter_Passthrough_Reset,
+  .update = filter_passthrough_update,
+  .reset  = filter_passthrough_reset,
 };
 
 void Filter_Passthrough_Init(

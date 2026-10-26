@@ -34,6 +34,12 @@
 - 最后一个下划线之后必须是不可再拆分的驼峰动作，例如
   `Platform_RTC_StartWakeUpTimer`、`Platform_UART_ReceiveIT`、
   `Platform_ADC_StartDMA`。
+- 私有函数指维护中的 `.c` 文件内具有 `static` 链接的函数。私有函数沿用对应
+  公共函数的模块词干和动作结构，但整个标识符转为小写，不新增或移动下划线。
+  例如 `App_Command_ParseFloat` 应写为 `app_command_parsefloat()`，
+  `Filter_Ekf_CoreUpdate` 应写为 `filter_ekf_coreupdate()`。
+- 公共头文件中通过 `static inline` 提供给使用者的函数属于公开 API，继续使用
+  公共函数命名规则，不按文件内私有函数处理。
 - 禁止 `Platform_UART_Receive_IT`、`StartMonitor_Task` 这类把动作或词法单元
   继续用下划线拆开的写法。
 - 平行模块保持相同词序。Policy 统一使用 `Policy_Omni_*`；通用串口统一使用

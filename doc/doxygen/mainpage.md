@@ -28,10 +28,12 @@ HAL / CMSIS / FreeRTOS
   MPU6050 I2C）、JoyCon、底盘、遥测协议设备。
 - **Controller**：轮级 SISO 控制律（线性、PID、compose）。
 - **Policy**：底盘级 MIMO 运动策略（当前为 omni 运动学）。
-- **Filter**：固定容量多通道滤波。
-- **System**：数学、检查、限幅、延时、临界区、Fault、看门狗、RTT 日志。
-- **RTOS**：F407 100 Hz 控制、UART 协议处理和 50 Hz 监控任务。
-- **App**：F407 四轮小车设备装配、上电归零、命令映射和故障联锁。
+- **Filter**：固定容量多通道滤波、IMU 六轴校正与七状态 EKF 接口壳层。
+- **System**：数学、检查、限幅、延时、临界区、Fault、看门狗、RTT 日志、
+  DWT 时间和双页 Flash 记录存储。
+- **RTOS**：F407 运动控制任务；F103 速通任务一的 100 Hz ImuEkfTask 和
+  50 Hz VofaTask。
+- **App**：F407 四轮小车与 F103 MPU6050 自动标定、JustFloat 和参数入口。
 
 ## 状态
 
@@ -49,6 +51,8 @@ Policy omni、Chassis omni、Filter 基础设施、System。
 - [编码约定](../conventions.md)
 - [F103 板级工程](../../Boards/f103c8t6-platform-test/README.md)
 - [F103 硬件与接口规范](../../Boards/f103c8t6-platform-test/hardware-map.md)
+- [F103 速通赛道任务一](../../Boards/f103c8t6-fast-channel-task-1/README.md)
+- [F103 速通任务一硬件规范](../../Boards/f103c8t6-fast-channel-task-1/hardware-map.md)
 - [F407 板级工程](../../Boards/f407vet6-omni-car/README.md)
 - [F407 硬件与接口规范](../../Boards/f407vet6-omni-car/hardware-map.md)
 - [TODO](../todo.md)

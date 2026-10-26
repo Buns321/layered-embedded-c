@@ -12,9 +12,9 @@
 #include "system_math.h"
 #include <assert.h>
 
-static void Chassis_Omni_Stop(chassis_base_t *chassis_h);
+static void chassis_omni_stop(chassis_base_t *chassis_h);
 
-static void Chassis_Omni_Update(chassis_base_t *chassis_h, uint32_t now_ms) {
+static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
   assert(chassis_h);
 
   chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
@@ -35,7 +35,7 @@ static void Chassis_Omni_Update(chassis_base_t *chassis_h, uint32_t now_ms) {
     (imu_sample.valid_mask & IMU_CHANNEL_YAW) == 0u         ||
     yaw_age_ms > chassis_omni_h->imu_timeout_ms
   ) {
-    Chassis_Omni_Stop(chassis_h);
+    chassis_omni_stop(chassis_h);
     return;
   }
 
@@ -58,7 +58,7 @@ static void Chassis_Omni_Update(chassis_base_t *chassis_h, uint32_t now_ms) {
   }
 }
 
-static void Chassis_Omni_Stop(chassis_base_t *chassis_h) {
+static void chassis_omni_stop(chassis_base_t *chassis_h) {
   assert(chassis_h);
 
   chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
@@ -73,7 +73,7 @@ static void Chassis_Omni_Stop(chassis_base_t *chassis_h) {
   }
 }
 
-static void Chassis_Omni_EStop(chassis_base_t *chassis_h) {
+static void chassis_omni_estop(chassis_base_t *chassis_h) {
   assert(chassis_h);
 
   chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
@@ -88,9 +88,9 @@ static void Chassis_Omni_EStop(chassis_base_t *chassis_h) {
 }
 
 static const chassis_ops_t chassis_ops_omni = {
-  .update = Chassis_Omni_Update,
-  .stop   = Chassis_Omni_Stop,
-  .estop  = Chassis_Omni_EStop,
+  .update = chassis_omni_update,
+  .stop   = chassis_omni_stop,
+  .estop  = chassis_omni_estop,
 };
 
 void Chassis_Omni_Init(
