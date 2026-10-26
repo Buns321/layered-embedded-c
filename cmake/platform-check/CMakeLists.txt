@@ -11,9 +11,9 @@ set(PLATFORM_CHECK_FAMILY "" CACHE STRING "要编译的目标系列：F4 或 F1"
 get_filename_component(REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
 if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
-  set(BOARD_ROOT ${REPO_ROOT}/boards/f407vet6)
+  set(BOARD_ROOT ${REPO_ROOT}/Boards/f407vet6-omni-car)
 elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
-  set(BOARD_ROOT ${REPO_ROOT}/boards/f103c8t6)
+  set(BOARD_ROOT ${REPO_ROOT}/Boards/f103c8t6-platform-test)
 else()
   message(FATAL_ERROR "PLATFORM_CHECK_FAMILY must be F4 or F1")
 endif()

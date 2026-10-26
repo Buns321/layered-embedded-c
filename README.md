@@ -8,23 +8,24 @@
 已完成并通过工具链构建的是**基础设施层**：
 
 - **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
-- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、UART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、遥测（base + FireWater / JustFloat UART）。
-- **Controller**：轮级 SISO 控制契约、线性控制律、compose。
+- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、UART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、JoyCon ASCII 命令、遥测（base + FireWater / JustFloat UART）。
+- **Controller**：轮级 SISO 控制契约、线性控制律、PID、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
 - **Filter**：样本、base、低通、透传、chain、distributor。
 - **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、日志 base 与 SEGGER RTT。
-- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已建立四个
-  CMSIS-RTOS2 任务骨架，F103 继续使用自己的 CubeMX 任务配置。
-- **Boards**：`boards/f103c8t6/` 和 `boards/f407vet6/` 是两个平级、独立的
+- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已接入 100 Hz
+  四轮 PID、WHT101 上电归零、JoyCon 命令、50 Hz JustFloat 和 RTT 监控，
+  F103 继续使用自己的 CubeMX 任务配置。
+- **Boards**：`Boards/f103c8t6-platform-test/` 和
+  `Boards/f407vet6-omni-car/` 是两个平级、独立的
   固件工程，各自持有 CubeMX、HAL、FreeRTOS、App、RTOS、启动文件、链接脚本和
   CMake presets。共享的 Platform、DeviceDrivers、Controller、Policy、Filter、
-  System 仍位于仓库根目录。
+  System 仍位于仓库根目录。工程目录统一采用 `<mcu>-<name>` 命名。
 
 尚未完成或暂缓：
 
-- `controller_pid_t`（PID）
-- 板级 App / RTOS 的设备装配、任务接线与故障联锁
+- F407 蓝牙/JoyCon/JustFloat 和 WHT101 的实板联调
 - 参数标定
 - Filter 单元测试、统一单调时间源、Kalman 姿态实现、MPU6050 板上验证
 - Platform 新增外设的板上电气与时序验证
@@ -43,13 +44,14 @@
 `unused-parameter` 告警。
 
 ```powershell
-cd boards/f407vet6
+cd Boards/f407vet6-omni-car
 cmake --preset Debug
 cmake --build --preset Debug
 ```
 
-F407 产物位于 `boards/f407vet6/build/Debug/`，包括 `f407vet6.elf` 和
-`f407vet6.map`。完整说明见 [F407 板级工程](boards/f407vet6/README.md)。
+F407 产物位于 `Boards/f407vet6-omni-car/build/Debug/`，包括 `f407vet6.elf` 和
+`f407vet6.map`。完整说明见
+[F407 板级工程](Boards/f407vet6-omni-car/README.md)。
 
 Release 构建：
 
@@ -73,14 +75,14 @@ Release 检查和详细能力矩阵见 [Platform 契约](doc/platform.md)。
 F103 同样使用板级目录中的独立 presets：
 
 ```powershell
-cd boards/f103c8t6
+cd Boards/f103c8t6-platform-test
 cmake --preset Debug
 cmake --build --preset Debug
 ```
 
-F103 产物位于 `boards/f103c8t6/build/Debug/`，包括 `f103c8t6.elf` 和
+F103 产物位于 `Boards/f103c8t6-platform-test/build/Debug/`，包括 `f103c8t6.elf` 和
 `f103c8t6.map`。完整命令和当前接入状态见
-[F103 板级说明](boards/f103c8t6/README.md)。
+[F103 板级说明](Boards/f103c8t6-platform-test/README.md)。
 
 ## 烧录 / 调试
 
@@ -88,7 +90,7 @@ F103 产物位于 `boards/f103c8t6/build/Debug/`，包括 `f103c8t6.elf` 和
 
 ```bash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
-  -c "program boards/f407vet6/build/Debug/f407vet6.elf verify reset exit"
+  -c "program Boards/f407vet6-omni-car/build/Debug/f407vet6.elf verify reset exit"
 ```
 
 实际接口配置按你的调试器与板卡调整。
@@ -115,9 +117,9 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 - [Platform 公共契约](doc/platform-contract.md)
 - Platform 全实例编译检查：`cmake/platform-check/README.md`
 - Platform/IMU 原生测试：`cmake/platform-test/README.md`
-- [F407 板级工程](boards/f407vet6/README.md)
-- [F407 硬件与接口规范](boards/f407vet6/hardware-map.md)
-- [F103 硬件与接口规范](boards/f103c8t6/hardware-map.md)
+- [F407 板级工程](Boards/f407vet6-omni-car/README.md)
+- [F407 硬件与接口规范](Boards/f407vet6-omni-car/hardware-map.md)
+- [F103 硬件与接口规范](Boards/f103c8t6-platform-test/hardware-map.md)
 - [日志与遥测](doc/telemetry.md)
 - [RTT 日志接收](tools/rtt/README.md)
 - [TODO](doc/todo.md)
@@ -136,7 +138,7 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 | `System/` | 数学、检查、延时 |
 | `Middlewares/Third_Party/SEGGER_RTT/` | 两块板共享的可选 RTT 日志后端 |
 | `doc/` | 文档 |
-| `boards/<board>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、App、RTOS、启动文件和链接脚本 |
+| `Boards/<mcu>-<name>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、App、RTOS、启动文件和链接脚本 |
 
 ## 设计要点
 

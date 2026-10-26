@@ -7,9 +7,10 @@
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
 - [x] FireWater / JustFloat 遥测设备与 UART DMA 发送
-- [ ] App 对象装配与 RTOS 运行链路的完整接线
-- [ ] 轮速 PID、参数标定和板上验证
-- [ ] 遥测通道 schema、周期发送与 USART2 高速配置
+- [x] F407 App 对象装配与 RTOS 运行链路接线
+- [x] 轮速 PID、控制器契约和主机测试
+- [x] F407 遥测通道 schema、50 Hz 周期发送与 USART2 115200 配置
+- [ ] 轮速 PID 参数标定和四轮实板验证
 
 ## 命名与接口一致性
 **目标**：公共类型、聚合标签、函数动作、对象句柄和并行模块词序使用同一套规则，
@@ -175,8 +176,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 
 ## DeviceDrivers · 电机
 **架构**：具体驱动配芯片并绑虚表，并在具体电机初始化时为内嵌 `motor_base` 注入 `law/enc`。`motor_base` 是闭环电机：目标速度接口存物理单位目标，`update` 按"读增量 → 控制律 → 限幅 → 执行器"运行；`reset` 复位控制律并重同步编码器；`enable` 内部调用 `reset`。具体驱动只认占空比。
-**当前状态**：编码器反馈与控制律注入链路已完成；现有线性控制律忽略 `measure`，
-实际执行仍是开环映射，真实轮速闭环等待 PID。
+**当前状态**：编码器反馈与控制律注入链路已完成；F407 使用 PID 实现真实轮速闭环，
+参数仍待实车整定。
 - [x] `motor_base` 新增 `controller_base_t *law` 与 `encoder_base_t *enc` 注入
 - [x] `Dev_Motor_TB6612_Init` 接收 `controller_base_t *controller` 与 `encoder_base_t *encoder`，并传给 `Dev_Motor_Base_Init`
 - [x] `motor_base` 新增 `update`：读取编码器增量、调用控制律、限幅、下发执行器
@@ -192,13 +193,13 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] `Dev_Motor_TB6612_Init` 返回 `platform_status_t` 并处理 PWM 启动失败
 - [x] 增加 `Dev_Motor_Base_Brake` 公共入口，使已经实现的 TB6612 短制动能力可达
 - [x] 具体驱动保持 base 首成员 + 静态 ops 表
-- [ ] 用 PID 替换线性开环映射，完成真实轮速闭环
+- [x] 用 PID 完成 F407 轮速闭环接线
 
 ## DeviceDrivers · 控制器
 **目标架构**：`controller_base_t` 是轮级 SISO 控制接口，明确 target、measure、dt、输出单位/范围和错误状态；Policy 负责 MIMO 运动解算，Controller 只负责单轮闭环。所有具体实现内嵌 base 并绑定静态 ops 表。
 - [x] 新增 `controller_base_t`，ops 含 `update(target, measure, dt, out)` 与 `reset`
 - [x] 重构 `controller_base_t`：加入控制周期 dt、输出指针和错误/饱和状态，明确 input/output 单位
-- [ ] 新增 `controller_pid_t`，基于新 Controller 契约实现，不复用即将废弃的 `PID_TypeDef`
+- [x] 新增 `controller_pid_t`，基于新 Controller 契约实现，不复用即将废弃的 `PID_TypeDef`
 - [x] 新增线性控制律，`duty = k * target + b`，`k = 1, b = 0` 时为目标透传
 - [x] 实现 `controller_compose_t`，参考 Filter Base/Chain 的组合方式
 - [x] 所有具体控制器采用 base 首成员 + 静态 ops 表
@@ -297,10 +298,10 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [x] 对有效掩码、非有限值、帧容量和 DMA 状态做检查
 - [x] 记录发送、丢弃和错误计数
 - [x] 加入 CMake 与 Doxygen 输入
-- [ ] 在 `rtos_shared` 中静态定义具体遥测设备并选择协议
-- [ ] 从电机、IMU、底盘生成固定通道 schema
-- [ ] 在 MonitorTask 中以 20..50 Hz 发送
-- [ ] 将 USART2 配置为 921600 / 1 Mbps 并做板上验证
+- [x] 在 F407 App 中静态定义 JustFloat 遥测设备并选择协议
+- [x] 从电机、IMU、JoyCon 生成 F407 固定 16 通道 schema
+- [x] F407 MonitorTask 以 50 Hz 发送
+- [ ] F407 蓝牙 115200 全双工链路和 JustFloat 主机解析实板验证
 
 ## DeviceDrivers · 电源与模拟
 **架构**：电池电压、电流等模拟量通过 Platform ADC 采样，经 Filter 处理后提供给上层；模拟采样不在电机或底盘驱动里硬编码。
@@ -316,16 +317,16 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 
 ## RTOS
 **架构**：静态对象按索引接线，第 i 个电机配第 i 个编码器与控制律，四个电机挂在同一个底盘下。一个固定周期任务驱动整条回路：底盘解算并下发，再逐轮运行闭环。Monitor 通过心跳与堵转标志监控。
-**状态**：暂停旧接线，等待上层重构后一次性接入。
-- [ ] `rtos_shared.c` 定义电机、编码器、控制律、底盘、IMU、policy 的静态对象
-- [ ] `App_Init` 按索引完成电机、编码器、控制律、底盘、policy 的接线
-- [ ] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
-- [ ] 上层接线按硬件组成对管理 STBY（`m0/m1`、`m2/m3`），禁止单电机依赖 STBY 停机
-- [ ] `rtos_control.c` 实现 `RTOS_Control_StartTask`，固定周期调用底盘 update 与四个电机 update
-- [ ] `rtos_control.c` 维护 `g_ctrl_heartbeat`
-- [ ] `rtos_uart.c` 实现 `RTOS_UART_StartTask`，周期调用 `Dev_IMU_Base_Process(now_ms)`
+**状态**：F407 已按 100 Hz 控制、2 ms UART 和 50 Hz 监控周期接入；F103 仍为占位。
+- [x] F407 App 静态定义电机、编码器、控制律、底盘、IMU、JoyCon、policy 对象
+- [x] `App_Car_Init` 按索引完成电机、编码器、控制律、底盘、policy 的接线
+- [x] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
+- [x] 上层接线按 AB、CD 两组管理 STBY，禁止单电机依赖 STBY 停机
+- [x] `rtos_control.c` 实现 `RTOS_Control_StartTask`，固定周期调用底盘 update 与四个电机 update
+- [x] `rtos_control.c` 维护控制心跳
+- [x] `rtos_uart.c` 实现 `RTOS_UART_StartTask`，周期处理 WHT101 与 JoyCon
 - [ ] `rtos_monitor.c` 补齐控制任务死亡与电机堵转时的停机动作
-- [ ] 替换 `Core/Src/freertos.c` 中 `RTOS_Control_StartTask`、`RTOS_UART_StartTask` 的 `__weak` 占位
+- [x] 用板级强符号替换 `Core/Src/freertos.c` 中三个任务的 `__weak` 运行实现
 - [ ] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
 - [ ] 为 Idle/Timer Task 提供静态内存并关闭 FreeRTOS 动态分配
 - [ ] 开启并实现 `configCHECK_FOR_STACK_OVERFLOW`
@@ -337,9 +338,9 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 
 ## App
 **架构**：业务逻辑只通过底盘入口下发运动命令，不直接接触电机。
-**状态**：计划随上层重构重写，当前不补旧调用链。
-- [ ] 业务逻辑通过 `chassis_base_t` 的 `set_motion` 下发运动命令
-- [ ] 建立遥控或串口命令到 `set_motion` 的链路
+**状态**：F407 已实现 JoyCon 到 omni 底盘的完整命令链；F103 仍为占位。
+- [x] F407 业务逻辑通过 `Chassis_Omni_SetMotion` 下发运动命令
+- [x] F407 建立 JoyCon ASCII 命令到世界系 `v/dir/omega` 的链路
 
 ## System
 **架构**：时基统一——RTOS 下毫秒延时使用内核延时，裸机下使用 DWT；
@@ -372,16 +373,17 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 ## Core / App 装配
 **架构**：Core 保持 CubeMX 生成内容；具体设备对象、依赖注入和运行链路由 App 装配层负责。
 - [x] `Core/Src/main.c` 不再直接依赖 `RTOS/Inc/rtos_shared.h`
-- [ ] 建立统一的 `App_Init()` / `System_Init()` 初始化入口
-- [x] USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
-- [ ] 将 USART2 波特率从 9600 提升到遥测所需速率
+- [x] 建立 F407 `App_Car_Init()` 初始化入口
+- [x] F103 USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
+- [x] F407 JoyCon 使用 USART3 RX 中断并启用 USART3 IRQ handler
+- [x] F407 JustFloat 使用 USART2 TX DMA，波特率 115200
 - [ ] `Error_Handler` 在停机前通过设备抽象切断电机输出
-- [ ] 在 App 装配层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
+- [x] 在 App 装配层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
 - [ ] 定义板级 NVIC 优先级配置常量，在 CubeMX MSP 中引用
 - [ ] 明确 STBY 硬件下拉与复位安全状态，确保看门狗/复位时电机不会保持使能
 - [x] 启动时读取并记录 IWDG/WWDG 复位原因
-- [ ] 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
-- [x] 统一 `.ioc` 与 `main.c` 的 8 MHz HSE、PLL x9 和 72 MHz 配置
+- [ ] F407 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
+- [x] F103 统一 `.ioc` 与 `main.c` 的 8 MHz HSE、PLL x9 和 72 MHz 配置
 - [ ] 为使用的 EXTI 引脚建立板级映射
 
 ## 构建
@@ -403,7 +405,7 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 - [ ] 标定四轮安装角与方向符号
 - [ ] 标定编码器每圈计数与轮径，得到 `counts_per_meter`
 - [ ] 使 `base` 的控制周期常数与控制任务真实周期一致
-- [ ] 整定轮速 PID 参数
+- [ ] 实车整定轮速 PID 参数
 
 ## 清理
 **说明**：源码与注释统一使用 UTF-8。

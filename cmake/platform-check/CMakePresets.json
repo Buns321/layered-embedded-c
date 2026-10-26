@@ -5,7 +5,7 @@
       "name": "f4-debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f4",
-      "toolchainFile": "${sourceDir}/../../boards/f407vet6/cmake/gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../Boards/f407vet6-omni-car/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "PLATFORM_CHECK_FAMILY": "F4"
@@ -15,7 +15,7 @@
       "name": "f1-debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f1",
-      "toolchainFile": "${sourceDir}/../../boards/f103c8t6/cmake/gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../Boards/f103c8t6-platform-test/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "PLATFORM_CHECK_FAMILY": "F1"
@@ -25,7 +25,7 @@
       "name": "f4-release",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f4-release",
-      "toolchainFile": "${sourceDir}/../../boards/f407vet6/cmake/gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../Boards/f407vet6-omni-car/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "PLATFORM_CHECK_FAMILY": "F4"
@@ -35,7 +35,7 @@
       "name": "f1-release",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/../../build/platform-check-f1-release",
-      "toolchainFile": "${sourceDir}/../../boards/f103c8t6/cmake/gcc-arm-none-eabi.cmake",
+      "toolchainFile": "${sourceDir}/../../Boards/f103c8t6-platform-test/cmake/gcc-arm-none-eabi.cmake",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "PLATFORM_CHECK_FAMILY": "F1"

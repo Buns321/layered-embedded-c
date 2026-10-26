@@ -52,7 +52,8 @@ base 与 Platform；base 只依赖 System 和标准库。
   由调用方保持有效。
 - 跨系列公共校验、策略和状态机位于 `Platform/Src/common/`；HAL handle、
   时钟和位宽适配位于 `Platform/Src/stm32f4/` 或 `Platform/Src/stm32f1/`。
-  `boards/f407vet6/` 目标选用 F4 backend，`boards/f103c8t6/` 目标选用 F1 backend。
+  `Boards/f407vet6-omni-car/` 目标选用 F4 backend，
+  `Boards/f103c8t6-platform-test/` 目标选用 F1 backend。
 - F407 已实现 GPIO、PWM、Encoder、USART1–6、EXTI、I2C1–3、SPI1–3、
   ADC1–3、DAC、CAN1–2、RTC、Flash、CRC、RNG、IWDG、WWDG。
 - F103C8T6 已实现 GPIO、PWM、Encoder、USART1–3、EXTI、I2C1–2、SPI1–2、
@@ -62,11 +63,12 @@ base 与 Platform；base 只依赖 System 和标准库。
 ### DeviceDrivers
 
 - `Base/` 放抽象接口：`led_base_t`、`motor_base_t`、`encoder_base_t`、
-  `uart_base_t`、`imu_base_t`、`chassis_base_t`、`telemetry_base_t`。
+  `uart_base_t`、`imu_base_t`、`joycon_base_t`、`chassis_base_t`、
+  `telemetry_base_t`。
 - `Inc/`、`Src/` 放具体实现：`led_gpio_t`、`led_pwm_t`、`motor_tb6612_t`、
   `encoder_tim_t`、`uart_port_t`、`imu_wht101_uart_t`、
   `mpu6050_i2c_t`、`chassis_omni_t`、
-  `firewater_uart_t`、`justfloat_uart_t`。
+  `firewater_uart_t`、`justfloat_uart_t`、`joycon_uart_t`。
 - 电机是闭环设备：目标速度、编码器、控制律、执行器都在 `motor_base` 里汇合。
 - UART 由 `uart_base_t` 抽象，`uart_port_t` 负责桥接 Platform 回调。
 - IMU 的 `start` / `process` / `get_status` 由具体实现提供；具体驱动只提交
@@ -94,7 +96,9 @@ controller_status_t update(
 - `dt` 单位秒，必须大于 0。
 - `out` 是执行器量（轮速环为 duty）。
 - 返回 `OK` / `SATURATED` / `ERROR`。
-- 线性控制律是开环映射加限幅/步长/摩擦补偿；PID 尚未实现。
+- 线性控制律是开环映射加限幅/步长/摩擦补偿。
+- `controller_pid_t` 是位置式 PID，微分作用于测量值，包含微分低通、积分限幅
+  和条件积分抗饱和。
 - `controller_compose_t` 把多个子控制器并联求和。
 
 ### Policy
@@ -195,39 +199,33 @@ MonitorTask
 遥测发送不阻塞控制任务。UART DMA 忙时整帧丢弃，并通过
 `telemetry_status_t` 暴露发送、丢弃和错误计数。
 
-## 6. F407 初始化顺序（计划）
+## 6. F407 初始化顺序
 
-1. `Dev_Encoder_TIM_Init` × 4
-2. 控制律初始化（当前用 `Ctrl_Linear_Init`）
-3. `Dev_Motor_TB6612_Init` × 4（注入 controller + encoder + 传动常数）
-4. `Dev_Motor_Base_Enable` × 4
-5. `Dev_UART_Port_Init`（USART1）
-6. WHT101：初始化 `filter_passthrough_t`，注入 IMU 并调用 `Dev_IMU_Base_Start`
-7. `Policy_Omni_Kinematics_Init`
-8. `Chassis_Omni_Init(..., imu_timeout_ms)`
-9. `Dev_UART_Port_Init`（USART2）
-10. `Dev_JustFloat_UART_Init` 或 `Dev_FireWater_UART_Init`
-11. `Sys_Log_RTT_Init` + `Sys_Log_Init`
-
-当前 `main()` 已调用 `Sys_Delay_Init()`，并在启用 `SYS_LOG_USE_RTT` 时初始化
-RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
+1. `App_Car_Init()` 初始化 USART1 WHT101、USART2 JustFloat 和 USART3 JoyCon。
+2. `Dev_Encoder_TIM_Init` × 4。
+3. `Ctrl_PID_Init` × 4。
+4. `Dev_Motor_TB6612_Init` × 4，A/B 和 C/D 分别共享 STBY。
+5. `Policy_Omni_Kinematics_Init` 和 `Chassis_Omni_Init`。
+6. WHT101 请求 10 Hz 输出率，UARTTask 等待静止后写入设备侧 yaw 零点。
+7. 归零完成并收到有效 JoyCon 后，才使能四轮闭环。
 
 ## 7. F407 任务模型
 
-`boards/f407vet6/Core/Src/freertos.c` 已创建四个 CMSIS-RTOS2 任务：
+`Boards/f407vet6-omni-car/Core/Src/freertos.c` 已创建四个 CMSIS-RTOS2 任务：
 
 | 任务 | 栈 | 优先级 | 当前状态 |
 | --- | --- | --- | --- |
 | defaultTask | 512 B | Normal | 空循环 |
-| MonitorTask | 2048 B | Low | 最小占位（每 100 ms 让一次） |
-| ControlTask | 4096 B | Realtime | 弱占位，待实现 |
-| UARTTask | 4096 B | Normal | 弱占位，待实现 |
+| MonitorTask | 2048 B | Low | 50 Hz 遥测、心跳和故障停机 |
+| ControlTask | 4096 B | Realtime | 100 Hz 底盘与四轮 PID |
+| UARTTask | 4096 B | Normal | WHT101/JoyCon 协议与归零状态机 |
 
-计划中的职责：
+任务职责：
 
-- **ControlTask**：固定周期调用底盘 update 和四个电机 update，维护心跳。
-- **UARTTask**：调用 `Dev_IMU_Base_Process(&imu, now_ms)`，后续接入命令链路。
-- **MonitorTask**：检查心跳、控制律状态和故障，负责安全停机。
+- **ControlTask**：固定 100 Hz 调用底盘和四轮闭环，维护控制心跳。
+- **UARTTask**：处理 WHT101 异步帧、JoyCon ASCII 帧和上电归零状态机。
+- **MonitorTask**：以 50 Hz 发送 JustFloat，检查控制心跳和控制律故障，
+  负责安全停机。
 
 ## 8. 所有权与内存
 
@@ -261,12 +259,12 @@ RTT 日志；设备对象和 `App_Init()` 仍待上层接线。
 ## 11. 当前状态
 
 已实现：Platform（F4 完整接入，F103 支持外设完整实现）、LED、电机、编码器、UART、
-统一 IMU 滤波管线、WHT101、MPU6050 I2C 驱动、
-Controller 契约 + 线性 + compose、
+统一 IMU 滤波管线、WHT101、JoyCon UART、MPU6050 I2C 驱动、
+Controller 契约 + 线性 + PID + compose、
 Policy omni、Chassis omni、Filter 基础设施、FireWater/JustFloat 遥测设备、
 System（数学/延时/临界区/Fault/看门狗/RTT 日志）。
 
-待完成或暂缓：PID、各板 App / RTOS 接线与对象装配、F103 板级外设接线与验证、参数标定、
+待完成或暂缓：F103 板级外设接线与验证、参数标定、
 Filter/Kalman 姿态实现、MPU6050 板上验证、Platform 新增外设板上验证、
 MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）、
-遥测对象与任务接线、USART2 高波特率配置、RTT 主机侧实测。
+F407 蓝牙/JoyCon/JustFloat 实板验证、RTT 主机侧实测。

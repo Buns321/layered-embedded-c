@@ -7,7 +7,7 @@ Dependencies flow from each board's `App/` and `RTOS/` through shared device/alg
 - `Platform/`: HAL-free contracts in `Inc/`, shared logic in `Src/common/`, and MCU adapters in `Src/stm32f4/` and `Src/stm32f1/`.
 - `DeviceDrivers/`: abstract interfaces in `Base/`; concrete drivers in `Inc/` and `Src/`.
 - `Controller/`, `Policy/`, `Filter/`, `System/`: shared algorithms and services.
-- `boards/<board>/`: self-contained firmware projects. Each board owns its `.ioc`, `Core/`, `Drivers/`, `Middlewares/`, `cmake/`, `App/`, `RTOS/`, startup, linker script, hardware mapping, and CMake presets.
+- `Boards/<mcu>-<name>/`: self-contained firmware projects. Each project owns its `.ioc`, `Core/`, `Drivers/`, `Middlewares/`, `cmake/`, `App/`, `RTOS/`, startup, linker script, hardware mapping, and CMake presets.
 - `Middlewares/Third_Party/SEGGER_RTT/`: optional RTT logger shared by board builds.
 - `cmake/platform-test/`: native C contract tests. `cmake/platform-check/`: F1/F4 compile-only checks. Documentation lives in `doc/`.
 
@@ -16,12 +16,12 @@ Dependencies flow from each board's `App/` and `RTOS/` through shared device/alg
 Install CMake 3.22+, Ninja, and `arm-none-eabi-gcc` on `PATH`.
 
 ```powershell
-cd boards/f407vet6
+cd Boards/f407vet6-omni-car
 cmake --preset Debug
 cmake --build --preset Debug
 ```
 
-Use the same commands in `boards/f103c8t6` for the F103 target. Substitute
+Use the same commands in `Boards/f103c8t6-platform-test` for the F103 target. Substitute
 `Release` for release builds. Flash ELF files with ST-Link/OpenOCD; see the
 board READMEs for examples.
 
@@ -33,7 +33,7 @@ ctest --test-dir build/platform-test --output-on-failure
 
 Any CMake-supported C11 compiler works. Build `cmake/platform-check` with its
 `f4-debug` and `f1-debug` presets when changing shared code, board App, or board
-RTOS. Generate API docs from `boards/f407vet6` with
+RTOS. Generate API docs from `Boards/f407vet6-omni-car` with
 `cmake --build --preset Debug --target docs`.
 
 ## Coding Style & Naming Conventions

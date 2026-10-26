@@ -25,7 +25,7 @@ skill 推导新的架构规则。审查通过只代表变更满足门禁，不�
 | `Controller/`、`Policy/`、`DeviceDrivers/` | `doc/architecture.md`、`doc/units.md`；按设备读取 `doc/imu.md` 或 `doc/telemetry.md` |
 | `Filter/`、`System/` | `doc/architecture.md`、`doc/units.md`；日志读取 `doc/telemetry.md` |
 | `RTOS/`、`App/` | `doc/architecture.md`、`doc/units.md`、`doc/telemetry.md` 和板级文档 |
-| `Core/`、`boards/`、CubeMX、启动或链接文件 | 对应 `boards/<board>/README.md`、`hardware-map.md`、`doc/platform.md` |
+| `Core/`、`Boards/`、CubeMX、启动或链接文件 | 对应 `Boards/<mcu>-<name>/README.md`、`hardware-map.md`、`doc/platform.md` |
 | `cmake/`、测试或工具 | `AGENTS.md`、`cmake/platform-test/README.md`、`cmake/platform-check/README.md` 中适用项 |
 | 公共 API、Doxygen 或 Markdown | `doc/doxygen/Doxyfile`、`doc/doxygen/groups.dox` 和对应模块文档 |
 

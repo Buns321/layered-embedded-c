@@ -25,21 +25,21 @@ HAL / CMSIS / FreeRTOS
 
 - **Platform**：HAL 封装，枚举身份 + 静态映射。
 - **DeviceDrivers**：LED、电机、编码器、UART、IMU（统一滤波管线、WHT101、
-  MPU6050 I2C）、底盘、遥测协议设备。
-- **Controller**：轮级 SISO 控制律（线性、compose；PID 待实现）。
+  MPU6050 I2C）、JoyCon、底盘、遥测协议设备。
+- **Controller**：轮级 SISO 控制律（线性、PID、compose）。
 - **Policy**：底盘级 MIMO 运动策略（当前为 omni 运动学）。
 - **Filter**：固定容量多通道滤波。
 - **System**：数学、检查、限幅、延时、临界区、Fault、看门狗、RTT 日志。
-- **RTOS**：任务骨架（控制 / 串口任务体待实现）。
-- **App**：业务逻辑（待实现）。
+- **RTOS**：F407 100 Hz 控制、UART 协议处理和 50 Hz 监控任务。
+- **App**：F407 四轮小车设备装配、上电归零、命令映射和故障联锁。
 
 ## 状态
 
 已完成：Platform（F4 完整接入，F103 基础外设接入）、设备驱动、
-Controller 契约 + 线性 + compose、
+Controller 契约 + 线性 + PID + compose、JoyCon UART、
 Policy omni、Chassis omni、Filter 基础设施、System。
 
-待完成或暂缓：PID、板级 App / RTOS 接线与故障联锁、F103 板级外设接线与验证、
+待完成或暂缓：F407 实板蓝牙/JoyCon/JustFloat 联调、F103 板级外设接线与验证、
 参数标定、Filter 单测 / 统一时间源 / Kalman。
 
 ## 文档
@@ -47,8 +47,8 @@ Policy omni、Chassis omni、Filter 基础设施、System。
 - [架构说明](../architecture.md)
 - [单位与量纲](../units.md)
 - [编码约定](../conventions.md)
-- [F103 板级工程](../../boards/f103c8t6/README.md)
-- [F103 硬件与接口规范](../../boards/f103c8t6/hardware-map.md)
-- [F407 板级工程](../../boards/f407vet6/README.md)
-- [F407 硬件与接口规范](../../boards/f407vet6/hardware-map.md)
+- [F103 板级工程](../../Boards/f103c8t6-platform-test/README.md)
+- [F103 硬件与接口规范](../../Boards/f103c8t6-platform-test/hardware-map.md)
+- [F407 板级工程](../../Boards/f407vet6-omni-car/README.md)
+- [F407 硬件与接口规范](../../Boards/f407vet6-omni-car/hardware-map.md)
 - [TODO](../todo.md)

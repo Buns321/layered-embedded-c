@@ -109,6 +109,19 @@ add_executable(system_log_contract_test
     ${REPO_ROOT}/System/Src/system_log_base.c
 )
 
+add_executable(controller_pid_contract_test
+    controller_pid_contract_test.c
+    ${REPO_ROOT}/Controller/Base/Src/controller_base.c
+    ${REPO_ROOT}/Controller/Src/controller_pid.c
+)
+
+add_executable(joycon_uart_contract_test
+    joycon_uart_contract_test.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/joycon_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
+    ${REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
+)
+
 add_executable(stm32f1_watchdog_backend_test
     stm32f1_watchdog_backend_test.c
     ${REPO_ROOT}/Platform/Src/stm32f1/platform_iwdg.c
@@ -282,6 +295,18 @@ target_include_directories(system_log_contract_test PRIVATE
     ${REPO_ROOT}/System/Inc
 )
 
+target_include_directories(controller_pid_contract_test PRIVATE
+    ${REPO_ROOT}/Controller/Base/Inc
+    ${REPO_ROOT}/Controller/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(joycon_uart_contract_test PRIVATE
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
 target_compile_definitions(system_log_contract_test PRIVATE
     SYS_LOG_EXTERNAL_TIME_SOURCE=Sys_Log_TestGetTimeMs
 )
@@ -389,6 +414,16 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(controller_pid_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(joycon_uart_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
     target_compile_options(stm32f1_watchdog_backend_test PRIVATE
         -Wall
         -Wextra
@@ -472,6 +507,14 @@ add_test(
 add_test(
     NAME system_log_contract_test
     COMMAND system_log_contract_test
+)
+add_test(
+    NAME controller_pid_contract_test
+    COMMAND controller_pid_contract_test
+)
+add_test(
+    NAME joycon_uart_contract_test
+    COMMAND joycon_uart_contract_test
 )
 add_test(
     NAME stm32f1_watchdog_backend_test

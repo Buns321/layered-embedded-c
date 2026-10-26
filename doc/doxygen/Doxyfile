@@ -24,15 +24,16 @@ INPUT                  = README.md \
                          doc/README.md \
                          doc/doxygen/mainpage.md \
                          doc/doxygen/groups.dox \
-                         boards/f103c8t6/README.md \
-                         boards/f103c8t6/hardware-map.md \
-                         boards/f103c8t6/App \
-                         boards/f103c8t6/RTOS \
-                         boards/f103c8t6/Test \
-                         boards/f407vet6/README.md \
-                         boards/f407vet6/hardware-map.md \
-                         boards/f407vet6/App \
-                         boards/f407vet6/RTOS \
+                         Boards/f103c8t6-platform-test/README.md \
+                         Boards/f103c8t6-platform-test/hardware-map.md \
+                         Boards/f103c8t6-platform-test/App \
+                         Boards/f103c8t6-platform-test/RTOS \
+                         Boards/f103c8t6-platform-test/Test \
+                         Boards/f407vet6-omni-car/README.md \
+                         Boards/f407vet6-omni-car/pinmap.md \
+                         Boards/f407vet6-omni-car/hardware-map.md \
+                         Boards/f407vet6-omni-car/App \
+                         Boards/f407vet6-omni-car/RTOS \
                          tools/rtt/README.md \
                          cmake/platform-check/README.md \
                          cmake/platform-test \
@@ -107,8 +108,8 @@ INCLUDE_PATH           = Platform/Inc \
                          Filter/Base/Inc \
                          Filter/Inc \
                          System/Inc \
-                         boards/f103c8t6/App/Inc \
-                         boards/f103c8t6/RTOS/Inc \
-                         boards/f103c8t6/Test/Inc \
-                         boards/f407vet6/App/Inc \
-                         boards/f407vet6/RTOS/Inc
+                         Boards/f103c8t6-platform-test/App/Inc \
+                         Boards/f103c8t6-platform-test/RTOS/Inc \
+                         Boards/f103c8t6-platform-test/Test/Inc \
+                         Boards/f407vet6-omni-car/App/Inc \
+                         Boards/f407vet6-omni-car/RTOS/Inc

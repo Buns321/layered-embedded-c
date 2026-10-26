@@ -12,8 +12,10 @@ System/
 
 DeviceDrivers/
   Base/telemetry_base
+  Base/joycon_base
   firewater_uart
   justfloat_uart
+  joycon_uart
 ```
 
 `System` 不依赖具体设备协议；DeviceDrivers 不依赖 App 或 RTOS。SEGGER RTT
@@ -117,7 +119,25 @@ float chN
 所有 float 和帧尾均为小端序。无效通道发送 `NAN`。每帧固定为
 `channel_count * 4 + 4` 字节。这是高频波形遥测的默认选择。
 
-### 3.3 FireWater
+### 3.3 JoyCon
+
+`joycon_uart_t` 从普通透明传输蓝牙串口接收 ASCII 控制报文：
+
+```text
+[j,lx,ly,rx,ry]
+```
+
+- `j` 是 JoyCon 固定标识，大小写兼容。
+- `lx`、`ly`、`rx`、`ry` 的原始范围均为 `[-100,100]`。
+- 不包含校验字段，`]` 的结束方括号是完整帧边界。
+- `\r\n` 可选，帧外空白不参与解析。
+- 设备层输出归一化到 `[-1,1]` 的结构化快照，不解释电机或底盘单位。
+- UART 中断只写环形队列；状态机、数值解析和快照发布在 UARTTask 中完成。
+
+F407 的 JustFloat 使用 USART2 TX，JoyCon 使用 USART3 RX，两者属于同一透明传输
+蓝牙模块的不同方向，但各自拥有独立的 `uart_base_t` 回调所有者。
+
+### 3.4 FireWater
 
 `firewater_uart_t` 输出带通道名的文本：
 
@@ -131,7 +151,7 @@ target0:1.230,current0:1.180,yaw:45.200\n
 FireWater 比 JustFloat 占用更多 CPU 和串口带宽，适合低频调试；高频数据应使用
 JustFloat。
 
-### 3.4 UART 和 DMA
+### 3.5 UART 和 DMA
 
 两个实现都通过 `uart_base_t` 发送 DMA，不直接依赖 HAL：
 
@@ -144,31 +164,39 @@ Dev_JustFloat_UART_Init(
   &g_telemetry,
   "justfloat2",
   &g_uart_h.uart_base,
-  12u
+  16u
 );
 ```
 
 约束：
 
 - TX 缓冲由具体设备对象持有，DMA 完成前不能被下一帧覆盖。
-- USART2 当前启用 DMA、DMA IRQ 和 USART2 NVIC，支持命令接收与 DMA 发送。
-- 只发送遥测时可关闭 USART2 NVIC；需要接收命令和错误回调时必须启用。
+- F103C8T6 的 USART2 当前同时启用 DMA、DMA IRQ 和 USART2 NVIC，支持命令接收
+  与 DMA 发送。
+- F407VET6 的 JustFloat 使用 USART2 TX DMA；JoyCon 使用 USART3 RX 中断，并启用
+  对应 NVIC 和 `USART3_IRQHandler`。
 - 当前 `uart_base_t` 每个实例只有一套回调。`firewater_uart` 或
   `justfloat_uart` 初始化后会接管该 UART 的回调槽，不能和另一个独立回调用户
   同时使用。
 - 发送缓冲必须位于普通 SRAM，不能放 CCMRAM，因为 F4 DMA 无法访问 CCMRAM。
 
-### 3.5 速率和波特率
+### 3.6 速率和波特率
 
-USART2 当前配置为 115200 baud，可作为首轮调试和命令通道。提高遥测速率前应在
-CubeMX 中改为 `921600` 或 `1 Mbps`，并同步修改上位机配置。
+USART2 当前配置按板区分：
+
+- F103C8T6：`115200 baud`。
+- F407VET6：USART2 JustFloat 和 USART3 JoyCon 均为 `115200 baud`；USART1
+  WHT101 为 `9600 baud`。
+
+提高遥测速率前应在对应板卡的 CubeMX 中改为 `921600` 或 `1 Mbps`，并同步修改
+上位机配置。
 
 参考带宽：
 
 - JustFloat，16 通道，50 Hz：约 3.4 KB/s。
 - FireWater，16 通道，3 位小数，50 Hz：通常约 15 KB/s 以上。
 
-### 3.6 调度建议
+### 3.7 调度建议
 
 - ControlTask 只生成或更新遥测快照。
 - MonitorTask 以 20..50 Hz 调用 `Dev_Telemetry_Base_Send()`。
@@ -203,11 +231,11 @@ cmake --build --preset Debug
 - FireWater / JustFloat UART DMA 协议设备
 - Debug、Release 和无 RTT 构建
 - F103 板上 RTT 控制块发现、启动日志、并发运行日志与主机端接收
+- F407 四轮目标/实测轮速、整车命令、yaw 和 gyro-Z 的 16 通道 JustFloat 快照
+- F407 JoyCon 蓝牙命令接收、超时制动和控制心跳急停
 
 尚未完成：
 
-- 在 `rtos_shared` 中定义具体遥测对象并选择协议
-- 从电机、IMU、底盘生成固定通道快照
-- 在 MonitorTask 中周期性发送
-- 将 USART2 波特率提高到遥测速率
+- 在真实蓝牙模块上验证 115200 全双工链路和主机端 JustFloat 解析
+- 验证 16 通道 JustFloat 在 50 Hz 下的实际丢帧率
 - 在 J-Link 工具链中实际验证主机端接收

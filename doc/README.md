@@ -7,11 +7,11 @@
 - [Platform 公共契约](platform-contract.md)：跨 F1/F4 状态、错误、回调和
   异步生命周期规则。
 - [IMU 与 MPU6050](imu.md)：统一 IMU 管线、WHT101 与 MPU6050 驱动说明。
-- [F103 板级工程](../boards/f103c8t6/README.md)：构建、接入状态和验证入口。
-- [F103 硬件与接口规范](../boards/f103c8t6/hardware-map.md)：完整引脚、资源、
+- [F103 板级工程](../Boards/f103c8t6-platform-test/README.md)：构建、接入状态和验证入口。
+- [F103 硬件与接口规范](../Boards/f103c8t6-platform-test/hardware-map.md)：完整引脚、资源、
   电源、驱动契约与风险边界。
-- [F407 板级工程](../boards/f407vet6/README.md)：构建、目录和验证入口。
-- [F407 硬件与接口规范](../boards/f407vet6/hardware-map.md)：当前 CubeMX 引脚、
+- [F407 板级工程](../Boards/f407vet6-omni-car/README.md)：构建、目录和验证入口。
+- [F407 硬件与接口规范](../Boards/f407vet6-omni-car/hardware-map.md)：当前 CubeMX 引脚、
   时钟与外设分配。
 - [日志与遥测](telemetry.md)：RTT 日志、FireWater、JustFloat、UART/DMA。
 - [Platform 编译检查](../cmake/platform-check/README.md)：F4/F1 全实例编译验证。

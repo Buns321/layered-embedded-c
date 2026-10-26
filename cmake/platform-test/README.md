@@ -3,7 +3,9 @@
 这些测试覆盖与 HAL 无关的校验逻辑、算术辅助函数、System 日志门面、统一 IMU 管线、
 watchdog/RTC/Flash/UART/I2C/SPI/CAN/ADC/DAC/PWM/Encoder/EXTI/GPIO/CRC/RNG
 公共状态机，并通过伪 Platform I2C 传输验证 MPU6050 驱动。F1 看门狗后端测试
-还覆盖 HAL 预分频编码值为 0 的合法情况。
+还覆盖 HAL 预分频编码值为 0 的合法情况。PID 契约测试覆盖比例、积分、微分测量、
+低通、限幅、抗饱和和错误输入；JoyCon 测试覆盖 ASCII 包头、可选换行、数值边界、
+非法帧、环形队列、错误重挂和线程安全快照。
 
 ```powershell
 cmake -S cmake/platform-test -B build/platform-test -G Ninja `

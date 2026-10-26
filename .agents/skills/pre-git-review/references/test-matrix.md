@@ -68,7 +68,7 @@ cmake --build --preset Debug
 F103 正式目标：
 
 ```powershell
-cd boards/f103c8t6
+cd Boards/f103c8t6-platform-test
 cmake --preset Debug
 cmake --build --preset Debug
 ```
