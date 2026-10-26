@@ -1,0 +1,6 @@
+interface:
+  display_name: "分层模块设计与验收"
+  short_description: "创建分层模块前读取规范，完成后逐项验收并修正"
+
+policy:
+  allow_implicit_invocation: true
