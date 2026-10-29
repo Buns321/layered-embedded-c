@@ -94,6 +94,8 @@ controller_status_t update(
 
 - `target` / `measure` 是当前槽位的物理量（轮速环为 m/s）。
 - `dt` 单位秒，必须大于 0。
+- 上述名称是存量接口；新增或修改接口按单位后缀规则使用 `target_mps`、
+  `measure_mps` 和 `dt_s`。
 - `out` 是执行器量（轮速环为 duty）。
 - 返回 `OK` / `SATURATED` / `ERROR`。
 - 线性控制律是开环映射加限幅/步长/摩擦补偿。
@@ -293,7 +295,7 @@ EKF 核心占位期间仍发布零姿态，但状态标记为 `PLACEHOLDER`。�
 
 - 编码器 `get_delta` 每个控制周期只能读一次。
 - `control_period` 必须和控制任务的真实周期一致。
-- 控制律 `dt` 必须有限且大于 0。
+- 控制律时间步（存量名 `dt`，新接口 `dt_s`）必须有限且大于 0。
 - `max_duty` 是执行器量程；控制律输出最终会被夹紧。
 - `SetTargetSpeed` / `SetMotion` 对非有限输入做清零保护。
 - ISR 只做入队和重新挂接收；解析和控制逻辑放在任务里。

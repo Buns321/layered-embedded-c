@@ -21,6 +21,8 @@
 - [x] 对象句柄统一为 `<role>_h`，同类实例使用数组下标
 - [x] 项目自有 UART 符号统一，CubeMX/HAL 的 USART 符号保留原名
 - [x] Policy、RTOS、System 数学 API 和文件名统一词序
+- [x] 物理量标识符单位后缀规则写入 `doc/conventions.md` 和 `doc/units.md`
+- [ ] 按模块迁移存量物理量标识符到规范单位后缀
 - [x] F4/F103 Debug、Release、`-Werror` 与全实例检查通过
 
 ## 文档与 Doxygen 规范

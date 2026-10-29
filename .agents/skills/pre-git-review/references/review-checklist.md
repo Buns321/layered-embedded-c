@@ -93,7 +93,10 @@
 ## 7. 单位、时间与数值边界
 
 - 对外使用 SI 单位：m、s、rad、m/s、rad/s；IMU 姿态使用 deg，角速度使用 deg/s。
-- `dt` 单位为秒且有限、大于零；`time_ms` 单位为毫秒。
+- `dt_s` 单位为秒且有限、大于零；`time_ms` 单位为毫秒。
+- 新增或修改的物理量参数、字段、局部变量、全局变量、常量和宏以
+  `doc/units.md` 登记的规范单位后缀结尾；存量不合规标识符不得借无关改动
+  继续扩散。
 - 电机目标与反馈为 m/s，控制律输出和 `max_duty` 为 duty，编码器为 counts。
 - PWM 使用 `ccr = ARR * duty / max_duty`，实现避免中间乘法溢出。
 - SPI 16 位模式长度为偶数且地址对齐；ADC/DMA 长度语义是转换次数。
@@ -132,7 +135,8 @@
 
 ### Controller、Policy 与 Chassis
 
-- Controller 是轮级 SISO，输入 target/measure 的当前物理量，输出执行器量。
+- Controller 是轮级 SISO，输入 target/measure 的当前物理量，输出执行器量；
+  新增或修改接口的参数名须带单位后缀，例如 `target_mps`、`measure_mps`。
 - Policy 是底盘级 MIMO 解算，不与 Controller 职责混合。
 - Chassis 只保存命令、检查 IMU 新鲜度、调用 policy 并向电机写目标。
 - 电机闭环由 `motor_base` 运行，Chassis 不重复控制环。

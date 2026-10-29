@@ -1,7 +1,8 @@
 # 文档索引
 
 - [架构说明](architecture.md)：分层、对象模型、数据流、任务模型、约束。
-- [单位与量纲](units.md)：各层单位、换算公式、常数归属、标定流程。
+- [单位与量纲](units.md)：标识符单位后缀、各层单位、换算公式、常数归属、
+  标定流程。
 - [编码约定](conventions.md)：命名、base/ops、初始化、错误处理、ISR 边界。
 - [Platform 契约](platform.md)：CubeMX 边界、实例可用性、回调、DMA 与错误。
 - [Platform 公共契约](platform-contract.md)：跨 F1/F4 状态、错误、回调和

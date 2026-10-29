@@ -162,7 +162,8 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 - **base 首成员**：具体类型通过首成员嵌入 base，回调里强转回具体类型。
 - **注入式算法**：电机注入 `controller_base_t`，底盘注入对应类型的 policy base。
 - **无动态内存**：所有对象静态定义。
-- **单位显式**：对外 SI 单位，设备层 duty，编码器 counts。
+- **单位显式**：物理量标识符带规范单位后缀，对外 SI 单位，设备层 duty，
+  编码器 counts。
 - **assert 管编程错误，状态枚举管运行时错误**。
 
 ## 许可

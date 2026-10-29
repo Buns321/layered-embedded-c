@@ -25,8 +25,10 @@
   结尾；枚举值与宏使用大写蛇形。
 - [ ] 长期对象指针使用与角色一致的 `<role>_h`，数组同类对象使用下标而非编号。
 - [ ] 每个公共参数都说明单位、范围、所有权、调用上下文、并发限制和失败行为。
-- [ ] 接口使用 SI 单位；`dt` 为秒且大于 0，`time_ms` 表示毫秒，量程和符号
+- [ ] 接口使用 SI 单位；`dt_s` 为秒且大于 0，`time_ms` 表示毫秒，量程和符号
   约定明确。
+- [ ] 新增或修改的物理量参数、字段、局部变量和常量均以 `doc/units.md`
+  登记的规范单位后缀结尾，例如 `target_speed_mps`、`control_period_s`。
 
 依据：`doc/conventions.md` 第 1、5、6 节、`doc/units.md`。
 
@@ -99,8 +101,8 @@
 ### Controller
 
 - [ ] `controller_base_t` + `controller_ops_t` 的 update/reset 职责单一。
-- [ ] `update` 接收本槽位 `target`、`measure`、秒单位正 `dt`，输出执行器量，
-      并返回 OK/SATURATED/ERROR 等明确状态。
+- [ ] `update` 接收本槽位 `target_mps`、`measure_mps`、秒单位正 `dt_s`，
+      输出执行器量，并返回 OK/SATURATED/ERROR 等明确状态。
 - [ ] 控制律是纯函数或显式状态机；状态跨周期变化时 reset 能恢复确定初态。
 - [ ] Controller 不调用 Policy、Chassis、具体驱动或硬件；组合器只并联求和。
 - [ ] 输出限幅、步长和摩擦补偿的归属及量程由调用契约明确。

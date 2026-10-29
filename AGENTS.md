@@ -38,7 +38,7 @@ RTOS. Generate API docs from `Boards/f407vet6-omni-car` with
 
 ## Coding Style & Naming Conventions
 
-Use C11, UTF-8, and two-space indentation (`.editorconfig`). Public functions follow `Layer_Module_Qualifier_VerbObject`, such as `Platform_UART_ReceiveIT`. Public types use `snake_case` plus `_t`; struct/enum/union tags end in `_s`/`_e`/`_u`, and handles use `<role>_h`.
+Use C11, UTF-8, and two-space indentation (`.editorconfig`). Public functions follow `Layer_Module_Qualifier_VerbObject`, such as `Platform_UART_ReceiveIT`. Public types use `snake_case` plus `_t`; struct/enum/union tags end in `_s`/`_e`/`_u`, and handles use `<role>_h`. New or modified physical-quantity parameters, fields, locals, globals, constants, and macros end with a canonical unit suffix registered in `doc/units.md`, such as `target_speed_mps`, `control_period_s`, and `wheel_theta_rad`; `_h` remains reserved for handles.
 
 Embed the matching `*_base_t` as the first member of concrete types. Use static `*_ops_t` tables, avoid dynamic memory, and keep HAL types inside `Platform/Src/`. Maintained comments and documentation use Simplified Chinese; identifiers remain English. Do not hand-edit `Drivers/`, `Middlewares/`, or generated CubeMX code outside `USER CODE` sections.
 
