@@ -10,8 +10,8 @@
 
 #include "rtos_control.h"
 #include "app_car.h"
-#include "app_car_config.h"
 #include "cmsis_os2.h"
+#include "rtos_config.h"
 #include "system_log.h"
 
 void RTOS_Control_StartTask(void *argument) {
@@ -24,11 +24,11 @@ void RTOS_Control_StartTask(void *argument) {
     uint32_t now_tick = osKernelGetTickCount();
     if (
       (uint32_t)(now_tick - next_wake_tick) >
-      APP_CAR_CONTROL_PERIOD_TICKS
+      RTOS_CAR_CONTROL_PERIOD_TICKS
     ) {
       next_wake_tick = now_tick;
     }
-    next_wake_tick += APP_CAR_CONTROL_PERIOD_TICKS;
+    next_wake_tick += RTOS_CAR_CONTROL_PERIOD_TICKS;
 
     App_Car_ProcessControl(now_tick);
     (void)osDelayUntil(next_wake_tick);

@@ -18,15 +18,6 @@
 /** @brief 轮速 PID 控制周期（s），必须与 ControlTask 调度周期一致。 */
 #define APP_CAR_CONTROL_PERIOD_S 0.01f
 
-/** @brief ControlTask 调度周期（RTOS tick）。 */
-#define APP_CAR_CONTROL_PERIOD_TICKS 10u
-
-/** @brief UARTTask 调度周期（RTOS tick）。 */
-#define APP_CAR_UART_PERIOD_TICKS 2u
-
-/** @brief MonitorTask 调度周期（RTOS tick）。 */
-#define APP_CAR_MONITOR_PERIOD_TICKS 10u
-
 /** @brief JustFloat 发送周期（ms）。 */
 #define APP_CAR_TELEMETRY_PERIOD_MS 20u
 

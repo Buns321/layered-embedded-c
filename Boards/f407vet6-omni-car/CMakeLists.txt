@@ -141,6 +141,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         ${REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
         ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_shared.c
         ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_shared.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_config.h
         ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_monitor.c
         ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_monitor.h
         ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_control.c
