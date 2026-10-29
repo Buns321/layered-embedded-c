@@ -10,10 +10,16 @@
 #include <stdbool.h>
 #include <string.h>
 
+/**
+ * @brief 判断两个单精度浮点数是否在容差内相等。
+ */
 static bool float_near(float left, float right, float tolerance) {
   return fabsf(left - right) <= tolerance;
 }
 
+/**
+ * @brief 验证设置命令。
+ */
 static void test_set_command(void) {
   char line[] = "SET Q_ANGLE 1.25e-4\r";
   app_uart_command_t command;
@@ -29,6 +35,9 @@ static void test_set_command(void) {
   assert(float_near(command.value, -2.5f, 1e-6f));
 }
 
+/**
+ * @brief 验证重置命令。
+ */
 static void test_reset_command(void) {
   char line[] = "reset ekf";
   app_uart_command_t command;
@@ -36,6 +45,9 @@ static void test_reset_command(void) {
   assert(command.kind == APP_UART_COMMAND_RESET_EKF);
 }
 
+/**
+ * @brief 验证非法命令不改变状态。
+ */
 static void test_invalid_commands(void) {
   app_uart_command_t command;
   char empty[] = "   ";
@@ -54,6 +66,9 @@ static void test_invalid_commands(void) {
   assert(!App_Command_Parse(NULL, &command));
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_set_command();
   test_reset_command();

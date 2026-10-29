@@ -22,12 +22,24 @@ static platform_status_t s_write_status;
 static platform_status_t s_erase_status;
 static uint32_t s_backend_error;
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
 }
 
+/**
+ * @brief 校验 Flash 地址范围与对齐是否合法。
+ */
 bool platform_flash_backend_range_valid(uint32_t address, uint32_t size) {
   if (
     size == 0U ||
@@ -39,12 +51,18 @@ bool platform_flash_backend_range_valid(uint32_t address, uint32_t size) {
   return size <= TEST_FLASH_END - address + 1U;
 }
 
+/**
+ * @brief 返回地址所在 Flash 擦除单元大小。
+ */
 uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
   return platform_flash_backend_range_valid(address, 1U)
            ? TEST_ERASE_UNIT
            : 0U;
 }
 
+/**
+ * @brief 读取Flash数据。
+ */
 platform_status_t platform_flash_backend_read(
   uint32_t address,
   void *data,
@@ -54,6 +72,9 @@ platform_status_t platform_flash_backend_read(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 写入Flash数据。
+ */
 platform_status_t platform_flash_backend_write(
   uint32_t address,
   const void *data,
@@ -68,6 +89,9 @@ platform_status_t platform_flash_backend_write(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 擦除 Flash 指定地址范围。
+ */
 platform_status_t platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
@@ -81,10 +105,16 @@ platform_status_t platform_flash_backend_erase(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回Flash后端记录的错误位。
+ */
 uint32_t platform_flash_backend_get_error(void) {
   return s_backend_error;
 }
 
+/**
+ * @brief 验证 Flash 参数校验、忙状态和错误路径。
+ */
 static void test_flash_contract(void) {
   s_write_status = PLATFORM_STATUS_OK;
   s_erase_status = PLATFORM_STATUS_OK;
@@ -158,6 +188,9 @@ static void test_flash_contract(void) {
           PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_flash_contract();
   return 0;

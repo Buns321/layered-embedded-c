@@ -11,11 +11,17 @@
 #include "uart_port.h"
 #include <assert.h>
 
+/**
+ * @brief 把 UART base 句柄还原为端口对象。
+ */
 static uart_port_t *dev_uart_port_frombase(uart_base_t *uart_h) {
   assert(uart_h);
   return (uart_port_t *)uart_h;
 }
 
+/**
+ * @brief 把 Platform UART 状态映射为设备状态。
+ */
 static dev_uart_status_t dev_uart_port_mapstatus(
   platform_status_t status
 ) {
@@ -30,6 +36,9 @@ static dev_uart_status_t dev_uart_port_mapstatus(
   }
 }
 
+/**
+ * @brief 转发阻塞接收请求。
+ */
 static dev_uart_status_t dev_uart_port_receive(
   uart_base_t *uart_h,
   uint8_t *buf,
@@ -42,6 +51,9 @@ static dev_uart_status_t dev_uart_port_receive(
   );
 }
 
+/**
+ * @brief 转发阻塞发送请求。
+ */
 static dev_uart_status_t dev_uart_port_transmit(
   uart_base_t *uart_h,
   const uint8_t *data,
@@ -54,6 +66,9 @@ static dev_uart_status_t dev_uart_port_transmit(
   );
 }
 
+/**
+ * @brief 注册中断接收请求。
+ */
 static dev_uart_status_t dev_uart_port_receiveit(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -65,6 +80,9 @@ static dev_uart_status_t dev_uart_port_receiveit(
   );
 }
 
+/**
+ * @brief 注册中断发送请求。
+ */
 static dev_uart_status_t dev_uart_port_transmitit(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -76,6 +94,9 @@ static dev_uart_status_t dev_uart_port_transmitit(
   );
 }
 
+/**
+ * @brief 注册 DMA 接收请求。
+ */
 static dev_uart_status_t dev_uart_port_receivedma(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -87,6 +108,9 @@ static dev_uart_status_t dev_uart_port_receivedma(
   );
 }
 
+/**
+ * @brief 注册 DMA 发送请求。
+ */
 static dev_uart_status_t dev_uart_port_transmitdma(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -107,6 +131,9 @@ static const uart_ops_t uart_ops_port = {
   .transmit_dma = dev_uart_port_transmitdma,
 };
 
+/**
+ * @brief 把 Platform UART 事件转发给设备回调。
+ */
 static void dev_uart_port_onevent(
   platform_uart_instance_t instance,
   const platform_uart_event_t *event,
@@ -146,6 +173,16 @@ static void dev_uart_port_onevent(
   }
 }
 
+/**
+ * @brief 初始化 UART 适配器并注册 Platform 回调。
+ * @param uart_h 对象。
+ * @param name 名称。
+ * @param instance UART 实例身份。
+ * @note Platform 回调会把事件转发到 uart_base 的回调集合。
+ * @retval PLATFORM_STATUS_OK 初始化和回调注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该 UART 实例已注册 Platform 回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 参数或实例非法。
+ */
 platform_status_t Dev_UART_Port_Init(
   uart_port_t *uart_h,
   const char *name,

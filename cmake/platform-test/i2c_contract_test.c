@@ -17,10 +17,16 @@ static uint32_t s_backend_error;
 static uint32_t s_event_count;
 static uint32_t s_probe_trials;
 
+/**
+ * @brief 校验I2C实例是否已由板级配置启用。
+ */
 bool platform_i2c_backend_is_valid(platform_i2c_instance_t i2c) {
   return i2c == PLATFORM_I2C_1;
 }
 
+/**
+ * @brief 启动 I2C 主机阻塞发送。
+ */
 platform_status_t platform_i2c_backend_master_transmit(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -36,6 +42,9 @@ platform_status_t platform_i2c_backend_master_transmit(
   return s_transmit_status;
 }
 
+/**
+ * @brief 启动 I2C 主机阻塞接收。
+ */
 platform_status_t platform_i2c_backend_master_receive(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -51,6 +60,9 @@ platform_status_t platform_i2c_backend_master_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器阻塞写入。
+ */
 platform_status_t platform_i2c_backend_mem_write(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -70,6 +82,9 @@ platform_status_t platform_i2c_backend_mem_write(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器阻塞读取。
+ */
 platform_status_t platform_i2c_backend_mem_read(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -89,6 +104,9 @@ platform_status_t platform_i2c_backend_mem_read(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 探测 I2C 7 位地址是否存在应答。
+ */
 platform_status_t platform_i2c_backend_probe(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -102,6 +120,9 @@ platform_status_t platform_i2c_backend_probe(
   return s_probe_status;
 }
 
+/**
+ * @brief 启动 I2C 主机中断发送。
+ */
 platform_status_t platform_i2c_backend_master_transmit_it(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -115,6 +136,9 @@ platform_status_t platform_i2c_backend_master_transmit_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 主机中断接收。
+ */
 platform_status_t platform_i2c_backend_master_receive_it(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -128,6 +152,9 @@ platform_status_t platform_i2c_backend_master_receive_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器中断写入。
+ */
 platform_status_t platform_i2c_backend_mem_write_it(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -145,6 +172,9 @@ platform_status_t platform_i2c_backend_mem_write_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器中断读取。
+ */
 platform_status_t platform_i2c_backend_mem_read_it(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -162,6 +192,9 @@ platform_status_t platform_i2c_backend_mem_read_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 主机 DMA 发送。
+ */
 platform_status_t platform_i2c_backend_master_transmit_dma(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -175,6 +208,9 @@ platform_status_t platform_i2c_backend_master_transmit_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 主机 DMA 接收。
+ */
 platform_status_t platform_i2c_backend_master_receive_dma(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -188,6 +224,9 @@ platform_status_t platform_i2c_backend_master_receive_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器 DMA 写入。
+ */
 platform_status_t platform_i2c_backend_mem_write_dma(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -205,6 +244,9 @@ platform_status_t platform_i2c_backend_mem_write_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 I2C 寄存器 DMA 读取。
+ */
 platform_status_t platform_i2c_backend_mem_read_dma(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -222,6 +264,9 @@ platform_status_t platform_i2c_backend_mem_read_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动I2C异步中止并映射 HAL 状态。
+ */
 platform_status_t platform_i2c_backend_abort_it(
   platform_i2c_instance_t i2c,
   uint16_t address
@@ -231,11 +276,17 @@ platform_status_t platform_i2c_backend_abort_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回I2C后端记录的错误位。
+ */
 uint32_t platform_i2c_backend_get_error(platform_i2c_instance_t i2c) {
   (void)i2c;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 I2C 完成或错误事件。
+ */
 static void i2c_callback(
   platform_i2c_instance_t i2c,
   const platform_i2c_event_t *event,
@@ -247,6 +298,9 @@ static void i2c_callback(
   s_event_count++;
 }
 
+/**
+ * @brief 验证 I2C 参数校验、地址和事件分发。
+ */
 static void test_i2c_contract(void) {
   uint8_t byte = 0U;
   s_transmit_status = PLATFORM_STATUS_OK;
@@ -337,6 +391,9 @@ static void test_i2c_contract(void) {
   assert(s_event_count == 1U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_i2c_contract();
   return 0;

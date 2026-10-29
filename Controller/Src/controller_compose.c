@@ -12,6 +12,9 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 依次执行级联控制器并传递中间输出。
+ */
 static controller_status_t ctrl_compose_update(
   controller_base_t *controller_h,
   float target,
@@ -61,6 +64,9 @@ static controller_status_t ctrl_compose_update(
   return status;
 }
 
+/**
+ * @brief 重置级联中的全部控制器。
+ */
 static void ctrl_compose_reset(controller_base_t *controller_h) {
   assert(controller_h);
 
@@ -79,6 +85,15 @@ static const controller_ops_t controller_ops_compose = {
   .reset  = ctrl_compose_reset,
 };
 
+/**
+ * @brief 初始化 compose 控制器。
+ * @param controller_h 对象。
+ * @param name 名称。
+ * @param controller_stage_h 子控制器静态表。
+ * @param stage_count 子控制器数量，范围 1..CONTROLLER_COMPOSE_CAPACITY。
+ * @note Init 会校验空指针、自引用和重复项，并级联 reset。
+ * @note 任一子控制器返回 ERROR 时，整体输出 0 并返回 ERROR。
+ */
 void Ctrl_Compose_Init(
   controller_compose_t      *controller_h,
   const char                *name,

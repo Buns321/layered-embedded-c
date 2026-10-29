@@ -12,6 +12,9 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 重置低通滤波器状态。
+ */
 static void filter_lowpass_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_lowpass_t *filter_lowpass_h = (filter_lowpass_t *)filter_h;
@@ -24,6 +27,9 @@ static void filter_lowpass_reset(filter_base_t *filter_h) {
   }
 }
 
+/**
+ * @brief 对各通道执行一阶低通更新。
+ */
 static void filter_lowpass_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(filter_h && input && output);
   filter_lowpass_t *filter_lowpass_h = (filter_lowpass_t *)filter_h;
@@ -89,6 +95,12 @@ static const filter_ops_t filter_ops_lowpass = {
   .reset  = filter_lowpass_reset,
 };
 
+/**
+ * @brief 初始化低通滤波器。
+ * @param filter_h 对象。
+ * @param name 名称。
+ * @param default_time_constant_s 默认时间常数（s），必须大于 0。
+ */
 void Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name, float default_time_constant_s) {
   assert(
     filter_h                                  &&
@@ -106,6 +118,12 @@ void Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name, float def
   Filter_Base_Reset(&filter_h->filter_base);
 }
 
+/**
+ * @brief 设置某个通道的时间常数。
+ * @param filter_h 对象。
+ * @param channel 通道下标，必须小于 FILTER_CHANNEL_CAPACITY。
+ * @param time_constant_s 时间常数（s），必须大于 0。
+ */
 void Filter_Lowpass_SetChannelTimeConstant(filter_lowpass_t *filter_h, uint8_t channel, float time_constant_s) {
   assert(
     filter_h                              &&

@@ -17,6 +17,12 @@
 
 #define PLATFORM_SECONDS_PER_DAY 86400UL
 
+/**
+ * @brief 校验经典 CAN 标识符范围。
+ * @param extended 是否使用扩展帧。
+ * @param identifier 标识符位值。
+ * @return 标识符在对应范围内时返回 true。
+ */
 static inline bool platform_can_identifier_is_valid(
   bool extended,
   uint32_t identifier
@@ -26,6 +32,13 @@ static inline bool platform_can_identifier_is_valid(
            : identifier <= 0x7FFUL;
 }
 
+/**
+ * @brief 校验经典 CAN 标识符和数据长度。
+ * @param extended 是否使用扩展帧。
+ * @param identifier 标识符位值。
+ * @param dlc 数据长度，范围 0..8。
+ * @return 标识符和 DLC 都合法时返回 true。
+ */
 static inline bool platform_can_frame_values_are_valid(
   bool extended,
   uint32_t identifier,
@@ -35,6 +48,13 @@ static inline bool platform_can_frame_values_are_valid(
          platform_can_identifier_is_valid(extended, identifier);
 }
 
+/**
+ * @brief 校验 SPI 传输缓冲区和长度约束。
+ * @param data 传输缓冲区；不能为空。
+ * @param size 字节数；必须大于 0。
+ * @param data_width_16 是否使用 16 位数据宽度。
+ * @return 缓冲区、长度和对齐要求都满足时返回 true。
+ */
 static inline bool platform_spi_transfer_values_are_valid(
   const void *data,
   uint16_t size,
@@ -50,6 +70,11 @@ static inline bool platform_spi_transfer_values_are_valid(
          (((uintptr_t)data & 1U) == 0U);
 }
 
+/**
+ * @brief 计算下一天的 RTC 闹钟计数器值。
+ * @param alarm_counter 当前闹钟计数器值。
+ * @return 增加一天秒数后的计数器值；32 位回绕由调用方按 RTC 语义处理。
+ */
 static inline uint32_t platform_rtc_next_daily_alarm(
   uint32_t alarm_counter
 ) {

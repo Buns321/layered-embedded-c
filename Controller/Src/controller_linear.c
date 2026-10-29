@@ -12,6 +12,9 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 按线性比例更新输出并处理饱和。
+ */
 static controller_status_t ctrl_linear_update(
   controller_base_t *controller_h,
   float target,
@@ -91,6 +94,9 @@ static controller_status_t ctrl_linear_update(
   return saturated ? CONTROLLER_STATUS_SATURATED : CONTROLLER_STATUS_OK;
 }
 
+/**
+ * @brief 重置线性控制器的输出状态。
+ */
 static void ctrl_linear_reset(controller_base_t *controller_h) {
   assert(controller_h);
   controller_linear_t *controller_linear_h = (controller_linear_t *) controller_h;
@@ -102,6 +108,22 @@ static const controller_ops_t controller_ops_linear = {
   .reset  = ctrl_linear_reset,
 };
 
+/**
+ * @brief 初始化线性控制律。
+ * @param controller_h 对象。
+ * @param name 名称。
+ * @param k 斜率（duty / (m/s)）。
+ * @param b 截距或摩擦补偿幅值（duty）。
+ * @param is_defriction_enabled 是否把 b 作为摩擦补偿。
+ * @param max_target 输入上限（m/s）。
+ * @param min_target 输入下限（m/s）。
+ * @param max_out 输出上限（duty）。
+ * @param min_out 输出下限（duty）。
+ * @param max_step 单周期最大变化（duty）。
+ * @param min_step 单周期最小变化（duty）。
+ * @param deadzone 输出保持带（duty），围绕上次输出。
+ * @note 初始化会校验参数范围与有限性。
+ */
 void Ctrl_Linear_Init(
   controller_linear_t *controller_h,
   const char *name,

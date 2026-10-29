@@ -14,6 +14,11 @@
 #include "rtos_config.h"
 #include "system_log.h"
 
+/**
+ * @brief WHT101 与 JoyCon 的 UART 处理任务。
+ * @param argument CMSIS-RTOS2 任务参数，当前未使用。
+ * @note 中断只负责入队；协议解析和上电归零状态机在本任务上下文运行。
+ */
 void RTOS_UART_StartTask(void *argument) {
   (void)argument;
 

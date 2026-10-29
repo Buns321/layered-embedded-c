@@ -12,6 +12,7 @@
 #include "system_math.h"
 #include <assert.h>
 
+/** @brief 初始化遥测设备并绑定静态操作表。 */
 void Dev_Telemetry_Base_Init(
   telemetry_base_t *telemetry_h,
   const char *name,
@@ -29,6 +30,11 @@ void Dev_Telemetry_Base_Init(
   telemetry_h->ops  = ops;
 }
 
+/**
+ * @brief 提交一帧协议数据。
+ * @return 接受时返回 OK；传输通道被占用时返回 BUSY；输入格式非法或编码
+ *         失败时返回 ERROR。
+ */
 dev_telemetry_status_t Dev_Telemetry_Base_Send(
   telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
@@ -70,6 +76,7 @@ dev_telemetry_status_t Dev_Telemetry_Base_Send(
   return telemetry_h->ops->send(telemetry_h, sample);
 }
 
+/** @brief 复制当前后端状态快照。 */
 void Dev_Telemetry_Base_GetStatus(
   telemetry_base_t *telemetry_h,
   telemetry_status_t *status

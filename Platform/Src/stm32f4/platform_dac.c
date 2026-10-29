@@ -9,10 +9,16 @@
 #include "platform_hal_internal.h"
 #include "stm32f4xx_hal.h"
 
+/**
+ * @brief 把平台 DAC 实例编号转换为 HAL 句柄。
+ */
 static DAC_HandleTypeDef *platform_dac_to_hal(platform_dac_instance_t dac) {
   return dac == PLATFORM_DAC_1 ? &hdac : NULL;
 }
 
+/**
+ * @brief 把 HAL DAC 句柄识别为平台实例编号。
+ */
 static bool platform_hal_to_dac(
   DAC_HandleTypeDef *dac_h,
   platform_dac_instance_t *dac
@@ -24,10 +30,16 @@ static bool platform_hal_to_dac(
   return false;
 }
 
+/**
+ * @brief 把 DAC 通道枚举转换为 HAL 通道宏。
+ */
 static uint32_t platform_dac_hal_channel(platform_dac_channel_t channel) {
   return channel == PLATFORM_DAC_CHANNEL_1 ? DAC_CHANNEL_1 : DAC_CHANNEL_2;
 }
 
+/**
+ * @brief 把 DAC 对齐枚举转换为 HAL 宏。
+ */
 static uint32_t platform_dac_hal_alignment(
   platform_dac_alignment_t alignment
 ) {
@@ -39,6 +51,9 @@ static uint32_t platform_dac_hal_alignment(
   }
 }
 
+/**
+ * @brief 把 HAL DAC 错误位映射为平台错误码。
+ */
 static uint32_t platform_dac_map_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_DAC_ERROR_NONE;
   if (((hal_error & HAL_DAC_ERROR_DMAUNDERRUNCH1) != 0U) ||
@@ -62,10 +77,16 @@ static uint32_t platform_dac_map_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 校验DAC实例是否已由板级配置启用。
+ */
 bool platform_dac_backend_is_valid(platform_dac_instance_t dac) {
   return platform_dac_to_hal(dac) != NULL;
 }
 
+/**
+ * @brief 写入 DAC 原始码值。
+ */
 platform_status_t platform_dac_backend_set_value(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel,
@@ -82,6 +103,9 @@ platform_status_t platform_dac_backend_set_value(
                      ));
 }
 
+/**
+ * @brief 启动DAC后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_dac_backend_start(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -94,6 +118,9 @@ platform_status_t platform_dac_backend_start(
                      ));
 }
 
+/**
+ * @brief 停止DAC后端并清理活动状态。
+ */
 platform_status_t platform_dac_backend_stop(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -106,6 +133,9 @@ platform_status_t platform_dac_backend_stop(
                      ));
 }
 
+/**
+ * @brief 启动DAC DMA 转换。
+ */
 platform_status_t platform_dac_backend_start_dma(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel,
@@ -124,6 +154,9 @@ platform_status_t platform_dac_backend_start_dma(
                      ));
 }
 
+/**
+ * @brief 停止DAC DMA 转换。
+ */
 platform_status_t platform_dac_backend_stop_dma(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -136,12 +169,18 @@ platform_status_t platform_dac_backend_stop_dma(
                      ));
 }
 
+/**
+ * @brief 返回DAC后端记录的错误位。
+ */
 uint32_t platform_dac_backend_get_error(platform_dac_instance_t dac) {
   DAC_HandleTypeDef *dac_h = platform_dac_to_hal(dac);
   return dac_h == NULL ? PLATFORM_DAC_ERROR_UNKNOWN
                    : platform_dac_map_error(HAL_DAC_GetError(dac_h));
 }
 
+/**
+ * @brief 把 HAL DAC 回调事件转发给已注册的项目回调。
+ */
 static void platform_dac_dispatch_hal_event(
   DAC_HandleTypeDef *dac_h,
   platform_dac_channel_t channel,
@@ -162,6 +201,9 @@ static void platform_dac_dispatch_hal_event(
   platform_dac_dispatch_event(dac, &event);
 }
 
+/**
+ * @brief 分发 DAC 通道 1 转换完成事件。
+ */
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -170,6 +212,9 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 分发 DAC 通道 1 半转换完成事件。
+ */
 void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -178,6 +223,9 @@ void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 记录并分发 DAC 通道 1 错误事件。
+ */
 void HAL_DAC_ErrorCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -186,6 +234,9 @@ void HAL_DAC_ErrorCallbackCh1(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 记录并分发 DAC 通道 1 DMA 欠载事件。
+ */
 void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -194,6 +245,9 @@ void HAL_DAC_DMAUnderrunCallbackCh1(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 分发 DAC 通道 2 转换完成事件。
+ */
 void HAL_DACEx_ConvCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -202,6 +256,9 @@ void HAL_DACEx_ConvCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 分发 DAC 通道 2 半转换完成事件。
+ */
 void HAL_DACEx_ConvHalfCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -210,6 +267,9 @@ void HAL_DACEx_ConvHalfCpltCallbackCh2(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 记录并分发 DAC 通道 2 错误事件。
+ */
 void HAL_DACEx_ErrorCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,
@@ -218,6 +278,9 @@ void HAL_DACEx_ErrorCallbackCh2(DAC_HandleTypeDef *dac_h) {
   );
 }
 
+/**
+ * @brief 记录并分发 DAC 通道 2 DMA 欠载事件。
+ */
 void HAL_DACEx_DMAUnderrunCallbackCh2(DAC_HandleTypeDef *dac_h) {
   platform_dac_dispatch_hal_event(
     dac_h,

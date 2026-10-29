@@ -46,12 +46,21 @@
 #  define SYS_DELAY_INLINE static inline
 #endif
 
+/**
+ * @brief 使能 DWT 周期计数器，供微秒延时使用。
+ * @note 应在调用 Sys_DelayUs 前执行。
+ */
 SYS_DELAY_INLINE void Sys_Delay_Init(void) {
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
   DWT->CYCCNT = 0;
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
+/**
+ * @brief 以 DWT 周期计数器忙等指定微秒数。
+ * @param us 延时微秒数。
+ * @note 阻塞忙等，只用于短延时；延时精度依赖 SystemCoreClock 配置。
+ */
 SYS_DELAY_INLINE void Sys_DelayUs(uint32_t us) {
   uint32_t startTick = DWT->CYCCNT;
   uint32_t delayTicks = us * (SystemCoreClock / 1000000);
@@ -60,6 +69,11 @@ SYS_DELAY_INLINE void Sys_DelayUs(uint32_t us) {
   }
 }
 
+/**
+ * @brief 延时指定毫秒数。
+ * @param ms 延时毫秒数。
+ * @note USE_FREERTOS 构建使用 osDelay 让出 CPU；裸机构建使用忙等。
+ */
 SYS_DELAY_INLINE void Sys_DelayMs(uint32_t ms) {
 #ifdef USE_FREERTOS
   osDelay(ms);

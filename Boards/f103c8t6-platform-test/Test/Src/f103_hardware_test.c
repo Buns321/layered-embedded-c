@@ -82,6 +82,9 @@ static volatile bool s_adc_dma_complete;
 static bool s_boot_iwdg_reset;
 static bool s_boot_wwdg_reset;
 
+/**
+ * @brief 向测试报告缓冲区追加文本。
+ */
 static void f103_hardwaretest_append(
   f103_hardware_test_text_t *text,
   const char *value
@@ -98,6 +101,9 @@ static void f103_hardwaretest_append(
   text->data[text->length] = '\0';
 }
 
+/**
+ * @brief 向测试报告缓冲区追加无符号十进制数。
+ */
 static void f103_hardwaretest_appenduint(
   f103_hardware_test_text_t *text,
   uint32_t value
@@ -118,6 +124,9 @@ static void f103_hardwaretest_appenduint(
   }
 }
 
+/**
+ * @brief 输出带前缀的硬件测试结果。
+ */
 static void f103_hardwaretest_report(
   const char *name,
   f103_hardware_test_result_t result,
@@ -139,6 +148,9 @@ static void f103_hardwaretest_report(
   }
 }
 
+/**
+ * @brief 检查 GPIO 输出和回读一致性。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checkgpio(void) {
   bool passed = true;
 
@@ -185,6 +197,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checkgpio(void) {
   return passed ? F103_TEST_RESULT_PASS : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 探测指定 I2C 地址是否存在。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checki2caddress(
   uint16_t address
 ) {
@@ -198,6 +213,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checki2caddress(
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 采样并检查 ADC 读数范围。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checkadc(void) {
   s_adc_dma[0] = 0u;
   s_adc_dma[1] = 0u;
@@ -245,6 +263,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checkadc(void) {
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 检查编码器计数方向和增量。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checkencoder(void) {
   platform_status_t status = Platform_Encoder_Start(PLATFORM_ENCODER_TIM1);
   if (status != PLATFORM_STATUS_OK) {
@@ -277,6 +298,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checkencoder(void) {
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 依次输出 PWM 占空比以验证通道。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_exercisepwm(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel,
@@ -311,6 +335,9 @@ static f103_hardware_test_result_t f103_hardwaretest_exercisepwm(
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 检查 TIM2 通道输出。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checktim2(void) {
   const f103_hardware_test_result_t channel_1 =
     f103_hardwaretest_exercisepwm(
@@ -334,6 +361,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checktim2(void) {
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 检查 TIM3 通道输出。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checktim3(void) {
   return f103_hardwaretest_exercisepwm(
     PLATFORM_PWM_TIM3,
@@ -344,6 +374,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checktim3(void) {
   );
 }
 
+/**
+ * @brief 检查 TIM4 通道输出。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checktim4(void) {
   return f103_hardwaretest_exercisepwm(
     PLATFORM_PWM_TIM4,
@@ -354,6 +387,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checktim4(void) {
   );
 }
 
+/**
+ * @brief 检查 USART3 回环通信。
+ */
 static f103_hardware_test_result_t f103_hardwaretest_checkusart3(void) {
   static const uint8_t probe[] = {'A', 'T', '\r', '\n'};
   uint8_t response[32] = {0};
@@ -383,6 +419,9 @@ static f103_hardware_test_result_t f103_hardwaretest_checkusart3(void) {
            : F103_TEST_RESULT_FAIL;
 }
 
+/**
+ * @brief 通过测试 UART 发送文本。
+ */
 static void f103_hardwaretest_send(const char *text) {
   if (text == NULL || s_uart_tx_busy) {
     return;
@@ -406,6 +445,9 @@ static void f103_hardwaretest_send(const char *text) {
   }
 }
 
+/**
+ * @brief 重新挂接测试 UART 接收。
+ */
 static void f103_hardwaretest_armuartreceive(void) {
   s_uart_rearm_pending = false;
   if (
@@ -419,6 +461,9 @@ static void f103_hardwaretest_armuartreceive(void) {
   }
 }
 
+/**
+ * @brief 不区分大小写比较测试命令。
+ */
 static bool f103_hardwaretest_commandis(
   const char *command,
   const char *expected
@@ -426,6 +471,9 @@ static bool f103_hardwaretest_commandis(
   return strncmp(command, expected, strlen(expected)) == 0;
 }
 
+/**
+ * @brief 解析并执行硬件测试命令。
+ */
 static void f103_hardwaretest_handlecommand(const char *command) {
   if (f103_hardwaretest_commandis(command, "PING")) {
     f103_hardwaretest_send("PONG\r\n");
@@ -555,6 +603,9 @@ static void f103_hardwaretest_handlecommand(const char *command) {
   }
 }
 
+/**
+ * @brief 处理测试 UART 收发与错误回调。
+ */
 static void f103_hardwaretest_uartcallback(
   platform_uart_instance_t uart,
   const platform_uart_event_t *event,
@@ -603,6 +654,9 @@ static void f103_hardwaretest_uartcallback(
   }
 }
 
+/**
+ * @brief 记录 ADC 转换完成结果。
+ */
 static void f103_hardwaretest_adccallback(
   platform_adc_instance_t adc,
   const platform_adc_event_t *event,
@@ -618,6 +672,10 @@ static void f103_hardwaretest_adccallback(
   }
 }
 
+/**
+ * @brief 初始化 USART2 自检命令接收并发送上电信息。
+ * @note 必须在所有 CubeMX 外设初始化完成、RTOS 调度器启动后调用。
+ */
 void F103_HardwareTest_Init(void) {
   s_boot_iwdg_reset = Platform_IWDG_WasReset(PLATFORM_IWDG_1);
   s_boot_wwdg_reset = Platform_WWDG_WasReset(PLATFORM_WWDG_1);
@@ -667,6 +725,11 @@ void F103_HardwareTest_Init(void) {
   f103_hardwaretest_send(boot_message);
 }
 
+/**
+ * @brief 执行全部非复位类板载硬件测试。
+ * @return 本次测试的通过、失败和跳过计数。
+ * @note IWDG、WWDG 复位测试只能通过 USART2 命令触发。
+ */
 f103_hardware_test_summary_t F103_HardwareTest_RunAll(void) {
   f103_hardware_test_summary_t summary = {0u, 0u, 0u};
 
@@ -733,6 +796,10 @@ f103_hardware_test_summary_t F103_HardwareTest_RunAll(void) {
   return summary;
 }
 
+/**
+ * @brief 处理 USART2 自检命令。
+ * @note 必须在任务上下文周期调用。
+ */
 void F103_HardwareTest_Process(void) {
   if (s_uart_rx_dma_complete) {
     s_uart_rx_dma_complete = false;

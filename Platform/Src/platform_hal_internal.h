@@ -15,6 +15,11 @@
 #include <assert.h>
 #include <stdint.h>
 
+/**
+ * @brief 把 HAL 状态码转换为平台状态。
+ * @param hal_status HAL 状态码。
+ * @return 对应 platform_status_t；未知值触发 assert。
+ */
 static inline platform_status_t platform_from_hal_status(
   uint32_t hal_status
 ) {

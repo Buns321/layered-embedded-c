@@ -24,10 +24,19 @@ static uint64_t s_imu_task_stack[
   APP_IMU_TASK_STACK_SIZE / sizeof(uint64_t)
 ];
 
+/**
+ * @brief 计算两个无符号时间戳的绝对差。
+ */
 static uint32_t rtos_app_absolutejitter(uint32_t actual, uint32_t target) {
   return actual >= target ? actual - target : target - actual;
 }
 
+/**
+ * @brief 创建静态 ImuEkfTask。
+ * @retval true 任务创建成功。
+ * @retval false 静态内存或 CMSIS-RTOS2 属性非法。
+ * @pre osKernelInitialize() 已调用。
+ */
 bool RTOS_App_CreateTasks(void) {
   const osThreadAttr_t imu_attributes = {
     .name = "ImuEkfTask",
@@ -46,6 +55,10 @@ bool RTOS_App_CreateTasks(void) {
   ) != NULL;
 }
 
+/**
+ * @brief 100 Hz IMU、标定和 EKF 任务入口。
+ * @param argument CMSIS-RTOS2 参数，当前未使用。
+ */
 void RTOS_App_ImuTask(void *argument) {
   (void)argument;
   SYS_LOG_INFO("RTOS", "ImuEkfTask started");
@@ -85,6 +98,11 @@ void RTOS_App_ImuTask(void *argument) {
   }
 }
 
+/**
+ * @brief 50 Hz JustFloat 与参数命令任务入口。
+ * @param argument CMSIS-RTOS2 参数，当前未使用。
+ * @note 当前由 CubeMX 生成的 defaultTask 槽位调用。
+ */
 void RTOS_App_TelemetryTask(void *argument) {
   (void)argument;
   SYS_LOG_INFO("RTOS", "VofaTask started");

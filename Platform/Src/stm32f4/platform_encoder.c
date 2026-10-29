@@ -9,6 +9,9 @@
 #include "stm32f4xx_hal.h"
 #include "tim.h"
 
+/**
+ * @brief 把平台编码器实例编号转换为 HAL 句柄。
+ */
 static TIM_HandleTypeDef *platform_encoder_to_hal(
   platform_encoder_instance_t encoder
 ) {
@@ -32,12 +35,18 @@ static TIM_HandleTypeDef *platform_encoder_to_hal(
   }
 }
 
+/**
+ * @brief 校验编码器实例是否已由板级配置启用。
+ */
 bool platform_encoder_backend_is_valid(
   platform_encoder_instance_t encoder
 ) {
   return platform_encoder_to_hal(encoder) != NULL;
 }
 
+/**
+ * @brief 启动编码器后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_encoder_backend_start(
   platform_encoder_instance_t encoder
 ) {
@@ -48,6 +57,9 @@ platform_status_t platform_encoder_backend_start(
                      );
 }
 
+/**
+ * @brief 停止编码器后端并清理活动状态。
+ */
 platform_status_t platform_encoder_backend_stop(
   platform_encoder_instance_t encoder
 ) {
@@ -58,6 +70,9 @@ platform_status_t platform_encoder_backend_stop(
                      );
 }
 
+/**
+ * @brief 读取编码器硬件计数器当前值。
+ */
 platform_status_t platform_encoder_backend_get_counter(
   platform_encoder_instance_t encoder,
   uint32_t *counter
@@ -70,6 +85,9 @@ platform_status_t platform_encoder_backend_get_counter(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 写入编码器硬件计数器。
+ */
 platform_status_t platform_encoder_backend_set_counter(
   platform_encoder_instance_t encoder,
   uint32_t counter
@@ -82,6 +100,9 @@ platform_status_t platform_encoder_backend_set_counter(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回编码器计数器位宽。
+ */
 platform_status_t platform_encoder_backend_get_counter_bits(
   platform_encoder_instance_t encoder,
   uint8_t *counter_bits

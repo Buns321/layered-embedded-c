@@ -22,6 +22,9 @@ static const uint32_t s_iwdg_divisors[] = {
 
 static bool s_iwdg_started;
 
+/**
+ * @brief 计算 IWDG 预分频与重载值。
+ */
 static bool platform_iwdg_calculate(
   uint32_t timeout_ms,
   uint32_t *divisor,
@@ -55,6 +58,17 @@ static bool platform_iwdg_calculate(
   return false;
 }
 
+/**
+ * @brief 启动独立看门狗。
+ * @param iwdg IWDG 实例。
+ * @param timeout_ms 请求的超时时间（ms），范围 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
+ * @retval PLATFORM_STATUS_OK 启动成功。
+ * @retval PLATFORM_STATUS_BUSY IWDG 已启动。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、超时范围或计算参数非法。
+ * @note 这是运行期策略操作，会立即启动看门狗。
+ * @note 调用后无法停止 IWDG。
+ * @note 超时时间会向上取整，并受 LSI 频率容差影响。
+ */
 platform_status_t Platform_IWDG_Start(
   platform_iwdg_instance_t iwdg,
   uint32_t timeout_ms
@@ -80,6 +94,12 @@ platform_status_t Platform_IWDG_Start(
   return status;
 }
 
+/**
+ * @brief 刷新已启动的 IWDG。
+ * @retval PLATFORM_STATUS_OK 刷新成功。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例非法。
+ * @retval PLATFORM_STATUS_ERROR IWDG 尚未启动或 HAL 刷新失败。
+ */
 platform_status_t Platform_IWDG_Refresh(
   platform_iwdg_instance_t iwdg
 ) {
@@ -92,6 +112,12 @@ platform_status_t Platform_IWDG_Refresh(
   return platform_iwdg_backend_refresh();
 }
 
+/**
+ * @brief 读取并清除 IWDG 复位标志。
+ * @return 最近一次复位由 IWDG 触发时返回 true。
+ * @note 非法实例返回 false，不访问硬件。
+ * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
+ */
 bool Platform_IWDG_WasReset(platform_iwdg_instance_t iwdg) {
   if (iwdg != PLATFORM_IWDG_1) {
     return false;

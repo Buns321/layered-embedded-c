@@ -10,11 +10,17 @@
 
 static volatile uint32_t crc_error;
 
+/**
+ * @brief 构造 CRC 非法参数状态。
+ */
 static platform_status_t platform_crc_invalid(void) {
   platform_error_record(&crc_error, PLATFORM_ERROR_INVALID_ARGUMENT);
   return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
+/**
+ * @brief 把 HAL CRC 结果转换为公共状态并记录错误。
+ */
 static platform_status_t platform_crc_finish(
   platform_status_t status
 ) {
@@ -24,6 +30,11 @@ static platform_status_t platform_crc_finish(
   return status;
 }
 
+/**
+ * @brief 复位 CRC 数据寄存器。
+ * @param crc CRC 实例。
+ * @pre MX_CRC_Init() 已成功完成。
+ */
 platform_status_t Platform_CRC_Reset(platform_crc_instance_t crc) {
   platform_error_reset(&crc_error);
   if (!platform_crc_backend_is_valid(crc)) {
@@ -32,6 +43,14 @@ platform_status_t Platform_CRC_Reset(platform_crc_instance_t crc) {
   return platform_crc_finish(platform_crc_backend_reset(crc));
 }
 
+/**
+ * @brief 在不复位 CRC 单元的情况下累积计算 32 位字。
+ * @param crc CRC 实例。
+ * @param words 输入字数组。
+ * @param word_count 32 位字数量，必须大于 0。
+ * @param result 累积计算后的 CRC 数据寄存器值输出。
+ * @note STM32F4 的 CRC 单元按 32 位字处理数据。
+ */
 platform_status_t Platform_CRC_AccumulateWords(
   platform_crc_instance_t crc,
   const uint32_t *words,
@@ -52,6 +71,13 @@ platform_status_t Platform_CRC_AccumulateWords(
   );
 }
 
+/**
+ * @brief 复位后计算 32 位字数组的 CRC。
+ * @param crc CRC 实例。
+ * @param words 输入字数组。
+ * @param word_count 32 位字数量，必须大于 0。
+ * @param result 计算得到的 CRC 数据寄存器值输出。
+ */
 platform_status_t Platform_CRC_CalculateWords(
   platform_crc_instance_t crc,
   const uint32_t *words,
@@ -72,6 +98,7 @@ platform_status_t Platform_CRC_CalculateWords(
   );
 }
 
+/** @brief 读取最近一次 CRC 操作错误快照。 */
 uint32_t Platform_CRC_GetLastError(platform_crc_instance_t crc) {
   return platform_crc_backend_is_valid(crc)
            ? crc_error

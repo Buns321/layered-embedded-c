@@ -11,11 +11,17 @@
 
 static uint32_t flash_backend_error;
 
+/**
+ * @brief 返回芯片 Flash 容量。
+ */
 static uint32_t platform_flash_size(void) {
   return (uint32_t)(*(volatile const uint16_t *)FLASH_SIZE_DATA_REGISTER) *
          1024UL;
 }
 
+/**
+ * @brief 校验 Flash 地址范围与对齐是否合法。
+ */
 bool platform_flash_backend_range_valid(uint32_t address, uint32_t size) {
   const uint32_t flash_size = platform_flash_size();
   if (
@@ -30,12 +36,18 @@ bool platform_flash_backend_range_valid(uint32_t address, uint32_t size) {
   return offset < flash_size && size <= flash_size - offset;
 }
 
+/**
+ * @brief 返回地址所在 Flash 擦除单元大小。
+ */
 uint32_t platform_flash_backend_erase_unit_size(uint32_t address) {
   return platform_flash_backend_range_valid(address, 1U)
            ? FLASH_PAGE_SIZE
            : 0U;
 }
 
+/**
+ * @brief 读取Flash数据。
+ */
 platform_status_t platform_flash_backend_read(
   uint32_t address,
   void *data,
@@ -45,6 +57,9 @@ platform_status_t platform_flash_backend_read(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 把 HAL Flash 错误位映射为平台错误码。
+ */
 static uint32_t platform_flash_map_hal_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_FLASH_ERROR_NONE;
 
@@ -60,6 +75,9 @@ static uint32_t platform_flash_map_hal_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 保存 Flash 后端失败快照。
+ */
 static void platform_flash_capture_error(uint32_t operation_error) {
   uint32_t error = platform_flash_map_hal_error(HAL_FLASH_GetError());
   if (error == PLATFORM_FLASH_ERROR_NONE) {
@@ -68,6 +86,9 @@ static void platform_flash_capture_error(uint32_t operation_error) {
   flash_backend_error = operation_error | error;
 }
 
+/**
+ * @brief 写入Flash数据。
+ */
 platform_status_t platform_flash_backend_write(
   uint32_t address,
   const void *data,
@@ -99,6 +120,9 @@ platform_status_t platform_flash_backend_write(
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 擦除 Flash 指定地址范围。
+ */
 platform_status_t platform_flash_backend_erase(
   uint32_t address,
   uint32_t size
@@ -128,6 +152,9 @@ platform_status_t platform_flash_backend_erase(
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 返回Flash后端记录的错误位。
+ */
 uint32_t platform_flash_backend_get_error(void) {
   return flash_backend_error;
 }

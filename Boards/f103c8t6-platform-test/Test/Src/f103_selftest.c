@@ -14,6 +14,9 @@
 #define F103_TEST_CRC_ZERO_WORD     0x00000000u
 #define F103_TEST_CRC_ZERO_RESULT   0xC704DD7Bu
 
+/**
+ * @brief 输出自检结果。
+ */
 static void f103_selftest_report(
   const char *name,
   bool passed,
@@ -29,6 +32,9 @@ static void f103_selftest_report(
   }
 }
 
+/**
+ * @brief 检查系统时钟配置。
+ */
 static bool f103_selftest_checkclock(void) {
   bool passed = SystemCoreClock == F103_TEST_EXPECTED_CLOCK_HZ;
 
@@ -43,6 +49,9 @@ static bool f103_selftest_checkclock(void) {
   return passed;
 }
 
+/**
+ * @brief 检查日志后端可用性。
+ */
 static bool f103_selftest_checklog(void) {
   bool is_ready = Sys_Log_IsReady();
   uint32_t drop_bytes = Sys_Log_GetDropBytes();
@@ -64,6 +73,9 @@ static bool f103_selftest_checklog(void) {
   return passed;
 }
 
+/**
+ * @brief 检查 CRC 计算是否符合预期。
+ */
 static bool f103_selftest_checkcrc(void) {
   const uint32_t words[] = {F103_TEST_CRC_ZERO_WORD};
   uint32_t result = 0u;
@@ -89,6 +101,14 @@ static bool f103_selftest_checkcrc(void) {
   return passed;
 }
 
+/**
+ * @brief 运行一次非破坏性板载自检。
+ * @param scheduler_tick_ok 调用方测量得到的调度器 tick 健康状态。
+ * @param scheduler_tick_elapsed_ms 调用方测量得到的调度器 tick 耗时（ms）。
+ * @return 全部测试通过时返回 true。
+ * @note 必须在 RTOS 调度器启动后、任务上下文中调用。
+ * @note 测试结果通过 System 日志输出，不操作继电器、电机、舵机、蜂鸣器或灯。
+ */
 bool F103_SelfTest_RunAll(
   bool scheduler_tick_ok,
   uint32_t scheduler_tick_elapsed_ms

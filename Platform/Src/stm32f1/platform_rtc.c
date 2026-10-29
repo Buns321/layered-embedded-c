@@ -14,6 +14,9 @@
 
 static volatile bool rtc_alarm_enabled;
 
+/**
+ * @brief 等待 RTC 寄存器进入可写状态。
+ */
 static bool platform_rtc_wait_for_ready(void) {
   for (uint32_t spin = 0U; spin < PLATFORM_RTC_RTOFF_SPIN_LIMIT; ++spin) {
     if ((hrtc.Instance->CRL & RTC_CRL_RTOFF) != 0U) {
@@ -23,6 +26,9 @@ static bool platform_rtc_wait_for_ready(void) {
   return false;
 }
 
+/**
+ * @brief 重新挂接每日 RTC 闹钟。
+ */
 static bool platform_rtc_rearm_daily_alarm(void) {
   const uint32_t current_alarm =
     ((uint32_t)hrtc.Instance->ALRH << 16U) |
@@ -42,10 +48,16 @@ static bool platform_rtc_rearm_daily_alarm(void) {
   return platform_rtc_wait_for_ready();
 }
 
+/**
+ * @brief 报告 RTC 后端是否支持唤醒定时器。
+ */
 bool platform_rtc_backend_has_wakeup_timer(void) {
   return false;
 }
 
+/**
+ * @brief 写入二进制 RTC 时间。
+ */
 platform_status_t platform_rtc_backend_set_time(
   const platform_rtc_date_time_t *date_time
 ) {
@@ -60,6 +72,9 @@ platform_status_t platform_rtc_backend_set_time(
   );
 }
 
+/**
+ * @brief 写入二进制 RTC 日期。
+ */
 platform_status_t platform_rtc_backend_set_date(
   const platform_rtc_date_time_t *date_time
 ) {
@@ -75,6 +90,9 @@ platform_status_t platform_rtc_backend_set_date(
   );
 }
 
+/**
+ * @brief 读取二进制 RTC 时间。
+ */
 platform_status_t platform_rtc_backend_get_time(
   platform_rtc_date_time_t *date_time
 ) {
@@ -90,6 +108,9 @@ platform_status_t platform_rtc_backend_get_time(
   return status;
 }
 
+/**
+ * @brief 读取二进制 RTC 日期。
+ */
 platform_status_t platform_rtc_backend_get_date(
   platform_rtc_date_time_t *date_time
 ) {
@@ -106,6 +127,9 @@ platform_status_t platform_rtc_backend_get_date(
   return status;
 }
 
+/**
+ * @brief 写入 RTC 每日闹钟时间。
+ */
 platform_status_t platform_rtc_backend_set_alarm(
   const platform_rtc_alarm_config_t *alarm
 ) {
@@ -125,6 +149,9 @@ platform_status_t platform_rtc_backend_set_alarm(
   return status;
 }
 
+/**
+ * @brief 关闭 RTC 闹钟。
+ */
 platform_status_t platform_rtc_backend_disable_alarm(void) {
   platform_status_t status = platform_from_hal_status(
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A)
@@ -135,6 +162,9 @@ platform_status_t platform_rtc_backend_disable_alarm(void) {
   return status;
 }
 
+/**
+ * @brief 启动 RTC 唤醒定时器。
+ */
 platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
   platform_rtc_wakeup_clock_t clock
@@ -144,10 +174,16 @@ platform_status_t platform_rtc_backend_start_wakeup(
   return PLATFORM_STATUS_UNSUPPORTED;
 }
 
+/**
+ * @brief 停止 RTC 唤醒定时器。
+ */
 platform_status_t platform_rtc_backend_stop_wakeup(void) {
   return PLATFORM_STATUS_UNSUPPORTED;
 }
 
+/**
+ * @brief 转发 RTC 闹钟 A 事件。
+ */
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *rtc_h) {
   assert(rtc_h == &hrtc);
   if (rtc_alarm_enabled && !platform_rtc_rearm_daily_alarm()) {

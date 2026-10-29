@@ -14,6 +14,7 @@
 #include "system_math.h"
 #include <assert.h>
 
+/** @brief 初始化电机抽象层并注入控制律与编码器。 */
 void Dev_Motor_Base_Init(
   motor_base_t *motor_h,
   const char *name,
@@ -53,26 +54,31 @@ void Dev_Motor_Base_Init(
   Dev_Motor_Base_SetTargetSpeed(motor_h, target_speed);
 }
 
+/** @brief 读取当前运行状态。 */
 dev_motor_state_t Dev_Motor_Base_ReadStatus(motor_base_t *motor_h) {
   assert(motor_h);
   return motor_h->state;
 }
 
+/** @brief 读取目标速度（m/s）。 */
 float Dev_Motor_Base_ReadTargetSpeed(motor_base_t *motor_h) {
   assert(motor_h);
   return motor_h->target_speed;
 }
 
+/** @brief 读取最近一次计算出的当前速度（m/s）。 */
 float Dev_Motor_Base_ReadCurrentSpeed(motor_base_t *motor_h) {
   assert(motor_h);
   return motor_h->current_speed;
 }
 
+/** @brief 读取最近一次控制律状态。 */
 controller_status_t Dev_Motor_Base_ReadControllerStatus(motor_base_t *motor_h) {
   assert(motor_h);
   return motor_h->controller_status;
 }
 
+/** @brief 设置目标速度（m/s）；只保存目标，不产生输出。 */
 void Dev_Motor_Base_SetTargetSpeed(motor_base_t *motor_h, float target_speed) {
   assert(motor_h && SYS_ISFINITE(target_speed));
 
@@ -83,6 +89,7 @@ void Dev_Motor_Base_SetTargetSpeed(motor_base_t *motor_h, float target_speed) {
   motor_h->target_speed = target_speed;
 }
 
+/** @brief 使能电机；内部会先执行 Reset。 */
 void Dev_Motor_Base_Enable(motor_base_t *motor_h) {
   assert(
     motor_h              &&
@@ -96,6 +103,7 @@ void Dev_Motor_Base_Enable(motor_base_t *motor_h) {
 }
 
 
+/** @brief 禁用电机并清除目标。 */
 void Dev_Motor_Base_Disable(motor_base_t *motor_h) {
   assert(
     motor_h                 &&
@@ -113,6 +121,10 @@ void Dev_Motor_Base_Disable(motor_base_t *motor_h) {
   motor_h->controller_status = CONTROLLER_STATUS_OK;
 }
 
+/**
+ * @brief 使用具体驱动的制动能力，并保持制动状态。
+ * @note 制动后 Update 不再输出，必须重新 Enable 才能恢复闭环控制。
+ */
 void Dev_Motor_Base_Brake(motor_base_t *motor_h) {
   assert(
     motor_h             &&
@@ -134,6 +146,11 @@ void Dev_Motor_Base_Brake(motor_base_t *motor_h) {
   motor_h->state            = DEV_MOTOR_BRAKE;
 }
 
+/**
+ * @brief 运行一次闭环更新。
+ * @note 每个控制周期调用一次；内部读取编码器 delta、运行控制律并下发占空比。
+ * @warning 非 ENABLE 状态直接返回，不读取编码器。
+ */
 void Dev_Motor_Base_Update(motor_base_t *motor_h) {
   assert(
     motor_h                 &&
@@ -189,6 +206,10 @@ void Dev_Motor_Base_Update(motor_base_t *motor_h) {
   motor_h->ops->set_power(motor_h, clamped_power);
 }
 
+/**
+ * @brief 复位控制律并重新对齐编码器基线。
+ * @note 不会改变目标速度。
+ */
 void Dev_Motor_Base_Reset(motor_base_t *motor_h) {
   assert(
     motor_h                 &&

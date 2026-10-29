@@ -14,6 +14,9 @@
 #include <math.h>
 #include <stddef.h>
 
+/**
+ * @brief 校验静止检测阈值是否满足范围与次序约束。
+ */
 static bool app_calibration_stillthresholdsvalid(
   const app_calibration_thresholds_t *thresholds
 ) {
@@ -29,6 +32,9 @@ static bool app_calibration_stillthresholdsvalid(
     thresholds->still_gyro_max_dps >= 0.0f;
 }
 
+/**
+ * @brief 校验安装面检测阈值是否满足范围与次序约束。
+ */
 static bool app_calibration_facethresholdsvalid(
   const app_calibration_thresholds_t *thresholds
 ) {
@@ -43,6 +49,13 @@ static bool app_calibration_facethresholdsvalid(
       thresholds->face_dominant_min_mps2;
 }
 
+/**
+ * @brief 判断原始六轴样本是否满足静止门限。
+ * @param accel_mps2 三轴加速度（m/s²）。
+ * @param gyro_dps 三轴角速度（deg/s）。
+ * @param thresholds 门限。
+ * @return 门限有效、所有输入有限且满足门限时返回 true。
+ */
 bool App_Calibration_IsStill(
   const float accel_mps2[3],
   const float gyro_dps[3],
@@ -86,6 +99,14 @@ bool App_Calibration_IsStill(
   return true;
 }
 
+/**
+ * @brief 从加速度方向识别唯一面。
+ * @param accel_mps2 三轴加速度（m/s²）。
+ * @param thresholds 主轴和非主轴门限。
+ * @param face 输出六面位掩码。
+ * @retval true 识别成功；门限要求主轴门限大于非主轴门限。
+ * @retval false 门限无效、输入非有限、倾斜过大或没有主轴。
+ */
 bool App_Calibration_DetectFace(
   const float accel_mps2[3],
   const app_calibration_thresholds_t *thresholds,
@@ -135,6 +156,20 @@ bool App_Calibration_DetectFace(
   return true;
 }
 
+/**
+ * @brief 由正负两面平均加速度计算单轴零偏和比例系数。
+ * @param positive_face_mps2 正方向朝上时三轴平均加速度。
+ * @param negative_face_mps2 负方向朝上时三轴平均加速度。
+ * @param axis 轴下标 0..2。
+ * @param gravity_mps2 标准重力。
+ * @param min_span_mps2 正负样本最小差值。
+ * @param scale_min 比例系数下限。
+ * @param scale_max 比例系数上限。
+ * @param offset_mps2 输出零偏。
+ * @param scale 输出比例系数。
+ * @retval true 公式结果有效。
+ * @retval false 参数或正负样本无效。
+ */
 bool App_Calibration_ComputeAccelAxis(
   const float positive_face_mps2[3],
   const float negative_face_mps2[3],

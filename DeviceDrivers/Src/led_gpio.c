@@ -11,6 +11,9 @@
 #include "led_gpio.h"
 #include <assert.h>
 
+/**
+ * @brief 按有效电平打开 GPIO LED。
+ */
 static void dev_led_gpio_turnon(led_base_t *led_h) {
   assert(led_h);
   led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
@@ -25,6 +28,9 @@ static void dev_led_gpio_turnon(led_base_t *led_h) {
   }
 }
 
+/**
+ * @brief 按有效电平关闭 GPIO LED。
+ */
 static void dev_led_gpio_turnoff(led_base_t *led_h) {
   assert(led_h);
   led_gpio_t *led_gpio_h = (led_gpio_t *)led_h;
@@ -39,6 +45,9 @@ static void dev_led_gpio_turnoff(led_base_t *led_h) {
   }
 }
 
+/**
+ * @brief 将非零亮度映射为开灯，零亮度映射为关灯。
+ */
 static void dev_led_gpio_setbrightness(led_base_t *led_h, uint16_t brightness) {
   // 空函数用于调用参数，防止编译(编译前期的语法/语义分析阶段)产生 unused parameter 警告
   // 由于优化器作用与编译后期，因此空语句被优化不影响防止产生 unused parameter 警告的作用
@@ -52,6 +61,15 @@ static const led_ops_t led_ops_gpio = {
   .set_brightness = dev_led_gpio_setbrightness,
 };
 
+/**
+ * @brief 初始化 GPIO LED。
+ * @param led_h 对象。
+ * @param name 名称。
+ * @param port 端口。
+ * @param pin 引脚掩码。
+ * @param active_level 点亮电平。
+ * @note 初始化会显式写入 inactive level。
+ */
 void Dev_LED_GPIO_Init(led_gpio_t *led_h, const char *name, platform_gpio_port_t port, uint16_t pin, platform_gpio_pin_state_t active_level) {
   assert(led_h && name);
   Dev_LED_Base_Init(&led_h->led_base, name, &led_ops_gpio);

@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 
+/**
+ * @brief 把 EXTI 引脚事件分发给已注册回调。
+ */
 void platform_exti_dispatch_event(uint16_t GPIO_Pin);
 
 #endif //LAYERED_EMBEDDED_C_PLATFORM_EXTI_BACKEND_H

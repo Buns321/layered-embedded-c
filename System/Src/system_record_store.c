@@ -45,6 +45,9 @@ _Static_assert(
   "record store header must be word aligned"
 );
 
+/**
+ * @brief 按字节更新记录 CRC32 状态。
+ */
 static uint32_t sys_recordstore_crc32update(
   uint32_t crc,
   const void *data,
@@ -64,6 +67,9 @@ static uint32_t sys_recordstore_crc32update(
   return crc;
 }
 
+/**
+ * @brief 计算记录头与载荷的 CRC。
+ */
 static uint32_t sys_recordstore_recordcrc(
   const system_record_store_header_t *header,
   const uint8_t *payload
@@ -78,6 +84,9 @@ static uint32_t sys_recordstore_recordcrc(
   return ~crc;
 }
 
+/**
+ * @brief 计算槽位在 Flash 中的地址。
+ */
 static uint32_t sys_recordstore_slotaddress(
   const system_record_store_t *store_h,
   uint8_t bank,
@@ -87,6 +96,9 @@ static uint32_t sys_recordstore_slotaddress(
     ((uint32_t)slot * SYSTEM_RECORD_STORE_SLOT_SIZE);
 }
 
+/**
+ * @brief 判断记录槽头是否为空。
+ */
 static bool sys_recordstore_headerisempty(
   const system_record_store_header_t *header
 ) {
@@ -95,6 +107,9 @@ static bool sys_recordstore_headerisempty(
     header->sequence == SYSTEM_RECORD_STORE_EMPTY_MARKER;
 }
 
+/**
+ * @brief 判断记录槽头是否有效。
+ */
 static bool sys_recordstore_headerisvalid(
   const system_record_store_t *store_h,
   const system_record_store_header_t *header,
@@ -113,6 +128,9 @@ static bool sys_recordstore_headerisvalid(
   return header_crc == header->header_crc;
 }
 
+/**
+ * @brief 扫描两页记录槽并找到最新有效记录。
+ */
 static system_record_store_status_t sys_recordstore_scan(
   const system_record_store_t *store_h,
   system_record_store_location_t *location
@@ -164,6 +182,9 @@ static system_record_store_status_t sys_recordstore_scan(
     : SYSTEM_RECORD_STORE_EMPTY;
 }
 
+/**
+ * @brief 擦除记录存储页。
+ */
 static system_record_store_status_t sys_recordstore_erasebank(
   system_record_store_t *store_h,
   uint8_t bank
@@ -180,6 +201,9 @@ static system_record_store_status_t sys_recordstore_erasebank(
   return SYSTEM_RECORD_STORE_OK;
 }
 
+/**
+ * @brief 把损坏槽位标记为跳过。
+ */
 static void sys_recordstore_skipfailedslot(system_record_store_t *store_h) {
   assert(store_h);
 
@@ -188,6 +212,17 @@ static void sys_recordstore_skipfailedslot(system_record_store_t *store_h) {
   }
 }
 
+/**
+ * @brief 初始化双页记录存储并扫描最新有效记录。
+ * @param store_h 对象。
+ * @param flash 内部 Flash 实例。
+ * @param first_bank_address 第一页起始地址，必须按擦除单元对齐。
+ * @param page_size 单页大小，必须等于实际擦除单元且容纳至少一个记录。
+ * @param magic 应用记录 Magic，不能为全 1。
+ * @retval SYSTEM_RECORD_STORE_OK 初始化成功。
+ * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT 参数或 Flash 范围非法。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR 扫描或初始化擦除失败。
+ */
 system_record_store_status_t Sys_RecordStore_Init(
   system_record_store_t *store_h,
   platform_flash_instance_t flash,
@@ -257,6 +292,19 @@ system_record_store_status_t Sys_RecordStore_Init(
   return SYSTEM_RECORD_STORE_OK;
 }
 
+/**
+ * @brief 读取序号最新的有效记录。
+ * @param store_h 已初始化对象。
+ * @param version 输出记录版本。
+ * @param payload 输出负载缓冲区。
+ * @param payload_capacity 缓冲区容量（byte）。
+ * @param payload_size 输出实际负载长度（byte）。
+ * @retval SYSTEM_RECORD_STORE_OK 找到并复制记录。
+ * @retval SYSTEM_RECORD_STORE_EMPTY 没有有效记录。
+ * @retval SYSTEM_RECORD_STORE_BUFFER_TOO_SMALL 缓冲区不足。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR Flash 读取失败。
+ * @note payload 指向调用方拥有的输出缓冲区；本函数只在返回前写入。
+ */
 system_record_store_status_t Sys_RecordStore_LoadLatest(
   const system_record_store_t *store_h,
   uint16_t *version,
@@ -316,6 +364,18 @@ system_record_store_status_t Sys_RecordStore_LoadLatest(
   return SYSTEM_RECORD_STORE_OK;
 }
 
+/**
+ * @brief 追加一条记录。
+ * @param store_h 已初始化对象。
+ * @param version 应用记录版本。
+ * @param payload 负载数据。
+ * @param payload_size 负载长度，范围 1..SYSTEM_RECORD_STORE_PAYLOAD_CAPACITY。
+ * @retval SYSTEM_RECORD_STORE_OK 写入和回读校验成功。
+ * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT 参数非法。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR Flash 擦除、写入或校验失败。
+ * @note 只允许单一写者从任务上下文调用。
+ * @note payload 在调用期间只读，不需要保持到函数返回之后。
+ */
 system_record_store_status_t Sys_RecordStore_Append(
   system_record_store_t *store_h,
   uint16_t version,

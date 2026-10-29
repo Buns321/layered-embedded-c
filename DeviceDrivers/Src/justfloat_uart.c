@@ -17,6 +17,9 @@ static const uint8_t s_justfloat_tail[JUSTFLOAT_FRAME_TAIL_SIZE] = {
   0x00u, 0x00u, 0x80u, 0x7Fu,
 };
 
+/**
+ * @brief 发送完成后释放忙状态并通知完成。
+ */
 static void dev_justfloat_uart_ontxcplt(
   uart_base_t *uart_h,
   void *context
@@ -29,6 +32,9 @@ static void dev_justfloat_uart_ontxcplt(
   justfloat_uart_h->busy = false;
 }
 
+/**
+ * @brief 以小端序写入 IEEE-754 浮点值。
+ */
 static void dev_justfloat_uart_storefloat(
   uint8_t *destination,
   float value
@@ -42,6 +48,9 @@ static void dev_justfloat_uart_storefloat(
   destination[3] = (uint8_t)((bits >> 24) & 0xFFu);
 }
 
+/**
+ * @brief 把遥测样本编码为 JustFloat 帧并发送。
+ */
 static dev_telemetry_status_t dev_justfloat_uart_send(
   telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
@@ -106,6 +115,9 @@ static dev_telemetry_status_t dev_justfloat_uart_send(
   return DEV_TELEMETRY_OK;
 }
 
+/**
+ * @brief 复制遥测发送状态快照。
+ */
 static void dev_justfloat_uart_getstatus(
   telemetry_base_t *telemetry_h,
   telemetry_status_t *status
@@ -126,6 +138,13 @@ static const telemetry_ops_t telemetry_ops_justfloat = {
   .get_status = dev_justfloat_uart_getstatus,
 };
 
+/**
+ * @brief 在 UART 上初始化 JustFloat。
+ * @param telemetry_h 对象。
+ * @param name 调试名称。
+ * @param uart_h 已完成初始化且 TX 支持 DMA 的 UART 后端。
+ * @param channel_count 每帧通道数，范围 1..capacity。
+ */
 void Dev_JustFloat_UART_Init(
   justfloat_uart_t *telemetry_h,
   const char *name,

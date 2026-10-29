@@ -16,10 +16,16 @@ static uint32_t s_backend_error;
 static uint32_t s_event_count;
 static platform_uart_event_t s_last_event;
 
+/**
+ * @brief 校验UART实例是否已由板级配置启用。
+ */
 bool platform_uart_backend_is_valid(platform_uart_instance_t uart) {
   return uart == PLATFORM_UART_1;
 }
 
+/**
+ * @brief 启动UART阻塞接收。
+ */
 platform_status_t platform_uart_backend_receive(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -33,6 +39,9 @@ platform_status_t platform_uart_backend_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动UART阻塞发送。
+ */
 platform_status_t platform_uart_backend_transmit(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -46,6 +55,9 @@ platform_status_t platform_uart_backend_transmit(
   return s_transmit_status;
 }
 
+/**
+ * @brief 启动UART中断接收。
+ */
 platform_status_t platform_uart_backend_receive_it(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -57,6 +69,9 @@ platform_status_t platform_uart_backend_receive_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动UART中断发送。
+ */
 platform_status_t platform_uart_backend_transmit_it(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -68,6 +83,9 @@ platform_status_t platform_uart_backend_transmit_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动UART DMA 接收。
+ */
 platform_status_t platform_uart_backend_receive_dma(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -79,6 +97,9 @@ platform_status_t platform_uart_backend_receive_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动UART DMA 发送。
+ */
 platform_status_t platform_uart_backend_transmit_dma(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -90,6 +111,9 @@ platform_status_t platform_uart_backend_transmit_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 中止UART接收并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort_receive(
   platform_uart_instance_t uart
 ) {
@@ -97,6 +121,9 @@ platform_status_t platform_uart_backend_abort_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 中止UART发送并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort_transmit(
   platform_uart_instance_t uart
 ) {
@@ -104,6 +131,9 @@ platform_status_t platform_uart_backend_abort_transmit(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 中止UART当前传输并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort(
   platform_uart_instance_t uart
 ) {
@@ -111,11 +141,17 @@ platform_status_t platform_uart_backend_abort(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回UART后端记录的错误位。
+ */
 uint32_t platform_uart_backend_get_error(platform_uart_instance_t uart) {
   (void)uart;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 UART 接收、发送或错误事件。
+ */
 static void uart_callback(
   platform_uart_instance_t uart,
   const platform_uart_event_t *event,
@@ -127,6 +163,9 @@ static void uart_callback(
   s_last_event = *event;
 }
 
+/**
+ * @brief 验证 UART 参数校验、收发和事件分发。
+ */
 static void test_uart_contract(void) {
   s_transmit_status = PLATFORM_STATUS_OK;
   s_backend_error = PLATFORM_UART_ERROR_NONE;
@@ -174,6 +213,9 @@ static void test_uart_contract(void) {
           PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_uart_contract();
   return 0;

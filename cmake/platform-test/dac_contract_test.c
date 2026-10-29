@@ -15,10 +15,16 @@ static uint32_t s_backend_error;
 static uint32_t s_event_count;
 static platform_dac_event_t s_last_event;
 
+/**
+ * @brief 校验DAC实例是否已由板级配置启用。
+ */
 bool platform_dac_backend_is_valid(platform_dac_instance_t dac) {
   return dac == PLATFORM_DAC_1;
 }
 
+/**
+ * @brief 写入 DAC 原始码值。
+ */
 platform_status_t platform_dac_backend_set_value(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel,
@@ -32,6 +38,9 @@ platform_status_t platform_dac_backend_set_value(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动DAC后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_dac_backend_start(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -41,6 +50,9 @@ platform_status_t platform_dac_backend_start(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止DAC后端并清理活动状态。
+ */
 platform_status_t platform_dac_backend_stop(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -50,6 +62,9 @@ platform_status_t platform_dac_backend_stop(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动DAC DMA 转换。
+ */
 platform_status_t platform_dac_backend_start_dma(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel,
@@ -65,6 +80,9 @@ platform_status_t platform_dac_backend_start_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止DAC DMA 转换。
+ */
 platform_status_t platform_dac_backend_stop_dma(
   platform_dac_instance_t dac,
   platform_dac_channel_t channel
@@ -74,11 +92,17 @@ platform_status_t platform_dac_backend_stop_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回DAC后端记录的错误位。
+ */
 uint32_t platform_dac_backend_get_error(platform_dac_instance_t dac) {
   (void)dac;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 DAC 转换完成事件。
+ */
 static void dac_callback(
   platform_dac_instance_t dac,
   const platform_dac_event_t *event,
@@ -91,6 +115,9 @@ static void dac_callback(
   s_last_event = *event;
 }
 
+/**
+ * @brief 验证 DAC 参数校验与事件分发。
+ */
 static void test_dac_contract(void) {
   s_backend_error = PLATFORM_DAC_ERROR_NONE;
   s_event_count = 0U;
@@ -148,6 +175,9 @@ static void test_dac_contract(void) {
   assert(s_last_event.error == PLATFORM_DAC_ERROR_DMA_UNDERRUN);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_dac_contract();
   return 0;

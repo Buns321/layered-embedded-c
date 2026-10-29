@@ -17,6 +17,13 @@ static uint32_t s_timeout_ms;
 static uint32_t s_last_checkin[SYS_WATCHDOG_TASK_COUNT];
 static uint32_t s_checkin_mask;
 
+/**
+ * @brief 启动 IWDG。
+ * @param timeout_ms 目标超时（ms），内部夹紧到 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
+ * @note IWDG 一旦启动不能停止；必须在监控任务准备好之后再调用。
+ * @note 应在任务启动前调用，避免与 Sys_Watchdog_CheckIn 并发。
+ * @note 实际超时受 LSI 频率偏差影响。
+ */
 void Sys_Watchdog_Init(uint32_t timeout_ms) {
   assert(timeout_ms > 0u);
 
@@ -43,6 +50,12 @@ void Sys_Watchdog_Init(uint32_t timeout_ms) {
   assert(status == PLATFORM_STATUS_OK);
 }
 
+/**
+ * @brief 任务报到。
+ * @param task 任务标识。
+ * @param now_ms 当前毫秒时间戳。
+ * @note 只能在任务上下文调用，不能在 ISR 中调用。
+ */
 void Sys_Watchdog_CheckIn(sys_watchdog_task_t task, uint32_t now_ms) {
   assert((uint32_t)task < (uint32_t)SYS_WATCHDOG_TASK_COUNT);
 
@@ -54,6 +67,13 @@ void Sys_Watchdog_CheckIn(sys_watchdog_task_t task, uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 检查所有任务是否新鲜；全部新鲜时喂狗。
+ * @param now_ms 当前毫秒时间戳。
+ * @return true 已喂狗；false 存在超时任务，未喂狗。
+ * @note 只能在任务上下文调用，不能在 ISR 中调用。
+ * @note 由监控任务调用；不要在 ISR 或其他驱动里直接喂狗。
+ */
 bool Sys_Watchdog_Service(uint32_t now_ms) {
   const uint32_t all_tasks_mask =
     ((uint32_t)1u << (uint32_t)SYS_WATCHDOG_TASK_COUNT) - 1u;
@@ -81,6 +101,10 @@ bool Sys_Watchdog_Service(uint32_t now_ms) {
   return Platform_IWDG_Refresh(PLATFORM_IWDG_1) == PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 读取并清除 IWDG 复位标志。
+ * @return true 本次复位由 IWDG 触发。
+ */
 bool Sys_Watchdog_WasReset(void) {
   return Platform_IWDG_WasReset(PLATFORM_IWDG_1);
 }

@@ -13,6 +13,9 @@
 #include <assert.h>
 #include <math.h>
 
+/**
+ * @brief 把车体速度分解为四个 Omni 轮速。
+ */
 static void policy_omni_kinematics_solve(
   policy_omni_base_t *policy_h,
   float v,
@@ -50,6 +53,15 @@ static const policy_omni_ops_t policy_omni_ops = {
   .solve = policy_omni_kinematics_solve,
 };
 
+/**
+ * @brief 初始化 Omni 运动学策略。
+ * @param policy_h 对象。
+ * @param name 名称。
+ * @param wheel_distance 轮子到车体中心距离（m）。
+ * @param wheel_theta 四轮安装角（rad）。
+ * @param wheel_sign 四轮方向符号。
+ * @note 解算使用当前 yaw；底盘应每个控制周期读取 IMU 后调用。
+ */
 void Policy_Omni_Kinematics_Init(
   policy_omni_kinematics_t *policy_h,
   const char *name,

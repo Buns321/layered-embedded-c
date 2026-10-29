@@ -12,6 +12,9 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 重置全部分发通道。
+ */
 static void filter_distributor_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
@@ -27,6 +30,9 @@ static void filter_distributor_reset(filter_base_t *filter_h) {
   }
 }
 
+/**
+ * @brief 按通道分发输入并汇总输出。
+ */
 static void filter_distributor_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output
 ) {
   assert(filter_h && input && output);
@@ -96,6 +102,14 @@ static const filter_ops_t filter_ops_distributor = {
   .reset  = filter_distributor_reset,
 };
 
+/**
+ * @brief 初始化分发器。
+ * @param filter_h 对象。
+ * @param name 名称。
+ * @param routes 静态路由表。
+ * @param route_count 路由数，范围 1..FILTER_DISTRIBUTOR_CAPACITY。
+ * @note Init 会校验重复滤波器、重复通道、非法索引和跨路由输出冲突。
+ */
 void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count
 ) {
   assert(

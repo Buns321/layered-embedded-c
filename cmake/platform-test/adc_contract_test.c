@@ -17,25 +17,40 @@ static uint32_t s_value;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
 
+/**
+ * @brief 校验ADC实例是否已由板级配置启用。
+ */
 bool platform_adc_backend_is_valid(platform_adc_instance_t adc) {
   return adc == PLATFORM_ADC_1;
 }
 
+/**
+ * @brief 报告 ADC 后端是否支持独立 DMA 请求。
+ */
 bool platform_adc_backend_supports_dma(platform_adc_instance_t adc) {
   (void)adc;
   return s_supports_dma;
 }
 
+/**
+ * @brief 启动ADC后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_adc_backend_start(platform_adc_instance_t adc) {
   (void)adc;
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止ADC后端并清理活动状态。
+ */
 platform_status_t platform_adc_backend_stop(platform_adc_instance_t adc) {
   (void)adc;
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 轮询 ADC 单次转换完成状态。
+ */
 platform_status_t platform_adc_backend_poll(
   platform_adc_instance_t adc,
   uint32_t timeout
@@ -45,6 +60,9 @@ platform_status_t platform_adc_backend_poll(
   return s_poll_status;
 }
 
+/**
+ * @brief 读取 ADC 转换码值。
+ */
 platform_status_t platform_adc_backend_get_value(
   platform_adc_instance_t adc,
   uint32_t *value
@@ -54,6 +72,9 @@ platform_status_t platform_adc_backend_get_value(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动ADC中断转换。
+ */
 platform_status_t platform_adc_backend_start_it(
   platform_adc_instance_t adc
 ) {
@@ -61,6 +82,9 @@ platform_status_t platform_adc_backend_start_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止ADC中断转换。
+ */
 platform_status_t platform_adc_backend_stop_it(
   platform_adc_instance_t adc
 ) {
@@ -68,6 +92,9 @@ platform_status_t platform_adc_backend_stop_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动ADC DMA 转换。
+ */
 platform_status_t platform_adc_backend_start_dma(
   platform_adc_instance_t adc,
   uint32_t *data,
@@ -79,6 +106,9 @@ platform_status_t platform_adc_backend_start_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止ADC DMA 转换。
+ */
 platform_status_t platform_adc_backend_stop_dma(
   platform_adc_instance_t adc
 ) {
@@ -86,11 +116,17 @@ platform_status_t platform_adc_backend_stop_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回ADC后端记录的错误位。
+ */
 uint32_t platform_adc_backend_get_error(platform_adc_instance_t adc) {
   (void)adc;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 ADC 转换完成事件并保存测试观察值。
+ */
 static void adc_callback(
   platform_adc_instance_t adc,
   const platform_adc_event_t *event,
@@ -102,6 +138,9 @@ static void adc_callback(
   s_event_count++;
 }
 
+/**
+ * @brief 验证 ADC 参数校验、事件分发和错误路径。
+ */
 static void test_adc_contract(void) {
   s_supports_dma = false;
   s_poll_status = PLATFORM_STATUS_OK;
@@ -144,6 +183,9 @@ static void test_adc_contract(void) {
   assert(s_event_count == 1U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_adc_contract();
   return 0;

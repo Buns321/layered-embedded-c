@@ -15,6 +15,9 @@ static app_uart_command_t s_last_command;
 static uint32_t s_handler_calls;
 static bool s_accept_command = true;
 
+/**
+ * @brief 接收链路解析出的测试命令。
+ */
 static bool app_uart_link_testhandler(
   const app_uart_command_t *command,
   void *context
@@ -27,6 +30,9 @@ static bool app_uart_link_testhandler(
   return s_accept_command;
 }
 
+/**
+ * @brief 向测试 UART 链路注入接收字节。
+ */
 static void app_uart_link_testfeed(
   app_uart_link_t *link_h,
   const char *text
@@ -43,6 +49,9 @@ static void app_uart_link_testfeed(
   }
 }
 
+/**
+ * @brief 重置测试 UART 链路状态。
+ */
 static void app_uart_link_testreset(app_uart_link_t *link_h) {
   assert(link_h);
 
@@ -56,6 +65,9 @@ static void app_uart_link_testreset(app_uart_link_t *link_h) {
   s_accept_command = true;
 }
 
+/**
+ * @brief 验证命令组帧和换行处理。
+ */
 static void test_command_framing(void) {
   app_uart_link_t link;
   app_uart_link_testreset(&link);
@@ -76,6 +88,9 @@ static void test_command_framing(void) {
   assert(link.accepted_commands == 2u);
 }
 
+/**
+ * @brief 验证被拒绝和非法命令。
+ */
 static void test_rejected_and_invalid_commands(void) {
   app_uart_link_t link;
   app_uart_link_testreset(&link);
@@ -96,6 +111,9 @@ static void test_rejected_and_invalid_commands(void) {
   );
 }
 
+/**
+ * @brief 验证接收环形缓冲溢出与回绕。
+ */
 static void test_overflow_and_ring_wrap(void) {
   app_uart_link_t link;
   app_uart_link_testreset(&link);
@@ -120,6 +138,7 @@ static void test_overflow_and_ring_wrap(void) {
   assert(link.last_command_status == APP_UART_LINK_COMMAND_OVERFLOW);
 }
 
+/** @brief 初始化 UART 抽象层并绑定操作表。 */
 void Dev_UART_Base_Init(
   uart_base_t *uart_h,
   const char *name,
@@ -130,6 +149,7 @@ void Dev_UART_Base_Init(
   (void)ops;
 }
 
+/** @brief 阻塞接收。 */
 dev_uart_status_t Dev_UART_Base_Receive(
   uart_base_t *uart_h,
   uint8_t *buf,
@@ -143,6 +163,7 @@ dev_uart_status_t Dev_UART_Base_Receive(
   return DEV_UART_OK;
 }
 
+/** @brief 阻塞发送。 */
 dev_uart_status_t Dev_UART_Base_Transmit(
   uart_base_t *uart_h,
   const uint8_t *data,
@@ -156,6 +177,7 @@ dev_uart_status_t Dev_UART_Base_Transmit(
   return DEV_UART_OK;
 }
 
+/** @brief 中断接收。 */
 dev_uart_status_t Dev_UART_ReceiveIT(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -167,6 +189,7 @@ dev_uart_status_t Dev_UART_ReceiveIT(
   return DEV_UART_OK;
 }
 
+/** @brief 中断发送。 */
 dev_uart_status_t Dev_UART_TransmitIT(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -178,6 +201,7 @@ dev_uart_status_t Dev_UART_TransmitIT(
   return DEV_UART_OK;
 }
 
+/** @brief DMA 接收。 */
 dev_uart_status_t Dev_UART_ReceiveDMA(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -189,6 +213,7 @@ dev_uart_status_t Dev_UART_ReceiveDMA(
   return DEV_UART_OK;
 }
 
+/** @brief DMA 发送。 */
 dev_uart_status_t Dev_UART_TransmitDMA(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -200,6 +225,11 @@ dev_uart_status_t Dev_UART_TransmitDMA(
   return DEV_UART_OK;
 }
 
+/**
+ * @brief 注册回调集合。
+ * @param uart_h UART 对象。
+ * @param cb 回调集合，内容会被复制。
+ */
 void Dev_UART_RegisterCallback(
   uart_base_t *uart_h,
   const dev_uart_callbacks_t *cb
@@ -208,10 +238,21 @@ void Dev_UART_RegisterCallback(
   (void)cb;
 }
 
+/** @brief 由具体 port 适配层调用的回调入口。 */
 void Dev_UART_Base_OnTxComplete(uart_base_t *uart_h) {
   (void)uart_h;
 }
 
+/**
+ * @brief 初始化 UART 适配器并注册 Platform 回调。
+ * @param uart_h 对象。
+ * @param name 名称。
+ * @param instance UART 实例身份。
+ * @note Platform 回调会把事件转发到 uart_base 的回调集合。
+ * @retval PLATFORM_STATUS_OK 初始化和回调注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该 UART 实例已注册 Platform 回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 参数或实例非法。
+ */
 platform_status_t Dev_UART_Port_Init(
   uart_port_t *uart_h,
   const char *name,
@@ -223,6 +264,13 @@ platform_status_t Dev_UART_Port_Init(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 在 UART 上初始化 JustFloat。
+ * @param telemetry_h 对象。
+ * @param name 调试名称。
+ * @param uart_h 已完成初始化且 TX 支持 DMA 的 UART 后端。
+ * @param channel_count 每帧通道数，范围 1..capacity。
+ */
 void Dev_JustFloat_UART_Init(
   justfloat_uart_t *telemetry_h,
   const char *name,
@@ -235,6 +283,11 @@ void Dev_JustFloat_UART_Init(
   (void)channel_count;
 }
 
+/**
+ * @brief 提交一帧协议数据。
+ * @return 接受时返回 OK；传输通道被占用时返回 BUSY；输入格式非法或编码
+ *         失败时返回 ERROR。
+ */
 dev_telemetry_status_t Dev_Telemetry_Base_Send(
   telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
@@ -244,6 +297,7 @@ dev_telemetry_status_t Dev_Telemetry_Base_Send(
   return DEV_TELEMETRY_OK;
 }
 
+/** @brief 复制当前后端状态快照。 */
 void Dev_Telemetry_Base_GetStatus(
   telemetry_base_t *telemetry_h,
   telemetry_status_t *status
@@ -253,6 +307,9 @@ void Dev_Telemetry_Base_GetStatus(
   *status = (telemetry_status_t){0};
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_command_framing();
   test_rejected_and_invalid_commands();

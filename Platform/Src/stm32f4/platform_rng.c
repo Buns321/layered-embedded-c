@@ -9,10 +9,16 @@
 #include "rng.h"
 #include "stm32f4xx_hal.h"
 
+/**
+ * @brief 把平台 RNG 实例编号转换为 HAL 句柄。
+ */
 static RNG_HandleTypeDef *platform_rng_to_hal(platform_rng_instance_t rng) {
   return rng == PLATFORM_RNG_1 ? &hrng : NULL;
 }
 
+/**
+ * @brief 把 HAL RNG 错误位映射为平台错误码。
+ */
 static uint32_t platform_rng_map_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_RNG_ERROR_NONE;
   if ((hal_error & HAL_RNG_ERROR_TIMEOUT) != 0U) {
@@ -38,10 +44,16 @@ static uint32_t platform_rng_map_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 校验RNG实例是否已由板级配置启用。
+ */
 bool platform_rng_backend_is_valid(platform_rng_instance_t rng) {
   return platform_rng_to_hal(rng) != NULL;
 }
 
+/**
+ * @brief 读取随机数生成器输出。
+ */
 platform_status_t platform_rng_backend_get_random(
   platform_rng_instance_t rng,
   uint32_t *value
@@ -54,6 +66,9 @@ platform_status_t platform_rng_backend_get_random(
              );
 }
 
+/**
+ * @brief 返回RNG后端记录的错误位。
+ */
 uint32_t platform_rng_backend_get_error(platform_rng_instance_t rng) {
   RNG_HandleTypeDef *rng_h = platform_rng_to_hal(rng);
   return rng_h == NULL ? PLATFORM_RNG_ERROR_UNKNOWN

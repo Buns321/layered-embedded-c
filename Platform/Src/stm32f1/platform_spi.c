@@ -9,6 +9,9 @@
 #include "spi.h"
 #include "stm32f1xx_hal.h"
 
+/**
+ * @brief 把平台 SPI 实例编号转换为 HAL 句柄。
+ */
 static SPI_HandleTypeDef *platform_spi_to_hal(platform_spi_instance_t spi) {
   switch (spi) {
 #if PLATFORM_ENABLE_SPI1
@@ -21,6 +24,9 @@ static SPI_HandleTypeDef *platform_spi_to_hal(platform_spi_instance_t spi) {
   }
 }
 
+/**
+ * @brief 把 HAL SPI 句柄识别为平台实例编号。
+ */
 static bool platform_hal_to_spi(
   SPI_HandleTypeDef *spi_h,
   platform_spi_instance_t *spi
@@ -43,6 +49,9 @@ static bool platform_hal_to_spi(
   return false;
 }
 
+/**
+ * @brief 把 SPI 数据宽度枚举转换为 HAL 位宽。
+ */
 static uint16_t platform_spi_hal_size(
   SPI_HandleTypeDef *spi_h,
   uint16_t size
@@ -52,6 +61,9 @@ static uint16_t platform_spi_hal_size(
            : size;
 }
 
+/**
+ * @brief 把 HAL SPI 错误位映射为平台错误码。
+ */
 static uint32_t platform_spi_map_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_SPI_ERROR_NONE;
   if ((hal_error & HAL_SPI_ERROR_MODF) != 0U) {
@@ -86,11 +98,17 @@ static uint32_t platform_spi_map_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 校验SPI实例是否已由板级配置启用。
+ */
 bool platform_spi_backend_is_valid(platform_spi_instance_t spi) {
   return (uint32_t)spi < PLATFORM_SPI_INSTANCE_COUNT &&
          platform_spi_to_hal(spi) != NULL;
 }
 
+/**
+ * @brief 返回 SPI 后端当前数据宽度。
+ */
 platform_status_t platform_spi_backend_get_data_width(
   platform_spi_instance_t spi,
   platform_spi_data_width_t *data_width
@@ -113,6 +131,9 @@ platform_status_t platform_spi_backend_get_data_width(
   return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
+/**
+ * @brief 启动SPI阻塞发送。
+ */
 platform_status_t platform_spi_backend_transmit(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -129,6 +150,9 @@ platform_status_t platform_spi_backend_transmit(
                      ));
 }
 
+/**
+ * @brief 启动SPI阻塞接收。
+ */
 platform_status_t platform_spi_backend_receive(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -145,6 +169,9 @@ platform_status_t platform_spi_backend_receive(
                      ));
 }
 
+/**
+ * @brief 启动 SPI 阻塞全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -163,6 +190,9 @@ platform_status_t platform_spi_backend_transmit_receive(
                      ));
 }
 
+/**
+ * @brief 启动SPI中断发送。
+ */
 platform_status_t platform_spi_backend_transmit_it(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -177,6 +207,9 @@ platform_status_t platform_spi_backend_transmit_it(
                      ));
 }
 
+/**
+ * @brief 启动SPI中断接收。
+ */
 platform_status_t platform_spi_backend_receive_it(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -191,6 +224,9 @@ platform_status_t platform_spi_backend_receive_it(
                      ));
 }
 
+/**
+ * @brief 启动 SPI 中断全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive_it(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -207,6 +243,9 @@ platform_status_t platform_spi_backend_transmit_receive_it(
                      ));
 }
 
+/**
+ * @brief 启动SPI DMA 发送。
+ */
 platform_status_t platform_spi_backend_transmit_dma(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -221,6 +260,9 @@ platform_status_t platform_spi_backend_transmit_dma(
                      ));
 }
 
+/**
+ * @brief 启动SPI DMA 接收。
+ */
 platform_status_t platform_spi_backend_receive_dma(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -235,6 +277,9 @@ platform_status_t platform_spi_backend_receive_dma(
                      ));
 }
 
+/**
+ * @brief 启动 SPI DMA 全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive_dma(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -251,6 +296,9 @@ platform_status_t platform_spi_backend_transmit_receive_dma(
                      ));
 }
 
+/**
+ * @brief 中止SPI当前传输并映射 HAL 状态。
+ */
 platform_status_t platform_spi_backend_abort(platform_spi_instance_t spi) {
   SPI_HandleTypeDef *spi_h = platform_spi_to_hal(spi);
   if (spi_h == NULL) {
@@ -263,6 +311,9 @@ platform_status_t platform_spi_backend_abort(platform_spi_instance_t spi) {
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 启动SPI异步中止并映射 HAL 状态。
+ */
 platform_status_t platform_spi_backend_abort_it(
   platform_spi_instance_t spi
 ) {
@@ -271,12 +322,18 @@ platform_status_t platform_spi_backend_abort_it(
                    : platform_from_hal_status(HAL_SPI_Abort_IT(spi_h));
 }
 
+/**
+ * @brief 返回SPI后端记录的错误位。
+ */
 uint32_t platform_spi_backend_get_error(platform_spi_instance_t spi) {
   SPI_HandleTypeDef *spi_h = platform_spi_to_hal(spi);
   return spi_h == NULL ? PLATFORM_SPI_ERROR_UNKNOWN
                    : platform_spi_map_error(HAL_SPI_GetError(spi_h));
 }
 
+/**
+ * @brief 把 HAL SPI 回调事件转发给已注册的项目回调。
+ */
 static void platform_spi_dispatch_hal_event(
   SPI_HandleTypeDef *spi_h,
   platform_spi_event_type_t type
@@ -287,22 +344,37 @@ static void platform_spi_dispatch_hal_event(
   }
 }
 
+/**
+ * @brief 分发 SPI 发送完成事件。
+ */
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *spi_h) {
   platform_spi_dispatch_hal_event(spi_h, PLATFORM_SPI_EVENT_TX_COMPLETE);
 }
 
+/**
+ * @brief 分发 SPI 接收完成事件。
+ */
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *spi_h) {
   platform_spi_dispatch_hal_event(spi_h, PLATFORM_SPI_EVENT_RX_COMPLETE);
 }
 
+/**
+ * @brief 分发 SPI 全双工完成事件。
+ */
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *spi_h) {
   platform_spi_dispatch_hal_event(spi_h, PLATFORM_SPI_EVENT_TX_RX_COMPLETE);
 }
 
+/**
+ * @brief 记录并分发 SPI 错误事件。
+ */
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *spi_h) {
   platform_spi_dispatch_hal_event(spi_h, PLATFORM_SPI_EVENT_ERROR);
 }
 
+/**
+ * @brief 分发 SPI 中止完成事件。
+ */
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *spi_h) {
   platform_spi_dispatch_hal_event(spi_h, PLATFORM_SPI_EVENT_ABORT_COMPLETE);
 }

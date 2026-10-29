@@ -11,16 +11,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
 }
 
+/**
+ * @brief 判断两组浮点数组是否逐项在容差内相等。
+ */
 static bool floats_near(float left, float right, float tolerance) {
   return fabsf(left - right) <= tolerance;
 }
 
+/**
+ * @brief 验证 IMU 校正默认恒等参数。
+ */
 static void test_identity_defaults(void) {
   const filter_imu_calibration_config_t config = {
     .accel_scale = {1.0f, 1.0f, 1.0f},
@@ -48,6 +63,9 @@ static void test_identity_defaults(void) {
   assert(output.time_ms == input.time_ms);
 }
 
+/**
+ * @brief 验证 IMU 校正与单步更新。
+ */
 static void test_correction_and_update(void) {
   const filter_imu_calibration_config_t initial = {
     .accel_scale = {1.0f, 1.0f, 1.0f},
@@ -94,6 +112,9 @@ static void test_correction_and_update(void) {
   assert(calibration.corrected_frames == 0u);
 }
 
+/**
+ * @brief 验证非法配置被拒绝。
+ */
 static void test_invalid_configuration(void) {
   filter_imu_calibration_t calibration;
   assert(!Filter_ImuCalibration_Init(&calibration, "cal", NULL));
@@ -115,6 +136,9 @@ static void test_invalid_configuration(void) {
   assert(floats_near(readback.accel_scale[1], 1.0f, 1e-6f));
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_identity_defaults();
   test_correction_and_update();

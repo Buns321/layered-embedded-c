@@ -30,10 +30,16 @@
 #define FILTER_EKF_ALL_PARAMETER_MASK \
   ((uint32_t)((1u << FILTER_EKF_PARAM_COUNT) - 1u))
 
+/**
+ * @brief 判断数值为正有限值。
+ */
 static bool filter_ekf_valueispositivefinite(float value) {
   return SYS_ISFINITE(value) && value > 0.0f;
 }
 
+/**
+ * @brief 校验 EKF 配置范围和有限性。
+ */
 static bool filter_ekf_configisvalid(const filter_ekf_config_t *config) {
   if (config == NULL) {
     return false;
@@ -62,6 +68,9 @@ static bool filter_ekf_configisvalid(const filter_ekf_config_t *config) {
     config->max_dt_s >= config->min_dt_s;
 }
 
+/**
+ * @brief 定位配置结构中可设置的字段。
+ */
 static float *filter_ekf_configfield(
   filter_ekf_config_t *config,
   filter_ekf_parameter_t parameter
@@ -96,6 +105,9 @@ static float *filter_ekf_configfield(
   }
 }
 
+/**
+ * @brief 初始化 EKF 协方差矩阵。
+ */
 static void filter_ekf_initializecovariance(filter_ekf_t *filter_h) {
   assert(filter_h);
 
@@ -115,6 +127,9 @@ static void filter_ekf_initializecovariance(filter_ekf_t *filter_h) {
   }
 }
 
+/**
+ * @brief 在安全点应用待处理的 EKF 配置。
+ */
 static void filter_ekf_applypendingconfig(filter_ekf_t *filter_h) {
   assert(filter_h);
 
@@ -138,6 +153,9 @@ static void filter_ekf_applypendingconfig(filter_ekf_t *filter_h) {
   }
 }
 
+/**
+ * @brief 把 EKF 时间步限制到允许范围。
+ */
 static float filter_ekf_clampdeltatime(
   filter_ekf_t *filter_h,
   uint32_t now_ms
@@ -161,6 +179,9 @@ static float filter_ekf_clampdeltatime(
   return dt_s;
 }
 
+/**
+ * @brief 检查输入帧是否包含可用的有限数值。
+ */
 static bool filter_ekf_inputframeisusable(const filter_sample_t *input) {
   assert(input);
   const uint32_t required_mask =
@@ -173,6 +194,9 @@ static bool filter_ekf_inputframeisusable(const filter_sample_t *input) {
   return (input->valid_mask & required_mask) == required_mask;
 }
 
+/**
+ * @brief 执行 EKF 预测与校正核心步骤。
+ */
 static void filter_ekf_coreupdate(
   filter_ekf_t *filter_h,
   const float gyro_radps[3],
@@ -196,6 +220,9 @@ static void filter_ekf_coreupdate(
   filter_h->state.valid = true;
 }
 
+/**
+ * @brief 发布 EKF 姿态和角速度结果。
+ */
 static void filter_ekf_publishattitude(
   filter_ekf_t *filter_h,
   filter_sample_t *output
@@ -223,6 +250,9 @@ static void filter_ekf_publishattitude(
   }
 }
 
+/**
+ * @brief 重置 EKF 状态与协方差。
+ */
 static void filter_ekf_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_ekf_t *filter_ekf_h = (filter_ekf_t *)filter_h;
@@ -236,6 +266,9 @@ static void filter_ekf_reset(filter_base_t *filter_h) {
   filter_ekf_initializecovariance(filter_ekf_h);
 }
 
+/**
+ * @brief 执行 EKF 单步更新。
+ */
 static void filter_ekf_update(
   filter_base_t *filter_h,
   const filter_sample_t *input,
@@ -284,6 +317,14 @@ static const filter_ops_t filter_ops_ekf = {
   .reset = filter_ekf_reset,
 };
 
+/**
+ * @brief 初始化七状态 EKF。
+ * @param filter_h 对象。
+ * @param name 名称。
+ * @param config 默认配置，不能为空。
+ * @retval true 参数有效并完成初始化。
+ * @retval false 对象或配置无效。
+ */
 bool Filter_Ekf_Init(
   filter_ekf_t *filter_h,
   const char *name,
@@ -307,6 +348,16 @@ bool Filter_Ekf_Init(
   return true;
 }
 
+/**
+ * @brief 提交一个在线参数。
+ * @param filter_h 对象。
+ * @param parameter 参数身份。
+ * @param value 新值，单位和量纲由参数身份决定。
+ * @retval true 参数有效并将在下一帧开始时生效。
+ * @retval false 参数身份、数值、单参数范围或组合范围无效。
+ * @note 该函数可从参数任务调用，不会修改正在执行的滤波状态。
+ * @note 多个未提交参数按调用顺序合并校验；任一调用失败时本次值不生效。
+ */
 bool Filter_Ekf_SetParameter(
   filter_ekf_t *filter_h,
   filter_ekf_parameter_t parameter,
@@ -347,6 +398,12 @@ bool Filter_Ekf_SetParameter(
   return true;
 }
 
+/**
+ * @brief 请求把所有参数恢复为初始化时的默认值。
+ * @param filter_h 对象。
+ * @note 参数在下一帧开始时原子生效。
+ * @pre filter_h 非空。
+ */
 void Filter_Ekf_ResetParameters(filter_ekf_t *filter_h) {
   assert(filter_h);
 
@@ -356,6 +413,12 @@ void Filter_Ekf_ResetParameters(filter_ekf_t *filter_h) {
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 复制当前 EKF 参数。
+ * @param filter_h 对象。
+ * @param config 输出参数。
+ * @pre filter_h 和 config 非空。
+ */
 void Filter_Ekf_GetConfig(
   const filter_ekf_t *filter_h,
   filter_ekf_config_t *config
@@ -367,6 +430,12 @@ void Filter_Ekf_GetConfig(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 复制最近一次 EKF 状态。
+ * @param filter_h 对象。
+ * @param state 输出状态。
+ * @pre filter_h 和 state 非空。
+ */
 void Filter_Ekf_GetState(
   const filter_ekf_t *filter_h,
   filter_ekf_state_t *state

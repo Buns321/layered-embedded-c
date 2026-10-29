@@ -18,10 +18,16 @@ static const app_calibration_thresholds_t s_thresholds = {
   .face_cross_max_mps2 = 5.0f,
 };
 
+/**
+ * @brief 判断两个单精度浮点数是否在容差内相等。
+ */
 static bool float_near(float left, float right, float tolerance) {
   return fabsf(left - right) <= tolerance;
 }
 
+/**
+ * @brief 验证静止检测。
+ */
 static void test_still_detection(void) {
   const float accel_up[3] = {0.1f, -0.2f, 9.80665f};
   const float gyro_still[3] = {0.2f, -0.1f, 0.3f};
@@ -48,6 +54,9 @@ static void test_still_detection(void) {
   ));
 }
 
+/**
+ * @brief 验证安装面检测与阈值边界。
+ */
 static void test_face_detection(void) {
   const float faces[6][3] = {
     {9.80665f, 0.0f, 0.0f},
@@ -85,6 +94,9 @@ static void test_face_detection(void) {
   ));
 }
 
+/**
+ * @brief 验证非法阈值被拒绝。
+ */
 static void test_invalid_thresholds(void) {
   const float accel_up[3] = {0.0f, 0.0f, 9.80665f};
   const float gyro_still[3] = {0.0f, 0.0f, 0.0f};
@@ -117,6 +129,9 @@ static void test_invalid_thresholds(void) {
   assert(!App_Calibration_DetectFace(accel_up, &thresholds, &face));
 }
 
+/**
+ * @brief 验证安装轴公式与坐标变换。
+ */
 static void test_axis_formula(void) {
   const float positive[3] = {10.0f, 0.0f, 0.0f};
   const float negative[3] = {-9.0f, 0.0f, 0.0f};
@@ -163,6 +178,9 @@ static void test_axis_formula(void) {
   ));
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_still_detection();
   test_face_detection();

@@ -36,8 +36,14 @@
 #define MPU6050_CALIBRATION_MIN_ACCEL_MPS2 3.0f
 #define MPU6050_CALIBRATION_MAX_ACCEL_MPS2 15.0f
 
+/**
+ * @brief 推进 MPU6050 周期采样状态机。
+ */
 static void mpu6050_process(imu_base_t *imu_h, uint32_t now_ms);
 
+/**
+ * @brief 写入 MPU6050 单寄存器。
+ */
 static platform_status_t mpu6050_write_reg(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
@@ -63,6 +69,9 @@ static platform_status_t mpu6050_write_reg(
   return status;
 }
 
+/**
+ * @brief 从 MPU6050 连续读取寄存器。
+ */
 static platform_status_t mpu6050_read_regs(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
@@ -89,6 +98,9 @@ static platform_status_t mpu6050_read_regs(
   return status;
 }
 
+/**
+ * @brief 读取 MPU6050 单寄存器。
+ */
 static platform_status_t mpu6050_read_reg(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint8_t reg,
@@ -97,10 +109,16 @@ static platform_status_t mpu6050_read_reg(
   return mpu6050_read_regs(mpu6050_i2c_h, reg, value, 1u);
 }
 
+/**
+ * @brief 判断 MPU6050 毫秒截止时间是否到达。
+ */
 static bool mpu6050_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
   return (int32_t)(now_ms - deadline_ms) >= 0;
 }
 
+/**
+ * @brief 以大端序读取有符号 16 位整数。
+ */
 static int16_t mpu6050_be_i16(const uint8_t *data) {
   assert(data);
 
@@ -112,6 +130,9 @@ static int16_t mpu6050_be_i16(const uint8_t *data) {
   return (int16_t)raw;
 }
 
+/**
+ * @brief 返回加速度量程对应的 LSB/g。
+ */
 static float mpu6050_accel_lsb_per_g(mpu6050_accel_range_t range) {
   switch (range) {
     case MPU6050_ACCEL_RANGE_2G:  return 16384.0f;
@@ -122,6 +143,9 @@ static float mpu6050_accel_lsb_per_g(mpu6050_accel_range_t range) {
   }
 }
 
+/**
+ * @brief 返回陀螺量程对应的 LSB/(deg/s)。
+ */
 static float mpu6050_gyro_lsb_per_dps(mpu6050_gyro_range_t range) {
   switch (range) {
     case MPU6050_GYRO_RANGE_250DPS:  return 131.0f;
@@ -132,10 +156,16 @@ static float mpu6050_gyro_lsb_per_dps(mpu6050_gyro_range_t range) {
   }
 }
 
+/**
+ * @brief 返回 DLPF 配置对应的陀螺输出率。
+ */
 static uint32_t mpu6050_gyro_output_rate(mpu6050_dlpf_t dlpf) {
   return dlpf == MPU6050_DLPF_256HZ ? 8000u : 1000u;
 }
 
+/**
+ * @brief 按配置重排三轴数据。
+ */
 static void mpu6050_apply_axis_map(
   const mpu6050_config_t *config,
   const float input[3],
@@ -151,6 +181,9 @@ static void mpu6050_apply_axis_map(
   }
 }
 
+/**
+ * @brief 保存最近一次原始采样。
+ */
 static void mpu6050_store_raw(
   mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_raw_sample_t *sample
@@ -163,6 +196,9 @@ static void mpu6050_store_raw(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 进入错误状态并记录失败原因。
+ */
 static void mpu6050_enter_error(mpu6050_i2c_t *mpu6050_i2c_h) {
   assert(mpu6050_i2c_h);
 
@@ -170,6 +206,9 @@ static void mpu6050_enter_error(mpu6050_i2c_t *mpu6050_i2c_h) {
   mpu6050_i2c_h->last_request_failed = true;
 }
 
+/**
+ * @brief 获取 MPU6050 驱动互斥状态。
+ */
 static platform_status_t mpu6050_acquire(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms,
@@ -218,6 +257,9 @@ static platform_status_t mpu6050_acquire(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 判断加速度样本是否满足静止条件。
+ */
 static bool mpu6050_accel_is_stationary(
   const mpu6050_raw_sample_t *sample
 ) {
@@ -234,6 +276,9 @@ static bool mpu6050_accel_is_stationary(
     norm <= MPU6050_CALIBRATION_MAX_ACCEL_MPS2;
 }
 
+/**
+ * @brief 重置 MPU6050 校准累计状态。
+ */
 static void mpu6050_calibration_reset(mpu6050_i2c_t *mpu6050_i2c_h) {
   assert(mpu6050_i2c_h);
 
@@ -245,6 +290,9 @@ static void mpu6050_calibration_reset(mpu6050_i2c_t *mpu6050_i2c_h) {
   }
 }
 
+/**
+ * @brief 完成校准并计算零偏与比例。
+ */
 static bool mpu6050_calibration_finish(mpu6050_i2c_t *mpu6050_i2c_h) {
   assert(
     mpu6050_i2c_h &&
@@ -271,6 +319,9 @@ static bool mpu6050_calibration_finish(mpu6050_i2c_t *mpu6050_i2c_h) {
   return true;
 }
 
+/**
+ * @brief 累计 MPU6050 校准样本。
+ */
 static void mpu6050_calibration_accumulate(
   mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_raw_sample_t *sample
@@ -286,6 +337,9 @@ static void mpu6050_calibration_accumulate(
   mpu6050_i2c_h->calibration_count++;
 }
 
+/**
+ * @brief 写入 MPU6050 初始化寄存器序列。
+ */
 static platform_status_t mpu6050_configure(mpu6050_i2c_t *mpu6050_i2c_h) {
   assert(mpu6050_i2c_h);
 
@@ -369,6 +423,9 @@ static platform_status_t mpu6050_configure(mpu6050_i2c_t *mpu6050_i2c_h) {
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 MPU6050 周期采样。
+ */
 static void mpu6050_start(imu_base_t *imu_h) {
   assert(imu_h);
   mpu6050_i2c_t *mpu6050_i2c_h = (mpu6050_i2c_t *)imu_h;
@@ -380,6 +437,9 @@ static void mpu6050_start(imu_base_t *imu_h) {
   mpu6050_i2c_h->last_request_failed = false;
 }
 
+/**
+ * @brief 复制 MPU6050 状态快照。
+ */
 static void mpu6050_get_status(
   imu_base_t *imu_h,
   imu_status_t *status
@@ -409,6 +469,9 @@ static void mpu6050_get_status(
   };
 }
 
+/**
+ * @brief 以当前姿态设置航向零点。
+ */
 static void mpu6050_set_zero(imu_base_t *imu_h) {
   assert(imu_h);
   Dev_IMU_Base_ZeroYaw(imu_h);
@@ -421,6 +484,9 @@ static const imu_ops_t mpu6050_imu_ops = {
   .set_zero   = mpu6050_set_zero,
 };
 
+/**
+ * @brief 校验 MPU6050 初始化配置。
+ */
 static bool mpu6050_config_is_valid(const mpu6050_config_t *config) {
   assert(config);
 
@@ -463,6 +529,9 @@ static bool mpu6050_config_is_valid(const mpu6050_config_t *config) {
   return true;
 }
 
+/**
+ * @brief 校验并绑定 MPU6050 初始化配置。
+ */
 static void mpu6050_bind_config(
   mpu6050_i2c_t *mpu6050_i2c_h,
   const mpu6050_config_t *config
@@ -493,6 +562,17 @@ static void mpu6050_bind_config(
   mpu6050_i2c_h->sample_period_ms = period_ms;
 }
 
+/**
+ * @brief 初始化并探测 MPU6050。
+ * @param imu_h 对象。
+ * @param name 名称。
+ * @param config 配置，内容会被复制。
+ * @param filter_h 已初始化的静态滤波器根节点。
+ * @retval PLATFORM_STATUS_OK WHO_AM_I 匹配。
+ * @retval PLATFORM_STATUS_ERROR 参数、通信或设备 ID 错误。
+ * @retval PLATFORM_STATUS_TIMEOUT I2C 超时。
+ * @note 本函数执行一次阻塞 WHO_AM_I 读取，不启动采样。
+ */
 platform_status_t Dev_MPU6050_I2C_Init(
   mpu6050_i2c_t *imu_h,
   const char *name,
@@ -537,6 +617,10 @@ platform_status_t Dev_MPU6050_I2C_Init(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 复制最近一次经单位换算和轴映射、但未经软件滤波的样本。
+ * @return 是否已有可用样本。
+ */
 bool Dev_MPU6050_I2C_GetRawSample(
   mpu6050_i2c_t *imu_h,
   mpu6050_raw_sample_t *sample
@@ -551,6 +635,12 @@ bool Dev_MPU6050_I2C_GetRawSample(
   return available;
 }
 
+/**
+ * @brief 请求重新采集静止陀螺零偏。
+ * @retval PLATFORM_STATUS_OK 请求已接受。
+ * @retval PLATFORM_STATUS_ERROR IMU 未启动或当前状态不允许标定。
+ * @note 标定期间 process() 不发布新样本。
+ */
 platform_status_t Dev_MPU6050_I2C_RequestGyroCalibration(
   mpu6050_i2c_t *imu_h
 ) {
@@ -569,6 +659,9 @@ platform_status_t Dev_MPU6050_I2C_RequestGyroCalibration(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 处理校准阶段采样。
+ */
 static void mpu6050_process_calibration(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms
@@ -611,6 +704,9 @@ static void mpu6050_process_calibration(
   mpu6050_i2c_h->last_request_failed = false;
 }
 
+/**
+ * @brief 处理就绪阶段采样和发布。
+ */
 static void mpu6050_process_ready(
   mpu6050_i2c_t *mpu6050_i2c_h,
   uint32_t now_ms
@@ -661,6 +757,9 @@ static void mpu6050_process_ready(
   }
 }
 
+/**
+ * @brief 推进 MPU6050 周期采样状态机。
+ */
 static void mpu6050_process(imu_base_t *imu_h, uint32_t now_ms) {
   assert(imu_h);
   mpu6050_i2c_t *mpu6050_i2c_h = (mpu6050_i2c_t *)imu_h;

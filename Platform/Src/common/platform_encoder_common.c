@@ -9,12 +9,18 @@
 
 static volatile uint32_t encoder_error[6];
 
+/**
+ * @brief 把编码器实例编号转换为错误快照下标。
+ */
 static uint32_t platform_encoder_error_index(
   platform_encoder_instance_t encoder
 ) {
   return (uint32_t)encoder;
 }
 
+/**
+ * @brief 把 HAL 编码器结果转换为公共状态并记录错误。
+ */
 static platform_status_t platform_encoder_finish(
   platform_encoder_instance_t encoder,
   platform_status_t status
@@ -28,6 +34,9 @@ static platform_status_t platform_encoder_finish(
   return status;
 }
 
+/**
+ * @brief 构造编码器非法参数状态。
+ */
 static platform_status_t platform_encoder_invalid(
   platform_encoder_instance_t encoder,
   bool instance_valid
@@ -41,6 +50,14 @@ static platform_status_t platform_encoder_invalid(
   return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
 
+/**
+ * @brief 启动编码器接口。
+ * @param encoder 编码器定时器身份。
+ * @retval PLATFORM_STATUS_OK 成功。
+ * @retval PLATFORM_STATUS_ERROR 失败。
+ * @pre 对应定时器的 MX_TIMx_Init() 已完成并配置为 Encoder 模式。
+ * @note 编码器模式固定使用定时器的两个输入通道。
+ */
 platform_status_t Platform_Encoder_Start(
   platform_encoder_instance_t encoder
 ) {
@@ -57,6 +74,7 @@ platform_status_t Platform_Encoder_Start(
   );
 }
 
+/** @brief 停止编码器接口。 */
 platform_status_t Platform_Encoder_Stop(
   platform_encoder_instance_t encoder
 ) {
@@ -73,6 +91,11 @@ platform_status_t Platform_Encoder_Stop(
   );
 }
 
+/**
+ * @brief 读取硬件计数器。
+ * @param encoder 编码器定时器身份。
+ * @param counter 当前计数值输出。
+ */
 platform_status_t Platform_Encoder_GetCounter(
   platform_encoder_instance_t encoder,
   uint32_t *counter
@@ -90,6 +113,11 @@ platform_status_t Platform_Encoder_GetCounter(
   );
 }
 
+/**
+ * @brief 写入硬件计数器。
+ * @param encoder 编码器定时器身份。
+ * @param counter 目标计数值。
+ */
 platform_status_t Platform_Encoder_SetCounter(
   platform_encoder_instance_t encoder,
   uint32_t counter
@@ -107,6 +135,11 @@ platform_status_t Platform_Encoder_SetCounter(
   );
 }
 
+/**
+ * @brief 查询定时器计数位宽。
+ * @param encoder 编码器定时器身份。
+ * @param counter_bits 位宽输出，值为 16 或 32。
+ */
 platform_status_t Platform_Encoder_GetCounterBits(
   platform_encoder_instance_t encoder,
   uint8_t *counter_bits
@@ -124,6 +157,7 @@ platform_status_t Platform_Encoder_GetCounterBits(
   );
 }
 
+/** @brief 读取最近一次编码器操作错误快照。 */
 uint32_t Platform_Encoder_GetLastError(
   platform_encoder_instance_t encoder
 ) {

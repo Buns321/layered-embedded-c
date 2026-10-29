@@ -37,6 +37,9 @@ static uint8_t s_registers[FAKE_REG_COUNT];
 static uint8_t s_burst[14];
 static bool s_i2c_fail;
 
+/**
+ * @brief 重置伪 I2C 后端状态。
+ */
 static void fake_i2c_reset(void) {
   memset(s_registers, 0, sizeof(s_registers));
   memset(s_burst, 0, sizeof(s_burst));
@@ -44,6 +47,9 @@ static void fake_i2c_reset(void) {
   s_i2c_fail = false;
 }
 
+/**
+ * @brief 设置伪 I2C 后端返回的加速度原始值。
+ */
 static void fake_i2c_set_accel_raw(int16_t x, int16_t y, int16_t z) {
   s_burst[0] = (uint8_t)((uint16_t)x >> 8u);
   s_burst[1] = (uint8_t)x;
@@ -53,6 +59,9 @@ static void fake_i2c_set_accel_raw(int16_t x, int16_t y, int16_t z) {
   s_burst[5] = (uint8_t)z;
 }
 
+/**
+ * @brief 设置伪 I2C 后端返回的角速度原始值。
+ */
 static void fake_i2c_set_gyro_raw(int16_t x, int16_t y, int16_t z) {
   s_burst[8] = (uint8_t)((uint16_t)x >> 8u);
   s_burst[9] = (uint8_t)x;
@@ -62,11 +71,24 @@ static void fake_i2c_set_gyro_raw(int16_t x, int16_t y, int16_t z) {
   s_burst[13] = (uint8_t)z;
 }
 
+/**
+ * @brief 设置伪 I2C 后端返回的温度原始值。
+ */
 static void fake_i2c_set_temperature_raw(int16_t value) {
   s_burst[6] = (uint8_t)((uint16_t)value >> 8u);
   s_burst[7] = (uint8_t)value;
 }
 
+/**
+ * @brief 阻塞式存储器写。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节），通常为 1 或 2。
+ * @param data 发送缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
+ */
 platform_status_t Platform_I2C_MemWrite(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -101,6 +123,16 @@ platform_status_t Platform_I2C_MemWrite(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 阻塞式存储器读。
+ * @param i2c I2C 实例。
+ * @param address 7 位器件地址。
+ * @param mem_address 器件内部存储地址。
+ * @param mem_address_size 存储地址宽度（字节），通常为 1 或 2。
+ * @param data 接收缓冲区。
+ * @param size 字节数。
+ * @param timeout 超时时间（ms）。
+ */
 platform_status_t Platform_I2C_MemRead(
   platform_i2c_instance_t i2c,
   uint16_t address,
@@ -139,9 +171,18 @@ platform_status_t Platform_I2C_MemRead(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
 }
 
@@ -150,21 +191,33 @@ typedef struct {
   bool started;
 } test_imu_t;
 
+/**
+ * @brief 验证 IMU 启动流程。
+ */
 static void test_imu_start(imu_base_t *imu_h) {
   test_imu_t *test_imu_h = (test_imu_t *)imu_h;
   test_imu_h->started = true;
 }
 
+/**
+ * @brief 验证 IMU 周期处理。
+ */
 static void test_imu_process(imu_base_t *imu_h, uint32_t now_ms) {
   (void)imu_h;
   (void)now_ms;
 }
 
+/**
+ * @brief 验证 IMU 状态快照。
+ */
 static void test_imu_get_status(imu_base_t *imu_h, imu_status_t *status) {
   (void)imu_h;
   *status = (imu_status_t){0};
 }
 
+/**
+ * @brief 验证 IMU 航向置零。
+ */
 static void test_imu_set_zero(imu_base_t *imu_h) {
   Dev_IMU_Base_ZeroYaw(imu_h);
 }
@@ -181,6 +234,9 @@ typedef struct {
   uint32_t receive_count;
 } test_uart_t;
 
+/**
+ * @brief 验证 UART 中断接收。
+ */
 static dev_uart_status_t test_uart_receive_it(
   uart_base_t *uart_h,
   uint8_t *data,
@@ -201,6 +257,9 @@ typedef struct {
   filter_base_t base;
 } test_attitude_filter_t;
 
+/**
+ * @brief 验证姿态滤波器更新结果。
+ */
 static void test_attitude_filter_update(
   filter_base_t *filter_h,
   const filter_sample_t *input,
@@ -214,6 +273,9 @@ static void test_attitude_filter_update(
   output->value[IMU_CHANNEL_INDEX_YAW] = 45.0f;
 }
 
+/**
+ * @brief 验证姿态滤波器重置清空状态。
+ */
 static void test_attitude_filter_reset(filter_base_t *filter_h) {
   (void)filter_h;
 }
@@ -223,6 +285,9 @@ static const filter_ops_t s_test_attitude_filter_ops = {
   .reset = test_attitude_filter_reset,
 };
 
+/**
+ * @brief 验证不完整 IMU 帧处理。
+ */
 static int test_partial_imu_frames(void) {
   test_imu_t imu = {0};
   filter_passthrough_t passthrough;
@@ -290,6 +355,9 @@ static int test_partial_imu_frames(void) {
   return 0;
 }
 
+/**
+ * @brief 验证滤波器姿态输出与通道清除。
+ */
 static int test_filter_adds_attitude_and_clears_channel(void) {
   test_imu_t imu = {0};
   test_attitude_filter_t filter = {0};
@@ -324,6 +392,9 @@ static int test_filter_adds_attitude_and_clears_channel(void) {
   return 0;
 }
 
+/**
+ * @brief 向 WHT101 接收路径注入完整帧。
+ */
 static void feed_wht101_frame(
   imu_wht101_uart_t *imu,
   uint8_t type,
@@ -347,6 +418,9 @@ static void feed_wht101_frame(
   }
 }
 
+/**
+ * @brief 验证 WHT101 透传管线。
+ */
 static int test_wht101_passthrough_pipeline(void) {
   test_uart_t usart = {0};
   Dev_UART_Base_Init(&usart.base, "wht-test-usart", &s_test_uart_ops);
@@ -391,6 +465,9 @@ static int test_wht101_passthrough_pipeline(void) {
   return 0;
 }
 
+/**
+ * @brief 构造有效的 MPU6050 测试配置。
+ */
 static void init_mpu_config(
   mpu6050_config_t *config,
   const uint8_t axis_source[3],
@@ -418,6 +495,9 @@ static void init_mpu_config(
   };
 }
 
+/**
+ * @brief 验证 MPU6050 采样与校准流程。
+ */
 static int test_mpu6050_acquisition(void) {
   fake_i2c_reset();
 
@@ -484,6 +564,9 @@ static int test_mpu6050_acquisition(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 MPU6050 轴映射和探测失败。
+ */
 static int test_mpu6050_axis_mapping_and_probe_failure(void) {
   fake_i2c_reset();
 
@@ -536,6 +619,9 @@ static int test_mpu6050_axis_mapping_and_probe_failure(void) {
   return 0;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   if (test_partial_imu_frames() != 0) {
     return 1;

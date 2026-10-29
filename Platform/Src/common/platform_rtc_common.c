@@ -12,11 +12,17 @@ static volatile uint32_t rtc_error;
 static platform_rtc_callback_binding_t rtc_cb;
 static bool rtc_cb_registered;
 
+/**
+ * @brief 判断年份是否为闰年。
+ */
 static bool platform_rtc_is_leap_year(uint16_t year) {
   return ((year % 4U) == 0U &&
           ((year % 100U) != 0U || (year % 400U) == 0U));
 }
 
+/**
+ * @brief 返回指定月份的天数。
+ */
 static uint8_t platform_rtc_days_in_month(uint16_t year, uint8_t month) {
   static const uint8_t days[12] = {
     31U, 28U, 31U, 30U, 31U, 30U,
@@ -28,6 +34,9 @@ static uint8_t platform_rtc_days_in_month(uint16_t year, uint8_t month) {
   return days[month - 1U];
 }
 
+/**
+ * @brief 校验 RTC 日期时间范围。
+ */
 static bool platform_rtc_datetime_valid(
   const platform_rtc_date_time_t *date_time
 ) {
@@ -43,6 +52,9 @@ static bool platform_rtc_datetime_valid(
          date_time->second <= 59U;
 }
 
+/**
+ * @brief 校验 RTC 时间字段范围。
+ */
 static bool platform_rtc_time_valid(
   const platform_rtc_alarm_config_t *alarm
 ) {
@@ -52,6 +64,9 @@ static bool platform_rtc_time_valid(
          alarm->second <= 59U;
 }
 
+/**
+ * @brief 把 HAL RTC 后端结果转换为公共状态。
+ */
 static platform_status_t platform_rtc_finish_backend(
   platform_status_t status,
   uint32_t operation_error
@@ -64,10 +79,16 @@ static platform_status_t platform_rtc_finish_backend(
   return status;
 }
 
+/**
+ * @brief 记录 RTC 软件错误位并保留硬件错误快照。
+ */
 void platform_rtc_record_error(uint32_t error) {
   platform_error_record(&rtc_error, error);
 }
 
+/**
+ * @brief 把 RTC 闹钟或唤醒事件分发给已注册回调。
+ */
 void platform_rtc_dispatch_event(platform_rtc_event_t event) {
   platform_rtc_callback_t callback = NULL;
   switch (event) {
@@ -86,11 +107,22 @@ void platform_rtc_dispatch_event(platform_rtc_event_t event) {
   }
 }
 
+/**
+ * @brief 查询当前系列是否支持 RTC 唤醒定时器。
+ * @param rtc RTC 实例。
+ * @return 支持返回 true；F1 或不支持实例返回 false。
+ */
 bool Platform_RTC_HasWakeUpTimer(platform_rtc_instance_t rtc) {
   return rtc == PLATFORM_RTC_1 &&
          platform_rtc_backend_has_wakeup_timer();
 }
 
+/**
+ * @brief 设置完整的二进制日期与 24 小时时间。
+ * @param rtc RTC 实例。
+ * @param date_time 年份必须在 2000..2099 内，weekday 必须在 1..7 内，
+ *                  其中周一到周日依次为 1..7。非法字段会被拒绝。
+ */
 platform_status_t Platform_RTC_SetDateTime(
   platform_rtc_instance_t rtc,
   const platform_rtc_date_time_t *date_time
@@ -117,6 +149,12 @@ platform_status_t Platform_RTC_SetDateTime(
   return platform_rtc_finish_backend(status, PLATFORM_RTC_ERROR_DATE);
 }
 
+/**
+ * @brief 读取完整日期和时间。
+ * @param rtc RTC 实例。
+ * @param date_time 目标日期和时间。
+ * @note 在硬件支持时，HAL 会把日期和时间作为一个一致的日历快照读取。
+ */
 platform_status_t Platform_RTC_GetDateTime(
   platform_rtc_instance_t rtc,
   platform_rtc_date_time_t *date_time
@@ -143,6 +181,14 @@ platform_status_t Platform_RTC_GetDateTime(
   return platform_rtc_finish_backend(status, PLATFORM_RTC_ERROR_DATE);
 }
 
+/**
+ * @brief 启用每日闹钟中断。
+ * @param rtc RTC 实例。
+ * @param alarm 每日闹钟时间。
+ * @note 闹钟只比较时、分、秒。跨系列 Platform 契约不包含日历日期匹配。
+ * @note STM32F1 会在中断回调中把计数器闹钟重装到第二天。禁止在该回调中
+ *       调用 RTC API。
+ */
 platform_status_t Platform_RTC_SetAlarm(
   platform_rtc_instance_t rtc,
   const platform_rtc_alarm_config_t *alarm
@@ -162,6 +208,10 @@ platform_status_t Platform_RTC_SetAlarm(
   );
 }
 
+/**
+ * @brief 禁用每日闹钟中断。
+ * @param rtc RTC 实例。
+ */
 platform_status_t Platform_RTC_DisableAlarm(
   platform_rtc_instance_t rtc
 ) {
@@ -180,6 +230,14 @@ platform_status_t Platform_RTC_DisableAlarm(
   );
 }
 
+/**
+ * @brief 启动 RTC 唤醒定时器中断。
+ * @param rtc RTC 实例。
+ * @param counter 以所选时钟节拍表示的重装计数器，范围 0..0xFFFF。
+ * @param clock 唤醒定时器时钟源。
+ * @retval PLATFORM_STATUS_UNSUPPORTED 当前系列不支持唤醒定时器。
+ * @note 唤醒时序由 RTC 时钟推导；实际周期取决于所选时钟和计数器重装语义。
+ */
 platform_status_t Platform_RTC_StartWakeUpTimer(
   platform_rtc_instance_t rtc,
   uint32_t counter,
@@ -208,6 +266,10 @@ platform_status_t Platform_RTC_StartWakeUpTimer(
   );
 }
 
+/**
+ * @brief 停止 RTC 唤醒定时器。
+ * @param rtc RTC 实例。
+ */
 platform_status_t Platform_RTC_StopWakeUpTimer(
   platform_rtc_instance_t rtc
 ) {
@@ -230,6 +292,12 @@ platform_status_t Platform_RTC_StopWakeUpTimer(
   );
 }
 
+/**
+ * @brief 读取最近一次 Platform RTC 操作错误快照。
+ * @param rtc RTC 实例。
+ * @return `platform_rtc_error_t` 与 `PLATFORM_ERROR_*` 位掩码的组合。
+ * @note 读取不清除快照。
+ */
 uint32_t Platform_RTC_GetLastError(platform_rtc_instance_t rtc) {
   if (rtc != PLATFORM_RTC_1) {
     return PLATFORM_ERROR_INVALID_ARGUMENT;
@@ -237,6 +305,15 @@ uint32_t Platform_RTC_GetLastError(platform_rtc_instance_t rtc) {
   return rtc_error;
 }
 
+/**
+ * @brief 注册 RTC 事件回调。
+ * @param rtc RTC 实例。
+ * @param callbacks 待复制的回调集合。
+ * @note 回调在中断上下文执行。应在初始化阶段调用一次。
+ * @retval PLATFORM_STATUS_OK 注册成功。
+ * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例或回调集合非法。
+ */
 platform_status_t Platform_RTC_RegisterCallback(
   platform_rtc_instance_t rtc,
   const platform_rtc_callback_binding_t *callbacks

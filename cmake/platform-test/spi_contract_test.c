@@ -16,10 +16,16 @@ static platform_status_t s_transmit_status;
 static uint32_t s_backend_error;
 static uint32_t s_event_count;
 
+/**
+ * @brief 校验SPI实例是否已由板级配置启用。
+ */
 bool platform_spi_backend_is_valid(platform_spi_instance_t spi) {
   return spi == PLATFORM_SPI_1;
 }
 
+/**
+ * @brief 返回 SPI 后端当前数据宽度。
+ */
 platform_status_t platform_spi_backend_get_data_width(
   platform_spi_instance_t spi,
   platform_spi_data_width_t *data_width
@@ -29,6 +35,9 @@ platform_status_t platform_spi_backend_get_data_width(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI阻塞发送。
+ */
 platform_status_t platform_spi_backend_transmit(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -42,6 +51,9 @@ platform_status_t platform_spi_backend_transmit(
   return s_transmit_status;
 }
 
+/**
+ * @brief 启动SPI阻塞接收。
+ */
 platform_status_t platform_spi_backend_receive(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -55,6 +67,9 @@ platform_status_t platform_spi_backend_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 SPI 阻塞全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -70,6 +85,9 @@ platform_status_t platform_spi_backend_transmit_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI中断发送。
+ */
 platform_status_t platform_spi_backend_transmit_it(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -81,6 +99,9 @@ platform_status_t platform_spi_backend_transmit_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI中断接收。
+ */
 platform_status_t platform_spi_backend_receive_it(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -92,6 +113,9 @@ platform_status_t platform_spi_backend_receive_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 SPI 中断全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive_it(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -105,6 +129,9 @@ platform_status_t platform_spi_backend_transmit_receive_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI DMA 发送。
+ */
 platform_status_t platform_spi_backend_transmit_dma(
   platform_spi_instance_t spi,
   const uint8_t *data,
@@ -116,6 +143,9 @@ platform_status_t platform_spi_backend_transmit_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI DMA 接收。
+ */
 platform_status_t platform_spi_backend_receive_dma(
   platform_spi_instance_t spi,
   uint8_t *data,
@@ -127,6 +157,9 @@ platform_status_t platform_spi_backend_receive_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 SPI DMA 全双工传输。
+ */
 platform_status_t platform_spi_backend_transmit_receive_dma(
   platform_spi_instance_t spi,
   const uint8_t *tx_data,
@@ -140,11 +173,17 @@ platform_status_t platform_spi_backend_transmit_receive_dma(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 中止SPI当前传输并映射 HAL 状态。
+ */
 platform_status_t platform_spi_backend_abort(platform_spi_instance_t spi) {
   (void)spi;
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动SPI异步中止并映射 HAL 状态。
+ */
 platform_status_t platform_spi_backend_abort_it(
   platform_spi_instance_t spi
 ) {
@@ -152,11 +191,17 @@ platform_status_t platform_spi_backend_abort_it(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回SPI后端记录的错误位。
+ */
 uint32_t platform_spi_backend_get_error(platform_spi_instance_t spi) {
   (void)spi;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 SPI 完成或错误事件。
+ */
 static void spi_callback(
   platform_spi_instance_t spi,
   const platform_spi_event_t *event,
@@ -168,6 +213,9 @@ static void spi_callback(
   s_event_count++;
 }
 
+/**
+ * @brief 验证 SPI 参数校验、收发和事件分发。
+ */
 static void test_spi_contract(void) {
   const uint8_t buffer[4] = {0U, 1U, 2U, 3U};
   s_transmit_status = PLATFORM_STATUS_OK;
@@ -208,6 +256,9 @@ static void test_spi_contract(void) {
   assert(s_event_count == 1U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_spi_contract();
   return 0;

@@ -12,6 +12,9 @@
 #include "SEGGER_RTT.h"
 #include <assert.h>
 
+/**
+ * @brief 通过 RTT 后端写入日志文本。
+ */
 static uint32_t sys_log_rtt_write(
   sys_log_base_t *log_h,
   const uint8_t *data,
@@ -31,6 +34,12 @@ static const sys_log_ops_t sys_log_ops_rtt = {
   .write = sys_log_rtt_write,
 };
 
+/**
+ * @brief 初始化 RTT 日志后端。
+ * @param log_h 后端对象。
+ * @param name 调试名称。
+ * @param channel RTT 上行通道，通常为 0。
+ */
 void Sys_Log_RTT_Init(
   system_log_rtt_t *log_h,
   const char *name,

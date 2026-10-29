@@ -118,24 +118,52 @@ uint32_t Sys_Log_GetDropBytes(void);
 /** @brief 因其他写入者占用日志门面而被拒绝的日志条数。 */
 uint32_t Sys_Log_GetContentionCount(void);
 
+/**
+ * @brief 按 ERROR 等级提交一条可被过滤的日志。
+ * @param tag 静态生命周期的简短子系统名称。
+ * @param format printf 风格格式字符串。
+ * @param ... 与 format 匹配的可选参数；等级被过滤时不求值。
+ * @note 仅允许任务上下文调用，不得在 ISR 中使用。
+ */
 #define SYS_LOG_ERROR(tag, format, ...) \
   do { \
     if (Sys_Log_IsEnabled(SYS_LOG_LEVEL_ERROR)) { \
       Sys_Log_Write(SYS_LOG_LEVEL_ERROR, tag, format, ##__VA_ARGS__); \
     } \
   } while (0)
+/**
+ * @brief 按 WARN 等级提交一条可被过滤的日志。
+ * @param tag 静态生命周期的简短子系统名称。
+ * @param format printf 风格格式字符串。
+ * @param ... 与 format 匹配的可选参数；等级被过滤时不求值。
+ * @note 仅允许任务上下文调用，不得在 ISR 中使用。
+ */
 #define SYS_LOG_WARN(tag, format, ...) \
   do { \
     if (Sys_Log_IsEnabled(SYS_LOG_LEVEL_WARN)) { \
       Sys_Log_Write(SYS_LOG_LEVEL_WARN, tag, format, ##__VA_ARGS__); \
     } \
   } while (0)
+/**
+ * @brief 按 INFO 等级提交一条可被过滤的日志。
+ * @param tag 静态生命周期的简短子系统名称。
+ * @param format printf 风格格式字符串。
+ * @param ... 与 format 匹配的可选参数；等级被过滤时不求值。
+ * @note 仅允许任务上下文调用，不得在 ISR 中使用。
+ */
 #define SYS_LOG_INFO(tag, format, ...) \
   do { \
     if (Sys_Log_IsEnabled(SYS_LOG_LEVEL_INFO)) { \
       Sys_Log_Write(SYS_LOG_LEVEL_INFO, tag, format, ##__VA_ARGS__); \
     } \
   } while (0)
+/**
+ * @brief 按 DEBUG 等级提交一条可被过滤的日志。
+ * @param tag 静态生命周期的简短子系统名称。
+ * @param format printf 风格格式字符串。
+ * @param ... 与 format 匹配的可选参数；等级被过滤时不求值。
+ * @note 仅允许任务上下文调用，不得在 ISR 中使用。
+ */
 #define SYS_LOG_DEBUG(tag, format, ...) \
   do { \
     if (Sys_Log_IsEnabled(SYS_LOG_LEVEL_DEBUG)) { \

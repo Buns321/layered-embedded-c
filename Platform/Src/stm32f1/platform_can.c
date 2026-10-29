@@ -14,10 +14,16 @@
 #error "STM32F1 Platform CAN requires CAN1"
 #endif
 
+/**
+ * @brief 把平台 CAN 实例编号转换为 HAL 句柄。
+ */
 static CAN_HandleTypeDef *platform_can_to_hal(platform_can_instance_t can) {
   return can == PLATFORM_CAN_1 ? &hcan1 : NULL;
 }
 
+/**
+ * @brief 把 HAL CAN 句柄识别为平台实例编号。
+ */
 static bool platform_hal_to_can(
   CAN_HandleTypeDef *can_h,
   platform_can_instance_t *can
@@ -29,6 +35,9 @@ static bool platform_hal_to_can(
   return false;
 }
 
+/**
+ * @brief 把 CAN 过滤器标识符转换为硬件位布局。
+ */
 static uint32_t platform_can_filter_identifier(
   const platform_can_filter_config_t *config,
   uint32_t identifier
@@ -41,6 +50,9 @@ static uint32_t platform_can_filter_identifier(
          (config->remote ? 0x00000002UL : 0U);
 }
 
+/**
+ * @brief 把 CAN 过滤器掩码转换为硬件位布局。
+ */
 static uint32_t platform_can_filter_mask(
   const platform_can_filter_config_t *config
 ) {
@@ -50,6 +62,9 @@ static uint32_t platform_can_filter_mask(
   return (config->mask << 21U) | 0x00000006UL;
 }
 
+/**
+ * @brief 把 CAN 通知选择转换为 HAL 中断掩码。
+ */
 static uint32_t platform_can_notifications(uint32_t notifications) {
   uint32_t hal_notifications = 0U;
   if ((notifications & PLATFORM_CAN_NOTIFY_RX_FIFO0_PENDING) != 0U) {
@@ -73,6 +88,9 @@ static uint32_t platform_can_notifications(uint32_t notifications) {
   return hal_notifications;
 }
 
+/**
+ * @brief 把 HAL CAN 错误位映射为平台错误码。
+ */
 static uint32_t platform_can_map_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_CAN_ERROR_NONE;
   if ((hal_error & HAL_CAN_ERROR_EWG) != 0U) {
@@ -195,6 +213,9 @@ static uint32_t platform_can_map_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 把项目 CAN 帧描述转换为 HAL 头结构。
+ */
 static void platform_can_to_hal_header(
   const platform_can_frame_t *frame,
   CAN_TxHeaderTypeDef *header
@@ -213,6 +234,9 @@ static void platform_can_to_hal_header(
   }
 }
 
+/**
+ * @brief 把 HAL CAN 头结构转换为项目帧描述。
+ */
 static void platform_can_from_hal_header(
   const CAN_RxHeaderTypeDef *header,
   platform_can_frame_t *frame
@@ -227,6 +251,9 @@ static void platform_can_from_hal_header(
                 : header->StdId;
 }
 
+/**
+ * @brief 等待 CAN 发送邮箱进入就绪状态。
+ */
 static platform_status_t platform_can_wait_tx_mailbox(
   CAN_HandleTypeDef *can_h,
   uint32_t timeout
@@ -243,6 +270,9 @@ static platform_status_t platform_can_wait_tx_mailbox(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 等待 CAN 接收 FIFO 进入就绪状态。
+ */
 static platform_status_t platform_can_wait_rx(
   CAN_HandleTypeDef *can_h,
   uint32_t fifo,
@@ -260,10 +290,16 @@ static platform_status_t platform_can_wait_rx(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 校验CAN实例是否已由板级配置启用。
+ */
 bool platform_can_backend_is_valid(platform_can_instance_t can) {
   return can == PLATFORM_CAN_1 && platform_can_to_hal(can) != NULL;
 }
 
+/**
+ * @brief 把公共 CAN 过滤规则写入后端。
+ */
 platform_status_t platform_can_backend_configure_filter(
   platform_can_instance_t can,
   const platform_can_filter_config_t *config
@@ -297,6 +333,9 @@ platform_status_t platform_can_backend_configure_filter(
   return platform_from_hal_status(HAL_CAN_ConfigFilter(can_h, &filter));
 }
 
+/**
+ * @brief 启动CAN后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_can_backend_start(
   platform_can_instance_t can
 ) {
@@ -305,6 +344,9 @@ platform_status_t platform_can_backend_start(
                    : platform_from_hal_status(HAL_CAN_Start(can_h));
 }
 
+/**
+ * @brief 停止CAN后端并清理活动状态。
+ */
 platform_status_t platform_can_backend_stop(
   platform_can_instance_t can
 ) {
@@ -313,6 +355,9 @@ platform_status_t platform_can_backend_stop(
                    : platform_from_hal_status(HAL_CAN_Stop(can_h));
 }
 
+/**
+ * @brief 启动CAN阻塞发送。
+ */
 platform_status_t platform_can_backend_transmit(
   platform_can_instance_t can,
   const platform_can_frame_t *frame,
@@ -335,6 +380,9 @@ platform_status_t platform_can_backend_transmit(
   );
 }
 
+/**
+ * @brief 启动CAN阻塞接收。
+ */
 platform_status_t platform_can_backend_receive(
   platform_can_instance_t can,
   platform_can_fifo_t fifo,
@@ -363,6 +411,9 @@ platform_status_t platform_can_backend_receive(
   return status;
 }
 
+/**
+ * @brief 启用 CAN 发送完成或接收通知。
+ */
 platform_status_t platform_can_backend_activate_notification(
   platform_can_instance_t can,
   uint32_t notifications
@@ -375,6 +426,9 @@ platform_status_t platform_can_backend_activate_notification(
                      ));
 }
 
+/**
+ * @brief 停用 CAN 发送完成或接收通知。
+ */
 platform_status_t platform_can_backend_deactivate_notification(
   platform_can_instance_t can,
   uint32_t notifications
@@ -387,12 +441,18 @@ platform_status_t platform_can_backend_deactivate_notification(
                      ));
 }
 
+/**
+ * @brief 返回CAN后端记录的错误位。
+ */
 uint32_t platform_can_backend_get_error(platform_can_instance_t can) {
   CAN_HandleTypeDef *can_h = platform_can_to_hal(can);
   return can_h == NULL ? PLATFORM_CAN_ERROR_PARAMETER
                    : platform_can_map_error(HAL_CAN_GetError(can_h));
 }
 
+/**
+ * @brief 分发 CAN 发送完成事件。
+ */
 static void platform_can_dispatch_tx(
   CAN_HandleTypeDef *can_h,
   uint8_t mailbox,
@@ -409,6 +469,9 @@ static void platform_can_dispatch_tx(
   platform_can_dispatch_event(can, &event);
 }
 
+/**
+ * @brief 分发 CAN 接收完成事件。
+ */
 static void platform_can_dispatch_rx(
   CAN_HandleTypeDef *can_h,
   platform_can_fifo_t fifo,
@@ -437,30 +500,51 @@ static void platform_can_dispatch_rx(
   platform_can_dispatch_event(can, &event);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 0 发送完成事件。
+ */
 void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 0U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 1 发送完成事件。
+ */
 void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 1U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 2 发送完成事件。
+ */
 void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 2U, PLATFORM_CAN_EVENT_TX_COMPLETE);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 0 中止完成事件。
+ */
 void HAL_CAN_TxMailbox0AbortCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 0U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 1 中止完成事件。
+ */
 void HAL_CAN_TxMailbox1AbortCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 1U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
+/**
+ * @brief 分发 CAN 邮箱 2 中止完成事件。
+ */
 void HAL_CAN_TxMailbox2AbortCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_tx(can_h, 2U, PLATFORM_CAN_EVENT_TX_ABORT_COMPLETE);
 }
 
+/**
+ * @brief 处理 CAN FIFO0 待接收报文并转发通知。
+ */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
     can_h,
@@ -469,6 +553,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   );
 }
 
+/**
+ * @brief 处理 CAN FIFO1 待接收报文并转发通知。
+ */
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
     can_h,
@@ -477,6 +564,9 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *can_h) {
   );
 }
 
+/**
+ * @brief 处理 CAN FIFO0 满事件并转发通知。
+ */
 void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
     can_h,
@@ -485,6 +575,9 @@ void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *can_h) {
   );
 }
 
+/**
+ * @brief 处理 CAN FIFO1 满事件并转发通知。
+ */
 void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *can_h) {
   platform_can_dispatch_rx(
     can_h,
@@ -493,6 +586,9 @@ void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *can_h) {
   );
 }
 
+/**
+ * @brief 记录并分发 CAN 错误事件。
+ */
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *can_h) {
   platform_can_instance_t can;
   if (!platform_hal_to_can(can_h, &can)) {

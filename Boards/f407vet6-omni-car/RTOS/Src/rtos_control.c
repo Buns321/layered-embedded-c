@@ -14,6 +14,11 @@
 #include "rtos_config.h"
 #include "system_log.h"
 
+/**
+ * @brief 固定 100 Hz 的小车控制任务。
+ * @param argument CMSIS-RTOS2 任务参数，当前未使用。
+ * @note 任务入口不得阻塞；控制周期由 osDelayUntil 维护。
+ */
 void RTOS_Control_StartTask(void *argument) {
   (void)argument;
 

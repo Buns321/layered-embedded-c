@@ -155,6 +155,9 @@ static const char *const s_motor_names[APP_CAR_WHEEL_COUNT] = {
   "motor_d",
 };
 
+/**
+ * @brief 返回轮毂 AIN1 控制端口。
+ */
 static platform_gpio_port_t app_car_ain1_port(uint8_t wheel) {
   switch (wheel) {
     case 0U: return APP_CAR_AIN1_A_PORT;
@@ -165,6 +168,9 @@ static platform_gpio_port_t app_car_ain1_port(uint8_t wheel) {
   }
 }
 
+/**
+ * @brief 返回轮毂 AIN1 控制引脚。
+ */
 static uint16_t app_car_ain1_pin(uint8_t wheel) {
   switch (wheel) {
     case 0U: return APP_CAR_AIN1_A_PIN;
@@ -175,6 +181,9 @@ static uint16_t app_car_ain1_pin(uint8_t wheel) {
   }
 }
 
+/**
+ * @brief 返回轮毂 AIN2 控制端口。
+ */
 static platform_gpio_port_t app_car_ain2_port(uint8_t wheel) {
   switch (wheel) {
     case 0U: return APP_CAR_AIN2_A_PORT;
@@ -185,6 +194,9 @@ static platform_gpio_port_t app_car_ain2_port(uint8_t wheel) {
   }
 }
 
+/**
+ * @brief 返回轮毂 AIN2 控制引脚。
+ */
 static uint16_t app_car_ain2_pin(uint8_t wheel) {
   switch (wheel) {
     case 0U: return APP_CAR_AIN2_A_PIN;
@@ -195,10 +207,16 @@ static uint16_t app_car_ain2_pin(uint8_t wheel) {
   }
 }
 
+/**
+ * @brief 用无符号回绕安全方式判断持续时间是否到期。
+ */
 static bool app_car_elapsed(uint32_t now_ms, uint32_t start_ms, uint32_t duration_ms) {
   return (uint32_t)(now_ms - start_ms) >= duration_ms;
 }
 
+/**
+ * @brief 用有符号差值判断时间戳是否晚于参考点。
+ */
 static bool app_car_timestamp_is_after(
   uint32_t timestamp_ms,
   uint32_t reference_ms
@@ -206,6 +224,9 @@ static bool app_car_timestamp_is_after(
   return (int32_t)(timestamp_ms - reference_ms) > 0;
 }
 
+/**
+ * @brief 在临界区内清除有效运动命令。
+ */
 static void app_car_clear_command(void) {
   Sys_Critical_Enter();
   s_car.command.valid = false;
@@ -215,6 +236,9 @@ static void app_car_clear_command(void) {
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 在临界区内发布新的运动命令和输入快照。
+ */
 static void app_car_set_command(
   const joycon_input_t *input,
   float linear_speed,
@@ -236,6 +260,9 @@ static void app_car_set_command(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 在临界区内复制当前运动命令。
+ */
 static app_car_command_t app_car_get_command(void) {
   app_car_command_t command;
 
@@ -246,6 +273,9 @@ static app_car_command_t app_car_get_command(void) {
   return command;
 }
 
+/**
+ * @brief 首次故障时锁存状态并记录错误日志。
+ */
 static void app_car_set_fault(const char *reason) {
   if (!s_car.faulted) {
     s_car.faulted = true;
@@ -253,6 +283,9 @@ static void app_car_set_fault(const char *reason) {
   }
 }
 
+/**
+ * @brief 切换启动状态并重置状态计时。
+ */
 static void app_car_enter_state(
   app_car_boot_state_t state,
   uint32_t now_ms
@@ -263,6 +296,9 @@ static void app_car_enter_state(
   s_car.still_tracking = false;
 }
 
+/**
+ * @brief 停止底盘、清除命令并复位使能状态。
+ */
 static void app_car_stop_motion(void) {
   if (s_car.motors_enabled || s_car.estop_latched) {
     Chassis_Base_Stop(&s_chassis.base);
@@ -273,6 +309,9 @@ static void app_car_stop_motion(void) {
   app_car_clear_command();
 }
 
+/**
+ * @brief 触发锁存急停并清除运动命令。
+ */
 static void app_car_estop(void) {
   if (!s_car.estop_latched) {
     Chassis_Base_EStop(&s_chassis.base);
@@ -283,6 +322,9 @@ static void app_car_estop(void) {
   app_car_clear_command();
 }
 
+/**
+ * @brief 检查四个电机是否都处于使能状态。
+ */
 static bool app_car_motors_are_enabled(void) {
   for (uint8_t wheel = 0U; wheel < APP_CAR_WHEEL_COUNT; wheel++) {
     if (
@@ -296,6 +338,9 @@ static bool app_car_motors_are_enabled(void) {
   return true;
 }
 
+/**
+ * @brief 使能四个电机并锁存使能失败。
+ */
 static void app_car_enable_motors(void) {
   for (uint8_t wheel = 0U; wheel < APP_CAR_WHEEL_COUNT; wheel++) {
     Dev_Motor_Base_Enable(&s_motors[wheel].motor_base);
@@ -309,6 +354,9 @@ static void app_car_enable_motors(void) {
   }
 }
 
+/**
+ * @brief 检查航向和 Z 轴角速度是否在超时窗口内有效。
+ */
 static bool app_car_imu_yaw_is_fresh(
   const imu_sample_t *sample,
   uint32_t now_ms
@@ -328,6 +376,9 @@ static bool app_car_imu_yaw_is_fresh(
   return yaw_age_ms <= APP_CAR_IMU_TIMEOUT_MS;
 }
 
+/**
+ * @brief 推进车辆启动状态机。
+ */
 static void app_car_update_boot_state(uint32_t now_ms) {
   imu_status_t imu_status = {0};
   imu_sample_t imu_sample = {0};
@@ -461,6 +512,9 @@ static void app_car_update_boot_state(uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 生成并发布车辆遥测快照。
+ */
 static void app_car_update_telemetry(uint32_t now_ms) {
   telemetry_sample_t sample = {
     .valid_mask = TELEMETRY_CHANNEL_MASK,
@@ -517,6 +571,9 @@ static void app_car_update_telemetry(uint32_t now_ms) {
   (void)Dev_Telemetry_Base_Send(&s_justfloat.base, &sample);
 }
 
+/**
+ * @brief 记录当前车辆运行状态。
+ */
 static void app_car_log_status(uint32_t now_ms) {
   imu_status_t imu_status = {0};
   joycon_status_t joycon_status = {0};
@@ -542,6 +599,15 @@ static void app_car_log_status(uint32_t now_ms) {
   );
 }
 
+/**
+ * @brief 初始化并静态装配小车全部设备。
+ * @retval PLATFORM_STATUS_OK 初始化成功。
+ * @retval PLATFORM_STATUS_ERROR 任一设备初始化失败。
+ * @pre CubeMX 已初始化 TIM1、TIM2–TIM5、USART1–USART3 和 GPIO。
+ * @pre RTT 日志后端已按构建选项完成初始化。
+ * @note 只允许在 RTOS 调度器启动前调用一次。
+ * @note 初始化完成后电机仍保持禁用，等待 WHT101 归零和有效 JoyCon 命令。
+ */
 platform_status_t App_Car_Init(void) {
   if (s_car.initialized) {
     return PLATFORM_STATUS_OK;
@@ -688,6 +754,12 @@ platform_status_t App_Car_Init(void) {
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 推进 WHT101、JoyCon 和上电归零状态机。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许 UARTTask 调用。
+ * @note 配置、静止确认和传感器归零完成前不会使能电机。
+ */
 void App_Car_ProcessInputs(uint32_t now_ms) {
   if (!s_car.initialized) {
     return;
@@ -706,6 +778,12 @@ void App_Car_ProcessInputs(uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 运行一次 100 Hz 底盘与四轮闭环控制。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许 ControlTask 调用，且调用周期与 APP_CAR_CONTROL_PERIOD_S 一致。
+ * @note JoyCon 超时、IMU 失效、控制器错误或故障锁存时执行制动或急停。
+ */
 void App_Car_ProcessControl(uint32_t now_ms) {
   if (!s_car.initialized) {
     return;
@@ -821,6 +899,11 @@ void App_Car_ProcessControl(uint32_t now_ms) {
   );
 }
 
+/**
+ * @brief 运行 50 Hz JustFloat 遥测、状态日志和任务心跳监控。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许 MonitorTask 调用。
+ */
 void App_Car_ProcessMonitor(uint32_t now_ms) {
   if (!s_car.initialized) {
     return;

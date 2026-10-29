@@ -33,18 +33,27 @@
  * - Init 返回 platform_status_t，PWM 启动失败时保持 STBY 为低。
  */
 
+/**
+ * @brief 拉高 STBY 使能 TB6612 输出。
+ */
 static void dev_motor_tb6612_enable(motor_base_t *motor_h) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
   Platform_GPIO_WritePin(motor_tb6612_h->stby_port, motor_tb6612_h->stby_pin, PLATFORM_GPIO_PIN_SET);
 }
 
+/**
+ * @brief 清除 TB6612 使能引脚。
+ */
 static void dev_motor_tb6612_disable(motor_base_t *motor_h) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
   Platform_GPIO_WritePin(motor_tb6612_h->stby_port, motor_tb6612_h->stby_pin, PLATFORM_GPIO_PIN_RESET);
 }
 
+/**
+ * @brief 设置方向和占空比，并在零点附近制动。
+ */
 static void dev_motor_tb6612_setpower(motor_base_t *motor_h, float power) {
   assert(motor_h);
   motor_tb6612_t *motor_tb6612_h = (motor_tb6612_t *)motor_h;
@@ -89,6 +98,9 @@ static void dev_motor_tb6612_setpower(motor_base_t *motor_h, float power) {
   );
 }
 
+/**
+ * @brief 拉低两个方向引脚执行短路制动。
+ */
 static void dev_motor_tb6612_brake(motor_base_t *motor_h) {
   assert(motor_h);
 
@@ -129,6 +141,28 @@ static const motor_ops_t motor_ops_tb6612 = {
   .brake     = dev_motor_tb6612_brake,
 };
 
+/**
+ * @brief 初始化 TB6612 电机。
+ * @param motor_h 对象。
+ * @param name 名称。
+ * @param controller_h 控制律句柄。
+ * @param encoder_h 编码器句柄。
+ * @param counts_per_meter 编码器每米计数。
+ * @param control_period 控制周期（s）。
+ * @param target_speed 初始目标速度（m/s）。
+ * @param max_duty 执行器量程。
+ * @param pwm_instance PWM 定时器。
+ * @param pwm_channel PWM 通道。
+ * @param ain1_port AIN1 端口。
+ * @param ain1_pin AIN1 引脚。
+ * @param ain2_port AIN2 端口。
+ * @param ain2_pin AIN2 引脚。
+ * @param stby_port STBY 端口。
+ * @param stby_pin STBY 引脚。
+ * @retval PLATFORM_STATUS_OK 初始化成功。
+ * @retval PLATFORM_STATUS_ERROR PWM 启动失败。
+ * @note power 的符号表示方向，绝对值范围由 max_duty 约束。
+ */
 platform_status_t Dev_Motor_TB6612_Init(
   motor_tb6612_t        *motor_h,
   const char            *name,

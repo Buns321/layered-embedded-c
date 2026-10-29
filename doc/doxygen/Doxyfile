@@ -10,7 +10,7 @@ JAVADOC_AUTOBRIEF      = YES
 
 EXTRACT_ALL            = NO
 EXTRACT_PRIVATE        = NO
-EXTRACT_STATIC         = NO
+EXTRACT_STATIC         = YES
 
 INPUT                  = README.md \
                          doc/architecture.md \

@@ -8,14 +8,23 @@
 #include "platform_crc_backend.h"
 #include "stm32f4xx_hal.h"
 
+/**
+ * @brief 把平台 CRC 实例编号转换为 HAL 句柄。
+ */
 static CRC_HandleTypeDef *platform_crc_to_hal(platform_crc_instance_t crc) {
   return crc == PLATFORM_CRC_1 ? &hcrc : NULL;
 }
 
+/**
+ * @brief 校验CRC实例是否已由板级配置启用。
+ */
 bool platform_crc_backend_is_valid(platform_crc_instance_t crc) {
   return platform_crc_to_hal(crc) != NULL;
 }
 
+/**
+ * @brief 复位 CRC 计算状态。
+ */
 platform_status_t platform_crc_backend_reset(
   platform_crc_instance_t crc
 ) {
@@ -27,6 +36,9 @@ platform_status_t platform_crc_backend_reset(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 累计 CRC 输入数据块。
+ */
 platform_status_t platform_crc_backend_accumulate(
   platform_crc_instance_t crc,
   const uint32_t *words,
@@ -44,6 +56,9 @@ platform_status_t platform_crc_backend_accumulate(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 按公共 CRC 配置计算校验值。
+ */
 platform_status_t platform_crc_backend_calculate(
   platform_crc_instance_t crc,
   const uint32_t *words,

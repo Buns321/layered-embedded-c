@@ -12,6 +12,9 @@
 #include "platform_encoder.h"
 #include "assert.h"
 
+/**
+ * @brief 读取硬件计数并更新累计位置。
+ */
 static int32_t dev_encoder_tim_readdelta(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
@@ -64,12 +67,18 @@ static int32_t dev_encoder_tim_readdelta(encoder_base_t *encoder_h) {
   return delta;
 }
 
+/**
+ * @brief 返回累计编码器位置。
+ */
 static int64_t dev_encoder_tim_getposition(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
   return encoder_tim_h->position;
 }
 
+/**
+ * @brief 清零累计编码器位置。
+ */
 static void dev_encoder_tim_setzero(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
@@ -83,11 +92,17 @@ static void dev_encoder_tim_setzero(encoder_base_t *encoder_h) {
   encoder_tim_h->position = 0;
 }
 
+/**
+ * @brief 返回最近一次读取的计数增量。
+ */
 static int32_t dev_encoder_tim_getdelta(encoder_base_t *encoder_h) {
   assert(encoder_h);
   return dev_encoder_tim_readdelta(encoder_h);
 }
 
+/**
+ * @brief 在检测到方向变化后重新同步计数基准。
+ */
 static void dev_encoder_tim_resync(encoder_base_t *encoder_h) {
   assert(encoder_h);
   encoder_tim_t *encoder_tim_h = (encoder_tim_t*)encoder_h;
@@ -108,6 +123,14 @@ static const encoder_ops_t encoder_ops_tim = {
   .resync = dev_encoder_tim_resync,
 };
 
+/**
+ * @brief 初始化并启动定时器编码器。
+ * @param encoder_h 对象。
+ * @param name 名称。
+ * @param tim 定时器身份。
+ * @retval PLATFORM_STATUS_OK 启动成功。
+ * @retval PLATFORM_STATUS_ERROR 启动失败。
+ */
 platform_status_t Dev_Encoder_TIM_Init(
   encoder_tim_t *encoder_h,
   const char *name,
@@ -137,16 +160,24 @@ platform_status_t Dev_Encoder_TIM_Init(
   return Platform_Encoder_Start(encoder_h->tim);
 }
 
+/**
+ * @brief 设置单周期增量上限。
+ * @param encoder_h 编码器对象。
+ * @param max_counts 上限（counts/period）；0 表示不限制。
+ * @note 超限时增量会被夹紧并置 overflow 标志。
+ */
 void Dev_Encoder_TIM_SetMaxCountsPerPeriod(encoder_tim_t *encoder_h, uint32_t max_counts) {
   assert(encoder_h);
   encoder_h->max_counts_per_period = max_counts;
 }
 
+/** @brief 是否发生过单周期超限。 */
 bool Dev_Encoder_TIM_HasOverflow(const encoder_tim_t *encoder_h) {
   assert(encoder_h);
   return encoder_h->overflow;
 }
 
+/** @brief 清除 overflow 标志。 */
 void Dev_Encoder_TIM_ClearOverflow(encoder_tim_t *encoder_h) {
   assert(encoder_h);
   encoder_h->overflow = false;

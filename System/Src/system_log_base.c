@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+/** @brief 初始化日志后端并绑定静态操作表。 */
 void Sys_Log_Base_Init(
   sys_log_base_t *log_h,
   const char *name,
@@ -28,6 +29,13 @@ void Sys_Log_Base_Init(
   log_h->ops  = ops;
 }
 
+/**
+ * @brief 向日志后端写入字节。
+ * @param log_h 后端对象。
+ * @param data 字节缓冲区。
+ * @param size 字节数。
+ * @return 已接受的字节数；后端不可用或数据被丢弃时返回 0。
+ */
 uint32_t Sys_Log_Base_Write(
   sys_log_base_t *log_h,
   const uint8_t *data,

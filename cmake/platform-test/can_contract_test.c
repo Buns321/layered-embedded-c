@@ -17,10 +17,16 @@ static uint32_t s_backend_error;
 static uint32_t s_event_count;
 static platform_can_event_t s_last_event;
 
+/**
+ * @brief 校验CAN实例是否已由板级配置启用。
+ */
 bool platform_can_backend_is_valid(platform_can_instance_t can) {
   return can == PLATFORM_CAN_1;
 }
 
+/**
+ * @brief 把公共 CAN 过滤规则写入后端。
+ */
 platform_status_t platform_can_backend_configure_filter(
   platform_can_instance_t can,
   const platform_can_filter_config_t *config
@@ -30,6 +36,9 @@ platform_status_t platform_can_backend_configure_filter(
   return s_filter_status;
 }
 
+/**
+ * @brief 启动CAN后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_can_backend_start(
   platform_can_instance_t can
 ) {
@@ -37,6 +46,9 @@ platform_status_t platform_can_backend_start(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停止CAN后端并清理活动状态。
+ */
 platform_status_t platform_can_backend_stop(
   platform_can_instance_t can
 ) {
@@ -44,6 +56,9 @@ platform_status_t platform_can_backend_stop(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动CAN阻塞发送。
+ */
 platform_status_t platform_can_backend_transmit(
   platform_can_instance_t can,
   const platform_can_frame_t *frame,
@@ -55,6 +70,9 @@ platform_status_t platform_can_backend_transmit(
   return s_transmit_status;
 }
 
+/**
+ * @brief 启动CAN阻塞接收。
+ */
 platform_status_t platform_can_backend_receive(
   platform_can_instance_t can,
   platform_can_fifo_t fifo,
@@ -68,6 +86,9 @@ platform_status_t platform_can_backend_receive(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启用 CAN 发送完成或接收通知。
+ */
 platform_status_t platform_can_backend_activate_notification(
   platform_can_instance_t can,
   uint32_t notifications
@@ -77,6 +98,9 @@ platform_status_t platform_can_backend_activate_notification(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 停用 CAN 发送完成或接收通知。
+ */
 platform_status_t platform_can_backend_deactivate_notification(
   platform_can_instance_t can,
   uint32_t notifications
@@ -86,11 +110,17 @@ platform_status_t platform_can_backend_deactivate_notification(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 返回CAN后端记录的错误位。
+ */
 uint32_t platform_can_backend_get_error(platform_can_instance_t can) {
   (void)can;
   return s_backend_error;
 }
 
+/**
+ * @brief 记录 CAN 接收事件并保存测试帧。
+ */
 static void can_callback(
   platform_can_instance_t can,
   const platform_can_event_t *event,
@@ -103,6 +133,9 @@ static void can_callback(
   s_last_event = *event;
 }
 
+/**
+ * @brief 验证 CAN 参数校验、帧转换和事件分发。
+ */
 static void test_can_contract(void) {
   s_transmit_status = PLATFORM_STATUS_OK;
   s_filter_status = PLATFORM_STATUS_OK;
@@ -171,6 +204,9 @@ static void test_can_contract(void) {
   assert(s_last_event.error == PLATFORM_CAN_ERROR_BUS_OFF);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_can_contract();
   return 0;

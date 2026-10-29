@@ -15,6 +15,9 @@
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief 把角度归一化到 [-180, 180) 度。
+ */
 static float imu_wrap_deg(float angle_deg) {
   float wrapped = angle_deg;
 
@@ -28,6 +31,9 @@ static float imu_wrap_deg(float angle_deg) {
   return wrapped;
 }
 
+/**
+ * @brief 根据通道位掩码定位样本中的浮点字段。
+ */
 static float *imu_value_slot(imu_sample_t *sample, uint32_t channel) {
   assert(sample && channel < IMU_CHANNEL_INDEX_COUNT);
 
@@ -45,6 +51,9 @@ static float *imu_value_slot(imu_sample_t *sample, uint32_t channel) {
   }
 }
 
+/**
+ * @brief 复制并清理输入帧中的非有限值。
+ */
 static bool imu_sanitize_frame(
   const filter_sample_t *input,
   filter_sample_t *sanitized
@@ -71,6 +80,9 @@ static bool imu_sanitize_frame(
   return sanitized->valid_mask != 0u;
 }
 
+/**
+ * @brief 把校正后的滤波器帧合并回 IMU 样本。
+ */
 static bool imu_merge_frame(
   imu_sample_t *sample,
   const filter_sample_t *frame,
@@ -126,6 +138,13 @@ static bool imu_merge_frame(
   return updated;
 }
 
+/**
+ * @brief 初始化 IMU 抽象层。
+ * @param imu_h 对象。
+ * @param name 名称。
+ * @param ops 具体实现操作表。
+ * @param filter_h 已初始化的静态滤波器根节点，不能为空。
+ */
 void Dev_IMU_Base_Init(
   imu_base_t *imu_h,
   const char *name,
@@ -149,6 +168,7 @@ void Dev_IMU_Base_Init(
   imu_h->filter_h = filter_h;
 }
 
+/** @brief 复位滤波器并启动具体 IMU。 */
 void Dev_IMU_Base_Start(imu_base_t *imu_h) {
   assert(imu_h && imu_h->ops && imu_h->filter_h && !imu_h->is_started);
 
@@ -157,11 +177,25 @@ void Dev_IMU_Base_Start(imu_base_t *imu_h) {
   imu_h->is_started = true;
 }
 
+/**
+ * @brief 推进 IMU 的非阻塞状态机。
+ * @param imu_h IMU 对象。
+ * @param now_ms 当前毫秒时间戳。
+ * @note 每个任务周期调用一次。
+ */
 void Dev_IMU_Base_Process(imu_base_t *imu_h, uint32_t now_ms) {
   assert(imu_h && imu_h->ops && imu_h->ops->process && imu_h->is_started);
   imu_h->ops->process(imu_h, now_ms);
 }
 
+/**
+ * @brief 提交一帧由具体驱动采集的原始数据。
+ * @param imu_h IMU 对象。
+ * @param frame 原始滤波样本，只标记本帧更新的通道。
+ * @return 滤波器是否产生了至少一个可发布通道。
+ * @note 仅允许单写者调用；输入值必须是工程单位。
+ * @note 调用方不能保持 frame；base 会完成滤波和结果合并。
+ */
 bool Dev_IMU_Base_SubmitSample(
   imu_base_t *imu_h,
   const filter_sample_t *frame
@@ -203,6 +237,7 @@ bool Dev_IMU_Base_SubmitSample(
   return published;
 }
 
+/** @brief 复制一份经过滤波的 IMU 数据快照。 */
 bool Dev_IMU_Base_GetSample(imu_base_t *imu_h, imu_sample_t *sample) {
   assert(imu_h && sample);
 
@@ -214,6 +249,7 @@ bool Dev_IMU_Base_GetSample(imu_base_t *imu_h, imu_sample_t *sample) {
   return available;
 }
 
+/** @brief 复制一份未经软件滤波的 IMU 数据快照。 */
 bool Dev_IMU_Base_GetRawSample(imu_base_t *imu_h, imu_sample_t *sample) {
   assert(imu_h && sample);
 
@@ -225,6 +261,7 @@ bool Dev_IMU_Base_GetRawSample(imu_base_t *imu_h, imu_sample_t *sample) {
   return available;
 }
 
+/** @brief 复制一份 IMU 运行状态快照。 */
 void Dev_IMU_Base_GetStatus(imu_base_t *imu_h, imu_status_t *status) {
   assert(imu_h && imu_h->ops && imu_h->ops->get_status && status);
 
@@ -249,60 +286,73 @@ void Dev_IMU_Base_GetStatus(imu_base_t *imu_h, imu_status_t *status) {
   *status = device_status;
 }
 
+/** @brief 读取滤波后的 yaw（度）。 */
 float Dev_IMU_Base_GetYaw(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.yaw_deg;
 }
 
+/** @brief 读取滤波后的 roll（度）。 */
 float Dev_IMU_Base_GetRoll(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.roll_deg;
 }
 
+/** @brief 读取滤波后的 pitch（度）。 */
 float Dev_IMU_Base_GetPitch(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.pitch_deg;
 }
 
+/** @brief 读取滤波后的 X 轴角速度（deg/s）。 */
 float Dev_IMU_Base_GetGyroX(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[0];
 }
 
+/** @brief 读取滤波后的 Y 轴角速度（deg/s）。 */
 float Dev_IMU_Base_GetGyroY(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[1];
 }
 
+/** @brief 读取滤波后的 Z 轴角速度（deg/s）。 */
 float Dev_IMU_Base_GetGyroZ(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.gyro_dps[2];
 }
 
+/** @brief 读取滤波后的 X 轴加速度（m/s^2）。 */
 float Dev_IMU_Base_GetAccelX(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[0];
 }
 
+/** @brief 读取滤波后的 Y 轴加速度（m/s^2）。 */
 float Dev_IMU_Base_GetAccelY(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[1];
 }
 
+/** @brief 读取滤波后的 Z 轴加速度（m/s^2）。 */
 float Dev_IMU_Base_GetAccelZ(imu_base_t *imu_h) {
   imu_sample_t sample = {0};
   (void)Dev_IMU_Base_GetSample(imu_h, &sample);
   return sample.accel_mps2[2];
 }
 
+/**
+ * @brief 把当前滤波后的 yaw 设为零参考，不改变 raw_sample。
+ * @note 该操作只影响对外发布值，不修改滤波器内部状态。
+ */
 void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h) {
   assert(imu_h);
 
@@ -318,6 +368,7 @@ void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h) {
   Sys_Critical_Exit();
 }
 
+/** @brief 请求具体 IMU 执行设备侧置零动作。 */
 void Dev_IMU_Base_SetZero(imu_base_t *imu_h) {
   assert(imu_h && imu_h->ops && imu_h->ops->set_zero);
   imu_h->ops->set_zero(imu_h);

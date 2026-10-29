@@ -22,6 +22,9 @@
   }                                                                          \
 } while (0)
 
+/**
+ * @brief 验证 CAN 过滤器与通知参数校验。
+ */
 static int test_can_validation(void) {
   CHECK(platform_can_frame_values_are_valid(false, 0x000UL, 0U));
   CHECK(platform_can_frame_values_are_valid(false, 0x7FFUL, 8U));
@@ -32,6 +35,9 @@ static int test_can_validation(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 SPI 参数校验。
+ */
 static int test_spi_validation(void) {
   uint8_t aligned_buffer[4] = {0};
   uint8_t *unaligned_buffer = &aligned_buffer[1];
@@ -45,6 +51,9 @@ static int test_spi_validation(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 RTC 每日闹钟计算。
+ */
 static int test_rtc_daily_alarm(void) {
   CHECK(platform_rtc_next_daily_alarm(0UL) == 86400UL);
   CHECK(platform_rtc_next_daily_alarm(86399UL) == 172799UL);
@@ -52,6 +61,9 @@ static int test_rtc_daily_alarm(void) {
   return 0;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   if (test_can_validation() != 0) {
     return 1;

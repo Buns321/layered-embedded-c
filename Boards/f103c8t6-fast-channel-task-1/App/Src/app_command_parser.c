@@ -14,6 +14,9 @@
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief 不区分大小写比较命令文本。
+ */
 static bool app_command_textequals(const char *left, const char *right) {
   assert(left && right);
 
@@ -36,6 +39,9 @@ static bool app_command_textequals(const char *left, const char *right) {
   return *left == '\0' && *right == '\0';
 }
 
+/**
+ * @brief 解析有限浮点数并拒绝尾随垃圾字符。
+ */
 static bool app_command_parsefloat(const char *text, float *value) {
   assert(text && value);
 
@@ -106,6 +112,9 @@ static bool app_command_parsefloat(const char *text, float *value) {
   return true;
 }
 
+/**
+ * @brief 去除字符串首尾空白并返回有效范围。
+ */
 static void app_command_trim(char **text) {
   assert(text && *text);
 
@@ -123,6 +132,9 @@ static void app_command_trim(char **text) {
   *end = '\0';
 }
 
+/**
+ * @brief 按分隔符拆分命令并限制片段数量。
+ */
 static bool app_command_split(
   char *line,
   char **first,
@@ -175,6 +187,15 @@ static bool app_command_split(
   return true;
 }
 
+/**
+ * @brief 解析一行命令。
+ * @param line 可修改的 NUL 结尾命令行，可包含 `\r`。
+ * @param command 输出命令。
+ * @retval true 语法正确。
+ * @retval false 空行、命令未知、参数缺失、数值非法或尾随多余字段。
+ * @note 支持 `SET <name> <float>` 和 `RESET EKF`，大小写不敏感。
+ * @note 参数名语义由命令处理回调校验，本函数只校验长度和语法。
+ */
 bool App_Command_Parse(char *line, app_uart_command_t *command) {
   if (line == NULL || command == NULL) {
     return false;

@@ -14,17 +14,64 @@
 
 #include "system_math_def.h"
 
+/**
+ * @brief 返回有符号整数的符号。
+ * @param x 输入值。
+ * @return x 小于、等于、大于 0 时分别为 -1、0、1。
+ */
 SYS_MATH_INLINE int Sys_SignInt(int x) { return (x > 0) - (x < 0); }
+/**
+ * @brief 返回长整数的符号。
+ * @param x 输入值。
+ * @return x 小于、等于、大于 0 时分别为 -1、0、1。
+ */
 SYS_MATH_INLINE long Sys_SignLong(long x) { return (long)((x > 0) - (x < 0)); }
+/**
+ * @brief 返回长长整数的符号。
+ * @param x 输入值。
+ * @return x 小于、等于、大于 0 时分别为 -1、0、1。
+ */
 SYS_MATH_INLINE long long Sys_SignLLong(long long x) { return (long long)((x > 0) - (x < 0)); }
 
+/**
+ * @brief 返回无符号整数是否非零。
+ * @param x 输入值。
+ * @return x 非零返回 1，否则返回 0。
+ */
 SYS_MATH_INLINE unsigned int Sys_SignUInt(unsigned int x) { return (x != 0u) ? 1u : 0u; }
+/**
+ * @brief 返回无符号长整数是否非零。
+ * @param x 输入值。
+ * @return x 非零返回 1，否则返回 0。
+ */
 SYS_MATH_INLINE unsigned long Sys_SignULong(unsigned long x) { return (x != 0ul) ? 1ul : 0ul; }
+/**
+ * @brief 返回无符号长长整数是否非零。
+ * @param x 输入值。
+ * @return x 非零返回 1，否则返回 0。
+ */
 SYS_MATH_INLINE unsigned long long Sys_SignULLong(unsigned long long x) { return (x != 0ull) ? 1ull : 0ull; }
 
+/**
+ * @brief 返回单精度浮点数的符号。
+ * @param x 输入值。
+ * @return x 小于、等于、大于 0 时分别为 -1、0、1。
+ */
 SYS_MATH_INLINE float Sys_SignF32(float x) { return (float)((x > 0.0f) - (x < 0.0f)); }
+/**
+ * @brief 返回双精度浮点数的符号。
+ * @param x 输入值。
+ * @return x 小于、等于、大于 0 时分别为 -1、0、1。
+ */
 SYS_MATH_INLINE double Sys_SignF64(double x) { return (double)((x > 0.0) - (x < 0.0)); }
 
+/**
+ * @brief 按输入类型返回数值的符号。
+ * @param x 整数或浮点值。
+ * @return 有符号输入小于、等于、大于 0 时分别为 -1、0、1；无符号输入返回 0 或 1。
+ * @warning 浮点 NaN 与 0 的比较均为假，因此返回 0；调用方应先完成有限性检查。
+ * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
+ */
 #define SYS_SIGN(x) _Generic((x), \
   char:               Sys_SignInt, \
   signed char:        Sys_SignInt, \

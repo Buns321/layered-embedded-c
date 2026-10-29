@@ -29,16 +29,28 @@ static uint32_t s_receive_calls;
 static uint32_t s_critical_nesting;
 static dev_uart_status_t s_receive_status;
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
   s_critical_nesting++;
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
   if (s_critical_nesting > 0u) {
     s_critical_nesting--;
   }
 }
 
+/**
+ * @brief 安装 UART 中断接收测试桩。
+ */
 static dev_uart_status_t fake_receive_it(
   uart_base_t *uart_h,
   uint8_t *data,
@@ -56,6 +68,9 @@ static const uart_ops_t s_fake_uart_ops = {
   .receive_it = fake_receive_it,
 };
 
+/**
+ * @brief 重置 UART 测试桩记录。
+ */
 static int fake_uart_reset(
   uart_base_t *uart_h,
   joycon_uart_t *joycon_h
@@ -82,6 +97,9 @@ static int fake_uart_reset(
   return 0;
 }
 
+/**
+ * @brief 向 UART 接收路径注入单字节。
+ */
 static void feed_rx_byte(
   uart_base_t *uart_h,
   joycon_uart_t *joycon_h,
@@ -96,6 +114,9 @@ static void feed_rx_byte(
   );
 }
 
+/**
+ * @brief 向 UART 接收路径注入文本。
+ */
 static void feed_text(
   uart_base_t *uart_h,
   joycon_uart_t *joycon_h,
@@ -107,6 +128,9 @@ static void feed_text(
   }
 }
 
+/**
+ * @brief 验证有效帧和可选换行。
+ */
 static int test_valid_frames_and_optional_newline(void) {
   uart_base_t uart = {0};
   joycon_uart_t joycon = {0};
@@ -138,6 +162,9 @@ static int test_valid_frames_and_optional_newline(void) {
   return 0;
 }
 
+/**
+ * @brief 验证非法帧保留上次快照。
+ */
 static int test_invalid_frames_keep_last_snapshot(void) {
   uart_base_t uart = {0};
   joycon_uart_t joycon = {0};
@@ -175,6 +202,9 @@ static int test_invalid_frames_keep_last_snapshot(void) {
   return 0;
 }
 
+/**
+ * @brief 验证分片帧与超长帧处理。
+ */
 static int test_partial_and_overlong_frames(void) {
   uart_base_t uart = {0};
   joycon_uart_t joycon = {0};
@@ -206,6 +236,9 @@ static int test_partial_and_overlong_frames(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 UART 错误后重新挂接接收。
+ */
 static int test_uart_error_and_rearm(void) {
   uart_base_t uart = {0};
   joycon_uart_t joycon = {0};
@@ -223,6 +256,9 @@ static int test_uart_error_and_rearm(void) {
   return 0;
 }
 
+/**
+ * @brief 验证启动失败后可恢复。
+ */
 static int test_start_failure_is_recoverable(void) {
   uart_base_t uart = {0};
   joycon_uart_t joycon = {0};
@@ -248,6 +284,9 @@ static int test_start_failure_is_recoverable(void) {
   return 0;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   if (test_valid_frames_and_optional_newline() != 0) {
     return 1;

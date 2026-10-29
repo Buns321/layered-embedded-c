@@ -13,11 +13,17 @@
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief 把 UART base 句柄还原为链路具体对象。
+ */
 static app_uart_link_t *app_uart_linkfromview(uart_base_t *uart_h) {
   assert(uart_h);
   return (app_uart_link_t *)uart_h;
 }
 
+/**
+ * @brief 转发阻塞接收请求到 Platform UART。
+ */
 static dev_uart_status_t app_uart_linkviewreceive(
   uart_base_t *uart_h,
   uint8_t *buf,
@@ -33,6 +39,9 @@ static dev_uart_status_t app_uart_linkviewreceive(
   );
 }
 
+/**
+ * @brief 转发阻塞发送请求到 Platform UART。
+ */
 static dev_uart_status_t app_uart_linkviewtransmit(
   uart_base_t *uart_h,
   const uint8_t *data,
@@ -48,6 +57,9 @@ static dev_uart_status_t app_uart_linkviewtransmit(
   );
 }
 
+/**
+ * @brief 转发中断接收请求并注册上下文。
+ */
 static dev_uart_status_t app_uart_linkviewreceiveit(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -57,6 +69,9 @@ static dev_uart_status_t app_uart_linkviewreceiveit(
   return Dev_UART_ReceiveIT(&link_h->port.uart_base, pdata, size);
 }
 
+/**
+ * @brief 转发中断发送请求并注册上下文。
+ */
 static dev_uart_status_t app_uart_linkviewtransmitit(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -66,6 +81,9 @@ static dev_uart_status_t app_uart_linkviewtransmitit(
   return Dev_UART_TransmitIT(&link_h->port.uart_base, pdata, size);
 }
 
+/**
+ * @brief 转发 DMA 接收请求并注册上下文。
+ */
 static dev_uart_status_t app_uart_linkviewreceivedma(
   uart_base_t *uart_h,
   uint8_t *pdata,
@@ -75,6 +93,9 @@ static dev_uart_status_t app_uart_linkviewreceivedma(
   return Dev_UART_ReceiveDMA(&link_h->port.uart_base, pdata, size);
 }
 
+/**
+ * @brief 转发 DMA 发送请求并注册上下文。
+ */
 static dev_uart_status_t app_uart_linkviewtransmitdma(
   uart_base_t *uart_h,
   const uint8_t *pdata,
@@ -93,6 +114,9 @@ static const uart_ops_t s_app_uart_link_view_ops = {
   .transmit_dma = app_uart_linkviewtransmitdma,
 };
 
+/**
+ * @brief 重新挂接 UART 中断接收。
+ */
 static void app_uart_linkrearmreceive(app_uart_link_t *link_h) {
   assert(link_h);
 
@@ -109,6 +133,9 @@ static void app_uart_linkrearmreceive(app_uart_link_t *link_h) {
   }
 }
 
+/**
+ * @brief 处理发送完成回调并继续链路状态机。
+ */
 static void app_uart_linkontxcomplete(
   uart_base_t *uart_h,
   void *context
@@ -119,6 +146,9 @@ static void app_uart_linkontxcomplete(
   Dev_UART_Base_OnTxComplete(&link_h->telemetry_view);
 }
 
+/**
+ * @brief 处理接收完成回调并推进命令组帧。
+ */
 static void app_uart_linkonrxcomplete(
   uart_base_t *uart_h,
   void *context
@@ -141,6 +171,9 @@ static void app_uart_linkonrxcomplete(
   app_uart_linkrearmreceive(link_h);
 }
 
+/**
+ * @brief 处理 UART 错误并重置链路接收状态。
+ */
 static void app_uart_linkonerror(
   uart_base_t *uart_h,
   void *context
@@ -152,6 +185,9 @@ static void app_uart_linkonerror(
   link_h->rx_rearm_pending = true;
 }
 
+/**
+ * @brief 执行已组帧的文本命令。
+ */
 static void app_uart_linkexecuteline(
   app_uart_link_t *link_h,
   char *line
@@ -178,6 +214,16 @@ static void app_uart_linkexecuteline(
   }
 }
 
+/**
+ * @brief 初始化 UART1 链路和 JustFloat。
+ * @param link_h 对象。
+ * @param name 名称。
+ * @param command_handler 命令处理回调，不能为空。
+ * @param command_context 回调上下文。
+ * @retval PLATFORM_STATUS_OK 初始化和接收挂载成功。
+ * @retval PLATFORM_STATUS_BUSY 物理 UART 回调已被占用。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 参数或 UART 实例非法。
+ */
 platform_status_t App_UART_LinkInit(
   app_uart_link_t *link_h,
   const char *name,
@@ -226,6 +272,13 @@ platform_status_t App_UART_LinkInit(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 启动 USART1 单字节中断接收。
+ * @retval PLATFORM_STATUS_OK 接收已启动。
+ * @retval PLATFORM_STATUS_BUSY UART 正忙，稍后由命令处理阶段重试。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 对象未初始化。
+ * @retval PLATFORM_STATUS_ERROR UART 启动失败。
+ */
 platform_status_t App_UART_LinkStart(app_uart_link_t *link_h) {
   if (link_h == NULL || !link_h->initialized) {
     return PLATFORM_STATUS_INVALID_ARGUMENT;
@@ -247,6 +300,11 @@ platform_status_t App_UART_LinkStart(app_uart_link_t *link_h) {
     : PLATFORM_STATUS_ERROR;
 }
 
+/**
+ * @brief 解析已接收参数命令。
+ * @param link_h 链路对象。
+ * @param now_ms 当前毫秒时间戳；当前保留，后续用于错误恢复节流。
+ */
 void App_UART_LinkProcessCommands(
   app_uart_link_t *link_h,
   uint32_t now_ms
@@ -289,6 +347,7 @@ void App_UART_LinkProcessCommands(
   }
 }
 
+/** @brief 非阻塞发送一帧 32 通道 JustFloat。 */
 dev_telemetry_status_t App_UART_LinkSendTelemetry(
   app_uart_link_t *link_h,
   const telemetry_sample_t *sample
@@ -297,6 +356,11 @@ dev_telemetry_status_t App_UART_LinkSendTelemetry(
   return Dev_Telemetry_Base_Send(&link_h->telemetry.base, sample);
 }
 
+/**
+ * @brief 复制链路状态。
+ * @param link_h 链路对象。
+ * @param status 输出状态。
+ */
 void App_UART_LinkGetStatus(
   app_uart_link_t *link_h,
   app_uart_link_status_t *status

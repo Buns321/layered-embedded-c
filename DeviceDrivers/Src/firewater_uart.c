@@ -21,6 +21,9 @@ static const uint32_t s_pow10[] = {
   1u, 10u, 100u, 1000u, 10000u, 100000u, 1000000u,
 };
 
+/**
+ * @brief 发送完成后释放忙状态并通知完成。
+ */
 static void dev_firewater_uart_ontxcplt(
   uart_base_t *uart_h,
   void *context
@@ -33,6 +36,9 @@ static void dev_firewater_uart_ontxcplt(
   firewater_uart_h->busy = false;
 }
 
+/**
+ * @brief 向容量受限缓冲区追加单字节。
+ */
 static bool dev_firewater_uart_appendchar(
   uint8_t *buffer,
   uint32_t capacity,
@@ -48,6 +54,9 @@ static bool dev_firewater_uart_appendchar(
   return true;
 }
 
+/**
+ * @brief 向容量受限缓冲区追加字符串。
+ */
 static bool dev_firewater_uart_appendstring(
   uint8_t *buffer,
   uint32_t capacity,
@@ -68,6 +77,9 @@ static bool dev_firewater_uart_appendstring(
   return true;
 }
 
+/**
+ * @brief 以十进制向容量受限缓冲区追加无符号数。
+ */
 static bool dev_firewater_uart_appendunsigned(
   uint8_t *buffer,
   uint32_t capacity,
@@ -96,6 +108,9 @@ static bool dev_firewater_uart_appendunsigned(
   return true;
 }
 
+/**
+ * @brief 以指定精度追加有限浮点值。
+ */
 static bool dev_firewater_uart_appendvalue(
   uint8_t *buffer,
   uint32_t capacity,
@@ -162,6 +177,9 @@ static bool dev_firewater_uart_appendvalue(
   return true;
 }
 
+/**
+ * @brief 将遥测样本编码为 FireWater 帧。
+ */
 static bool dev_firewater_uart_encode(
   firewater_uart_t *firewater_uart_h,
   const telemetry_sample_t *sample,
@@ -226,6 +244,9 @@ static bool dev_firewater_uart_encode(
   return true;
 }
 
+/**
+ * @brief 编码并启动遥测帧异步发送。
+ */
 static dev_telemetry_status_t dev_firewater_uart_send(
   telemetry_base_t *telemetry_h,
   const telemetry_sample_t *sample
@@ -267,6 +288,9 @@ static dev_telemetry_status_t dev_firewater_uart_send(
   return DEV_TELEMETRY_OK;
 }
 
+/**
+ * @brief 复制遥测发送状态快照。
+ */
 static void dev_firewater_uart_getstatus(
   telemetry_base_t *telemetry_h,
   telemetry_status_t *status
@@ -287,6 +311,15 @@ static const telemetry_ops_t telemetry_ops_firewater = {
   .get_status = dev_firewater_uart_getstatus,
 };
 
+/**
+ * @brief 在 UART 上初始化 FireWater。
+ * @param telemetry_h 对象。
+ * @param name 调试名称。
+ * @param uart_h 已完成初始化且 TX 支持 DMA 的 UART 后端。
+ * @param channel_names 静态通道名称表。
+ * @param channel_count 已配置通道数，范围 1..capacity。
+ * @param precision 小数位数，范围 0..6。
+ */
 void Dev_FireWater_UART_Init(
   firewater_uart_t *telemetry_h,
   const char *name,

@@ -13,10 +13,16 @@
 
 static uint32_t s_result;
 
+/**
+ * @brief 校验CRC实例是否已由板级配置启用。
+ */
 bool platform_crc_backend_is_valid(platform_crc_instance_t crc) {
   return crc == PLATFORM_CRC_1;
 }
 
+/**
+ * @brief 复位 CRC 计算状态。
+ */
 platform_status_t platform_crc_backend_reset(
   platform_crc_instance_t crc
 ) {
@@ -24,6 +30,9 @@ platform_status_t platform_crc_backend_reset(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 累计 CRC 输入数据块。
+ */
 platform_status_t platform_crc_backend_accumulate(
   platform_crc_instance_t crc,
   const uint32_t *words,
@@ -37,6 +46,9 @@ platform_status_t platform_crc_backend_accumulate(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 按公共 CRC 配置计算校验值。
+ */
 platform_status_t platform_crc_backend_calculate(
   platform_crc_instance_t crc,
   const uint32_t *words,
@@ -51,6 +63,9 @@ platform_status_t platform_crc_backend_calculate(
   );
 }
 
+/**
+ * @brief 验证 CRC 参数校验与结果。
+ */
 static void test_crc_contract(void) {
   const uint32_t words[2] = {1U, 2U};
   uint32_t result = 0U;
@@ -74,6 +89,9 @@ static void test_crc_contract(void) {
           PLATFORM_ERROR_INVALID_ARGUMENT) != 0U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_crc_contract();
   return 0;

@@ -10,6 +10,14 @@
 
 static volatile uint32_t rng_error;
 
+/**
+ * @brief 生成一个 32 位随机数。
+ * @param rng RNG 实例。
+ * @param value 输出值。
+ * @return Platform 状态。
+ * @pre MX_RNG_Init() 已成功完成。
+ * @note 使用 HAL RNG 的超时机制，必须从任务上下文调用。
+ */
 platform_status_t Platform_RNG_GetRandom(
   platform_rng_instance_t rng,
   uint32_t *value
@@ -28,6 +36,10 @@ platform_status_t Platform_RNG_GetRandom(
   return status;
 }
 
+/**
+ * @brief 读取最近一次 HAL RNG 错误快照。
+ * @return platform_rng_error_t 位掩码。
+ */
 uint32_t Platform_RNG_GetLastError(platform_rng_instance_t rng) {
   if (!platform_rng_backend_is_valid(rng)) {
     return PLATFORM_ERROR_INVALID_ARGUMENT;

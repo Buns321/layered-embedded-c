@@ -9,6 +9,9 @@
 #include "rtc.h"
 #include "stm32f4xx_hal.h"
 
+/**
+ * @brief 计算 RTC 唤醒定时器时钟分频。
+ */
 static uint32_t platform_rtc_wakeup_clock(
   platform_rtc_wakeup_clock_t clock
 ) {
@@ -30,10 +33,16 @@ static uint32_t platform_rtc_wakeup_clock(
   }
 }
 
+/**
+ * @brief 报告 RTC 后端是否支持唤醒定时器。
+ */
 bool platform_rtc_backend_has_wakeup_timer(void) {
   return true;
 }
 
+/**
+ * @brief 写入二进制 RTC 时间。
+ */
 platform_status_t platform_rtc_backend_set_time(
   const platform_rtc_date_time_t *date_time
 ) {
@@ -51,6 +60,9 @@ platform_status_t platform_rtc_backend_set_time(
   );
 }
 
+/**
+ * @brief 写入二进制 RTC 日期。
+ */
 platform_status_t platform_rtc_backend_set_date(
   const platform_rtc_date_time_t *date_time
 ) {
@@ -66,6 +78,9 @@ platform_status_t platform_rtc_backend_set_date(
   );
 }
 
+/**
+ * @brief 读取二进制 RTC 时间。
+ */
 platform_status_t platform_rtc_backend_get_time(
   platform_rtc_date_time_t *date_time
 ) {
@@ -81,6 +96,9 @@ platform_status_t platform_rtc_backend_get_time(
   return status;
 }
 
+/**
+ * @brief 读取二进制 RTC 日期。
+ */
 platform_status_t platform_rtc_backend_get_date(
   platform_rtc_date_time_t *date_time
 ) {
@@ -97,6 +115,9 @@ platform_status_t platform_rtc_backend_get_date(
   return status;
 }
 
+/**
+ * @brief 写入 RTC 每日闹钟时间。
+ */
 platform_status_t platform_rtc_backend_set_alarm(
   const platform_rtc_alarm_config_t *alarm
 ) {
@@ -121,12 +142,18 @@ platform_status_t platform_rtc_backend_set_alarm(
   );
 }
 
+/**
+ * @brief 关闭 RTC 闹钟。
+ */
 platform_status_t platform_rtc_backend_disable_alarm(void) {
   return platform_from_hal_status(
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A)
   );
 }
 
+/**
+ * @brief 启动 RTC 唤醒定时器。
+ */
 platform_status_t platform_rtc_backend_start_wakeup(
   uint32_t counter,
   platform_rtc_wakeup_clock_t clock
@@ -140,17 +167,26 @@ platform_status_t platform_rtc_backend_start_wakeup(
   );
 }
 
+/**
+ * @brief 停止 RTC 唤醒定时器。
+ */
 platform_status_t platform_rtc_backend_stop_wakeup(void) {
   return platform_from_hal_status(
     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc)
   );
 }
 
+/**
+ * @brief 转发 RTC 闹钟 A 事件。
+ */
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *rtc_h) {
   assert(rtc_h == &hrtc);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_ALARM);
 }
 
+/**
+ * @brief 转发 RTC 唤醒定时器事件。
+ */
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *rtc_h) {
   assert(rtc_h == &hrtc);
   platform_rtc_dispatch_event(PLATFORM_RTC_EVENT_WAKEUP);

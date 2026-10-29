@@ -12,6 +12,9 @@
 #include <stddef.h>
 #include <assert.h>
 
+/**
+ * @brief 重置链条中的全部滤波器。
+ */
 static void filter_chain_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
@@ -25,6 +28,9 @@ static void filter_chain_reset(filter_base_t *filter_h) {
   }
 }
 
+/**
+ * @brief 依次执行链条中的滤波器。
+ */
 static void filter_chain_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(filter_h && input && output);
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
@@ -53,6 +59,14 @@ static const filter_ops_t filter_ops_chain = {
   .reset  = filter_chain_reset,
 };
 
+/**
+ * @brief 初始化滤波器链。
+ * @param filter_h 对象。
+ * @param name 名称。
+ * @param filter_stage_h 静态级联表。
+ * @param stage_count 级数，范围 1..FILTER_CHAIN_CAPACITY。
+ * @note Init 会校验空指针、自引用和重复项，并级联 reset。
+ */
 void Filter_Chain_Init(filter_chain_t *filter_h, const char *name, filter_base_t *const *filter_stage_h, uint8_t stage_count) {
   assert(
     filter_h                                 &&

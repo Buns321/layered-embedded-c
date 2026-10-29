@@ -26,6 +26,12 @@
 static uint32_t s_boot_critical_nesting;
 static uint32_t s_boot_primask;
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
   if (xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
     uint32_t primask = __get_PRIMASK();
@@ -40,6 +46,9 @@ void Sys_Critical_Enter(void) {
   }
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
   if (s_boot_critical_nesting > 0u) {
     s_boot_critical_nesting--;
@@ -51,10 +60,19 @@ void Sys_Critical_Exit(void) {
   }
 }
 
+/**
+ * @brief 进入 ISR 上下文临界区。
+ * @return 进入前的中断状态，供退出时恢复。
+ * @note 必须与 Sys_Critical_ExitFromISR 成对使用。
+ */
 sys_critical_state_t Sys_Critical_EnterFromISR(void) {
   return (sys_critical_state_t)taskENTER_CRITICAL_FROM_ISR();
 }
 
+/**
+ * @brief 退出 ISR 上下文临界区并恢复中断状态。
+ * @param state Sys_Critical_EnterFromISR 返回的状态。
+ */
 void Sys_Critical_ExitFromISR(sys_critical_state_t state) {
   taskEXIT_CRITICAL_FROM_ISR((UBaseType_t)state);
 }
@@ -72,6 +90,12 @@ void Sys_Critical_ExitFromISR(sys_critical_state_t state) {
 static uint32_t s_critical_nesting;
 static uint32_t s_critical_primask;
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
@@ -83,6 +107,9 @@ void Sys_Critical_Enter(void) {
   s_critical_nesting++;
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
   assert(s_critical_nesting > 0u);
 
@@ -97,12 +124,21 @@ void Sys_Critical_Exit(void) {
   }
 }
 
+/**
+ * @brief 进入 ISR 上下文临界区。
+ * @return 进入前的中断状态，供退出时恢复。
+ * @note 必须与 Sys_Critical_ExitFromISR 成对使用。
+ */
 sys_critical_state_t Sys_Critical_EnterFromISR(void) {
   uint32_t primask = __get_PRIMASK();
   __disable_irq();
   return (sys_critical_state_t)primask;
 }
 
+/**
+ * @brief 退出 ISR 上下文临界区并恢复中断状态。
+ * @param state Sys_Critical_EnterFromISR 返回的状态。
+ */
 void Sys_Critical_ExitFromISR(sys_critical_state_t state) {
   __set_PRIMASK((uint32_t)state);
 }

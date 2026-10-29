@@ -37,10 +37,16 @@ typedef struct test_log_sink_s {
 
 static uint32_t s_test_time_ms;
 
+/**
+ * @brief 为主机日志测试提供可控的毫秒时间源。
+ */
 uint32_t Sys_Log_TestGetTimeMs(void) {
   return s_test_time_ms;
 }
 
+/**
+ * @brief 记录测试日志后端接收的数据并模拟写入限制。
+ */
 static uint32_t test_log_sink_write(
   sys_log_base_t *log_h,
   const uint8_t *data,
@@ -74,12 +80,18 @@ static const sys_log_ops_t s_test_log_ops = {
   .write = test_log_sink_write,
 };
 
+/**
+ * @brief 重置测试日志后端状态。
+ */
 static void test_log_sink_reset(test_log_sink_t *sink_h) {
   (void)memset(sink_h, 0, sizeof(*sink_h));
   Sys_Log_Base_Init(&sink_h->base, "test", &s_test_log_ops);
   sink_h->accepted_limit = TEST_SINK_CAPACITY;
 }
 
+/**
+ * @brief 比较测试日志后端内容与预期文本。
+ */
 static bool test_log_sink_equals(
   const test_log_sink_t *sink_h,
   const char *expected
@@ -92,11 +104,17 @@ static bool test_log_sink_equals(
 
 static int s_argument_evaluations;
 
+/**
+ * @brief 记录惰性日志参数的求值次数并返回固定值。
+ */
 static int test_log_argument(void) {
   s_argument_evaluations++;
   return 7;
 }
 
+/**
+ * @brief 验证日志就绪状态和后端切换。
+ */
 static int test_ready_and_sink_switching(void) {
   test_log_sink_t first_sink;
   test_log_sink_t second_sink;
@@ -133,6 +151,9 @@ static int test_ready_and_sink_switching(void) {
   return 0;
 }
 
+/**
+ * @brief 验证日志级别过滤与惰性参数。
+ */
 static int test_level_filtering_and_lazy_arguments(void) {
   test_log_sink_t sink_h;
 
@@ -160,6 +181,9 @@ static int test_level_filtering_and_lazy_arguments(void) {
   return 0;
 }
 
+/**
+ * @brief 验证日志级别校验。
+ */
 static int test_level_validation(void) {
   test_log_sink_t sink_h;
 
@@ -180,6 +204,9 @@ static int test_level_validation(void) {
   return 0;
 }
 
+/**
+ * @brief 验证日志格式化与时间戳。
+ */
 static int test_format_and_timestamp(void) {
   test_log_sink_t sink_h;
 
@@ -194,6 +221,9 @@ static int test_format_and_timestamp(void) {
   return 0;
 }
 
+/**
+ * @brief 验证日志丢弃计数。
+ */
 static int test_drop_accounting(void) {
   test_log_sink_t sink_h;
   const char *expected = "[10][E][TEST] x\r\n";
@@ -215,6 +245,9 @@ static int test_drop_accounting(void) {
   return 0;
 }
 
+/**
+ * @brief 验证日志锁竞争计数。
+ */
 static int test_contention_accounting(void) {
   test_log_sink_t sink_h;
 
@@ -234,6 +267,9 @@ static int test_contention_accounting(void) {
   return 0;
 }
 
+/**
+ * @brief 验证紧急原始日志路径。
+ */
 static int test_emergency_raw(void) {
   test_log_sink_t sink_h;
   const uint8_t payload[] = {0x11u, 0x00u, 0xFEu, 0xFFu};
@@ -252,6 +288,9 @@ static int test_emergency_raw(void) {
   return 0;
 }
 
+/**
+ * @brief 验证超长日志被截断。
+ */
 static int test_long_message_is_clamped(void) {
   test_log_sink_t sink_h;
   char message[400];
@@ -272,6 +311,9 @@ static int test_long_message_is_clamped(void) {
   return 0;
 }
 
+/**
+ * @brief 验证非法日志级别被忽略。
+ */
 static int test_invalid_level_is_ignored(void) {
   test_log_sink_t sink_h;
 
@@ -286,6 +328,9 @@ static int test_invalid_level_is_ignored(void) {
   return 0;
 }
 
+/**
+ * @brief 验证非法日志标签被忽略。
+ */
 static int test_invalid_tag_is_ignored(void) {
   test_log_sink_t sink_h;
   char long_tag[200];
@@ -304,6 +349,9 @@ static int test_invalid_tag_is_ignored(void) {
   return 0;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   if (test_ready_and_sink_switching() != 0) {
     return 1;

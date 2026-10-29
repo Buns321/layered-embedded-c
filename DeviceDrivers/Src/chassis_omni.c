@@ -12,8 +12,14 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 按受控顺序停止四个轮电机。
+ */
 static void chassis_omni_stop(chassis_base_t *chassis_h);
 
+/**
+ * @brief 根据运动学输出驱动四个轮电机。
+ */
 static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
   assert(chassis_h);
 
@@ -58,6 +64,9 @@ static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 按受控顺序停止四个轮电机。
+ */
 static void chassis_omni_stop(chassis_base_t *chassis_h) {
   assert(chassis_h);
 
@@ -73,6 +82,9 @@ static void chassis_omni_stop(chassis_base_t *chassis_h) {
   }
 }
 
+/**
+ * @brief 立即急停四个轮电机。
+ */
 static void chassis_omni_estop(chassis_base_t *chassis_h) {
   assert(chassis_h);
 
@@ -93,6 +105,16 @@ static const chassis_ops_t chassis_ops_omni = {
   .estop  = chassis_omni_estop,
 };
 
+/**
+ * @brief 初始化 Omni 底盘。
+ * @param chassis_h 对象。
+ * @param name 名称。
+ * @param motor_h 四个电机基类指针。
+ * @param imu_h IMU 基类指针。
+ * @param policy_h Omni 策略基类指针。
+ * @param imu_timeout_ms yaw 数据最大允许年龄（ms），必须大于 0。
+ * @note 底盘只保存指针，不复制对象。
+ */
 void Chassis_Omni_Init(
   chassis_omni_t     *chassis_h,
   const char         *name,
@@ -132,6 +154,14 @@ void Chassis_Omni_Init(
   chassis_h->imu_timeout_ms = imu_timeout_ms;
 }
 
+/**
+ * @brief 设置底盘运动命令。
+ * @param chassis_h 底盘对象。
+ * @param v 平动速度（m/s）。
+ * @param dir 世界系方向（rad，逆时针为正）。
+ * @param omega 自转角速度（rad/s，逆时针为正）。
+ * @note 只保存命令；实际解算在 Chassis_Base_Update 中完成。
+ */
 void Chassis_Omni_SetMotion(chassis_omni_t *chassis_h, float v, float dir, float omega) {
   assert(chassis_h);
 

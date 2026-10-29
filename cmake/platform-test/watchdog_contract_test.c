@@ -22,10 +22,16 @@ static uint32_t s_iwdg_reload;
 static uint32_t s_wwdg_divisor;
 static uint8_t s_wwdg_window;
 
+/**
+ * @brief 返回独立看门狗使用的 LSI 频率。
+ */
 uint32_t platform_iwdg_backend_lsi_hz(void) {
   return s_iwdg_lsi_hz;
 }
 
+/**
+ * @brief 启动独立看门狗后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_iwdg_backend_start(
   uint32_t divisor,
   uint32_t reload
@@ -39,18 +45,30 @@ platform_status_t platform_iwdg_backend_start(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 刷新独立看门狗。
+ */
 platform_status_t platform_iwdg_backend_refresh(void) {
   return s_iwdg_backend_started ? PLATFORM_STATUS_OK : PLATFORM_STATUS_ERROR;
 }
 
+/**
+ * @brief 报告本次复位是否由独立看门狗触发。
+ */
 bool platform_iwdg_backend_was_reset(void) {
   return true;
 }
 
+/**
+ * @brief 返回窗口看门狗使用的 APB1 时钟频率。
+ */
 uint32_t platform_wwdg_backend_pclk1_hz(void) {
   return s_wwdg_pclk1_hz;
 }
 
+/**
+ * @brief 启动窗口看门狗后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_wwdg_backend_start(
   uint32_t divisor,
   uint8_t window
@@ -64,14 +82,23 @@ platform_status_t platform_wwdg_backend_start(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 刷新窗口看门狗。
+ */
 platform_status_t platform_wwdg_backend_refresh(void) {
   return s_wwdg_backend_started ? PLATFORM_STATUS_OK : PLATFORM_STATUS_ERROR;
 }
 
+/**
+ * @brief 报告本次复位是否由窗口看门狗触发。
+ */
 bool platform_wwdg_backend_was_reset(void) {
   return true;
 }
 
+/**
+ * @brief 验证 IWDG 参数计算与启动。
+ */
 static void test_iwdg_contract(void) {
   s_iwdg_lsi_hz = 32000U;
   s_iwdg_start_result = PLATFORM_STATUS_ERROR;
@@ -93,6 +120,9 @@ static void test_iwdg_contract(void) {
   assert(!Platform_IWDG_WasReset((platform_iwdg_instance_t)99U));
 }
 
+/**
+ * @brief 验证 WWDG 参数计算与启动。
+ */
 static void test_wwdg_contract(void) {
   s_wwdg_pclk1_hz = 42000000U;
   assert(Platform_WWDG_GetMaxTimeoutMs(PLATFORM_WWDG_1) == 49U);
@@ -128,6 +158,9 @@ static void test_wwdg_contract(void) {
   assert(Platform_WWDG_GetMaxTimeoutMs(PLATFORM_WWDG_1) == 29U);
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_iwdg_contract();
   test_wwdg_contract();

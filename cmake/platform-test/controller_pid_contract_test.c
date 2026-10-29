@@ -23,6 +23,9 @@
   }                                                                          \
 } while (0)
 
+/**
+ * @brief 构造 PID 控制器测试配置。
+ */
 static void init_pid(
   controller_pid_t *controller,
   float kp,
@@ -48,6 +51,9 @@ static void init_pid(
   );
 }
 
+/**
+ * @brief 验证 PID 比例项和分派。
+ */
 static int test_proportional_and_dispatch(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -76,6 +82,9 @@ static int test_proportional_and_dispatch(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 PID 积分项与限幅。
+ */
 static int test_integral_and_limit(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -111,6 +120,9 @@ static int test_integral_and_limit(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 PID 输出饱和与抗积分饱和。
+ */
 static int test_output_saturation_antwindup(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -154,6 +166,9 @@ static int test_output_saturation_antwindup(void) {
   return 0;
 }
 
+/**
+ * @brief 验证测量值微分与首帧处理。
+ */
 static int test_derivative_on_measurement(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -182,6 +197,9 @@ static int test_derivative_on_measurement(void) {
   return 0;
 }
 
+/**
+ * @brief 验证微分低通滤波。
+ */
 static int test_derivative_filter(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -211,6 +229,9 @@ static int test_derivative_filter(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 PID 目标限幅和非法输入。
+ */
 static int test_target_clamp_and_invalid_input(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -241,6 +262,9 @@ static int test_target_clamp_and_invalid_input(void) {
   return 0;
 }
 
+/**
+ * @brief 验证 PID 重置。
+ */
 static int test_reset(void) {
   controller_pid_t controller = {0};
   init_pid(
@@ -273,6 +297,9 @@ static int test_reset(void) {
   return 0;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   if (test_proportional_and_dispatch() != 0) {
     return 1;

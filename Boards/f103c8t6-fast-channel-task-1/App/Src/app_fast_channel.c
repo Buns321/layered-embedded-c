@@ -147,6 +147,9 @@ _Static_assert(
   "JustFloat channel count exceeds telemetry capacity"
 );
 
+/**
+ * @brief 不区分 ASCII 大小写比较两个文本是否完全相等。
+ */
 static bool app_fastchannel_textequals(
   const char *left,
   const char *right
@@ -172,6 +175,9 @@ static bool app_fastchannel_textequals(
   return *left == '\0' && *right == '\0';
 }
 
+/**
+ * @brief 按有效电平配置驱动蜂鸣器 GPIO。
+ */
 static void app_fastchannel_writebuzzer(bool enabled) {
   bool output_high = enabled
     ? APP_BUZZER_ON_LEVEL != 0U
@@ -183,6 +189,9 @@ static void app_fastchannel_writebuzzer(bool enabled) {
   );
 }
 
+/**
+ * @brief 按有效电平配置驱动 LED GPIO。
+ */
 static void app_fastchannel_writeled(bool enabled) {
   bool output_high = enabled
     ? APP_LED_ON_LEVEL != 0U
@@ -194,18 +203,27 @@ static void app_fastchannel_writeled(bool enabled) {
   );
 }
 
+/**
+ * @brief 启动双短鸣提示并记录当前时间。
+ */
 static void app_fastchannel_startshortbuzzer(uint32_t now_ms) {
   s_app.buzzer.phase = APP_BUZZER_PHASE_SHORT_ON_1;
   s_app.buzzer.phase_started_ms = now_ms;
   app_fastchannel_writebuzzer(true);
 }
 
+/**
+ * @brief 启动长鸣提示并记录当前时间。
+ */
 static void app_fastchannel_startlongbuzzer(uint32_t now_ms) {
   s_app.buzzer.phase = APP_BUZZER_PHASE_LONG_ON;
   s_app.buzzer.phase_started_ms = now_ms;
   app_fastchannel_writebuzzer(true);
 }
 
+/**
+ * @brief 推进蜂鸣器时序状态机并关闭到期的输出。
+ */
 static void app_fastchannel_processbuzzer(uint32_t now_ms) {
   uint32_t elapsed_ms = now_ms - s_app.buzzer.phase_started_ms;
 
@@ -249,6 +267,9 @@ static void app_fastchannel_processbuzzer(uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 按运行状态切换 LED 闪烁周期。
+ */
 static void app_fastchannel_processled(uint32_t now_ms) {
   uint32_t half_period_ms =
     s_app.calibration_state == APP_FAST_CHANNEL_STATE_MAIN ? 500u : 250u;
@@ -260,6 +281,9 @@ static void app_fastchannel_processled(uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 构造全零且比例因子为 1 的默认校准记录。
+ */
 static void app_fastchannel_defaultrecord(
   app_calibration_record_t *record
 ) {
@@ -270,6 +294,9 @@ static void app_fastchannel_defaultrecord(
   }
 }
 
+/**
+ * @brief 把校准记录中的角度单位转换后应用到 IMU 校正滤波器。
+ */
 static void app_fastchannel_applyrecord(
   const app_calibration_record_t *record
 ) {
@@ -285,6 +312,9 @@ static void app_fastchannel_applyrecord(
   (void)Filter_ImuCalibration_SetConfig(&s_calibration_filter, &config);
 }
 
+/**
+ * @brief 从记录存储读取并校验最新校准记录。
+ */
 static bool app_fastchannel_loadcalibration(void) {
   app_calibration_record_t record;
   uint16_t version = 0u;
@@ -323,6 +353,9 @@ static bool app_fastchannel_loadcalibration(void) {
   return true;
 }
 
+/**
+ * @brief 持久化工作校准记录并更新活动配置。
+ */
 static bool app_fastchannel_commitcalibration(void) {
   if (
     Sys_RecordStore_Append(
@@ -343,6 +376,9 @@ static bool app_fastchannel_commitcalibration(void) {
   return true;
 }
 
+/**
+ * @brief 使用原始校准阈值判断 IMU 样本是否静止。
+ */
 static bool app_fastchannel_rawsampleisstill(
   const imu_sample_t *sample
 ) {
@@ -354,6 +390,9 @@ static bool app_fastchannel_rawsampleisstill(
   );
 }
 
+/**
+ * @brief 检测样本对应的安装面，失败时返回 0。
+ */
 static uint32_t app_fastchannel_detectface(
   const imu_sample_t *sample
 ) {
@@ -368,6 +407,9 @@ static uint32_t app_fastchannel_detectface(
     : 0u;
 }
 
+/**
+ * @brief 把安装面位掩码映射为记录下标。
+ */
 static uint8_t app_fastchannel_faceindex(uint32_t face) {
   switch (face) {
     case APP_FACE_X_POSITIVE: return 0u;
@@ -380,6 +422,9 @@ static uint8_t app_fastchannel_faceindex(uint32_t face) {
   }
 }
 
+/**
+ * @brief 把安装面映射为对应传感器轴。
+ */
 static uint8_t app_fastchannel_faceaxis(uint32_t face) {
   if (
     face == APP_FACE_X_POSITIVE ||
@@ -396,6 +441,9 @@ static uint8_t app_fastchannel_faceaxis(uint32_t face) {
   return APP_AXIS_Z;
 }
 
+/**
+ * @brief 校验并累计当前安装面的校准样本。
+ */
 static bool app_fastchannel_acceptface(
   uint32_t face,
   const float accel_mean[APP_AXIS_COUNT]
@@ -474,6 +522,9 @@ static bool app_fastchannel_acceptface(
   return true;
 }
 
+/**
+ * @brief 进入校准错误状态并触发错误提示。
+ */
 static void app_fastchannel_entergyrocalibration(uint32_t now_ms) {
   s_app.calibration_state = APP_FAST_CHANNEL_STATE_GYRO_CALIBRATION;
   s_app.state_started_ms = now_ms;
@@ -482,6 +533,9 @@ static void app_fastchannel_entergyrocalibration(uint32_t now_ms) {
   memset(s_app.gyro_sum_sq_dps, 0, sizeof(s_app.gyro_sum_sq_dps));
 }
 
+/**
+ * @brief 切换到主运行状态并刷新状态时间。
+ */
 static void app_fastchannel_entermain(
   uint32_t now_ms,
   const char *reason
@@ -505,6 +559,9 @@ static void app_fastchannel_entermain(
   SYS_LOG_INFO("APP", "main started: %s", reason);
 }
 
+/**
+ * @brief 处理初始姿态确认阶段。
+ */
 static void app_fastchannel_processinitialpose(
   uint32_t now_ms,
   const imu_sample_t *raw_sample
@@ -541,6 +598,9 @@ static void app_fastchannel_processinitialpose(
   }
 }
 
+/**
+ * @brief 处理六面陀螺零偏校准流程。
+ */
 static void app_fastchannel_processgyrocalibration(
   uint32_t now_ms,
   const imu_sample_t *raw_sample
@@ -602,10 +662,16 @@ static void app_fastchannel_processgyrocalibration(
   SYS_LOG_INFO("CAL", "gyro bias calibrated");
 }
 
+/**
+ * @brief 判断当前安装面的采样是否超时。
+ */
 static bool app_fastchannel_facetimedout(uint32_t now_ms) {
   return (int32_t)(now_ms - s_app.face_deadline_ms) >= 0;
 }
 
+/**
+ * @brief 清空安装面搜索状态和计时。
+ */
 static void app_fastchannel_resetfacesearch(uint32_t now_ms) {
   s_app.calibration_state = APP_FAST_CHANNEL_STATE_WAIT_FACE;
   s_app.state_started_ms = now_ms;
@@ -615,6 +681,9 @@ static void app_fastchannel_resetfacesearch(uint32_t now_ms) {
     now_ms + APP_CALIBRATION_FACE_TIMEOUT_MS;
 }
 
+/**
+ * @brief 推进安装面搜索状态机。
+ */
 static void app_fastchannel_processfacesearch(
   uint32_t now_ms,
   const imu_sample_t *raw_sample,
@@ -714,6 +783,9 @@ static void app_fastchannel_processfacesearch(
   }
 }
 
+/**
+ * @brief 把角度归一化到 [-pi, pi) 区间。
+ */
 static float app_fastchannel_wrapradians(float angle_rad) {
   while (angle_rad > APP_PI) {
     angle_rad -= 2.0f * APP_PI;
@@ -724,6 +796,9 @@ static float app_fastchannel_wrapradians(float angle_rad) {
   return angle_rad;
 }
 
+/**
+ * @brief 根据静止样本更新航向参考。
+ */
 static void app_fastchannel_updatereference(
   uint32_t now_ms,
   const imu_sample_t *sample
@@ -776,6 +851,9 @@ static void app_fastchannel_updatereference(
   }
 }
 
+/**
+ * @brief 生成并发布当前快速通道遥测快照。
+ */
 static void app_fastchannel_publishsnapshot(
   uint32_t now_ms,
   bool raw_valid,
@@ -822,6 +900,9 @@ static void app_fastchannel_publishsnapshot(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 解析并应用主机命令的状态变更。
+ */
 static bool app_fastchannel_applycommand(
   const app_uart_command_t *command,
   void *context
@@ -867,6 +948,15 @@ static bool app_fastchannel_applycommand(
   return Filter_Ekf_SetParameter(&s_ekf, parameter, command->value);
 }
 
+/**
+ * @brief 初始化板级设备、滤波链、Flash 校准和 UART 链路。
+ * @retval PLATFORM_STATUS_OK 初始化成功。
+ * @retval PLATFORM_STATUS_BUSY UART 回调已被其他对象占用。
+ * @retval PLATFORM_STATUS_ERROR 滤波器、IMU 或底层外设初始化失败。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 板级配置不满足接口前置条件。
+ * @pre CubeMX 已初始化 I2C1、USART1、DMA1_Channel4、GPIO 和 CRC。
+ * @pre 只允许在 RTOS 调度器启动前调用一次。
+ */
 platform_status_t App_FastChannel_Init(void) {
   if (s_app.initialized) {
     return PLATFORM_STATUS_OK;
@@ -993,6 +1083,11 @@ platform_status_t App_FastChannel_Init(void) {
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 执行一次 100 Hz IMU、标定和 EKF 处理。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许 ImuEkfTask 调用。
+ */
 void App_FastChannel_ProcessImu(uint32_t now_ms) {
   if (!s_app.initialized) {
     return;
@@ -1055,6 +1150,9 @@ void App_FastChannel_ProcessImu(uint32_t now_ms) {
   app_fastchannel_processled(now_ms);
 }
 
+/**
+ * @brief 根据数据有效性更新遥测通道掩码。
+ */
 static void app_fastchannel_setchannelvalid(
   telemetry_sample_t *sample,
   uint32_t channel,
@@ -1069,6 +1167,11 @@ static void app_fastchannel_setchannelvalid(
   }
 }
 
+/**
+ * @brief 处理命令并发送 50 Hz 32 通道 JustFloat。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许遥测任务调用。
+ */
 void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
   if (!s_app.initialized) {
     return;
@@ -1200,6 +1303,11 @@ void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief 复制最近一次一致快照。
+ * @param snapshot 输出快照。
+ * @pre snapshot 不能为空。
+ */
 void App_FastChannel_GetSnapshot(
   app_fast_channel_snapshot_t *snapshot
 ) {
@@ -1210,6 +1318,11 @@ void App_FastChannel_GetSnapshot(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 更新 ImuEkfTask 性能统计。
+ * @param metrics 最新性能统计。
+ * @pre 只允许 ImuEkfTask 调用，metrics 不能为空。
+ */
 void App_FastChannel_ReportImuMetrics(
   const app_task_metrics_t *metrics
 ) {

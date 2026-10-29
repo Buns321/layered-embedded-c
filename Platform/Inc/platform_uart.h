@@ -219,7 +219,7 @@ uint32_t Platform_UART_GetLastError(
 /**
  * @brief 注册 UART 回调。
  * @param uart UART 实例。
- * @param cb 回调集合，内容会被复制。
+ * @param callbacks 回调集合，内容会被复制。
  * @pre 必须在启动 IT/DMA 传输前调用，且一个实例只能有一个回调所有者。
  * @retval PLATFORM_STATUS_OK 注册成功。
  * @retval PLATFORM_STATUS_BUSY 该实例已注册回调。

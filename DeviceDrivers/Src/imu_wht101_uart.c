@@ -12,11 +12,26 @@
 #include <assert.h>
 #include <stdint.h>
 
+/**
+ * @brief 启动 WHT101 接收与配置。
+ */
 static void imu_wht101_start(imu_base_t *imu_h);
+/**
+ * @brief 推进 WHT101 周期处理。
+ */
 static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms);
+/**
+ * @brief 处理 WHT101 接收完成并解析帧。
+ */
 static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context);
+/**
+ * @brief 处理 WHT101 UART 错误并触发重同步。
+ */
 static void imu_wht101_uart_err_cb(uart_base_t *uart_h, void *context);
 
+/**
+ * @brief 复制 WHT101 状态快照。
+ */
 static void imu_wht101_get_status(
   imu_base_t *imu_h,
   imu_status_t *status
@@ -44,6 +59,9 @@ static void imu_wht101_get_status(
   };
 }
 
+/**
+ * @brief 请求 WHT101 设置航向零点。
+ */
 static void imu_wht101_set_zero(imu_base_t *imu_h) {
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t*)imu_h;
   Dev_IMU_WHT101_UART_SetZero(imu_wht101_uart_h);
@@ -58,6 +76,9 @@ static const imu_ops_t imu_ops_wht101 = {
 
 /******************************************************************************/
 
+/**
+ * @brief 写入 WHT101 配置寄存器。
+ */
 static dev_uart_status_t imu_wht101_write_reg(
   imu_wht101_uart_t *imu_wht101_uart_h,
   imu_wht101_reg_t reg,
@@ -80,18 +101,27 @@ static dev_uart_status_t imu_wht101_write_reg(
 
 /******************************************************************************/
 
+/**
+ * @brief 解析 WHT101 角度字段。
+ */
 static float imu_wht101_parse_angle(const imu_wht101_uart_t *imu_wht101_uart_h) {
   // 角度帧: 55 53 00 00 00 00 YawL YawH VL VH SUM
   int16_t yaw_raw = (int16_t)((imu_wht101_uart_h->frame[7] << 8) | imu_wht101_uart_h->frame[6]);
   return yaw_raw / IMU_WHT101_SCALE * IMU_WHT101_YAW_RANGE;
 }
 
+/**
+ * @brief 解析 WHT101 角速度字段。
+ */
 static float imu_wht101_parse_gyro(const imu_wht101_uart_t *imu_wht101_uart_h) {
   // 角速度帧: 55 52 00 00 RWzL RWzH WzL WzH 00 00 SUM
   int16_t wz_raw = (int16_t)((imu_wht101_uart_h->frame[7] << 8) | imu_wht101_uart_h->frame[6]);
   return wz_raw / IMU_WHT101_SCALE * IMU_WHT101_GYRO_RANGE;
 }
 
+/**
+ * @brief 把已解析通道写入样本并更新时间。
+ */
 static void imu_wht101_submit_channel(
   imu_wht101_uart_t *imu_wht101_uart_h,
   imu_channel_index_t channel,
@@ -108,6 +138,13 @@ static void imu_wht101_submit_channel(
 
 /******************************************************************************/
 
+/**
+ * @brief 初始化 WHT101。
+ * @param imu_h 对象。
+ * @param name 名称。
+ * @param uart_h 已初始化的 uart_base 对象，需支持中断接收。
+ * @param filter_h 已初始化的静态滤波器根节点；WHT101 通常注入 passthrough。
+ */
 void Dev_IMU_WHT101_UART_Init(
   imu_wht101_uart_t *imu_h,
   const char *name,
@@ -137,6 +174,9 @@ void Dev_IMU_WHT101_UART_Init(
   imu_h->rx_resync_requested     = false;
 }
 
+/**
+ * @brief 重新挂接 WHT101 UART 接收。
+ */
 static void imu_wht101_rearm_receive(imu_wht101_uart_t *imu_wht101_uart_h) {
   assert(imu_wht101_uart_h);
   dev_uart_status_t status = Dev_UART_ReceiveIT(
@@ -148,6 +188,9 @@ static void imu_wht101_rearm_receive(imu_wht101_uart_t *imu_wht101_uart_h) {
   (void)status;
 }
 
+/**
+ * @brief 处理 WHT101 接收完成并解析帧。
+ */
 static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)context;
   assert(imu_wht101_uart_h && uart_h == imu_wht101_uart_h->uart_h);
@@ -169,6 +212,9 @@ static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_rearm_receive(imu_wht101_uart_h);
 }
 
+/**
+ * @brief 处理 WHT101 UART 错误并触发重同步。
+ */
 static void imu_wht101_uart_err_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)context;
   assert(imu_wht101_uart_h && uart_h == imu_wht101_uart_h->uart_h);
@@ -180,6 +226,9 @@ static void imu_wht101_uart_err_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_rearm_receive(imu_wht101_uart_h);
 }
 
+/**
+ * @brief 应用重同步结果并恢复接收。
+ */
 static void imu_wht101_apply_resync(imu_wht101_uart_t *imu_wht101_uart_h) {
   assert(imu_wht101_uart_h);
 
@@ -192,10 +241,16 @@ static void imu_wht101_apply_resync(imu_wht101_uart_t *imu_wht101_uart_h) {
   imu_wht101_uart_h->rx_resync_requested = false;
 }
 
+/**
+ * @brief 判断毫秒截止时间是否已到达。
+ */
 static bool imu_wht101_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
   return (int32_t)(now_ms - deadline_ms) >= 0;
 }
 
+/**
+ * @brief 写配置并记录请求状态。
+ */
 static bool imu_wht101_config_write(
   imu_wht101_uart_t *imu_wht101_uart_h,
   imu_wht101_reg_t reg,
@@ -210,6 +265,9 @@ static bool imu_wht101_config_write(
   return true;
 }
 
+/**
+ * @brief 启动下一项速率配置请求。
+ */
 static void imu_wht101_config_start_next(
   imu_wht101_uart_t *imu_wht101_uart_h,
   uint32_t now_ms
@@ -250,6 +308,9 @@ static void imu_wht101_config_start_next(
   }
 }
 
+/**
+ * @brief 推进 WHT101 配置状态机。
+ */
 static void imu_wht101_config_process(
   imu_wht101_uart_t *imu_wht101_uart_h,
   uint32_t now_ms
@@ -320,6 +381,9 @@ static void imu_wht101_config_process(
   }
 }
 
+/**
+ * @brief 启动 WHT101 接收与配置。
+ */
 static void imu_wht101_start(imu_base_t *imu_h) {
   assert(imu_h);
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
@@ -338,6 +402,9 @@ static void imu_wht101_start(imu_base_t *imu_h) {
   imu_wht101_uart_h->is_started = true;
 }
 
+/**
+ * @brief 推进 WHT101 周期处理。
+ */
 static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms) {
   assert(imu_h);
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
@@ -355,6 +422,13 @@ static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms) {
   imu_wht101_config_process(imu_wht101_uart_h, now_ms);
 }
 
+/**
+ * @brief 解析一个字节。
+ * @param imu_h 对象。
+ * @param byte 输入字节。
+ * @param now_ms 当前毫秒时间戳。
+ * @note 该函数是解析器，不是 ISR 入队接口；应在任务上下文调用。
+ */
 void Dev_IMU_WHT101_UART_FeedByte(
   imu_wht101_uart_t *imu_h,
   uint8_t byte,
@@ -420,12 +494,22 @@ void Dev_IMU_WHT101_UART_FeedByte(
   }
 }
 
+/**
+ * @brief 请求设置 yaw 零点。
+ * @note 非阻塞；实际写入由 process 状态机推进。
+ */
 void Dev_IMU_WHT101_UART_SetZero(imu_wht101_uart_t *imu_h) {
   assert(imu_h && imu_h->is_started);
   imu_h->config_failed = false;
   imu_h->zero_pending = true;
 }
 
+/**
+ * @brief 请求设置输出速率。
+ * @param imu_h 对象。
+ * @param rate 速率配置值。
+ * @note 非阻塞；实际写入由 process 状态机推进。
+ */
 void Dev_IMU_WHT101_UART_SetOutputRate(imu_wht101_uart_t *imu_h, uint8_t rate) {
   assert(imu_h && imu_h->is_started);
   imu_h->config_failed = false;

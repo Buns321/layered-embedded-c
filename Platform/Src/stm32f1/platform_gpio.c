@@ -8,6 +8,9 @@
 #include "platform_hal_internal.h"
 #include "stm32f1xx_hal.h"
 
+/**
+ * @brief 把平台 GPIO 端口转换为 HAL 端口。
+ */
 static GPIO_TypeDef *platform_gpio_to_hal_port(platform_gpio_port_t port) {
   switch (port) {
     case PLATFORM_GPIO_PORT_A: return GPIOA;
@@ -23,12 +26,18 @@ static GPIO_TypeDef *platform_gpio_to_hal_port(platform_gpio_port_t port) {
   }
 }
 
+/**
+ * @brief 把平台引脚状态转换为 HAL 电平。
+ */
 static GPIO_PinState platform_gpio_to_hal_state(
   platform_gpio_pin_state_t state
 ) {
   return state == PLATFORM_GPIO_PIN_SET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 }
 
+/**
+ * @brief 把 HAL 引脚电平转换为平台状态。
+ */
 static platform_gpio_pin_state_t platform_gpio_from_hal_state(
   GPIO_PinState state
 ) {
@@ -37,10 +46,16 @@ static platform_gpio_pin_state_t platform_gpio_from_hal_state(
            : PLATFORM_GPIO_PIN_RESET;
 }
 
+/**
+ * @brief 校验 GPIO 端口是否已由板级配置启用。
+ */
 bool platform_gpio_backend_is_valid_port(platform_gpio_port_t port) {
   return platform_gpio_to_hal_port(port) != NULL;
 }
 
+/**
+ * @brief 读取GPIO数据。
+ */
 platform_gpio_pin_state_t platform_gpio_backend_read(
   platform_gpio_port_t port,
   uint16_t pin
@@ -50,6 +65,9 @@ platform_gpio_pin_state_t platform_gpio_backend_read(
   );
 }
 
+/**
+ * @brief 写入GPIO数据。
+ */
 void platform_gpio_backend_write(
   platform_gpio_port_t port,
   uint16_t pin,
@@ -62,6 +80,9 @@ void platform_gpio_backend_write(
   );
 }
 
+/**
+ * @brief 翻转 GPIO 输出电平。
+ */
 void platform_gpio_backend_toggle(
   platform_gpio_port_t port,
   uint16_t pin
@@ -69,6 +90,9 @@ void platform_gpio_backend_toggle(
   HAL_GPIO_TogglePin(platform_gpio_to_hal_port(port), pin);
 }
 
+/**
+ * @brief 锁定 GPIO 引脚配置，禁止运行期重配置。
+ */
 platform_status_t platform_gpio_backend_lock(
   platform_gpio_port_t port,
   uint16_t pin

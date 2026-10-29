@@ -18,6 +18,9 @@ static uint32_t s_iwdg_reload;
 static uint32_t s_wwdg_prescaler;
 static uint32_t s_wwdg_window;
 
+/**
+ * @brief 初始化独立看门狗并映射 HAL 状态。
+ */
 HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *iwdg_h) {
   assert(iwdg_h != NULL);
   s_iwdg_prescaler = iwdg_h->Init.Prescaler;
@@ -25,6 +28,9 @@ HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *iwdg_h) {
   return HAL_OK;
 }
 
+/**
+ * @brief 初始化窗口看门狗并映射 HAL 状态。
+ */
 HAL_StatusTypeDef HAL_WWDG_Init(WWDG_HandleTypeDef *wwdg_h) {
   assert(wwdg_h != NULL);
   s_wwdg_prescaler = wwdg_h->Init.Prescaler;
@@ -32,20 +38,32 @@ HAL_StatusTypeDef HAL_WWDG_Init(WWDG_HandleTypeDef *wwdg_h) {
   return HAL_OK;
 }
 
+/**
+ * @brief 刷新独立看门狗并映射 HAL 状态。
+ */
 HAL_StatusTypeDef HAL_IWDG_Refresh(IWDG_HandleTypeDef *iwdg_h) {
   assert(iwdg_h != NULL);
   return HAL_OK;
 }
 
+/**
+ * @brief 刷新窗口看门狗并映射 HAL 状态。
+ */
 HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *wwdg_h) {
   assert(wwdg_h != NULL);
   return HAL_OK;
 }
 
+/**
+ * @brief 返回 APB1 外设时钟频率。
+ */
 uint32_t HAL_RCC_GetPCLK1Freq(void) {
   return 36000000u;
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   assert(
     platform_iwdg_backend_start(4u, 999u) == PLATFORM_STATUS_OK

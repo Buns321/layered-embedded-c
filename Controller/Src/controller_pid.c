@@ -8,6 +8,9 @@
 #include "system_math.h"
 #include <assert.h>
 
+/**
+ * @brief 清除 PID 积分、微分和上次采样状态。
+ */
 static void ctrl_pid_clearstate(controller_pid_t *controller_pid_h) {
   assert(controller_pid_h);
 
@@ -18,6 +21,9 @@ static void ctrl_pid_clearstate(controller_pid_t *controller_pid_h) {
   controller_pid_h->has_last_measure = false;
 }
 
+/**
+ * @brief 计算位置式 PID 输出并处理限幅与微分滤波。
+ */
 static controller_status_t ctrl_pid_update(
   controller_base_t *controller_h,
   float target,
@@ -121,6 +127,9 @@ static controller_status_t ctrl_pid_update(
   return saturated ? CONTROLLER_STATUS_SATURATED : CONTROLLER_STATUS_OK;
 }
 
+/**
+ * @brief 重置 PID 内部状态。
+ */
 static void ctrl_pid_reset(controller_base_t *controller_h) {
   assert(controller_h);
 
@@ -132,6 +141,23 @@ static const controller_ops_t controller_ops_pid = {
   .reset  = ctrl_pid_reset,
 };
 
+/**
+ * @brief 初始化 PID 控制律。
+ * @param controller_h 对象。
+ * @param name 名称。
+ * @param kp 比例增益，必须有限且非负。
+ * @param ki 积分增益，必须有限且非负。
+ * @param kd 微分增益，必须有限且非负。
+ * @param max_target 目标上限，必须有限且不小于 min_target。
+ * @param min_target 目标下限，必须有限。
+ * @param max_out 输出上限（duty），必须有限且不小于 min_out。
+ * @param min_out 输出下限（duty），必须有限且不大于 0。
+ * @param max_integral 积分项绝对值上限（duty），必须有限且非负。
+ * @param derivative_filter_tau 微分一阶低通时间常数（s），0 表示关闭，
+ *        非零时必须有限且大于 0。
+ * @pre 所有增益和范围满足 Doxygen 中描述的不变量。
+ * @note 初始化会清空积分、微分滤波和上一次测量状态。
+ */
 void Ctrl_PID_Init(
   controller_pid_t *controller_h,
   const char *name,

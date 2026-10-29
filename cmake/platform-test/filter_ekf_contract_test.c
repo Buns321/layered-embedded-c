@@ -11,9 +11,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/**
+ * @brief 进入任务上下文临界区。
+ * @note 必须与 Sys_Critical_Exit 成对使用。
+ * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
+ * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ */
 void Sys_Critical_Enter(void) {
 }
 
+/**
+ * @brief 退出任务上下文临界区。
+ */
 void Sys_Critical_Exit(void) {
 }
 
@@ -31,10 +40,16 @@ static const filter_ekf_config_t s_default_config = {
   .max_dt_s = 0.05f,
 };
 
+/**
+ * @brief 判断两组浮点数组是否逐项在容差内相等。
+ */
 static bool floats_near(float left, float right, float tolerance) {
   return fabsf(left - right) <= tolerance;
 }
 
+/**
+ * @brief 构造包含全部通道的滤波器输入。
+ */
 static filter_sample_t make_complete_input(uint32_t time_ms) {
   filter_sample_t input = {
     .valid_mask =
@@ -46,6 +61,9 @@ static filter_sample_t make_complete_input(uint32_t time_ms) {
   return input;
 }
 
+/**
+ * @brief 验证 EKF 占位输出与时间步处理。
+ */
 static void test_placeholder_and_time(void) {
   filter_ekf_t ekf;
   assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
@@ -72,6 +90,9 @@ static void test_placeholder_and_time(void) {
   assert(floats_near(state.dt_s, 0.02f, 1e-6f));
 }
 
+/**
+ * @brief 验证不完整滤波输入的拒绝行为。
+ */
 static void test_incomplete_input(void) {
   filter_ekf_t ekf;
   assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
@@ -89,6 +110,9 @@ static void test_incomplete_input(void) {
   assert(!state.valid);
 }
 
+/**
+ * @brief 验证 EKF 在线参数更新。
+ */
 static void test_online_parameters(void) {
   filter_ekf_t ekf;
   assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
@@ -154,6 +178,9 @@ static void test_online_parameters(void) {
   ));
 }
 
+/**
+ * @brief 运行本文件定义的契约测试并返回进程状态。
+ */
 int main(void) {
   test_placeholder_and_time();
   test_incomplete_input();

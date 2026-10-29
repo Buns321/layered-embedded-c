@@ -25,6 +25,9 @@
 #define FILTER_IMU_CAL_SCALE_MAX        10.0f
 #define FILTER_IMU_CAL_GYRO_BIAS_MAX_DPS 720.0f
 
+/**
+ * @brief 校验 IMU 校正配置。
+ */
 static bool filter_imucalibration_configisvalid(
   const filter_imu_calibration_config_t *config
 ) {
@@ -46,6 +49,9 @@ static bool filter_imucalibration_configisvalid(
   return true;
 }
 
+/**
+ * @brief 把校正配置应用到 IMU 校正滤波器。
+ */
 static float filter_imucalibration_apply(
   float value,
   float offset,
@@ -54,6 +60,9 @@ static float filter_imucalibration_apply(
   return (value - offset) * scale;
 }
 
+/**
+ * @brief 重置 IMU 校正内部状态。
+ */
 static void filter_imucalibration_reset(filter_base_t *filter_h) {
   assert(filter_h);
   filter_imu_calibration_t *imu_calibration_h =
@@ -61,6 +70,9 @@ static void filter_imucalibration_reset(filter_base_t *filter_h) {
   imu_calibration_h->corrected_frames = 0u;
 }
 
+/**
+ * @brief 应用偏置、比例和安装变换。
+ */
 static void filter_imucalibration_update(
   filter_base_t *filter_h,
   const filter_sample_t *input,
@@ -123,6 +135,15 @@ static const filter_ops_t filter_ops_imu_calibration = {
   .reset = filter_imucalibration_reset,
 };
 
+/**
+ * @brief 初始化六轴校正滤波器。
+ * @param filter_h 对象。
+ * @param name 名称。
+ * @param config 初始校正参数，不能为空。
+ * @retval true 初始化和参数校验成功。
+ * @retval false 参数为空、非有限或比例系数超出安全范围。
+ * @note 只允许在任务初始化阶段调用。
+ */
 bool Filter_ImuCalibration_Init(
   filter_imu_calibration_t *filter_h,
   const char *name,
@@ -148,6 +169,15 @@ bool Filter_ImuCalibration_Init(
   return true;
 }
 
+/**
+ * @brief 在帧边界更新六轴校正参数。
+ * @param filter_h 对象。
+ * @param config 新参数。
+ * @retval true 参数有效且已提交。
+ * @retval false 参数无效，原配置保持不变。
+ * @note 可以从另一任务调用；配置只在一次完整 update 前复制并应用。
+ * @pre filter_h 和 config 非空。
+ */
 bool Filter_ImuCalibration_SetConfig(
   filter_imu_calibration_t *filter_h,
   const filter_imu_calibration_config_t *config
@@ -166,6 +196,12 @@ bool Filter_ImuCalibration_SetConfig(
   return true;
 }
 
+/**
+ * @brief 复制当前六轴校正参数。
+ * @param filter_h 对象。
+ * @param config 输出参数。
+ * @pre filter_h 和 config 非空。
+ */
 void Filter_ImuCalibration_GetConfig(
   const filter_imu_calibration_t *filter_h,
   filter_imu_calibration_config_t *config

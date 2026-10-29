@@ -9,6 +9,9 @@
 #include "stm32f4xx_hal.h"
 #include "usart.h"
 
+/**
+ * @brief 把平台 UART 实例编号转换为 HAL 句柄。
+ */
 static UART_HandleTypeDef *platform_uart_to_hal(
   platform_uart_instance_t uart
 ) {
@@ -35,6 +38,9 @@ static UART_HandleTypeDef *platform_uart_to_hal(
   }
 }
 
+/**
+ * @brief 把 HAL UART 句柄识别为平台实例编号。
+ */
 static bool platform_hal_to_uart(
   UART_HandleTypeDef *uart_h,
   platform_uart_instance_t *uart
@@ -82,6 +88,9 @@ static bool platform_hal_to_uart(
   return false;
 }
 
+/**
+ * @brief 把 HAL UART 错误位映射为平台错误码。
+ */
 static uint32_t platform_uart_map_error(uint32_t hal_error) {
   uint32_t error = PLATFORM_UART_ERROR_NONE;
 
@@ -113,6 +122,9 @@ static uint32_t platform_uart_map_error(uint32_t hal_error) {
   return error;
 }
 
+/**
+ * @brief 清除 UART 接收错误与中断标志。
+ */
 static void platform_uart_clear_rx_flags(UART_HandleTypeDef *uart_h) {
   __HAL_UART_CLEAR_OREFLAG(uart_h);
   __HAL_UART_CLEAR_FEFLAG(uart_h);
@@ -120,11 +132,17 @@ static void platform_uart_clear_rx_flags(UART_HandleTypeDef *uart_h) {
   __HAL_UART_CLEAR_PEFLAG(uart_h);
 }
 
+/**
+ * @brief 校验UART实例是否已由板级配置启用。
+ */
 bool platform_uart_backend_is_valid(platform_uart_instance_t uart) {
   return (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT &&
          platform_uart_to_hal(uart) != NULL;
 }
 
+/**
+ * @brief 启动UART阻塞接收。
+ */
 platform_status_t platform_uart_backend_receive(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -139,6 +157,9 @@ platform_status_t platform_uart_backend_receive(
              );
 }
 
+/**
+ * @brief 启动UART阻塞发送。
+ */
 platform_status_t platform_uart_backend_transmit(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -153,6 +174,9 @@ platform_status_t platform_uart_backend_transmit(
              );
 }
 
+/**
+ * @brief 启动UART中断接收。
+ */
 platform_status_t platform_uart_backend_receive_it(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -166,6 +190,9 @@ platform_status_t platform_uart_backend_receive_it(
              );
 }
 
+/**
+ * @brief 启动UART中断发送。
+ */
 platform_status_t platform_uart_backend_transmit_it(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -179,6 +206,9 @@ platform_status_t platform_uart_backend_transmit_it(
              );
 }
 
+/**
+ * @brief 启动UART DMA 接收。
+ */
 platform_status_t platform_uart_backend_receive_dma(
   platform_uart_instance_t uart,
   uint8_t *data,
@@ -192,6 +222,9 @@ platform_status_t platform_uart_backend_receive_dma(
              );
 }
 
+/**
+ * @brief 启动UART DMA 发送。
+ */
 platform_status_t platform_uart_backend_transmit_dma(
   platform_uart_instance_t uart,
   const uint8_t *data,
@@ -205,6 +238,9 @@ platform_status_t platform_uart_backend_transmit_dma(
              );
 }
 
+/**
+ * @brief 中止UART接收并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort_receive(
   platform_uart_instance_t uart
 ) {
@@ -221,6 +257,9 @@ platform_status_t platform_uart_backend_abort_receive(
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 中止UART发送并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort_transmit(
   platform_uart_instance_t uart
 ) {
@@ -236,6 +275,9 @@ platform_status_t platform_uart_backend_abort_transmit(
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 中止UART当前传输并映射 HAL 状态。
+ */
 platform_status_t platform_uart_backend_abort(
   platform_uart_instance_t uart
 ) {
@@ -252,6 +294,9 @@ platform_status_t platform_uart_backend_abort(
   return platform_from_hal_status(status);
 }
 
+/**
+ * @brief 返回UART后端记录的错误位。
+ */
 uint32_t platform_uart_backend_get_error(platform_uart_instance_t uart) {
   UART_HandleTypeDef *uart_h = platform_uart_to_hal(uart);
   return uart_h == NULL
@@ -259,6 +304,9 @@ uint32_t platform_uart_backend_get_error(platform_uart_instance_t uart) {
            : platform_uart_map_error(uart_h->ErrorCode);
 }
 
+/**
+ * @brief 把 HAL UART 回调事件转发给已注册的项目回调。
+ */
 static void platform_uart_dispatch_hal_event(
   UART_HandleTypeDef *uart_h,
   platform_uart_event_type_t type
@@ -269,30 +317,51 @@ static void platform_uart_dispatch_hal_event(
   }
 }
 
+/**
+ * @brief 分发 UART 发送完成事件。
+ */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_TX_COMPLETE);
 }
 
+/**
+ * @brief 分发 UART 半发送完成事件。
+ */
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_TX_HALF_COMPLETE);
 }
 
+/**
+ * @brief 分发 UART 接收完成事件。
+ */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_RX_COMPLETE);
 }
 
+/**
+ * @brief 分发 UART 半接收完成事件。
+ */
 void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_RX_HALF_COMPLETE);
 }
 
+/**
+ * @brief 记录并分发 UART 错误事件。
+ */
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_ERROR);
 }
 
+/**
+ * @brief 分发 UART 中止完成事件。
+ */
 void HAL_UART_AbortCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(uart_h, PLATFORM_UART_EVENT_ABORT_COMPLETE);
 }
 
+/**
+ * @brief 分发 UART 发送中止完成事件。
+ */
 void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(
     uart_h,
@@ -300,6 +369,9 @@ void HAL_UART_AbortTransmitCpltCallback(UART_HandleTypeDef *uart_h) {
   );
 }
 
+/**
+ * @brief 分发 UART 接收中止完成事件。
+ */
 void HAL_UART_AbortReceiveCpltCallback(UART_HandleTypeDef *uart_h) {
   platform_uart_dispatch_hal_event(
     uart_h,

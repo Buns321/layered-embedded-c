@@ -51,6 +51,7 @@ void Sys_Fault_Handler(sys_fault_type_t type);
 const sys_fault_info_t *Sys_Fault_GetInfo(void);
 
 /**
+ * @fn void Sys_Fault_OnFault(const sys_fault_info_t *info)
  * @brief 安全钩子，由 Board/App 提供强定义。
  * @param info Fault 快照。
  * @note 默认弱实现为空；可在此切电机、记录或复位。

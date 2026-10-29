@@ -9,6 +9,9 @@
 #include "stm32f1xx_hal.h"
 #include "tim.h"
 
+/**
+ * @brief 把平台 PWM 实例编号转换为 HAL 句柄。
+ */
 static TIM_HandleTypeDef *platform_pwm_to_hal(platform_pwm_instance_t pwm) {
   switch (pwm) {
 #if PLATFORM_ENABLE_PWM_TIM1
@@ -27,6 +30,9 @@ static TIM_HandleTypeDef *platform_pwm_to_hal(platform_pwm_instance_t pwm) {
   }
 }
 
+/**
+ * @brief 把 PWM 通道枚举转换为 HAL 通道宏。
+ */
 static uint32_t platform_pwm_channel_to_hal(platform_pwm_channel_t channel) {
   switch (channel) {
     case PLATFORM_PWM_CHANNEL_1: return TIM_CHANNEL_1;
@@ -37,10 +43,16 @@ static uint32_t platform_pwm_channel_to_hal(platform_pwm_channel_t channel) {
   }
 }
 
+/**
+ * @brief 校验PWM实例是否已由板级配置启用。
+ */
 bool platform_pwm_backend_is_valid(platform_pwm_instance_t pwm) {
   return platform_pwm_to_hal(pwm) != NULL;
 }
 
+/**
+ * @brief 启动PWM后端，不负责 CubeMX 结构性初始化。
+ */
 platform_status_t platform_pwm_backend_start(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel
@@ -53,6 +65,9 @@ platform_status_t platform_pwm_backend_start(
                      ));
 }
 
+/**
+ * @brief 启动 PWM 后端全部通道。
+ */
 platform_status_t platform_pwm_backend_start_all(
   platform_pwm_instance_t pwm
 ) {
@@ -63,6 +78,9 @@ platform_status_t platform_pwm_backend_start_all(
                      );
 }
 
+/**
+ * @brief 停止PWM后端并清理活动状态。
+ */
 platform_status_t platform_pwm_backend_stop(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel
@@ -75,6 +93,9 @@ platform_status_t platform_pwm_backend_stop(
                      ));
 }
 
+/**
+ * @brief 停止 PWM 后端全部通道。
+ */
 platform_status_t platform_pwm_backend_stop_all(
   platform_pwm_instance_t pwm
 ) {
@@ -85,6 +106,9 @@ platform_status_t platform_pwm_backend_stop_all(
                      );
 }
 
+/**
+ * @brief 把比较值写入 PWM 定时器 CCR。
+ */
 platform_status_t platform_pwm_backend_set_compare(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel,
@@ -106,6 +130,9 @@ platform_status_t platform_pwm_backend_set_compare(
   return PLATFORM_STATUS_OK;
 }
 
+/**
+ * @brief 按 ARR 与 max_duty 换算并写入 PWM 比较值。
+ */
 platform_status_t platform_pwm_backend_set_duty(
   platform_pwm_instance_t pwm,
   platform_pwm_channel_t channel,

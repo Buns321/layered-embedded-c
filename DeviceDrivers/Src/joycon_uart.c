@@ -18,10 +18,16 @@
 #define JOYCON_UART_VALUE_COUNT 4u
 #define JOYCON_UART_VALUE_LIMIT 100.0f
 
+/**
+ * @brief 获取最近一次 JoyCon 输入。
+ */
 static bool dev_joycon_uart_getinputop(
   joycon_base_t *joycon_h,
   joycon_input_t *input
 );
+/**
+ * @brief 复制 JoyCon 状态快照。
+ */
 static void dev_joycon_uart_getstatusop(
   joycon_base_t *joycon_h,
   joycon_status_t *status
@@ -32,10 +38,16 @@ static const joycon_ops_t joycon_ops_uart = {
   .get_status = dev_joycon_uart_getstatusop,
 };
 
+/**
+ * @brief 判断字符是否为 ASCII 空白。
+ */
 static bool joycon_char_is_space(char value) {
   return value == ' ' || value == '\t';
 }
 
+/**
+ * @brief 清空 JoyCon 文本组帧状态。
+ */
 static void joycon_reset_frame(joycon_uart_t *joycon_h) {
   assert(joycon_h);
 
@@ -44,6 +56,9 @@ static void joycon_reset_frame(joycon_uart_t *joycon_h) {
   joycon_h->frame_active = false;
 }
 
+/**
+ * @brief 解析并校验单个摇杆数值字段。
+ */
 static bool joycon_parse_value(
   const char *text,
   uint16_t length,
@@ -118,6 +133,9 @@ static bool joycon_parse_value(
   return true;
 }
 
+/**
+ * @brief 解析完整 JoyCon 输入帧。
+ */
 static bool joycon_parse_frame(
   const joycon_uart_t *joycon_h,
   uint32_t now_ms,
@@ -181,6 +199,9 @@ static bool joycon_parse_frame(
   return true;
 }
 
+/**
+ * @brief 发布已解析的 JoyCon 输入。
+ */
 static void joycon_publish_frame(
   joycon_uart_t *joycon_h,
   uint32_t now_ms
@@ -204,6 +225,9 @@ static void joycon_publish_frame(
   Sys_Critical_Exit();
 }
 
+/**
+ * @brief 重新挂接 JoyCon UART 接收。
+ */
 static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
   assert(joycon_h && joycon_h->uart_h);
 
@@ -222,6 +246,9 @@ static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
   joycon_h->rearm_error_count++;
 }
 
+/**
+ * @brief 处理 JoyCon 接收完成并解析帧。
+ */
 static void joycon_rx_complete_cb(
   uart_base_t *uart_h,
   void *context
@@ -245,6 +272,9 @@ static void joycon_rx_complete_cb(
   joycon_rearm_receive(joycon_h);
 }
 
+/**
+ * @brief 处理 JoyCon UART 错误并重置接收。
+ */
 static void joycon_uart_error_cb(
   uart_base_t *uart_h,
   void *context
@@ -257,6 +287,14 @@ static void joycon_uart_error_cb(
   joycon_rearm_receive(joycon_h);
 }
 
+/**
+ * @brief 初始化 JoyCon UART 设备。
+ * @param joycon_h 对象。
+ * @param name 调试名称。
+ * @param uart_h 已初始化的 UART 后端，必须支持中断接收。
+ * @pre uart_h 对应物理 UART 不得再注册其他回调所有者。
+ * @note 初始化不启动接收，也不会调用 UART 传输接口。
+ */
 void Dev_JoyCon_UART_Init(
   joycon_uart_t *joycon_h,
   const char *name,
@@ -269,6 +307,14 @@ void Dev_JoyCon_UART_Init(
   joycon_h->uart_h = uart_h;
 }
 
+/**
+ * @brief 注册 UART 回调并启动单字节中断接收。
+ * @param joycon_h 对象。
+ * @retval DEV_UART_OK 启动成功。
+ * @retval DEV_UART_ERROR 参数或 UART 后端错误。
+ * @retval DEV_UART_BUSY UART 已被占用。
+ * @note 只允许在任务上下文调用一次。
+ */
 dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
   assert(joycon_h && joycon_h->uart_h && !joycon_h->is_started);
 
@@ -289,6 +335,13 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
   return DEV_UART_OK;
 }
 
+/**
+ * @brief 解析环形队列中的已接收字节。
+ * @param joycon_h 对象。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @pre 只允许单一 UART 任务调用。
+ * @note 完整帧发布是原子的，其他任务只能通过 GetInput 读取副本。
+ */
 void Dev_JoyCon_UART_Process(
   joycon_uart_t *joycon_h,
   uint32_t now_ms
@@ -307,6 +360,13 @@ void Dev_JoyCon_UART_Process(
   }
 }
 
+/**
+ * @brief 向 ASCII 解析器输入一个字节。
+ * @param joycon_h 对象。
+ * @param byte 输入字节。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @note 该接口供任务上下文和主机测试使用，不得从 ISR 调用。
+ */
 void Dev_JoyCon_UART_FeedByte(
   joycon_uart_t *joycon_h,
   uint8_t byte,
@@ -351,6 +411,13 @@ void Dev_JoyCon_UART_FeedByte(
   joycon_h->frame_length++;
 }
 
+/**
+ * @brief 复制最近一帧有效 JoyCon 输入。
+ * @param joycon_h 对象。
+ * @param input 输出快照。
+ * @return 至少收到一帧有效报文时返回 true。
+ * @note 可以从其他任务调用；复制期间使用 System 临界区保护。
+ */
 bool Dev_JoyCon_UART_GetInput(
   joycon_uart_t *joycon_h,
   joycon_input_t *input
@@ -360,6 +427,9 @@ bool Dev_JoyCon_UART_GetInput(
   return Dev_JoyCon_Base_GetInput(&joycon_h->base, input);
 }
 
+/**
+ * @brief 获取最近一次 JoyCon 输入。
+ */
 static bool dev_joycon_uart_getinputop(
   joycon_base_t *joycon_h,
   joycon_input_t *input
@@ -376,6 +446,12 @@ static bool dev_joycon_uart_getinputop(
   return available;
 }
 
+/**
+ * @brief 复制 JoyCon 设备状态快照。
+ * @param joycon_h 对象。
+ * @param status 输出状态。
+ * @note 可以从其他任务调用。
+ */
 void Dev_JoyCon_UART_GetStatus(
   joycon_uart_t *joycon_h,
   joycon_status_t *status
@@ -385,6 +461,9 @@ void Dev_JoyCon_UART_GetStatus(
   Dev_JoyCon_Base_GetStatus(&joycon_h->base, status);
 }
 
+/**
+ * @brief 复制 JoyCon 状态快照。
+ */
 static void dev_joycon_uart_getstatusop(
   joycon_base_t *joycon_h,
   joycon_status_t *status

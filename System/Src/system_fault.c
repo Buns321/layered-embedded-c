@@ -20,10 +20,21 @@
 
 static sys_fault_info_t s_fault_info;
 
+/**
+ * @fn void Sys_Fault_OnFault(const sys_fault_info_t *info)
+ * @brief 安全钩子，由 Board/App 提供强定义。
+ * @param info Fault 快照。
+ * @note 默认弱实现为空；可在此切电机、记录或复位。
+ */
 __attribute__((weak)) void Sys_Fault_OnFault(const sys_fault_info_t *info) {
   (void)info;
 }
 
+/**
+ * @brief 捕获 Fault 信息并调用安全钩子。
+ * @param type Fault 类型。
+ * @note 在 Fault Handler 中调用；返回后由调用方的 while(1) 兜底。
+ */
 void Sys_Fault_Handler(sys_fault_type_t type) {
   s_fault_info.type = type;
   s_fault_info.cfsr = SCB->CFSR;
@@ -38,6 +49,10 @@ void Sys_Fault_Handler(sys_fault_type_t type) {
   __disable_irq();
 }
 
+/**
+ * @brief 获取最近一次 Fault 快照。
+ * @return 指向静态快照的指针；调试器可在停机后读取。
+ */
 const sys_fault_info_t *Sys_Fault_GetInfo(void) {
   return &s_fault_info;
 }

@@ -142,7 +142,9 @@
 ## 6. 注释、构建、测试与范围
 
 - [ ] 每个维护的 `.c/.h` 有中文 Doxygen 文件头和正确分组；公共 API 有适用
-      的 `@brief`、`@param`、`@retval`、`@pre`、`@post`、`@note`、`@warning`。
+      的 `@brief`、`@param`、`@retval`、`@pre`、`@post`、`@note`、`@warning`；
+      公共头声明与 `.c` 定义两处同步；私有函数前向声明和定义均有中文
+      `@brief`，非显然契约补充参数、返回值或限制说明。
 - [ ] 新增公共头加入 Doxygen `INPUT`，新增分组先登记到 `groups.dox`。
 - [ ] 新增源文件和测试加入对应 `CMakeLists.txt`，没有遗漏构建接线。
 - [ ] 行为变化有聚焦原生测试，覆盖非法参数、边界和错误路径；测试断言有效，
