@@ -30,13 +30,16 @@ typedef struct platform_exti_callback_binding_s {
 
 /**
  * @brief 注册某个引脚的 EXTI 回调。
- * @param GPIO_Pin 单引脚掩码，必须是非零单 bit。
- * @param cb 回调条目，内容会被复制。
+ * @param GPIO_Pin 非零单 bit 引脚掩码，对应 EXTI 线 0..15。
+ * @param cb 回调条目；函数复制结构和函数指针，不接管 context 的所有权。
  * @retval PLATFORM_STATUS_OK 注册成功。
  * @retval PLATFORM_STATUS_BUSY 该 EXTI 线已注册。
- * @retval PLATFORM_STATUS_INVALID_ARGUMENT 引脚或回调条目非法。
- * @note 回调在 EXTI 中断上下文执行，参数是触发中断的 GPIO Pin。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT GPIO_Pin 为非零单 bit 之外的掩码，cb 为空，
+ *         或映射结果超出 16 条 EXTI 线。
+ * @pre 应在对应 EXTI 线和 NVIC 使能前完成注册。
+ * @note 回调在 EXTI 中断上下文执行，参数是触发中断的 GPIO_Pin；不得阻塞。
  * @note 一个 EXTI 线只允许一个回调所有者，不支持静默覆盖。
+ * @note cb 只需在调用期间有效，context 生命周期由调用方保证；不分配内存。
  */
 platform_status_t Platform_EXTI_RegisterCallback(
   uint16_t GPIO_Pin,

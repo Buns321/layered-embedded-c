@@ -5,7 +5,7 @@
 /**
  * @file filter_distributor.h
  * @brief 多路路由与通道映射。
- * @addtogroup filter_h
+ * @addtogroup filter
  * @{
  */
 
@@ -44,11 +44,13 @@ typedef struct filter_distributor_s {
 
 /**
  * @brief 初始化分发器。
- * @param filter_h 对象。
- * @param name 名称。
- * @param routes 静态路由表。
+ * @param filter_h 待初始化的分发器存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖分发器对象。
+ * @param routes 非空路由表；前 route_count 项在调用期间只读。
  * @param route_count 路由数，范围 1..FILTER_DISTRIBUTOR_CAPACITY。
- * @note Init 会校验重复滤波器、重复通道、非法索引和跨路由输出冲突。
+ * @pre 每条路由的输入/输出数量在 1..FILTER_ROUTE_CAPACITY 内，索引小于 FILTER_CHANNEL_CAPACITY。
+ * @post 路由表复制入对象、剩余槽位清零，并 reset 全部唯一子滤波器。
+ * @note Debug 构建拒绝重复滤波器、同一路由内重复索引和跨路由重复输出；仅初始化阶段调用。
  */
 void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count);
 

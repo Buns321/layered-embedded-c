@@ -48,7 +48,10 @@
 
 /**
  * @brief 使能 DWT 周期计数器，供微秒延时使用。
- * @note 应在调用 Sys_DelayUs 前执行。
+ * @note 应在第一次调用 Sys_DelayUs 或 System 时间辅助函数前执行。
+ * @warning 重复调用会把 CYCCNT 清零，使清零前取得的时间戳与清零后不可比较；
+ *          运行期不要重新初始化。
+ * @post DWT_CTRL.CYCCNTENA 已置位，且 DWT->CYCCNT 从 0 重新开始计数。
  */
 SYS_DELAY_INLINE void Sys_Delay_Init(void) {
   CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -58,8 +61,12 @@ SYS_DELAY_INLINE void Sys_Delay_Init(void) {
 
 /**
  * @brief 以 DWT 周期计数器忙等指定微秒数。
- * @param us 延时微秒数。
- * @note 阻塞忙等，只用于短延时；延时精度依赖 SystemCoreClock 配置。
+ * @param us 目标忙等时长，单位 us；0 表示不等待。
+ * @pre Sys_Delay_Init 已执行且 SystemCoreClock 反映当前 CPU 频率。
+ * @note 阻塞忙等，只用于短延时；实际时长按 SystemCoreClock / 1 MHz 换算周期。
+ * @warning us 过大时周期增量会在 32 位内回绕，等待时长不再可靠；应改用
+ *          Sys_DelayMs 或 RTOS 延时。
+ * @post 函数返回前已消耗约 us 微秒的 CPU 时间，不主动让出 CPU。
  */
 SYS_DELAY_INLINE void Sys_DelayUs(uint32_t us) {
   uint32_t startTick = DWT->CYCCNT;
@@ -71,8 +78,11 @@ SYS_DELAY_INLINE void Sys_DelayUs(uint32_t us) {
 
 /**
  * @brief 延时指定毫秒数。
- * @param ms 延时毫秒数。
- * @note USE_FREERTOS 构建使用 osDelay 让出 CPU；裸机构建使用忙等。
+ * @param ms 目标延时时长，单位 ms；0 表示不等待。
+ * @note USE_FREERTOS 构建使用 osDelay 让出 CPU；裸机构建按 1 ms 分片调用
+ *       Sys_DelayUs 忙等。
+ * @warning FreeRTOS 分支要求内核已启动；裸机分支长时间忙等会阻塞所有任务逻辑。
+ * @post 函数返回前已等待至少 ms 毫秒；FreeRTOS 分支期间允许其他任务运行。
  */
 SYS_DELAY_INLINE void Sys_DelayMs(uint32_t ms) {
 #ifdef USE_FREERTOS

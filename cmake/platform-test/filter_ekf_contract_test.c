@@ -12,16 +12,21 @@
 #include <stdint.h>
 
 /**
- * @brief 进入任务上下文临界区。
- * @note 必须与 Sys_Critical_Exit 成对使用。
- * @note 调度器未启动时使用 PRIMASK，启动后使用 FreeRTOS 任务临界区。
- * @warning 只包住几条指令；不要放阻塞调用、串口、浮点三角函数或策略解算。
+ * @brief EKF 契约测试使用的空临界区进入桩。
+ * @pre 必须与 Sys_Critical_Exit 配对调用；本测试不在 ISR 中调用。
+ * @post 函数体为空，不保存 PRIMASK、不关闭中断、不增加嵌套计数。
+ * @warning 该桩不提供互斥或中断保护，只用于让 EKF 公共层完成链接。
+ * @note 本测试后续不依赖真实临界区；生产 System 实现才有中断/调度保护语义。
  */
 void Sys_Critical_Enter(void) {
 }
 
 /**
- * @brief 退出任务上下文临界区。
+ * @brief EKF 契约测试使用的空临界区退出桩。
+ * @pre 之前已调用本文件的 Sys_Critical_Enter 桩；本函数不验证配对关系。
+ * @post 函数体为空，不恢复 PRIMASK、不开启中断、不修改嵌套计数。
+ * @warning 该桩不提供互斥或中断保护，只用于让 EKF 公共层完成链接。
+ * @note 必须与 Sys_Critical_Enter 成对调用；生产 System 实现才有恢复语义。
  */
 void Sys_Critical_Exit(void) {
 }
@@ -41,14 +46,26 @@ static const filter_ekf_config_t s_default_config = {
 };
 
 /**
- * @brief 判断两组浮点数组是否逐项在容差内相等。
+ * @brief 判断两个浮点标量是否在绝对容差内相等。
+ * @param left 左操作数；与 right 使用相同物理单位。
+ * @param right 右操作数；与 left 使用相同物理单位。
+ * @param tolerance 非负绝对容差，单位与两个操作数相同。
+ * @retval true fabsf(left - right) 不超过 tolerance。
+ * @retval false 差值超出容差、任一操作数为 NaN，或 tolerance 为负。
+ * @post 不修改输入，也不产生外部状态。
+ * @note 测试辅助函数，不处理无穷值；仅供本测试程序比较数值结果。
  */
 static bool floats_near(float left, float right, float tolerance) {
   return fabsf(left - right) <= tolerance;
 }
 
 /**
- * @brief 构造包含全部通道的滤波器输入。
+ * @brief 构造包含全部 IMU 通道的合成滤波输入。
+ * @param time_ms 采样时间戳，单位 ms。
+ * @return 按值返回 filter_sample_t；valid_mask 置位通道 3 至 8，加速度 Z 通道
+ *         设为 9.80665 m/s^2，其余通道值为 0。
+ * @post 不修改任何全局状态。
+ * @note 该输入用于让 EKF 通过六轴完整性检查；其他通道没有填充真实传感器值。
  */
 static filter_sample_t make_complete_input(uint32_t time_ms) {
   filter_sample_t input = {
@@ -62,7 +79,12 @@ static filter_sample_t make_complete_input(uint32_t time_ms) {
 }
 
 /**
- * @brief 验证 EKF 占位输出与时间步处理。
+ * @brief 验证 EKF 占位姿态输出与时间步钳制。
+ * @post 成功返回时，首次完整输入产生有效的横滚、俯仰和偏航占位输出，状态为
+ *       valid/placeholder、更新计数为 1、四元数为单位四元数，dt 等于最小周期
+ *       0.001 s；120 ms 的第二次输入使 dt 变为 0.020 s。
+ * @warning 任一 assert 失败都会终止测试进程，不返回可恢复的错误状态。
+ * @note 测试对象位于栈上，返回后失效；EKF 核心仍为占位实现，结果不可用于控制。
  */
 static void test_placeholder_and_time(void) {
   filter_ekf_t ekf;
@@ -91,7 +113,11 @@ static void test_placeholder_and_time(void) {
 }
 
 /**
- * @brief 验证不完整滤波输入的拒绝行为。
+ * @brief 验证不完整 IMU 输入不会发布有效姿态。
+ * @post 成功返回时，仅含陀螺 Z 和加速度 Z 的输入使输出通道 0 至 2 的 valid 位
+ *       清零，并令内部 state.valid 为 false。
+ * @warning 任一 assert 失败都会终止测试进程，不返回可恢复的错误状态。
+ * @note 测试对象位于栈上，返回后失效；失败帧不会访问外部传感器或硬件。
  */
 static void test_incomplete_input(void) {
   filter_ekf_t ekf;
@@ -111,7 +137,12 @@ static void test_incomplete_input(void) {
 }
 
 /**
- * @brief 验证 EKF 在线参数更新。
+ * @brief 验证 EKF 参数校验、延迟提交与默认值恢复。
+ * @post 成功返回时，非法 dt 组合使初始化失败；合法测量噪声 0.2 在更新前仍保留
+ *       旧配置 0.1，下一帧后变为 0.2；非法参数编号、零值、NaN 和越界组合均被
+ *       拒绝；ResetParameters 后的下一帧恢复默认测量噪声 0.1。
+ * @warning 任一 assert 失败都会终止测试进程，不返回可恢复的错误状态。
+ * @note 参数采用 pending 机制，在帧边界生效；测试对象位于栈上，返回后失效。
  */
 static void test_online_parameters(void) {
   filter_ekf_t ekf;
@@ -179,7 +210,11 @@ static void test_online_parameters(void) {
 }
 
 /**
- * @brief 运行本文件定义的契约测试并返回进程状态。
+ * @brief 依次运行 EKF 的三组契约测试并返回进程状态。
+ * @return 固定返回 0；只有全部断言通过才会到达该返回语句。
+ * @post 三个测试函数创建的栈对象均已失效，本文件不保留 EKF 全局状态。
+ * @warning 任一 assert 失败都会终止进程，因此不会返回非零退出码。
+ * @note 仅供 CTest 启动本测试可执行文件时调用。
  */
 int main(void) {
   test_placeholder_and_time();

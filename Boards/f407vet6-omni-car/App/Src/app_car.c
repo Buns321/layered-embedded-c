@@ -157,6 +157,9 @@ static const char *const s_motor_names[APP_CAR_WHEEL_COUNT] = {
 
 /**
  * @brief 返回轮毂 AIN1 控制端口。
+ * @param wheel 轮位下标，有效范围 0..3，依次对应 A/B/C/D。
+ * @return 对应轮位的 AIN1 GPIO 端口；非法下标回退到轮位 A 的端口。
+ * @note 纯函数；调用方必须先保证 wheel 合法，回退值仅用于避免越界，不代表有效电机映射。
  */
 static platform_gpio_port_t app_car_ain1_port(uint8_t wheel) {
   switch (wheel) {
@@ -170,6 +173,9 @@ static platform_gpio_port_t app_car_ain1_port(uint8_t wheel) {
 
 /**
  * @brief 返回轮毂 AIN1 控制引脚。
+ * @param wheel 轮位下标，有效范围 0..3，依次对应 A/B/C/D。
+ * @return 对应轮位的 AIN1 引脚掩码；非法下标回退到轮位 A 的引脚。
+ * @note 纯函数；返回值必须与 app_car_ain1_port 的轮位选择配套使用。
  */
 static uint16_t app_car_ain1_pin(uint8_t wheel) {
   switch (wheel) {
@@ -183,6 +189,9 @@ static uint16_t app_car_ain1_pin(uint8_t wheel) {
 
 /**
  * @brief 返回轮毂 AIN2 控制端口。
+ * @param wheel 轮位下标，有效范围 0..3，依次对应 A/B/C/D。
+ * @return 对应轮位的 AIN2 GPIO 端口；非法下标回退到轮位 A 的端口。
+ * @note 纯函数；调用方必须先保证 wheel 合法，回退值仅用于避免越界。
  */
 static platform_gpio_port_t app_car_ain2_port(uint8_t wheel) {
   switch (wheel) {
@@ -196,6 +205,9 @@ static platform_gpio_port_t app_car_ain2_port(uint8_t wheel) {
 
 /**
  * @brief 返回轮毂 AIN2 控制引脚。
+ * @param wheel 轮位下标，有效范围 0..3，依次对应 A/B/C/D。
+ * @return 对应轮位的 AIN2 引脚掩码；非法下标回退到轮位 A 的引脚。
+ * @note 纯函数；返回值必须与 app_car_ain2_port 的轮位选择配套使用。
  */
 static uint16_t app_car_ain2_pin(uint8_t wheel) {
   switch (wheel) {
@@ -209,6 +221,12 @@ static uint16_t app_car_ain2_pin(uint8_t wheel) {
 
 /**
  * @brief 用无符号回绕安全方式判断持续时间是否到期。
+ * @param now_ms 当前单调毫秒时间戳。
+ * @param start_ms 起始单调毫秒时间戳，必须早于或等于 now_ms 的一个回绕周期内。
+ * @param duration_ms 持续时间，单位 ms；应远小于 2^31。
+ * @retval true 无符号差值 now_ms - start_ms 已达到 duration_ms。
+ * @retval false 尚未达到持续时间。
+ * @note 纯函数；依赖 uint32 模运算处理单次 49.7 天回绕，不修改状态。
  */
 static bool app_car_elapsed(uint32_t now_ms, uint32_t start_ms, uint32_t duration_ms) {
   return (uint32_t)(now_ms - start_ms) >= duration_ms;
@@ -216,6 +234,11 @@ static bool app_car_elapsed(uint32_t now_ms, uint32_t start_ms, uint32_t duratio
 
 /**
  * @brief 用有符号差值判断时间戳是否晚于参考点。
+ * @param timestamp_ms 待比较的单调毫秒时间戳。
+ * @param reference_ms 参考单调毫秒时间戳。
+ * @retval true 有符号差 timestamp_ms - reference_ms 大于零。
+ * @retval false 时间戳等于或早于参考点。
+ * @note 纯函数；要求两者间隔小于 2^31 ms，因而只能比较同一回绕窗口内的时间。
  */
 static bool app_car_timestamp_is_after(
   uint32_t timestamp_ms,
@@ -226,6 +249,8 @@ static bool app_car_timestamp_is_after(
 
 /**
  * @brief 在临界区内清除有效运动命令。
+ * @post s_car.command.valid 置 false，线速度/方向/角速度清零；JoyCon 原始快照和命令时间保留。
+ * @note 使用短 PRIMASK 临界区保护 ControlTask 与发布者的一致性；不修改电机或底盘硬件。
  */
 static void app_car_clear_command(void) {
   Sys_Critical_Enter();
@@ -238,6 +263,14 @@ static void app_car_clear_command(void) {
 
 /**
  * @brief 在临界区内发布新的运动命令和输入快照。
+ * @param input 只读 JoyCon 快照；函数只复制 left_x、left_y、right_x 三个 [-1,1] 归一化轴值。
+ * @param linear_speed 世界系平动速度大小，单位 m/s，范围 0..APP_CAR_MAX_LINEAR_MPS。
+ * @param direction 世界系行进方向，单位 rad，逆时针为正；有效范围 [-pi, pi]。
+ * @param angular_speed 自转角速度，单位 rad/s，逆时针为正；有效范围 [-APP_CAR_MAX_ANGULAR_RPS, APP_CAR_MAX_ANGULAR_RPS]。
+ * @param now_ms 命令发布时的单调毫秒时间戳。
+ * @pre input 非 NULL，数值均已由 ControlTask 限幅；调用期间 input 保持有效。
+ * @post 临界区内一次性覆盖运动命令、JoyCon 快照、时间戳并置 valid=true。
+ * @note 仅复制数据、不访问硬件；临界区很短，不分配内存。
  */
 static void app_car_set_command(
   const joycon_input_t *input,
@@ -262,6 +295,8 @@ static void app_car_set_command(
 
 /**
  * @brief 在临界区内复制当前运动命令。
+ * @return 当前命令的结构体副本；内容可能 valid=false，调用方必须检查。
+ * @note 使用短临界区保证整条命令一致；按值返回，不保留内部指针，不修改状态。
  */
 static app_car_command_t app_car_get_command(void) {
   app_car_command_t command;
@@ -274,7 +309,12 @@ static app_car_command_t app_car_get_command(void) {
 }
 
 /**
- * @brief 首次故障时锁存状态并记录错误日志。
+ * @brief 首次故障时锁存 faulted 并记录一条错误日志。
+ * @param reason NUL 结尾的故障原因文本；非 NULL，且须在日志格式化期间保持有效。
+ * @pre 只允许 App_Car 的 UARTTask、ControlTask 或 MonitorTask 调用，reason 通常为字符串字面量。
+ * @post 若此前未故障，s_car.faulted 置 true 并输出一条 SYS_LOG_ERROR；已故障时不重复写状态或日志。
+ * @note 无临界区保护，多任务并发进入时首次日志可能重复或交错；不分配内存、不阻塞等待，也不直接停止电机。
+ * @warning reason 不得为 NULL；本函数只锁存故障，安全停机仍由调用方显式执行 app_car_estop。
  */
 static void app_car_set_fault(const char *reason) {
   if (!s_car.faulted) {
@@ -284,7 +324,12 @@ static void app_car_set_fault(const char *reason) {
 }
 
 /**
- * @brief 切换启动状态并重置状态计时。
+ * @brief 切换上电状态机状态并重置静止检测计时。
+ * @param state 目标启动状态，必须为 app_car_boot_state_t 的合法枚举值。
+ * @param now_ms 新状态开始的单调毫秒时间戳，必须与 IMU 和任务时基一致。
+ * @pre 只允许 UARTTask 在推进上电状态机时调用；调用方负责保证状态转换合法。
+ * @post boot_state 与 state_started_ms 更新，still_since_ms 清零，still_tracking 置 false。
+ * @note 不修改 faulted、imu_ready、电机或 IMU 设备；无锁、无硬件访问、不分配内存。
  */
 static void app_car_enter_state(
   app_car_boot_state_t state,
@@ -297,7 +342,11 @@ static void app_car_enter_state(
 }
 
 /**
- * @brief 停止底盘、清除命令并复位使能状态。
+ * @brief 常规制动底盘、清除运动命令并复位使能标记。
+ * @pre 只允许 ControlTask 调用，App_Car_Init 已成功返回，且没有其他上下文并发操作同一底盘实例。
+ * @post 若电机已使能或急停曾锁存，调用 Chassis_Base_Stop 清零底盘目标并请求四轮制动；随后 motors_enabled 与 estop_latched 均置 false，共享命令失效。
+ * @note 不修改 faulted 或 imu_ready，不解除故障；不需要重新上电即可重新使能电机。
+ * @warning 底盘操作无锁且非原子；不得与 Chassis_Base_Update、Chassis_Base_EStop 或另一控制实例并发。
  */
 static void app_car_stop_motion(void) {
   if (s_car.motors_enabled || s_car.estop_latched) {
@@ -310,7 +359,11 @@ static void app_car_stop_motion(void) {
 }
 
 /**
- * @brief 触发锁存急停并清除运动命令。
+ * @brief 执行并锁存一次急停，同时使共享运动命令失效。
+ * @pre 只允许 ControlTask 或 MonitorTask 调用，且底盘已完成初始化、没有其他上下文并发操作同一底盘实例。
+ * @post 首次调用经 Chassis_Base_EStop 清零底盘状态、禁用四轮输出并置 estop_latched；后续调用不再重复写底盘，但仍清除 motors_enabled 和共享命令。
+ * @note 无锁，四轮禁用不是跨轮原子操作；不修改 faulted 或 imu_ready，不分配内存。
+ * @warning 本函数是硬件侧安全动作但无返回值，实际 STBY/GPIO 结果仍须通过电机状态另行确认。
  */
 static void app_car_estop(void) {
   if (!s_car.estop_latched) {
@@ -324,6 +377,10 @@ static void app_car_estop(void) {
 
 /**
  * @brief 检查四个电机是否都处于使能状态。
+ * @retval true 四个 Dev_Motor_Base_ReadStatus 均恰为 DEV_MOTOR_ENABLE。
+ * @retval false 任一电机处于禁用、制动、故障或其他非 ENABLE 状态。
+ * @pre 四个电机对象均已由 App_Car_Init 完成初始化。
+ * @note 逐个读取状态且无锁，返回后状态可能立即变化；只能用于控制路径判断，不能替代安全联锁。
  */
 static bool app_car_motors_are_enabled(void) {
   for (uint8_t wheel = 0U; wheel < APP_CAR_WHEEL_COUNT; wheel++) {
@@ -339,7 +396,12 @@ static bool app_car_motors_are_enabled(void) {
 }
 
 /**
- * @brief 使能四个电机并锁存使能失败。
+ * @brief 使能四个轮电机，按回读结果更新使能标记。
+ * @pre 仅由 ControlTask 在 READY、IMU 有效且已有有效 JoyCon 输入时调用；没有其他上下文并发操作电机。
+ * @post 已对四轮调用 Dev_Motor_Base_Enable 并清除 estop_latched；motors_enabled 取四轮回读的合取结果。
+ * @post 若回读并非四轮全部使能，则锁存 "motor enable failed" 故障，但本函数不直接执行急停。
+ * @note 有 STBY/PWM 硬件副作用；不分配内存、不等待，调用方必须在故障时继续执行 app_car_estop。
+ * @warning 使能前必须确认底盘目标已清零且车轮可安全转动；驱动错误会通过 faulted 延迟暴露。
  */
 static void app_car_enable_motors(void) {
   for (uint8_t wheel = 0U; wheel < APP_CAR_WHEEL_COUNT; wheel++) {
@@ -355,7 +417,13 @@ static void app_car_enable_motors(void) {
 }
 
 /**
- * @brief 检查航向和 Z 轴角速度是否在超时窗口内有效。
+ * @brief 检查 yaw 与 gyro-Z 通道有效位，并判断 yaw 是否仍在超时窗口内。
+ * @param sample 只读 IMU 快照；非 NULL，函数不接管所有权，也不修改样本。
+ * @param now_ms 当前单调毫秒时间戳，必须与样本 channel_update_ms 使用同一时基。
+ * @retval true YAW 与 GYRO_Z 有效位均已置位，且 yaw 通道年龄不超过 APP_CAR_IMU_TIMEOUT_MS。
+ * @retval false 任一有效位缺失，或 yaw 通道年龄超过 APP_CAR_IMU_TIMEOUT_MS。
+ * @pre sample 非 NULL；调试构建以 assert 检查，调用方保证生命周期覆盖本次调用。
+ * @note 仅单独计算 yaw 年龄，GYRO_Z 只检查有效位；差值按 uint32 回绕安全计算，不分配内存。
  */
 static bool app_car_imu_yaw_is_fresh(
   const imu_sample_t *sample,
@@ -377,7 +445,15 @@ static bool app_car_imu_yaw_is_fresh(
 }
 
 /**
- * @brief 推进车辆启动状态机。
+ * @brief 推进 WHT101 速率配置、静止确认、设备置零和软件零偏验证状态机。
+ * @param now_ms 当前单调毫秒时间戳，必须与 IMU 通道时间戳及超时配置使用同一时基。
+ * @pre 只允许 UARTTask 在 App_Car_Init 成功后调用；调用时 boot_state 不应为 READY 或 FAULT。
+ * @post RATE_CONFIG 在请求完成后进入 WAIT_STILL，失败或 3 s 超时会锁存故障。
+ * @post WAIT_STILL 要求配置后的 yaw/gyro-Z 新帧持续静止 400 ms，随后请求设备侧置零并进入 ZERO_CONFIG；5 s 内未确认则锁存故障。
+ * @post ZERO_CONFIG 在设备请求完成后记录 zero_done_ms 并等待新 yaw 帧；失败或超时锁存故障。
+ * @post WAIT_ZERO_FRAME 在归零后的新 yaw 残差不超过门限时执行软件 ZeroYaw、置 imu_ready 并进入 READY；2 s 内未满足则锁存故障。
+ * @note 故障分支只把 faulted 置 true，下一次 App_Car_ProcessInputs 会把 boot_state 切到 FAULT；本函数从不使能电机。
+ * @warning 状态机含 IMU 设备写请求和跨任务可见的 volatile 状态，无锁；只能由单一 UARTTask 串行推进。
  */
 static void app_car_update_boot_state(uint32_t now_ms) {
   imu_status_t imu_status = {0};
@@ -513,7 +589,13 @@ static void app_car_update_boot_state(uint32_t now_ms) {
 }
 
 /**
- * @brief 生成并发布车辆遥测快照。
+ * @brief 组装 16 通道车辆遥测并提交给 JustFloat。
+ * @param now_ms 当前单调毫秒时间戳，写入样本作为整帧时间戳。
+ * @pre 只允许 MonitorTask 调用，且 IMU、JoyCon、电机和 JustFloat 均已完成初始化。
+ * @post 四轮目标/当前速度以 m/s 填入通道 0..7；命令线速度 m/s、方向 rad、角速度 rad/s 填入通道 8..10。
+ * @post IMU yaw（deg）与 gyro-Z（deg/s）、JoyCon 三轴归一化值按有效位填入；对应读取失败时清除该通道有效位而不保留旧值。
+ * @note SYS_LOG/注释中的“16 通道”是 JustFloat 发送宽度；样本有效掩码仍使用底层 32 通道容量。
+ * @note Dev_Telemetry_Base_Send 的返回值被忽略；发送忙时 JustFloat 整帧丢弃，本函数不等待 DMA、不分配内存。
  */
 static void app_car_update_telemetry(uint32_t now_ms) {
   telemetry_sample_t sample = {
@@ -572,7 +654,11 @@ static void app_car_update_telemetry(uint32_t now_ms) {
 }
 
 /**
- * @brief 记录当前车辆运行状态。
+ * @brief 输出一条车辆运行状态日志。
+ * @param now_ms 当前单调毫秒时间戳，用于计算 ControlTask 心跳年龄。
+ * @pre 只允许 MonitorTask 在模块初始化后调用；日志后端必须已初始化且允许任务上下文写入。
+ * @post 输出启动状态、IMU 错误数、JoyCon 非法帧/溢出数、JustFloat 丢帧数和心跳年龄；心跳从未有效时年龄记录为 0。
+ * @note 不修改车辆状态，不访问电机或传感器硬件；SYS_LOG 为非阻塞日志门面，不分配内存。
  */
 static void app_car_log_status(uint32_t now_ms) {
   imu_status_t imu_status = {0};
@@ -601,12 +687,15 @@ static void app_car_log_status(uint32_t now_ms) {
 
 /**
  * @brief 初始化并静态装配小车全部设备。
- * @retval PLATFORM_STATUS_OK 初始化成功。
- * @retval PLATFORM_STATUS_ERROR 任一设备初始化失败。
- * @pre CubeMX 已初始化 TIM1、TIM2–TIM5、USART1–USART3 和 GPIO。
- * @pre RTT 日志后端已按构建选项完成初始化。
- * @note 只允许在 RTOS 调度器启动前调用一次。
- * @note 初始化完成后电机仍保持禁用，等待 WHT101 归零和有效 JoyCon 命令。
+ * @retval PLATFORM_STATUS_OK 设备、策略、底盘和遥测已完成静态装配；重复调用直接返回 OK。
+ * @retval PLATFORM_STATUS_ERROR JoyCon 接收启动或任一底层设备装配失败。
+ * @retval PLATFORM_STATUS_BUSY 某个物理 UART 的回调槽已被其他所有者占用。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 底层实例或静态配置不合法。
+ * @pre CubeMX 已初始化 TIM1、TIM2–TIM5、USART1–USART3、GPIO 和 NVIC。
+ * @pre RTT 日志后端已按构建选项完成初始化；首次初始化须在 RTOS 调度器启动前完成。
+ * @post 成功时启动 WHT101 10 Hz 输出配置并进入 RATE_CONFIG 状态，四轮保持禁用。
+ * @post 失败时模块保持未初始化并返回底层错误，调用方不得继续启动控制任务。
+ * @note 不分配动态内存；初始化包含同步 UART/驱动操作，重复调用不会重新装配。
  */
 platform_status_t App_Car_Init(void) {
   if (s_car.initialized) {
@@ -756,9 +845,11 @@ platform_status_t App_Car_Init(void) {
 
 /**
  * @brief 推进 WHT101、JoyCon 和上电归零状态机。
- * @param now_ms 当前单调毫秒时间戳。
- * @pre 只允许 UARTTask 调用。
- * @note 配置、静止确认和传感器归零完成前不会使能电机。
+ * @param now_ms 当前单调毫秒时间戳，必须与 ControlTask/MonitorTask 共用同一回绕时基。
+ * @pre 只允许 UARTTask 在 2 ms 周期上下文中调用，且 App_Car_Init 已成功返回。
+ * @post 已处理 WHT101 帧、JoyCon 帧及速率配置/静止确认/归零验证状态机。
+ * @post 任一阶段失败会锁存故障，并在下一次调用进入 FAULT；成功归零后进入 READY，但本函数不会使能电机。
+ * @note 未初始化时直接返回；任务上下文，不阻塞 RTOS 队列，不分配内存。
  */
 void App_Car_ProcessInputs(uint32_t now_ms) {
   if (!s_car.initialized) {
@@ -780,9 +871,11 @@ void App_Car_ProcessInputs(uint32_t now_ms) {
 
 /**
  * @brief 运行一次 100 Hz 底盘与四轮闭环控制。
- * @param now_ms 当前单调毫秒时间戳。
- * @pre 只允许 ControlTask 调用，且调用周期与 APP_CAR_CONTROL_PERIOD_S 一致。
- * @note JoyCon 超时、IMU 失效、控制器错误或故障锁存时执行制动或急停。
+ * @param now_ms 当前单调毫秒时间戳，同时用于心跳、命令和 IMU 时效判断。
+ * @pre 只允许 ControlTask 调用，调用周期必须为 10 ms 且与 APP_CAR_CONTROL_PERIOD_S 一致。
+ * @post 每次调用先刷新控制心跳；故障或未就绪时制动，无有效 JoyCon/IMU 或进入死区时制动。
+ * @post 有效输入时启用四轮、更新底盘与 PID，并在临界区发布统一命令快照；控制器错误触发锁存急停。
+ * @note 任务上下文；不分配内存，不阻塞等待，底盘/PID 输出最终由执行器限幅。
  */
 void App_Car_ProcessControl(uint32_t now_ms) {
   if (!s_car.initialized) {
@@ -900,9 +993,13 @@ void App_Car_ProcessControl(uint32_t now_ms) {
 }
 
 /**
- * @brief 运行 50 Hz JustFloat 遥测、状态日志和任务心跳监控。
- * @param now_ms 当前单调毫秒时间戳。
- * @pre 只允许 MonitorTask 调用。
+ * @brief 运行 100 Hz 监控循环：50 Hz JustFloat 遥测、1 Hz 状态日志和任务心跳检查。
+ * @param now_ms 当前单调毫秒时间戳，用于心跳超时、20 ms 遥测和 1 s 日志节流。
+ * @pre 只允许 MonitorTask 在 10 ms 周期上下文中调用，且 App_Car_Init 已成功返回。
+ * @post 控制心跳超时锁存故障并执行急停；已有故障时继续请求急停；未初始化时直接返回。
+ * @post 首次 ControlTask 刷新心跳前不判定超时；此时四轮尚未由控制路径使能。
+ * @post 每 20 ms 发起一次非阻塞 16 通道 JustFloat，每 1000 ms 输出一次 RTT 状态日志。
+ * @note 不分配内存；遥测忙时整帧丢弃，不等待 DMA。
  */
 void App_Car_ProcessMonitor(uint32_t now_ms) {
   if (!s_car.initialized) {

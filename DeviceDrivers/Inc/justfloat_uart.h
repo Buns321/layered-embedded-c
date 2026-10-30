@@ -39,11 +39,17 @@ typedef struct justfloat_uart_s {
 } justfloat_uart_t;
 
 /**
- * @brief 在 UART 上初始化 JustFloat。
- * @param telemetry_h 对象。
- * @param name 调试名称。
- * @param uart_h 已完成初始化且 TX 支持 DMA 的 UART 后端。
- * @param channel_count 每帧通道数，范围 1..capacity。
+ * @brief 在 UART 上初始化 JustFloat 遥测对象。
+ * @param telemetry_h 待初始化的静态对象，不得为 NULL；调用方保留所有权。
+ * @param name 调试名称，不得为 NULL；指针会被保存，必须在对象生命周期内有效。
+ * @param uart_h 已初始化且 TX 支持 DMA 的 UART 后端，借用且不得为 NULL。
+ * @param channel_count 每帧通道数，范围 1..TELEMETRY_CHANNEL_CAPACITY。
+ * @pre telemetry_h 尚未被并发使用，uart_h 当前没有进行中的 TX，也没有其他回调所有者。
+ * @post 基类、通道数、忙状态和计数器已初始化，并在 uart_h 上注册 TX 完成回调；
+ *       该回调集合会覆盖 uart_h 原有回调，其他回调槽被清空。
+ * @note 不启动传输、不阻塞、不分配动态内存；必须在任务和中断使用前由单一装配者调用。
+ * @warning 本对象取得 uart_h 的设备级回调槽所有权；不得再注册其他回调或并发初始化，
+ *          也不得在已有 DMA 发送时调用，否则旧完成事件将无法归还给原所有者。
  */
 void Dev_JustFloat_UART_Init(
   justfloat_uart_t *telemetry_h,

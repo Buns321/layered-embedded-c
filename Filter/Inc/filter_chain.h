@@ -30,11 +30,13 @@ typedef struct filter_chain_s {
 
 /**
  * @brief 初始化滤波器链。
- * @param filter_h 对象。
- * @param name 名称。
- * @param filter_stage_h 静态级联表。
+ * @param filter_h 待初始化的滤波器链存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖链对象。
+ * @param filter_stage_h 非空级联表；前 stage_count 项必须非空、已初始化且互不重复。
  * @param stage_count 级数，范围 1..FILTER_CHAIN_CAPACITY。
- * @note Init 会校验空指针、自引用和重复项，并级联 reset。
+ * @pre 任一 stage 不能指向 filter_h 自身的基对象；表项生命周期必须覆盖链对象。
+ * @post 级联表复制入对象、剩余槽位清零，并按顺序 reset 全部 stage。
+ * @note Debug 构建检查自引用和重复项；仅允许初始化阶段单线程调用。
  */
 void Filter_Chain_Init(filter_chain_t *filter_h, const char *name, filter_base_t *const *filter_stage_h, uint8_t stage_count);
 

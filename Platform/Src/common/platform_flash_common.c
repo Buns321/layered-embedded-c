@@ -14,6 +14,10 @@ static uint32_t flash_error;
 
 /**
  * @brief 获取 Flash 操作忙状态。
+ * @retval true 此前空闲，调用方现在必须配对调用 platform_flash_release()。
+ * @retval false 另一个 Flash 操作正在进行。
+ * @post 成功时在 System 临界区内把忙标志置位；失败时忙标志不变。
+ * @note 全局忙状态由临界区保护，不分配内存；调用方不得在未取得所有权时释放。
  */
 static bool platform_flash_acquire(void) {
   bool acquired = false;
@@ -28,6 +32,8 @@ static bool platform_flash_acquire(void) {
 
 /**
  * @brief 释放 Flash 操作忙状态。
+ * @post 在 System 临界区内清除全局 Flash 忙标志，其他等待路径可再次取得所有权。
+ * @note 只能由成功调用 platform_flash_acquire() 的路径调用；不访问 Flash 硬件。
  */
 static void platform_flash_release(void) {
   Sys_Critical_Enter();
@@ -37,6 +43,8 @@ static void platform_flash_release(void) {
 
 /**
  * @brief 记录 Flash 忙冲突。
+ * @post 全局 Flash 错误快照置入 PLATFORM_ERROR_BUSY。
+ * @note 仅供忙冲突路径使用；不访问 Flash 硬件，不分配内存。
  */
 static void platform_flash_record_busy(void) {
   platform_error_record(&flash_error, PLATFORM_ERROR_BUSY);
@@ -44,6 +52,10 @@ static void platform_flash_record_busy(void) {
 
 /**
  * @brief 记录 Flash 后端失败。
+ * @param operation_error 本次操作类别对应的 PLATFORM_FLASH_ERROR_* 位，例如读/写或擦除。
+ * @post 全局快照合并 PLATFORM_ERROR_HAL、操作类别和后端具体错误；后端未报告错误时
+ *       补入 PLATFORM_FLASH_ERROR_UNKNOWN。
+ * @note 仅供后端失败路径使用；不修改忙标志，不分配内存。
  */
 static void platform_flash_record_backend_failure(uint32_t operation_error) {
   uint32_t error = platform_flash_backend_get_error();
@@ -58,15 +70,17 @@ static void platform_flash_record_backend_failure(uint32_t operation_error) {
 
 /**
  * @brief 从内部 Flash 复制字节。
- * @param instance 内部 Flash 实例。
- * @param address MCU Flash 地址空间中的起始地址。
- * @param data 目标缓冲区。
- * @param size 字节数，必须大于零。
- * @retval PLATFORM_STATUS_OK 成功。
+ * @param instance 内部 Flash 实例；当前只支持 PLATFORM_FLASH_1。
+ * @param address MCU Flash 地址空间中的起始地址，单位字节。
+ * @param data 目标缓冲区；函数只写 size 字节，所有权仍归调用方。
+ * @param size 读取字节数，必须大于零且完整落在 Flash 范围内。
+ * @retval PLATFORM_STATUS_OK 读取成功，data 指向的 size 字节已从 Flash 复制。
  * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
- * @retval PLATFORM_STATUS_ERROR 地址范围非法或缓冲区为空。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例非法、data 为空或地址范围非法。
+ * @retval PLATFORM_STATUS_ERROR 后端读取失败。
  * @note 从任务上下文调用。应用中的所有 Flash 操作都必须使用这个 Platform
  *       实例，以确保忙状态保护具有唯一权威性。
+ * @note 忙状态受 System 临界区保护，但数据缓冲区所有权和并发修改由调用方负责。
  */
 platform_status_t Platform_FLASH_Read(
   platform_flash_instance_t instance,
@@ -102,15 +116,17 @@ platform_status_t Platform_FLASH_Read(
 
 /**
  * @brief 向已擦除的内部 Flash 写入 32 位字。
- * @param instance 内部 Flash 实例。
- * @param address 目标地址，必须按 4 字节对齐。
- * @param data 源缓冲区。
- * @param size 字节数，必须是四的非零整数倍。
- * @retval PLATFORM_STATUS_OK 成功。
+ * @param instance 内部 Flash 实例；当前只支持 PLATFORM_FLASH_1。
+ * @param address 目标地址，单位字节，必须按 4 字节对齐并位于 Flash 范围。
+ * @param data 源缓冲区，按 32 位字读取；调用期间保持只读。
+ * @param size 写入字节数，必须是四的非零整数倍。
+ * @retval PLATFORM_STATUS_OK 写入成功，size 字节已按 32 位字写入目标区域。
  * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
- * @retval PLATFORM_STATUS_ERROR 地址范围或对齐非法，或 HAL 写入失败。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、缓冲区、地址范围或对齐非法。
+ * @retval PLATFORM_STATUS_ERROR HAL 写入失败。
  * @note 目标区域必须已擦除，擦除策略由调用方负责。
  * @note 从任务上下文调用，并遵守目标 MCU 对中断或 RTOS 调度的要求。
+ * @warning 写入期间不得从目标 Flash 区域执行代码；失败后错误快照保留具体 Flash 错误位。
  */
 platform_status_t Platform_FLASH_Write(
   platform_flash_instance_t instance,
@@ -154,12 +170,13 @@ platform_status_t Platform_FLASH_Write(
 
 /**
  * @brief 擦除与给定字节范围相交的所有 Flash 擦除单元。
- * @param instance 内部 Flash 实例。
- * @param address 起始地址，必须按擦除单元边界对齐。
- * @param size 字节数，必须大于零。
- * @retval PLATFORM_STATUS_OK 成功。
+ * @param instance 内部 Flash 实例；当前只支持 PLATFORM_FLASH_1。
+ * @param address 起始地址，单位字节，必须按擦除单元边界对齐。
+ * @param size 擦除范围字节数，必须大于零且完整落在 Flash 范围内。
+ * @retval PLATFORM_STATUS_OK 擦除成功，所有与请求范围相交的擦除单元均已完成。
  * @retval PLATFORM_STATUS_BUSY 另一个 Flash 操作正在进行。
- * @retval PLATFORM_STATUS_ERROR 地址范围非法或 HAL 擦除失败。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、地址范围或擦除单元对齐非法。
+ * @retval PLATFORM_STATUS_ERROR HAL 擦除失败。
  * @warning 与范围相交的所有页或扇区都会被擦除。选择参数槽位前应先调用
  *          Platform_FLASH_GetEraseUnitSize()。
  * @note 从任务上下文调用，且不能从正在被擦除的区域执行代码。
@@ -207,9 +224,11 @@ platform_status_t Platform_FLASH_Erase(
 
 /**
  * @brief 获取覆盖指定地址的擦除单元大小。
- * @param instance 内部 Flash 实例。
- * @param address 待查询地址。
- * @return 擦除单元大小（字节）；地址不在 Flash 中时返回零。
+ * @param instance 内部 Flash 实例；当前只支持 PLATFORM_FLASH_1。
+ * @param address 待查询地址，单位字节。
+ * @retval 0 实例非法或地址不在 Flash 范围内。
+ * @retval 大于0 覆盖该地址的页或扇区大小，单位为字节。
+ * @note 纯查询，不修改 Flash、不改变忙状态，也不分配内存。
  */
 uint32_t Platform_FLASH_GetEraseUnitSize(
   platform_flash_instance_t instance,
@@ -223,7 +242,12 @@ uint32_t Platform_FLASH_GetEraseUnitSize(
 
 /**
  * @brief 读取最近一次 Platform Flash 错误快照。
- * @param instance 内部 Flash 实例。
+ * @param instance 内部 Flash 实例；当前只支持 PLATFORM_FLASH_1，其他值返回
+ *        PLATFORM_ERROR_INVALID_ARGUMENT。
+ * @return PLATFORM_FLASH_ERROR_* 与 PLATFORM_ERROR_* 的位掩码组合；非法实例返回
+ *         PLATFORM_ERROR_INVALID_ARGUMENT。
+ * @note 只读，不清除快照；后续公共 Flash 操作开始时会清除快照。
+ * @note 不访问 Flash 硬件，不分配内存；并发读写快照须由调用方串行化。
  */
 uint32_t Platform_FLASH_GetLastError(platform_flash_instance_t instance) {
   if (instance != PLATFORM_FLASH_1) {

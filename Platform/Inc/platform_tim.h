@@ -16,6 +16,8 @@
 
 /**
  * @brief 定时器通道身份。
+ * @note 通道 1..4 对应硬件比较/捕获通道；ALL 只可用于同时启动或停止全部通道，
+ *       不能用于需要单一通道的比较值写入。
  */
 typedef enum platform_tim_channel_e {
   PLATFORM_TIM_CHANNEL_1 = 0U,
@@ -27,6 +29,8 @@ typedef enum platform_tim_channel_e {
 
 /**
  * @brief 定时器实例身份。
+ * @note 枚举值是身份编码而非连续数组下标；F1 只提供 TIM1..TIM4，F4 扩展到 TIM14。
+ * @note 本类型只表达硬件身份，PWM 与 Encoder 的可用集合仍由各自功能实例定义。
  */
 /* STM32F1 构建中省略 TIM5-TIM14。 */
 typedef enum platform_tim_instance_e {

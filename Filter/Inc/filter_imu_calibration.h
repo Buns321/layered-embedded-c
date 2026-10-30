@@ -44,12 +44,14 @@ typedef struct filter_imu_calibration_s {
 
 /**
  * @brief 初始化六轴校正滤波器。
- * @param filter_h 对象。
- * @param name 名称。
- * @param config 初始校正参数，不能为空。
- * @retval true 初始化和参数校验成功。
- * @retval false 参数为空、非有限或比例系数超出安全范围。
- * @note 只允许在任务初始化阶段调用。
+ * @param filter_h 待初始化的校正滤波器存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖滤波器对象。
+ * @param config 非空初始参数；加速度比例系数每轴须在 0.1..10，陀螺零偏绝对值不超过 720 deg/s。
+ * @retval true 参数有效，对象已清零、绑定并完成 reset。
+ * @retval false filter_h、name 或 config 为空，或配置含非有限值/超范围比例/超范围零偏；对象保持不变。
+ * @pre 只在任务初始化阶段调用，且 filter_h 未被其他上下文使用。
+ * @post 成功时 corrected_frames 为 0，配置被复制并持久保存；失败时不修改 filter_h。
+ * @note 不分配动态内存；输入通道 schema 与 IMU 固定通道 3..8 一致。
  */
 bool Filter_ImuCalibration_Init(
   filter_imu_calibration_t *filter_h,
@@ -59,12 +61,13 @@ bool Filter_ImuCalibration_Init(
 
 /**
  * @brief 在帧边界更新六轴校正参数。
- * @param filter_h 对象。
- * @param config 新参数。
- * @retval true 参数有效且已提交。
- * @retval false 参数无效，原配置保持不变。
- * @note 可以从另一任务调用；配置只在一次完整 update 前复制并应用。
- * @pre filter_h 和 config 非空。
+ * @param filter_h 已初始化的校正滤波器，不能为 NULL。
+ * @param config 非空候选参数；校验规则与 Filter_ImuCalibration_Init 相同。
+ * @retval true 参数有效，已在临界区内完整提交。
+ * @retval false 任一指针为空或参数无效，原配置保持不变。
+ * @pre filter_h 已成功初始化；调用方拥有 config，函数只读取它。
+ * @post 成功时后续 update 使用新配置；update 通过临界区复制配置，不会观察到半更新状态。
+ * @note 可从参数任务调用；配置提交与帧内读取由 Sys_Critical 串行化，不分配动态内存。
  */
 bool Filter_ImuCalibration_SetConfig(
   filter_imu_calibration_t *filter_h,
@@ -73,9 +76,11 @@ bool Filter_ImuCalibration_SetConfig(
 
 /**
  * @brief 复制当前六轴校正参数。
- * @param filter_h 对象。
- * @param config 输出参数。
- * @pre filter_h 和 config 非空。
+ * @param filter_h 已初始化的校正滤波器，不能为 NULL。
+ * @param config 调用方拥有的输出存储，不能为 NULL。
+ * @pre filter_h 已成功初始化；config 可写且不与滤波器内部配置重叠。
+ * @post config 获得临界区内的完整配置快照，滤波器状态不变。
+ * @note 可从其他任务读取；不分配动态内存。
  */
 void Filter_ImuCalibration_GetConfig(
   const filter_imu_calibration_t *filter_h,

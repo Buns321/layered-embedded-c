@@ -13,9 +13,16 @@
 #define LAYERED_EMBEDDED_C_RTOS_MONITOR_H
 
 /**
- * @brief 监控任务入口。
- * @note 参数为 CMSIS-RTOS2 任务参数，当前未使用。
- * @note 当前是最小占位实现，心跳和故障停机待接入。
+ * @cond F103_MONITOR_PLACEHOLDER_DUPLICATE_SYMBOL
+ * @brief 监控任务入口（当前为最小占位循环）。
+ * @param argument CMSIS-RTOS2 线程参数；实现未使用，可传 NULL。
+ * @pre 由 RTOS 调度器以任务入口形式调用，且调度器已启动；不得在 ISR 中直接调用。
+ * @post 函数不返回；每轮调用 osDelay(100)，约 100 ms 后再次运行。
+ * @note 当前未接入遥测、状态日志、控制心跳、喂狗或故障急停，也未在
+ *       freertos.c 中创建对应任务；不能把本占位实现当作监控功能。
+ * @warning 若在调度器启动前调用，osDelay 无法阻塞，循环会持续占用 CPU；
+ *          实现不使用 assert，错误配置不会以断言终止呈现。
+ * @endcond
  */
 void RTOS_Monitor_StartTask(void *argument);
 

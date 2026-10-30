@@ -29,13 +29,14 @@ typedef struct controller_compose_s {
 } controller_compose_t;
 
 /**
- * @brief 初始化 compose 控制器。
- * @param controller_h 对象。
- * @param name 名称。
- * @param controller_stage_h 子控制器静态表。
- * @param stage_count 子控制器数量，范围 1..CONTROLLER_COMPOSE_CAPACITY。
- * @note Init 会校验空指针、自引用和重复项，并级联 reset。
- * @note 任一子控制器返回 ERROR 时，整体输出 0 并返回 ERROR。
+ * @brief 初始化并联求和控制器并复制子控制律表。
+ * @param controller_h 待初始化的控制器存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖控制器对象。
+ * @param controller_stage_h 非空子控制律指针数组；前 stage_count 项必须非空、已初始化且互不重复。
+ * @param stage_count 子控制律数量，范围 1..CONTROLLER_COMPOSE_CAPACITY。
+ * @pre 子控制律均不能指向 controller_h->base；所有指针表项在对象使用期间保持有效。
+ * @post 子控制律表复制入对象、剩余槽位清零、数量已设置，并对全部子控制器执行 reset。
+ * @note Debug 构建用 assert 检查自引用、重复项和空回调；仅允许初始化阶段单线程调用。
  */
 void Ctrl_Compose_Init(
   controller_compose_t      *controller_h,

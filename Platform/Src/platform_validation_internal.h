@@ -19,9 +19,10 @@
 
 /**
  * @brief 校验经典 CAN 标识符范围。
- * @param extended 是否使用扩展帧。
- * @param identifier 标识符位值。
- * @return 标识符在对应范围内时返回 true。
+ * @param extended true 按 29 位扩展帧校验，false 按 11 位标准帧校验。
+ * @param identifier 仅含 CAN 标识符位的值，不包含 IDE、RTR 或硬件寄存器标志。
+ * @return 标识符不超过所选帧格式上限时返回 true，否则返回 false。
+ * @note 纯函数，不访问硬件、不分配内存且无共享状态，可从任务或 ISR 上下文调用。
  */
 static inline bool platform_can_identifier_is_valid(
   bool extended,
@@ -34,10 +35,11 @@ static inline bool platform_can_identifier_is_valid(
 
 /**
  * @brief 校验经典 CAN 标识符和数据长度。
- * @param extended 是否使用扩展帧。
- * @param identifier 标识符位值。
- * @param dlc 数据长度，范围 0..8。
- * @return 标识符和 DLC 都合法时返回 true。
+ * @param extended true 按 29 位扩展帧校验，false 按 11 位标准帧校验。
+ * @param identifier 仅含 CAN 标识符位的值，不包含 IDE、RTR 或硬件寄存器标志。
+ * @param dlc 经典 CAN 数据长度，范围 0..8 字节。
+ * @return 标识符范围和 dlc 同时合法时返回 true，否则返回 false。
+ * @note 纯函数，不访问硬件、不分配内存且无共享状态，可从任务或 ISR 上下文调用。
  */
 static inline bool platform_can_frame_values_are_valid(
   bool extended,
@@ -50,10 +52,11 @@ static inline bool platform_can_frame_values_are_valid(
 
 /**
  * @brief 校验 SPI 传输缓冲区和长度约束。
- * @param data 传输缓冲区；不能为空。
- * @param size 字节数；必须大于 0。
- * @param data_width_16 是否使用 16 位数据宽度。
- * @return 缓冲区、长度和对齐要求都满足时返回 true。
+ * @param data 待传输缓冲区；可为 NULL，由本函数显式拒绝。
+ * @param size 传输字节数，不是硬件帧数；必须大于 0。
+ * @param data_width_16 true 要求 size 为偶数字节且 data 地址按 2 字节对齐。
+ * @return data 非空、size 非零且满足所选数据宽度约束时返回 true，否则返回 false。
+ * @note size 与 data_width_16 描述的是同一 CubeMX 配置；纯函数且无共享状态。
  */
 static inline bool platform_spi_transfer_values_are_valid(
   const void *data,
@@ -72,8 +75,9 @@ static inline bool platform_spi_transfer_values_are_valid(
 
 /**
  * @brief 计算下一天的 RTC 闹钟计数器值。
- * @param alarm_counter 当前闹钟计数器值。
- * @return 增加一天秒数后的计数器值；32 位回绕由调用方按 RTC 语义处理。
+ * @param alarm_counter 当前 RTC 秒计数器值，单位为秒。
+ * @return alarm_counter 加 86400 秒后的值；32 位无符号回绕由 RTC 硬件语义处理。
+ * @note 纯算术函数，不读取 RTC 寄存器，也不判断日期或夏令时。
  */
 static inline uint32_t platform_rtc_next_daily_alarm(
   uint32_t alarm_counter

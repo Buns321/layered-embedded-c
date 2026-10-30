@@ -44,19 +44,21 @@ typedef struct controller_linear_s {
 
 /**
  * @brief 初始化线性控制律。
- * @param controller_h 对象。
- * @param name 名称。
- * @param k 斜率（duty / (m/s)）。
- * @param b 截距或摩擦补偿幅值（duty）。
- * @param is_defriction_enabled 是否把 b 作为摩擦补偿。
- * @param max_target 输入上限（m/s）。
- * @param min_target 输入下限（m/s）。
- * @param max_out 输出上限（duty）。
- * @param min_out 输出下限（duty）。
- * @param max_step 单周期最大变化（duty）。
- * @param min_step 单周期最小变化（duty）。
- * @param deadzone 输出保持带（duty），围绕上次输出。
- * @note 初始化会校验参数范围与有限性。
+ * @param controller_h 待初始化的线性控制律存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖控制律对象。
+ * @param k 输入到输出的线性斜率，单位 duty/(m/s)，必须有限。
+ * @param b 截距或摩擦补偿幅值，单位 duty，必须有限。
+ * @param is_defriction_enabled true 时按线性输出符号施加 b，false 时始终加 b。
+ * @param max_target 输入上限，单位 m/s，必须有限且不小于 min_target。
+ * @param min_target 输入下限，单位 m/s，必须有限且不大于 max_target。
+ * @param max_out 输出上限，单位 duty，必须有限且非负。
+ * @param min_out 输出下限，单位 duty，必须有限且非正。
+ * @param max_step 单次更新最大变化量，单位 duty，必须有限且非负、不小于 min_step。
+ * @param min_step 单次更新最小变化量，单位 duty，必须有限且非负、不大于 max_step。
+ * @param deadzone 围绕 last_out 的输出保持带，单位 duty，必须有限、非负且小于 max_step。
+ * @pre 所有浮点参数必须有限；范围不变量由 Debug 构建 assert 检查。
+ * @post 控制律参数和 ops 已绑定，last_out 清零；不分配动态内存。
+ * @note 仅允许初始化阶段单线程调用，不得与更新或复位并发。
  */
 void Ctrl_Linear_Init(
   controller_linear_t *controller_h,

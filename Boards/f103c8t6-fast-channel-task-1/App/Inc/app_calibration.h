@@ -54,10 +54,13 @@ typedef struct app_calibration_thresholds_s {
 
 /**
  * @brief 判断原始六轴样本是否满足静止门限。
- * @param accel_mps2 三轴加速度（m/s²）。
- * @param gyro_dps 三轴角速度（deg/s）。
- * @param thresholds 门限。
- * @return 门限有效、所有输入有限且满足门限时返回 true。
+ * @param accel_mps2 三轴加速度数组，按 X/Y/Z 排列，单位 m/s²；仅读取前 3 个元素。
+ * @param gyro_dps 三轴角速度数组，按 X/Y/Z 排列，单位 deg/s；仅读取前 3 个元素。
+ * @param thresholds 静止判定门限；要求加速度上下限有限且 0 < 下限 <= 上限，角速度上限有限且非负。
+ * @retval true 三轴加速度模长位于 [still_accel_min_mps2, still_accel_max_mps2]，
+ *             且每个角速度绝对值不超过 still_gyro_max_dps。
+ * @retval false 指针为 NULL、门限不合法、任一分量非有限，或不满足上述范围。
+ * @note 纯只读函数，不修改输入、不分配内存，可由任意任务或 ISR 并发调用。
  */
 bool App_Calibration_IsStill(
   const float accel_mps2[3],
@@ -67,11 +70,13 @@ bool App_Calibration_IsStill(
 
 /**
  * @brief 从加速度方向识别唯一面。
- * @param accel_mps2 三轴加速度（m/s²）。
- * @param thresholds 主轴和非主轴门限。
- * @param face 输出六面位掩码。
- * @retval true 识别成功；门限要求主轴门限大于非主轴门限。
- * @retval false 门限无效、输入非有限、倾斜过大或没有主轴。
+ * @param accel_mps2 三轴加速度数组，按 X/Y/Z 排列，单位 m/s²；仅读取前 3 个元素。
+ * @param thresholds 面识别门限；要求主轴下限有限且大于零，非主轴上限有限、非负且小于主轴下限。
+ * @param face 输出单个六面位掩码；仅在返回 true 时写入，失败时保持调用前的值不变。
+ * @retval true 最大绝对分量达到主轴下限，其余分量不超过非主轴上限，并已写入唯一面。
+ * @retval false 指针为 NULL、门限不合法、任一分量非有限，或样本倾斜到无法唯一识别安装面。
+ * @post 成功时 *face 恰为 APP_FACE_* 中表示正负 X/Y/Z 的一个位。
+ * @note 纯函数；不分配内存，不访问共享状态，可由任意任务或 ISR 调用。
  */
 bool App_Calibration_DetectFace(
   const float accel_mps2[3],
@@ -81,17 +86,20 @@ bool App_Calibration_DetectFace(
 
 /**
  * @brief 由正负两面平均加速度计算单轴零偏和比例系数。
- * @param positive_face_mps2 正方向朝上时三轴平均加速度。
- * @param negative_face_mps2 负方向朝上时三轴平均加速度。
- * @param axis 轴下标 0..2。
- * @param gravity_mps2 标准重力。
- * @param min_span_mps2 正负样本最小差值。
- * @param scale_min 比例系数下限。
- * @param scale_max 比例系数上限。
- * @param offset_mps2 输出零偏。
- * @param scale 输出比例系数。
- * @retval true 公式结果有效。
- * @retval false 参数或正负样本无效。
+ * @param positive_face_mps2 正方向朝上时的三轴平均加速度，单位 m/s²；只读取 axis 指定的分量。
+ * @param negative_face_mps2 负方向朝上时的三轴平均加速度，单位 m/s²；只读取 axis 指定的分量。
+ * @param axis 传感器轴下标，有效范围 0..2（X/Y/Z）。
+ * @param gravity_mps2 用于反算比例系数的标准重力，单位 m/s²；必须有限且大于零。
+ * @param min_span_mps2 正负样本差值下限，单位 m/s²；必须有限且大于零。
+ * @param scale_min 允许的最小无量纲比例系数，必须有限且大于零。
+ * @param scale_max 允许的最大无量纲比例系数，必须有限且不小于 scale_min。
+ * @param offset_mps2 输出零偏，单位 m/s²；仅在返回 true 时写入。
+ * @param scale 输出无量纲比例系数；仅在返回 true 时写入。
+ * @retval true 正负样本差值达到 min_span_mps2，且计算出的比例系数位于 [scale_min, scale_max]。
+ * @retval false 指针为空、轴或标量参数非法、样本非有限、差值不足，或比例系数越界；输出保持不变。
+ * @post 成功时 *offset_mps2 = (positive + negative) / 2，
+ *       *scale = 2 * gravity_mps2 / (positive - negative)。
+ * @note 纯函数；不分配内存，不修改输入数组，可由任意任务或 ISR 调用。
  */
 bool App_Calibration_ComputeAccelAxis(
   const float positive_face_mps2[3],

@@ -23,7 +23,14 @@ static const uint32_t s_iwdg_divisors[] = {
 static bool s_iwdg_started;
 
 /**
- * @brief 计算 IWDG 预分频与重载值。
+ * @brief 根据超时时间计算 IWDG 预分频与重载值。
+ * @param timeout_ms 请求超时时间，单位毫秒；合法范围为 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
+ * @param divisor 预分频值输出地址；成功时写入 4..256 中可满足超时的最小值。
+ * @param reload 重载值输出地址；成功时写入 0..0x0FFF。
+ * @return 找到满足超时且不超过 12 位重载范围的组合时返回 true，否则返回 false。
+ * @pre divisor 和 reload 均非空；Debug 构建以 assert 检查该内部不变量。
+ * @post 成功时写入两个输出；失败时不修改输出。
+ * @note 计算会把超时向上取整并受 LSI 频率容差影响；不访问硬件或分配内存。
  */
 static bool platform_iwdg_calculate(
   uint32_t timeout_ms,
@@ -60,14 +67,16 @@ static bool platform_iwdg_calculate(
 
 /**
  * @brief 启动独立看门狗。
- * @param iwdg IWDG 实例。
+ * @param iwdg IWDG 实例；当前系列只支持 PLATFORM_IWDG_1。
  * @param timeout_ms 请求的超时时间（ms），范围 1..PLATFORM_IWDG_MAX_TIMEOUT_MS。
  * @retval PLATFORM_STATUS_OK 启动成功。
  * @retval PLATFORM_STATUS_BUSY IWDG 已启动。
  * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例、超时范围或计算参数非法。
+ * @retval PLATFORM_STATUS_ERROR HAL 配置或启动失败。
  * @note 这是运行期策略操作，会立即启动看门狗。
  * @note 调用后无法停止 IWDG。
  * @note 超时时间会向上取整，并受 LSI 频率容差影响。
+ * @warning 只允许在任务上下文配置一次；调用方负责与其他监控路径串行化。
  */
 platform_status_t Platform_IWDG_Start(
   platform_iwdg_instance_t iwdg,
@@ -96,9 +105,11 @@ platform_status_t Platform_IWDG_Start(
 
 /**
  * @brief 刷新已启动的 IWDG。
+ * @param iwdg IWDG 实例；当前仅支持 PLATFORM_IWDG_1，非法值返回 PLATFORM_STATUS_INVALID_ARGUMENT。
  * @retval PLATFORM_STATUS_OK 刷新成功。
  * @retval PLATFORM_STATUS_INVALID_ARGUMENT 实例非法。
  * @retval PLATFORM_STATUS_ERROR IWDG 尚未启动或 HAL 刷新失败。
+ * @note 刷新必须早于看门狗到期；本函数不分配内存，也不改变超时配置。
  */
 platform_status_t Platform_IWDG_Refresh(
   platform_iwdg_instance_t iwdg
@@ -114,9 +125,12 @@ platform_status_t Platform_IWDG_Refresh(
 
 /**
  * @brief 读取并清除 IWDG 复位标志。
- * @return 最近一次复位由 IWDG 触发时返回 true。
+ * @param iwdg IWDG 实例；当前仅支持 PLATFORM_IWDG_1，非法值返回 false。
+ * @retval true 最近一次复位由 IWDG 触发，且标志已清除。
+ * @retval false 未由 IWDG 触发复位，或实例非法。
  * @note 非法实例返回 false，不访问硬件。
  * @note 清除复位标志会同时清除共享的 STM32 复位标志锁存状态。
+ * @warning 该调用具有一次性读取语义；其他复位标志消费者应在同一上下文协调。
  */
 bool Platform_IWDG_WasReset(platform_iwdg_instance_t iwdg) {
   if (iwdg != PLATFORM_IWDG_1) {

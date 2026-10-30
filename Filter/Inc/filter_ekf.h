@@ -113,11 +113,14 @@ typedef struct filter_ekf_s {
 
 /**
  * @brief 初始化七状态 EKF。
- * @param filter_h 对象。
- * @param name 名称。
- * @param config 默认配置，不能为空。
- * @retval true 参数有效并完成初始化。
- * @retval false 对象或配置无效。
+ * @param filter_h 待初始化的 EKF 存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖 EKF 对象。
+ * @param config 非空默认参数；噪声和门限必须为规定的正有限值，max_dt_s 不小于 min_dt_s。
+ * @retval true 参数有效，EKF 状态、默认参数、待提交参数和协方差已初始化。
+ * @retval false filter_h/name/config 为空或配置无效；filter_h 保持不变。
+ * @pre 仅允许在任务初始化阶段单线程调用，且对象未被其他上下文使用。
+ * @post update_count 清零、四元数为单位四元数、placeholder 为 true，pending_mask 为 0。
+ * @note 当前核心为占位实现，该函数只建立接口和参数状态；不分配动态内存。
  */
 bool Filter_Ekf_Init(
   filter_ekf_t *filter_h,
@@ -127,13 +130,17 @@ bool Filter_Ekf_Init(
 
 /**
  * @brief 提交一个在线参数。
- * @param filter_h 对象。
- * @param parameter 参数身份。
- * @param value 新值，单位和量纲由参数身份决定。
- * @retval true 参数有效并将在下一帧开始时生效。
- * @retval false 参数身份、数值、单参数范围或组合范围无效。
- * @note 该函数可从参数任务调用，不会修改正在执行的滤波状态。
- * @note 多个未提交参数按调用顺序合并校验；任一调用失败时本次值不生效。
+ * @param filter_h 已初始化的 EKF，不能为 NULL。
+ * @param parameter 参数身份，范围 0..FILTER_EKF_PARAM_COUNT-1。
+ * @param value 新值；单位随 parameter：ANGLE_PROCESS_NOISE/INITIAL_ANGLE_VARIANCE 为 rad²，
+ *              BIAS_PROCESS_NOISE/INITIAL_BIAS_VARIANCE 为 (rad/s)²，
+ *              ACCEL_MEASUREMENT_NOISE 为 (m/s²)²，ACCEL_NORM_MIN/MAX 为 m/s²，
+ *              GYRO_LIMIT/BIAS_LIMIT 为 rad/s，MIN_DT/MAX_DT 为 s。
+ * @retval true 候选配置整体有效，已合并进待提交配置。
+ * @retval false filter_h 为空、参数身份非法、value 非有限，或候选配置未通过组合范围校验。
+ * @pre 单参数写者调用；value 必须与 parameter 的物理量一致，函数不进行单位换算。
+ * @post 成功时待提交配置更新且 pending_mask 置位，下一帧开始时一次性应用；失败时活动配置和已有待提交值不变。
+ * @note 与 update 的配置应用通过临界区交换快照；不修改正在使用的滤波状态或协方差。
  */
 bool Filter_Ekf_SetParameter(
   filter_ekf_t *filter_h,
@@ -143,17 +150,20 @@ bool Filter_Ekf_SetParameter(
 
 /**
  * @brief 请求把所有参数恢复为初始化时的默认值。
- * @param filter_h 对象。
- * @note 参数在下一帧开始时原子生效。
- * @pre filter_h 非空。
+ * @param filter_h 已初始化的 EKF，不能为 NULL。
+ * @pre 单参数写者调用；default_config 已由 Filter_Ekf_Init 保存。
+ * @post pending_config 被替换为 default_config，pending_mask 标记全部参数。
+ * @note 新参数在下一帧开始时原子应用；不立即改变 active config 或协方差，不分配动态内存。
  */
 void Filter_Ekf_ResetParameters(filter_ekf_t *filter_h);
 
 /**
  * @brief 复制当前 EKF 参数。
- * @param filter_h 对象。
- * @param config 输出参数。
- * @pre filter_h 和 config 非空。
+ * @param filter_h 已初始化的 EKF，不能为 NULL。
+ * @param config 调用方拥有的输出存储，不能为 NULL。
+ * @pre config 可写且不与内部 config 重叠。
+ * @post config 获得 active config 的完整一致快照；pending 参数不会混入。
+ * @note 可从其他任务读取；不分配动态内存，不改变 EKF 状态。
  */
 void Filter_Ekf_GetConfig(
   const filter_ekf_t *filter_h,
@@ -162,9 +172,11 @@ void Filter_Ekf_GetConfig(
 
 /**
  * @brief 复制最近一次 EKF 状态。
- * @param filter_h 对象。
- * @param state 输出状态。
- * @pre filter_h 和 state 非空。
+ * @param filter_h 已初始化的 EKF，不能为 NULL。
+ * @param state 调用方拥有的输出存储，不能为 NULL。
+ * @pre state 可写且不与内部状态重叠。
+ * @post state 获得姿态、零偏、dt_s、更新计数和 valid/placeholder 的一致快照。
+ * @note 当前 placeholder 为 true 时姿态不可用于闭环控制；不分配动态内存。
  */
 void Filter_Ekf_GetState(
   const filter_ekf_t *filter_h,

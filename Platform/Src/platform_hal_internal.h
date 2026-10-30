@@ -17,8 +17,10 @@
 
 /**
  * @brief 把 HAL 状态码转换为平台状态。
- * @param hal_status HAL 状态码。
- * @return 对应 platform_status_t；未知值触发 assert。
+ * @param hal_status HAL_StatusTypeDef 的数值形式，预期为 0..3。
+ * @retval PLATFORM_STATUS_ERROR 输入未知；Debug 构建还会触发 assert。
+ * @warning 未知值属于内部不变量破坏。Release 构建不保留 assert 时统一返回 ERROR。
+ * @note 纯转换函数，不访问 HAL handle 或硬件，不分配内存。
  */
 static inline platform_status_t platform_from_hal_status(
   uint32_t hal_status

@@ -20,7 +20,7 @@
   时钟与外设分配。
 - [日志与遥测](telemetry.md)：RTT 日志、FireWater、JustFloat、UART/DMA。
 - [Platform 编译检查](../cmake/platform-check/README.md)：F4/F1 全实例编译验证。
-- [主机测试说明](../cmake/platform-test/README.md)：公共契约与管线测试入口。
+- 主机测试说明：`cmake/platform-test/README.md`，公共契约与管线测试入口。
 - [TODO](todo.md)：已完成与待办事项。
 - [Doxygen 主页](doxygen/mainpage.md)：API 文档入口。
 

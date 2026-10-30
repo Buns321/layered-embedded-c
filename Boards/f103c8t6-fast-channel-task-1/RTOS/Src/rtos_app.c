@@ -26,6 +26,10 @@ static uint64_t s_imu_task_stack[
 
 /**
  * @brief 计算两个无符号时间戳的绝对差。
+ * @param actual 实际周期或时间戳，单位与 target 相同（当前为 RTOS tick）。
+ * @param target 目标周期或时间戳，单位与 actual 相同。
+ * @return 两者差值的绝对值，单位相同；结果不会因 uint32 回绕而变成负数。
+ * @note 纯函数；适用于差值小于 2^32 的单调时间戳，不分配内存。
  */
 static uint32_t rtos_app_absolutejitter(uint32_t actual, uint32_t target) {
   return actual >= target ? actual - target : target - actual;
@@ -33,9 +37,11 @@ static uint32_t rtos_app_absolutejitter(uint32_t actual, uint32_t target) {
 
 /**
  * @brief 创建静态 ImuEkfTask。
- * @retval true 任务创建成功。
- * @retval false 静态内存或 CMSIS-RTOS2 属性非法。
- * @pre osKernelInitialize() 已调用。
+ * @retval true ImuEkfTask 已用静态 TCB 和静态栈成功创建。
+ * @retval false osThreadNew 返回 NULL，表示静态内存、优先级或内核属性不合法。
+ * @pre osKernelInitialize() 已调用，且 App_FastChannel_Init 已完成所需的静态对象初始化。
+ * @post 成功时任务处于 AboveNormal 优先级并可被调度；VofaTask 由 CubeMX 的 defaultTask 槽位创建。
+ * @note 不分配动态内存；应在 osKernelStart 前调用一次。
  */
 bool RTOS_App_CreateTasks(void) {
   const osThreadAttr_t imu_attributes = {
@@ -57,7 +63,11 @@ bool RTOS_App_CreateTasks(void) {
 
 /**
  * @brief 100 Hz IMU、标定和 EKF 任务入口。
- * @param argument CMSIS-RTOS2 参数，当前未使用。
+ * @param argument CMSIS-RTOS2 任务参数；当前忽略，允许为 NULL。
+ * @pre 仅由 CMSIS-RTOS2 任务调度器调用，且 App_FastChannel_Init 已成功返回。
+ * @post 每次周期调用 App_FastChannel_ProcessImu，并通过 App_FastChannel_ReportImuMetrics 更新 ImuEkfTask 内部性能统计。
+ * @note 任务以 osDelayUntil 维持 10 ms 周期；正常运行时永不返回，不分配内存。
+ * @note 若延迟超过一个周期，下一次唤醒从当前 tick 重新排程，不补跑历史周期。
  */
 void RTOS_App_ImuTask(void *argument) {
   (void)argument;
@@ -100,8 +110,11 @@ void RTOS_App_ImuTask(void *argument) {
 
 /**
  * @brief 50 Hz JustFloat 与参数命令任务入口。
- * @param argument CMSIS-RTOS2 参数，当前未使用。
- * @note 当前由 CubeMX 生成的 defaultTask 槽位调用。
+ * @param argument CMSIS-RTOS2 任务参数；当前忽略，允许为 NULL。
+ * @pre 当前由 CubeMX 生成的 defaultTask 槽位调用，且 App_FastChannel_Init 已成功返回。
+ * @post 每次周期调用 App_FastChannel_ProcessTelemetry，完成命令消费和 32 通道 JustFloat 发送。
+ * @note 任务以 osDelayUntil 维持 20 ms 周期；正常运行时永不返回，不分配内存。
+ * @note 若延迟超过一个周期，下一次唤醒从当前 tick 重新排程，不补跑历史周期。
  */
 void RTOS_App_TelemetryTask(void *argument) {
   (void)argument;

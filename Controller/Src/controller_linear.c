@@ -14,6 +14,17 @@
 
 /**
  * @brief 按线性比例更新输出并处理饱和。
+ * @param controller_h 已初始化的线性控制律基对象，不能为 NULL。
+ * @param target 目标轮速，单位 m/s；必须有限，超出 [min_target, max_target] 时夹紧。
+ * @param measure 未使用的实测量；仅用于满足 SISO 接口，本控制律忽略。
+ * @param dt 未使用的控制周期，单位 s；接口要求有限且大于 0，本控制律忽略。
+ * @param out 调用方拥有的输出存储，不能为 NULL；写入 duty 结果。
+ * @retval CONTROLLER_STATUS_OK 未触发输入/输出限幅或最小步长调整；保持带可能已把输出保持在 last_out。
+ * @retval CONTROLLER_STATUS_SATURATED target、绝对输出、相对步长或最小步长触发了调整。
+ * @retval CONTROLLER_STATUS_ERROR target 或最终输出不为有限值；last_out 与 out 清零。
+ * @pre 控制律已初始化；last_out 表示上一周期输出，out 可写。
+ * @post last_out 与 out 同步为本次输出；输出保持带围绕旧 last_out 计算。
+ * @note 开环映射，不使用 measure 和 dt；同一实例只允许单写者调用。
  */
 static controller_status_t ctrl_linear_update(
   controller_base_t *controller_h,
@@ -96,6 +107,10 @@ static controller_status_t ctrl_linear_update(
 
 /**
  * @brief 重置线性控制器的输出状态。
+ * @param controller_h 已初始化的线性控制律基对象，不能为 NULL。
+ * @pre 当前没有并发更新；配置参数无需重新初始化。
+ * @post last_out 清零，下一周期从零输出开始计算步长和保持带。
+ * @note 不修改 k、b、限幅和死区参数；不分配动态内存。
  */
 static void ctrl_linear_reset(controller_base_t *controller_h) {
   assert(controller_h);
@@ -110,19 +125,21 @@ static const controller_ops_t controller_ops_linear = {
 
 /**
  * @brief 初始化线性控制律。
- * @param controller_h 对象。
- * @param name 名称。
- * @param k 斜率（duty / (m/s)）。
- * @param b 截距或摩擦补偿幅值（duty）。
- * @param is_defriction_enabled 是否把 b 作为摩擦补偿。
- * @param max_target 输入上限（m/s）。
- * @param min_target 输入下限（m/s）。
- * @param max_out 输出上限（duty）。
- * @param min_out 输出下限（duty）。
- * @param max_step 单周期最大变化（duty）。
- * @param min_step 单周期最小变化（duty）。
- * @param deadzone 输出保持带（duty），围绕上次输出。
- * @note 初始化会校验参数范围与有限性。
+ * @param controller_h 待初始化的线性控制律存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖控制律对象。
+ * @param k 输入到输出的线性斜率，单位 duty/(m/s)，必须有限。
+ * @param b 截距或摩擦补偿幅值，单位 duty，必须有限。
+ * @param is_defriction_enabled true 时按线性输出符号施加 b，false 时始终加 b。
+ * @param max_target 输入上限，单位 m/s，必须有限且不小于 min_target。
+ * @param min_target 输入下限，单位 m/s，必须有限且不大于 max_target。
+ * @param max_out 输出上限，单位 duty，必须有限且非负。
+ * @param min_out 输出下限，单位 duty，必须有限且非正。
+ * @param max_step 单次更新最大变化量，单位 duty，必须有限且非负、不小于 min_step。
+ * @param min_step 单次更新最小变化量，单位 duty，必须有限且非负、不大于 max_step。
+ * @param deadzone 围绕 last_out 的输出保持带，单位 duty，必须有限、非负且小于 max_step。
+ * @pre 所有浮点参数必须有限；范围不变量由 Debug 构建 assert 检查。
+ * @post 控制律参数和 ops 已绑定，last_out 清零；不分配动态内存。
+ * @note 仅允许初始化阶段单线程调用，不得与更新或复位并发。
  */
 void Ctrl_Linear_Init(
   controller_linear_t *controller_h,

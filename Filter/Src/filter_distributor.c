@@ -14,6 +14,10 @@
 
 /**
  * @brief 重置全部分发通道。
+ * @param filter_h 已初始化的分发器基对象，不能为 NULL。
+ * @pre route_count 在 1..FILTER_DISTRIBUTOR_CAPACITY 内，全部 route filter 指针有效。
+ * @post 每条路由的滤波器均执行 reset；路由表、通道映射和分发器名称不变。
+ * @note 路由滤波器在初始化时已保证唯一；不分配动态内存，非线程安全。
  */
 static void filter_distributor_reset(filter_base_t *filter_h) {
   assert(filter_h);
@@ -32,6 +36,13 @@ static void filter_distributor_reset(filter_base_t *filter_h) {
 
 /**
  * @brief 按通道分发输入并汇总输出。
+ * @param filter_h 已初始化的分发器基对象，不能为 NULL。
+ * @param input 只读全局输入样本；各路由按 input_index 选取通道。
+ * @param output 调用方拥有的全局输出；base 已预复制 input。
+ * @pre 路由配置有效，input/output 期间可访问，output 的 time_ms 保持输入时间戳。
+ * @post 每条有有效输入的路由执行一次滤波；仅把 local_output 中有效且有限的通道按 output_index 写回。
+ *       无有效输入的路由跳过，未写回的全局通道保持 base 预复制值和有效位。
+ * @note 非有限滤波结果会触发 assert 并被跳过；不分配动态内存，单写者调用。
  */
 static void filter_distributor_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output
 ) {
@@ -104,11 +115,13 @@ static const filter_ops_t filter_ops_distributor = {
 
 /**
  * @brief 初始化分发器。
- * @param filter_h 对象。
- * @param name 名称。
- * @param routes 静态路由表。
+ * @param filter_h 待初始化的分发器存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖分发器对象。
+ * @param routes 非空路由表；前 route_count 项在调用期间只读。
  * @param route_count 路由数，范围 1..FILTER_DISTRIBUTOR_CAPACITY。
- * @note Init 会校验重复滤波器、重复通道、非法索引和跨路由输出冲突。
+ * @pre 每条路由的输入/输出数量在 1..FILTER_ROUTE_CAPACITY 内，索引小于 FILTER_CHANNEL_CAPACITY。
+ * @post 路由表复制入对象、剩余槽位清零，并 reset 全部唯一子滤波器。
+ * @note Debug 构建拒绝重复滤波器、同一路由内重复索引和跨路由重复输出；仅初始化阶段调用。
  */
 void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count
 ) {

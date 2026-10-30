@@ -40,7 +40,6 @@ INPUT                  = README.md \
                          Boards/f407vet6-omni-car/RTOS \
                          tools/rtt/README.md \
                          cmake/platform-check/README.md \
-                         cmake/platform-test \
                          Platform \
                          DeviceDrivers \
                          Controller \
@@ -49,7 +48,8 @@ INPUT                  = README.md \
                          System
 FILE_PATTERNS          = *.c *.h *.md *.dox
 RECURSIVE              = YES
-EXCLUDE                = build Drivers Middlewares Core cmake/stm32cubemx
+EXCLUDE                = build Drivers Middlewares Core cmake/stm32cubemx \
+                         cmake/platform-test
 EXCLUDE_PATTERNS       = */build/*
 INPUT_ENCODING         = UTF-8
 SEARCH_INCLUDES        = NO

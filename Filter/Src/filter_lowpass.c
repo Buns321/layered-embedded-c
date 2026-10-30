@@ -14,6 +14,10 @@
 
 /**
  * @brief 重置低通滤波器状态。
+ * @param filter_h 已初始化的低通滤波器基对象，不能为 NULL。
+ * @pre 当前没有并发 update；各通道时间常数保持已配置值。
+ * @post initialized_mask、last_output 和 last_time_ms 全部清零，下一有效样本重新初始化滤波。
+ * @note 不分配动态内存；不修改 time_constant_s。
  */
 static void filter_lowpass_reset(filter_base_t *filter_h) {
   assert(filter_h);
@@ -29,6 +33,12 @@ static void filter_lowpass_reset(filter_base_t *filter_h) {
 
 /**
  * @brief 对各通道执行一阶低通更新。
+ * @param filter_h 已初始化的低通滤波器基对象，不能为 NULL。
+ * @param input 只读输入样本；仅处理 valid_mask 中有效的通道。
+ * @param output 调用方拥有的输出样本，base 已预复制 input；无效通道会清除对应掩码位。
+ * @pre input->time_ms 单调递增；通道时间常数有限且大于 0。
+ * @post 首样本直接采用输入值；后续按 dt/(tau+dt) 平滑，零时间差保持上次输出。
+ * @note 非有限输入、时间常数或结果会清除该通道有效位；不分配动态内存，单写者调用。
  */
 static void filter_lowpass_update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
   assert(filter_h && input && output);
@@ -97,9 +107,12 @@ static const filter_ops_t filter_ops_lowpass = {
 
 /**
  * @brief 初始化低通滤波器。
- * @param filter_h 对象。
- * @param name 名称。
- * @param default_time_constant_s 默认时间常数（s），必须大于 0。
+ * @param filter_h 待初始化的低通滤波器存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖滤波器对象。
+ * @param default_time_constant_s 所有通道的初始时间常数，单位 s；必须有限且大于 0。
+ * @pre filter_h 可写；name 在滤波器对象存活期间保持有效。
+ * @post 全部通道使用默认时间常数，历史输出和初始化掩码清零；不分配动态内存。
+ * @note 仅允许初始化阶段单线程调用，不得与 update/reset 并发。
  */
 void Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name, float default_time_constant_s) {
   assert(
@@ -120,9 +133,12 @@ void Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name, float def
 
 /**
  * @brief 设置某个通道的时间常数。
- * @param filter_h 对象。
+ * @param filter_h 已初始化的低通滤波器，不能为 NULL。
  * @param channel 通道下标，必须小于 FILTER_CHANNEL_CAPACITY。
- * @param time_constant_s 时间常数（s），必须大于 0。
+ * @param time_constant_s 新时间常数，单位 s；必须有限且大于 0。
+ * @pre 当前没有对同一通道的并发 update；Debug 构建用 assert 检查范围和有限性。
+ * @post 指定通道后续更新使用新时间常数，已有 last_output 和 last_time_ms 保留。
+ * @note 单写者调用；不分配动态内存，修改不会自动 reset 该通道。
  */
 void Filter_Lowpass_SetChannelTimeConstant(filter_lowpass_t *filter_h, uint8_t channel, float time_constant_s) {
   assert(

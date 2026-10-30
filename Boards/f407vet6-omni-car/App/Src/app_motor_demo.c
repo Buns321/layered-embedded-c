@@ -4,8 +4,9 @@
 
 /**
  * @file app_motor_demo.c
- * @brief 电机驱动应用演示入口。
+ * @brief 电机驱动示例空实现。
  * @ingroup app
+ * @note 当前编译单元不含函数或状态；保留源文件以维持板级构建列表稳定。
  */
 
 #include "../Inc/app_motor_demo.h"

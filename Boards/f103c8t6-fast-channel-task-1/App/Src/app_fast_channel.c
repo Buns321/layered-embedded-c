@@ -149,6 +149,12 @@ _Static_assert(
 
 /**
  * @brief 不区分 ASCII 大小写比较两个文本是否完全相等。
+ * @param left 左侧 NUL 结尾文本，必须非 NULL，允许空字符串，调试构建以 assert 检查。
+ * @param right 右侧 NUL 结尾文本，必须非 NULL，允许空字符串，调试构建以 assert 检查。
+ * @retval true 两个文本长度相同，且 ASCII 字母忽略大小写后逐字符相等。
+ * @retval false 任一字符不同或长度不同。
+ * @pre left 和 right 非 NULL，并保持有效直到函数返回。
+ * @note 只读纯函数；不分配内存，仅折叠 ASCII 字母大小写。
  */
 static bool app_fastchannel_textequals(
   const char *left,
@@ -177,6 +183,9 @@ static bool app_fastchannel_textequals(
 
 /**
  * @brief 按有效电平配置驱动蜂鸣器 GPIO。
+ * @param enabled true 表示请求蜂鸣器发声，false 表示关闭；有效电平由 APP_BUZZER_ON_LEVEL 决定。
+ * @post APP_BUZZER_PORT/PIN 的物理输出与请求状态一致；不修改蜂鸣器相位状态机。
+ * @note 在 ImuEkfTask 或初始化上下文调用；GPIO 写入不阻塞，不分配内存。
  */
 static void app_fastchannel_writebuzzer(bool enabled) {
   bool output_high = enabled
@@ -191,6 +200,9 @@ static void app_fastchannel_writebuzzer(bool enabled) {
 
 /**
  * @brief 按有效电平配置驱动 LED GPIO。
+ * @param enabled true 表示请求 LED 点亮，false 表示熄灭；有效电平由 APP_LED_ON_LEVEL 决定。
+ * @post APP_LED_PORT/PIN 的物理输出与请求状态一致；不修改 led_output_on 逻辑状态。
+ * @note 在 ImuEkfTask 或初始化上下文调用；GPIO 写入不阻塞，不分配内存。
  */
 static void app_fastchannel_writeled(bool enabled) {
   bool output_high = enabled
@@ -205,6 +217,9 @@ static void app_fastchannel_writeled(bool enabled) {
 
 /**
  * @brief 启动双短鸣提示并记录当前时间。
+ * @param now_ms 当前单调毫秒时间戳，作为第一段短鸣的相位起点。
+ * @post 蜂鸣器立即开启，相位置为 SHORT_ON_1，后续由 app_fastchannel_processbuzzer 推进。
+ * @note 若已有鸣叫序列正在执行，本函数会以新序列覆盖它；不阻塞、不分配内存。
  */
 static void app_fastchannel_startshortbuzzer(uint32_t now_ms) {
   s_app.buzzer.phase = APP_BUZZER_PHASE_SHORT_ON_1;
@@ -214,6 +229,9 @@ static void app_fastchannel_startshortbuzzer(uint32_t now_ms) {
 
 /**
  * @brief 启动长鸣提示并记录当前时间。
+ * @param now_ms 当前单调毫秒时间戳，作为长鸣相位起点。
+ * @post 蜂鸣器立即开启，相位置为 LONG_ON，600 ms 后由处理函数关闭。
+ * @note 若已有鸣叫序列正在执行，本函数会以长鸣覆盖它；不阻塞、不分配内存。
  */
 static void app_fastchannel_startlongbuzzer(uint32_t now_ms) {
   s_app.buzzer.phase = APP_BUZZER_PHASE_LONG_ON;
@@ -223,6 +241,9 @@ static void app_fastchannel_startlongbuzzer(uint32_t now_ms) {
 
 /**
  * @brief 推进蜂鸣器时序状态机并关闭到期的输出。
+ * @param now_ms 当前单调毫秒时间戳；必须与启动相位时使用同一时基。
+ * @post 根据 80/120/80/600 ms 时序推进双短鸣或长鸣，并在 OFF 相位持续保持蜂鸣器关闭。
+ * @note 允许调用间隔大于单段时长，单次调用最多推进一个相位；不阻塞、不分配内存。
  */
 static void app_fastchannel_processbuzzer(uint32_t now_ms) {
   uint32_t elapsed_ms = now_ms - s_app.buzzer.phase_started_ms;
@@ -269,6 +290,9 @@ static void app_fastchannel_processbuzzer(uint32_t now_ms) {
 
 /**
  * @brief 按运行状态切换 LED 闪烁周期。
+ * @param now_ms 当前单调毫秒时间戳，用于判断半周期是否到达。
+ * @post 主运行状态每 500 ms 翻转一次，其他状态每 250 ms 翻转一次，并立即更新 LED 引脚。
+ * @note 仅由 ImuEkfTask 调用；不阻塞、不分配内存。
  */
 static void app_fastchannel_processled(uint32_t now_ms) {
   uint32_t half_period_ms =
@@ -283,6 +307,10 @@ static void app_fastchannel_processled(uint32_t now_ms) {
 
 /**
  * @brief 构造全零且比例因子为 1 的默认校准记录。
+ * @param record 输出记录，必须可写且非 NULL，所有权仍归调用方。
+ * @pre record 非 NULL，调试构建以 assert 检查。
+ * @post face_mask/completed_axis_mask 和全部零偏清零，三轴 accel_scale 均为 1.0。
+ * @note 不分配内存；用于 Flash 记录缺失或损坏时的安全回退。
  */
 static void app_fastchannel_defaultrecord(
   app_calibration_record_t *record
@@ -296,6 +324,11 @@ static void app_fastchannel_defaultrecord(
 
 /**
  * @brief 把校准记录中的角度单位转换后应用到 IMU 校正滤波器。
+ * @param record 只读校准记录；零偏单位 rad/s，加速度零偏 m/s²，比例系数无量纲。
+ * @pre record 非 NULL，内容已由加载校验或标定流程验证，调试构建以 assert 检查。
+ * @post 加速度零偏/比例原样下发，陀螺零偏换算为 deg/s 后下发到 s_calibration_filter。
+ * @warning 底层配置结果被忽略；调用方必须只传入已验证记录，否则滤波器可能保留旧配置。
+ * @note 不分配内存；仅由 ImuEkfTask 或初始化路径调用。
  */
 static void app_fastchannel_applyrecord(
   const app_calibration_record_t *record
@@ -314,6 +347,11 @@ static void app_fastchannel_applyrecord(
 
 /**
  * @brief 从记录存储读取并校验最新校准记录。
+ * @retval true 最新记录版本、负载长度、掩码、有限值和比例系数范围均合法。
+ * @retval false 存储为空/损坏、版本或长度不匹配、掩码越界，或任一标定值非法。
+ * @post 成功时 s_app.active_record 被记录内容覆盖；失败时保持默认或已有活动记录不变。
+ * @pre Sys_RecordStore_Init 已成功，且调用期间独占 Flash 记录存储；本函数只在初始化阶段调用。
+ * @note 不分配内存；失败时不覆盖 active_record，调用方继续使用默认记录。
  */
 static bool app_fastchannel_loadcalibration(void) {
   app_calibration_record_t record;
@@ -355,6 +393,10 @@ static bool app_fastchannel_loadcalibration(void) {
 
 /**
  * @brief 持久化工作校准记录并更新活动配置。
+ * @retval true 记录已追加到 Flash，active_record 已更新并应用到校正滤波器。
+ * @retval false Flash 追加失败；flash_write_failed 置 true，active_record 和滤波器保持旧值。
+ * @post 成功时更新活动记录、清空 flash_write_failed 并设置 flash_record_valid。
+ * @note 仅在 ImuEkfTask 标定流程调用；包含 Flash 擦写等待，不得在 ISR 调用，不分配内存。
  */
 static bool app_fastchannel_commitcalibration(void) {
   if (
@@ -378,6 +420,11 @@ static bool app_fastchannel_commitcalibration(void) {
 
 /**
  * @brief 使用原始校准阈值判断 IMU 样本是否静止。
+ * @param sample 只读 IMU 样本，加速度单位 m/s²、角速度单位 deg/s。
+ * @retval true 加速度模长在 7.8..11.8 m/s²，且三轴原始角速度绝对值不超过 10 deg/s。
+ * @retval false 任一分量非有限，或超出原始静止门限。
+ * @pre sample 非 NULL，调试构建以 assert 检查。
+ * @note 使用未校正陀螺阈值，适用于零偏偏移尚未标定的初始阶段；纯只读，不分配内存。
  */
 static bool app_fastchannel_rawsampleisstill(
   const imu_sample_t *sample
@@ -392,6 +439,10 @@ static bool app_fastchannel_rawsampleisstill(
 
 /**
  * @brief 检测样本对应的安装面，失败时返回 0。
+ * @param sample 只读 IMU 样本；使用其原始三轴加速度（m/s²）和原始面识别门限。
+ * @return 成功时返回 APP_FACE_X/Y/Z_POSITIVE/NEGATIVE 之一；倾斜或非有限时返回 0。
+ * @pre sample 非 NULL，调试构建以 assert 检查。
+ * @note 纯只读函数；不更新面掩码，不分配内存。
  */
 static uint32_t app_fastchannel_detectface(
   const imu_sample_t *sample
@@ -409,6 +460,9 @@ static uint32_t app_fastchannel_detectface(
 
 /**
  * @brief 把安装面位掩码映射为记录下标。
+ * @param face 单个安装面位：APP_FACE_X_POSITIVE 至 APP_FACE_Z_NEGATIVE。
+ * @return X+..Z- 依次映射为 0..5；不是单个合法面时返回 UINT8_MAX。
+ * @note 纯函数；调用方必须区分合法下标和 UINT8_MAX，不分配内存。
  */
 static uint8_t app_fastchannel_faceindex(uint32_t face) {
   switch (face) {
@@ -424,6 +478,10 @@ static uint8_t app_fastchannel_faceindex(uint32_t face) {
 
 /**
  * @brief 把安装面映射为对应传感器轴。
+ * @param face 单个安装面位；X/Y 正负映射到 0/1，其他值映射到 2。
+ * @return X 面返回 0，Y 面返回 1，Z 面及非法输入返回 2。
+ * @warning 本函数不校验 face；调用方须先用 app_fastchannel_faceindex 验证，否则非法值会被当作 Z 轴。
+ * @note 纯函数；不分配内存，不修改面状态。
  */
 static uint8_t app_fastchannel_faceaxis(uint32_t face) {
   if (
@@ -443,6 +501,13 @@ static uint8_t app_fastchannel_faceaxis(uint32_t face) {
 
 /**
  * @brief 校验并累计当前安装面的校准样本。
+ * @param face 待接受的单个安装面位；必须属于 APP_FACE_* 六个合法值之一。
+ * @param accel_mean 该面的三轴平均加速度，按 X/Y/Z 排列，单位 m/s²；容量至少 3 个 float。
+ * @retval true 面已写入 working_record；若已有相对面，则同时完成该轴零偏和比例计算。
+ * @retval false face 非法、相对样本跨度不足，或计算出的比例系数越界；标定状态不变。
+ * @pre 仅在 SAMPLE_FACE 完成 100 点平均后调用；accel_mean 非 NULL，调试构建以 assert 检查。
+ * @post 成功时把三轴均值写入 face_values，face_mask 增加该面并更新对应轴记录；本函数不写 Flash。
+ * @note 仅 ImuEkfTask 调用；不分配内存。
  */
 static bool app_fastchannel_acceptface(
   uint32_t face,
@@ -523,7 +588,10 @@ static bool app_fastchannel_acceptface(
 }
 
 /**
- * @brief 进入校准错误状态并触发错误提示。
+ * @brief 进入陀螺零偏校准状态并清空累计器。
+ * @param now_ms 当前单调毫秒时间戳，作为 30 秒校准窗口起点。
+ * @post calibration_state 置为 GYRO_CALIBRATION，采样计数清零，三轴和与平方和清零。
+ * @note 仅由 ImuEkfTask 调用；不写 Flash、不分配内存。
  */
 static void app_fastchannel_entergyrocalibration(uint32_t now_ms) {
   s_app.calibration_state = APP_FAST_CHANNEL_STATE_GYRO_CALIBRATION;
@@ -535,6 +603,12 @@ static void app_fastchannel_entergyrocalibration(uint32_t now_ms) {
 
 /**
  * @brief 切换到主运行状态并刷新状态时间。
+ * @param now_ms 当前单调毫秒时间戳，作为 MAIN 状态起点。
+ * @param reason 状态切换原因文本，NUL 结尾且必须非 NULL，允许空字符串；用于 RTT 日志，函数不保留指针。
+ * @pre reason 非 NULL，生命周期至少覆盖本次调用。
+ * @post 若尚未进入 MAIN：恢复 Flash 活动记录、清除未提交面进度、重置 EKF，并置 MAIN；
+ *       首次进入时启动一次长鸣。重复调用不重复重置或鸣叫。
+ * @note 仅由 ImuEkfTask 状态机调用；不分配内存。
  */
 static void app_fastchannel_entermain(
   uint32_t now_ms,
@@ -561,6 +635,12 @@ static void app_fastchannel_entermain(
 
 /**
  * @brief 处理初始姿态确认阶段。
+ * @param now_ms 当前单调毫秒时间戳，用于 3 秒初始观察和倒置计时。
+ * @param raw_sample 只读原始样本；要求三轴加速度 m/s²、角速度 deg/s 且相关通道有效。
+ * @pre raw_sample 非 NULL，调试构建以 assert 检查。
+ * @post 若静止且 az <= -7.8 m/s² 持续 3 秒，跳过六面流程直接进入 MAIN；
+ *       否则初始观察满 3 秒后进入陀螺零偏校准。
+ * @note 仅由 ImuEkfTask 调用；不分配内存，不直接写 Flash。
  */
 static void app_fastchannel_processinitialpose(
   uint32_t now_ms,
@@ -600,6 +680,12 @@ static void app_fastchannel_processinitialpose(
 
 /**
  * @brief 处理六面陀螺零偏校准流程。
+ * @param now_ms 当前单调毫秒时间戳，用于 30 秒超时和累计采样。
+ * @param raw_sample 只读原始样本；使用三轴角速度（deg/s）和静止判定所需加速度（m/s²）。
+ * @pre raw_sample 非 NULL，调试构建以 assert 检查。
+ * @post 连续静止累计 100 点且三轴标准差不超过 3 deg/s 时写入工作记录零偏并进入 WAIT_FACE。
+ * @post 移动或标准差超差时清零累计并留在 GYRO_CALIBRATION；30 s 超时则进入 MAIN。
+ * @note 仅在 ImuEkfTask 中调用；此阶段不提交 Flash，不分配内存。
  */
 static void app_fastchannel_processgyrocalibration(
   uint32_t now_ms,
@@ -664,6 +750,10 @@ static void app_fastchannel_processgyrocalibration(
 
 /**
  * @brief 判断当前安装面的采样是否超时。
+ * @param now_ms 当前单调毫秒时间戳，使用与 face_deadline_ms 相同的回绕计数时基。
+ * @retval true 有符号差 now_ms - face_deadline_ms >= 0，即窗口到期。
+ * @retval false 尚未到达截止时间。
+ * @note 纯判定函数；要求截止时间与 now_ms 的跨度小于 2^31 ms，不修改状态、不分配内存。
  */
 static bool app_fastchannel_facetimedout(uint32_t now_ms) {
   return (int32_t)(now_ms - s_app.face_deadline_ms) >= 0;
@@ -671,6 +761,9 @@ static bool app_fastchannel_facetimedout(uint32_t now_ms) {
 
 /**
  * @brief 清空安装面搜索状态和计时。
+ * @param now_ms 当前单调毫秒时间戳，作为下一轮 30 秒面搜索窗口起点。
+ * @post 状态回到 WAIT_FACE，候选面、单面采样计数清零，face_deadline_ms 设为 now_ms + 30 秒。
+ * @note 已接受的面和轴完成掩码保持不变；不分配内存，不写 Flash。
  */
 static void app_fastchannel_resetfacesearch(uint32_t now_ms) {
   s_app.calibration_state = APP_FAST_CHANNEL_STATE_WAIT_FACE;
@@ -683,6 +776,15 @@ static void app_fastchannel_resetfacesearch(uint32_t now_ms) {
 
 /**
  * @brief 推进安装面搜索状态机。
+ * @param now_ms 当前单调毫秒时间戳，用于稳定 1 秒、单面 30 秒窗口和蜂鸣器相位。
+ * @param raw_sample 只读原始样本，用于面识别和三轴加速度（m/s²）平均。
+ * @param calibrated_sample 只读校正后样本，仅使用其角速度（deg/s）判断静止。
+ * @pre raw_sample 和 calibrated_sample 非 NULL，调试构建以 assert 检查。
+ * @post WAIT_FACE 识别新面后进入 1 秒 STABILIZE_FACE；稳定后采集 100 点进入 SAMPLE_FACE。
+ * @post 每面提交后尝试写 Flash；非最终面写入成功时短鸣并继续搜索，最终面写入成功时由 MAIN 入口长鸣。
+ * @post Flash 写失败会置 flash_write_failed 且不短鸣；非最终面保留内存进度继续搜索，最终面仍进入 MAIN，但回退到最近成功持久化的记录。
+ * @post 面偏移、样本跨度非法或超时会丢弃未提交进度并回到安全状态，不使能任何执行器。
+ * @note 仅由 ImuEkfTask 调用；状态机内可执行 Flash 写入，不分配内存。
  */
 static void app_fastchannel_processfacesearch(
   uint32_t now_ms,
@@ -784,7 +886,11 @@ static void app_fastchannel_processfacesearch(
 }
 
 /**
- * @brief 把角度归一化到 [-pi, pi) 区间。
+ * @brief 把角度归一化到 [-pi, pi] 区间。
+ * @param angle_rad 待归一化角度，单位 rad；实际有效输出范围为 [-pi, pi]。
+ * @return 与输入相差 2*pi 整数倍且落在 [-pi, pi] 的角度，单位 rad。
+ * @warning 输入必须是有限值；+inf/-inf 会使 while 循环永不结束。正常调用来自有限陀螺积分。
+ * @note 纯函数；不分配内存，不修改共享状态。
  */
 static float app_fastchannel_wrapradians(float angle_rad) {
   while (angle_rad > APP_PI) {
@@ -797,7 +903,14 @@ static float app_fastchannel_wrapradians(float angle_rad) {
 }
 
 /**
- * @brief 根据静止样本更新航向参考。
+ * @brief 更新直接姿态角、陀螺积分角和实际采样周期。
+ * @param now_ms 当前单调毫秒时间戳，用于计算并限幅实际 dt_s。
+ * @param sample 只读校正后样本；加速度 m/s²，角速度 deg/s，有效性由 valid_mask 标记。
+ * @pre sample 非 NULL，调试构建以 assert 检查。
+ * @post 加速度 Z 有效时更新直接横滚/俯仰角；三轴陀螺均有效时按 dt_s 积分并归一化三轴角度。
+ * @post dt_s 限制在 APP_EKF_MIN_DT_S..APP_EKF_MAX_DT_S；缺失通道对应的参考量保持不变。
+ * @note 首次调用沿用初始化阶段的标称 dt_s；本函数不判断静止门限，收到有效校正样本即更新。
+ * @note 仅由 ImuEkfTask 调用，不分配内存。
  */
 static void app_fastchannel_updatereference(
   uint32_t now_ms,
@@ -853,6 +966,12 @@ static void app_fastchannel_updatereference(
 
 /**
  * @brief 生成并发布当前快速通道遥测快照。
+ * @param now_ms 当前单调毫秒时间戳；当前仅保留，未写入快照。
+ * @param raw_valid true 表示尝试复制最新原始 MPU6050 样本，false 表示标记原始数据无效。
+ * @param calibrated_valid true 表示尝试复制最新校正样本，false 表示标记校正数据无效。
+ * @post 先完整写入非活动双缓冲，再在临界区内一次性切换 s_active_snapshot，保证读者看到一致快照。
+ * @post 快照序号递增；EKF、标定状态、面掩码、Flash 状态和命令结果始终发布。
+ * @note 仅由 ImuEkfTask 调用；不阻塞，不分配内存，临界区仅覆盖索引切换。
  */
 static void app_fastchannel_publishsnapshot(
   uint32_t now_ms,
@@ -902,6 +1021,13 @@ static void app_fastchannel_publishsnapshot(
 
 /**
  * @brief 解析并应用主机命令的状态变更。
+ * @param command 已解析命令，只读；SET 名称大小写不敏感，value 由解析器保证有限。
+ * @param context 链路回调上下文；当前未使用，可为 NULL。
+ * @retval true RESET EKF 已执行，或 SET 参数名受支持且数值通过 EKF 范围校验。
+ * @retval false 命令类型、参数名未知，或参数值被 EKF 拒绝；EKF 配置保持不变。
+ * @pre command 非 NULL，调试构建以 assert 检查；仅由 VofaTask 命令回调调用。
+ * @post RESET 提交编译期 EKF 默认参数；SET 提交单个运行时参数，均在下一帧开始时生效，不写 Flash。
+ * @note 与 ImuEkfTask 共享 EKF；Filter_Ekf_* 内部用短临界区交换待提交配置，本函数不额外加锁、不分配内存。
  */
 static bool app_fastchannel_applycommand(
   const app_uart_command_t *command,
@@ -950,12 +1076,15 @@ static bool app_fastchannel_applycommand(
 
 /**
  * @brief 初始化板级设备、滤波链、Flash 校准和 UART 链路。
- * @retval PLATFORM_STATUS_OK 初始化成功。
- * @retval PLATFORM_STATUS_BUSY UART 回调已被其他对象占用。
- * @retval PLATFORM_STATUS_ERROR 滤波器、IMU 或底层外设初始化失败。
- * @retval PLATFORM_STATUS_INVALID_ARGUMENT 板级配置不满足接口前置条件。
+ * @retval PLATFORM_STATUS_OK 设备、滤波链、校准状态和命令链路已初始化；重复调用直接返回 OK。
+ * @retval PLATFORM_STATUS_BUSY 物理 UART 回调槽已被其他所有者占用。
+ * @retval PLATFORM_STATUS_ERROR IMU 校准滤波器、EKF、MPU6050 或 UART 端口初始化失败。
+ * @retval PLATFORM_STATUS_INVALID_ARGUMENT 板级静态配置或 UART 实例不满足底层前置条件。
  * @pre CubeMX 已初始化 I2C1、USART1、DMA1_Channel4、GPIO 和 CRC。
- * @pre 只允许在 RTOS 调度器启动前调用一次。
+ * @pre 首次初始化必须在 RTOS 调度器启动前完成，并独占 I2C1、USART1 和 Flash；已初始化后的重复调用直接返回 OK。
+ * @post 成功时进入 INITIAL_POSE_CHECK，电机外设尚未参与；RX 启动失败会记录警告并延后重试。
+ * @post Flash 记录缺失或损坏不阻止启动，但 flash_record_valid 为 false；后续提交会尝试重建记录。
+ * @note 不分配动态内存；初始化包含同步 I2C/Flash 操作，失败时模块保持未初始化。
  */
 platform_status_t App_FastChannel_Init(void) {
   if (s_app.initialized) {
@@ -1085,8 +1214,11 @@ platform_status_t App_FastChannel_Init(void) {
 
 /**
  * @brief 执行一次 100 Hz IMU、标定和 EKF 处理。
- * @param now_ms 当前单调毫秒时间戳。
- * @pre 只允许 ImuEkfTask 调用。
+ * @param now_ms 当前单调毫秒时间戳；首帧可传 0，state_started_ms 为 0 时会用该值初始化状态起点。
+ * @pre 只允许 ImuEkfTask 在 10 ms 周期上下文中调用，且 App_FastChannel_Init 已成功返回。
+ * @post 已驱动一次 MPU6050 采样/滤波，推进姿态、陀螺和六面标定状态机，并发布一致快照。
+ * @post 同步推进蜂鸣器和 LED 时序；未初始化时函数直接返回，状态保持不变。
+ * @note 任务上下文执行，可能等待最多 APP_IMU_I2C_TIMEOUT_MS 的 I2C 事务；六面提交时还可能在任务内执行 Flash 擦写并显著延长本次调用；不分配内存。
  */
 void App_FastChannel_ProcessImu(uint32_t now_ms) {
   if (!s_app.initialized) {
@@ -1152,6 +1284,12 @@ void App_FastChannel_ProcessImu(uint32_t now_ms) {
 
 /**
  * @brief 根据数据有效性更新遥测通道掩码。
+ * @param sample 待修改的遥测样本，必须非 NULL 且可写。
+ * @param channel 通道下标，有效范围 0..TELEMETRY_CHANNEL_CAPACITY-1。
+ * @param valid true 置位该通道有效位，false 清除该通道有效位。
+ * @pre sample 非 NULL 且 channel 在容量内，调试构建以 assert 检查。
+ * @post valid_mask 仅修改 channel 对应的一位，其他通道值和掩码保持不变。
+ * @note 纯本地掩码操作；不分配内存，不访问硬件。
  */
 static void app_fastchannel_setchannelvalid(
   telemetry_sample_t *sample,
@@ -1169,8 +1307,11 @@ static void app_fastchannel_setchannelvalid(
 
 /**
  * @brief 处理命令并发送 50 Hz 32 通道 JustFloat。
- * @param now_ms 当前单调毫秒时间戳。
- * @pre 只允许遥测任务调用。
+ * @param now_ms 当前单调毫秒时间戳，同时写入遥测样本时间戳。
+ * @pre 只允许 VofaTask 在 20 ms 周期上下文中调用，且 App_FastChannel_Init 已成功返回。
+ * @post 已消费 RX 命令、复制最新一致快照、组装 32 通道 JustFloat 并发起一次非阻塞发送。
+ * @post 约每 1000 ms 输出一条 RTT 状态日志；发送忙时整帧丢弃，不影响 IMU 状态机。
+ * @note 任务上下文；命令回调同步执行，不分配内存，不等待 DMA 完成。
  */
 void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
   if (!s_app.initialized) {
@@ -1305,8 +1446,11 @@ void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
 
 /**
  * @brief 复制最近一次一致快照。
- * @param snapshot 输出快照。
- * @pre snapshot 不能为空。
+ * @param snapshot 输出快照；函数完整覆盖其全部字段，所有权仍归调用方。
+ * @pre snapshot 非 NULL，可写且不与内部双缓冲重叠。
+ * @post 返回的 raw/calibrated/EKF、标定状态、序列号和 Flash 标志来自同一个已发布缓冲区。
+ * @note 使用短临界区复制整个快照；不分配内存，可从任务上下文调用。
+ * @warning 复制期间会短暂关闭中断，禁止在 ISR 或高实时性路径调用。
  */
 void App_FastChannel_GetSnapshot(
   app_fast_channel_snapshot_t *snapshot
@@ -1320,8 +1464,11 @@ void App_FastChannel_GetSnapshot(
 
 /**
  * @brief 更新 ImuEkfTask 性能统计。
- * @param metrics 最新性能统计。
- * @pre 只允许 ImuEkfTask 调用，metrics 不能为空。
+ * @param metrics 最新执行时间、周期抖动和剩余栈字节；只读，调用方保留所有权。
+ * @pre 只允许 ImuEkfTask 调用，metrics 非 NULL 且包含本单位换算后的有效统计。
+ * @post 内部统计已在临界区内整体替换，供 VofaTask 日志读取；不改变姿态或标定状态。
+ * @note 使用短 PRIMASK 临界区保证写侧一致；读取侧未加锁，三个字段可能来自相邻更新。
+ * @note 不分配内存，调试构建对空指针 assert。
  */
 void App_FastChannel_ReportImuMetrics(
   const app_task_metrics_t *metrics

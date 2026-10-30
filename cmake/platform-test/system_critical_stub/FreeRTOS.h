@@ -24,8 +24,10 @@ extern uint32_t g_test_isr_enter_count;
 extern uint32_t g_test_isr_exit_count;
 
 /**
- * @brief 读取测试调度器状态。
- * @return 测试用调度器状态。
+ * @brief 返回测试注入的 FreeRTOS 调度器状态。
+ * @return g_test_scheduler_state 的值；0 表示未启动，1 表示运行中。
+ * @post 不修改调度器、中断掩码或测试计数。
+ * @note 这是 FreeRTOS API 桩，不查询真实调度器，也不会失败。
  */
 uint32_t xTaskGetSchedulerState(void);
 

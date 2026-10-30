@@ -29,12 +29,14 @@ typedef struct policy_omni_kinematics_s {
 
 /**
  * @brief 初始化 Omni 运动学策略。
- * @param policy_h 对象。
- * @param name 名称。
- * @param wheel_distance 轮子到车体中心距离（m）。
- * @param wheel_theta 四轮安装角（rad）。
- * @param wheel_sign 四轮方向符号。
- * @note 解算使用当前 yaw；底盘应每个控制周期读取 IMU 后调用。
+ * @param policy_h 待初始化的运动学策略存储；可处于未初始化状态，不能为 NULL。
+ * @param name 非空只读名称；生命周期必须覆盖策略对象。
+ * @param wheel_distance 轮子到车体中心距离，单位 m；必须有限且大于 0。
+ * @param wheel_theta 四轮安装角数组，单位 rad；四项必须有限。
+ * @param wheel_sign 四轮方向符号数组，通常取 ±1；四项必须有限，本函数只检查有限性。
+ * @pre policy_h 可写；name 的生命周期覆盖策略对象；wheel_theta 和 wheel_sign 只需在调用期间可读。
+ * @post 基对象名称与 ops 已绑定，wheel_distance、wheel_theta 和 wheel_sign 已复制到对象；不保留输入数组指针。
+ * @note 仅允许初始化阶段单线程调用；不分配动态内存。
  */
 void Policy_Omni_Kinematics_Init(
   policy_omni_kinematics_t *policy_h,

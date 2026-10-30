@@ -15,9 +15,12 @@
 #include "system_log.h"
 
 /**
- * @brief 固定 100 Hz 的小车控制任务。
- * @param argument CMSIS-RTOS2 任务参数，当前未使用。
- * @note 任务入口不得阻塞；控制周期由 osDelayUntil 维护。
+ * @brief 固定 100 Hz 的小车控制任务入口。
+ * @param argument CMSIS-RTOS2 任务参数；当前忽略，允许为 NULL。
+ * @pre 仅在调度器启动后由内核调用，且 App_Car_Init 已成功完成。
+ * @post 每个 10 tick 周期调用一次 App_Car_ProcessControl；错过多个周期时只从当前 tick 重新排程，不补跑历史周期。
+ * @note 任务通过 osDelayUntil 保持 100 Hz；正常运行时永不返回，不分配内存，也不阻塞等待应用事件。
+ * @warning 本任务负责四轮闭环和故障急停，长时间被更高优先级任务抢占会触发心跳超时。
  */
 void RTOS_Control_StartTask(void *argument) {
   (void)argument;

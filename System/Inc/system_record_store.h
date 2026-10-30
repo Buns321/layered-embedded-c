@@ -65,14 +65,21 @@ typedef struct system_record_store_s {
 
 /**
  * @brief 初始化双页记录存储并扫描最新有效记录。
- * @param store_h 对象。
- * @param flash 内部 Flash 实例。
- * @param first_bank_address 第一页起始地址，必须按擦除单元对齐。
- * @param page_size 单页大小，必须等于实际擦除单元且容纳至少一个记录。
- * @param magic 应用记录 Magic，不能为全 1。
- * @retval SYSTEM_RECORD_STORE_OK 初始化成功。
- * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT 参数或 Flash 范围非法。
- * @retval SYSTEM_RECORD_STORE_FLASH_ERROR 扫描或初始化擦除失败。
+ * @param store_h 待初始化对象；调用方拥有，生命周期必须覆盖后续全部存储操作。
+ * @param flash 已初始化的内部 Flash 实例，按值复制到 store_h。
+ * @param first_bank_address 第一页起始地址，必须按 page_size 对齐。
+ * @param page_size 单页大小，单位 byte；必须等于两个页的 Flash 擦除单元，且为
+ *                  SYSTEM_RECORD_STORE_SLOT_SIZE 的整数倍。
+ * @param magic 应用记录 Magic，不能为 0xFFFFFFFF。
+ * @retval SYSTEM_RECORD_STORE_OK 扫描和初始化完成，槽位位置及下一序号已就绪。
+ * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT store_h 为 NULL、页大小/地址不满足约束，
+ *         或 magic 等于空标记。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR 扫描读取或首次擦除失败，对象未标记为可写。
+ * @pre flash 已初始化；两个页的地址范围落在该 Flash 内，且由本存储独占。
+ * @post 成功时 initialized=true 并按最新有效记录设置 active_bank、next_slot、
+ *       next_sequence；无有效记录时擦除 bank 0 并从序号 1 开始。失败时不标记为可写。
+ * @note 不分配动态内存；初始化会扫描全部槽位。只允许单写者，应在任务启动前调用。
+ * @warning 擦除会破坏目标页旧数据；页地址不得与代码或其他持久数据重叠。
  */
 system_record_store_status_t Sys_RecordStore_Init(
   system_record_store_t *store_h,
@@ -84,16 +91,22 @@ system_record_store_status_t Sys_RecordStore_Init(
 
 /**
  * @brief 读取序号最新的有效记录。
- * @param store_h 已初始化对象。
- * @param version 输出记录版本。
- * @param payload 输出负载缓冲区。
- * @param payload_capacity 缓冲区容量（byte）。
- * @param payload_size 输出实际负载长度（byte）。
- * @retval SYSTEM_RECORD_STORE_OK 找到并复制记录。
- * @retval SYSTEM_RECORD_STORE_EMPTY 没有有效记录。
- * @retval SYSTEM_RECORD_STORE_BUFFER_TOO_SMALL 缓冲区不足。
- * @retval SYSTEM_RECORD_STORE_FLASH_ERROR Flash 读取失败。
- * @note payload 指向调用方拥有的输出缓冲区；本函数只在返回前写入。
+ * @param store_h 已成功初始化的记录存储对象。
+ * @param version 非空输出指针；成功时写入记录版本。
+ * @param payload 调用方拥有的输出缓冲区；容量由 payload_capacity 指定。
+ * @param payload_capacity 输出缓冲区容量，单位 byte。
+ * @param payload_size 非空输出指针；成功时写入实际负载长度，单位 byte。
+ * @retval SYSTEM_RECORD_STORE_OK 找到最新有效记录并完整复制。
+ * @retval SYSTEM_RECORD_STORE_EMPTY 两页中都没有有效记录。
+ * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT store_h 未初始化，或任一输出指针为 NULL。
+ * @retval SYSTEM_RECORD_STORE_INVALID_RECORD 扫描后再次读取时记录头或 CRC 失效。
+ * @retval SYSTEM_RECORD_STORE_BUFFER_TOO_SMALL payload_capacity 小于记录负载长度。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR 扫描或最终读取失败。
+ * @pre store_h 已初始化，version、payload、payload_size 非 NULL。
+ * @post 仅成功时写入 version、payload 和 payload_size；失败时不保证输出内容，
+ *       且不修改 store_h。负载不追加 NUL 终止符。
+ * @note 每次调用都会重新扫描 Flash 槽位，复杂度为 O(2 * slot_count)。不分配动态内存；
+ *       必须与 Sys_RecordStore_Append 串行使用，避免读取到写入中的槽位。
  */
 system_record_store_status_t Sys_RecordStore_LoadLatest(
   const system_record_store_t *store_h,
@@ -105,15 +118,20 @@ system_record_store_status_t Sys_RecordStore_LoadLatest(
 
 /**
  * @brief 追加一条记录。
- * @param store_h 已初始化对象。
- * @param version 应用记录版本。
- * @param payload 负载数据。
- * @param payload_size 负载长度，范围 1..SYSTEM_RECORD_STORE_PAYLOAD_CAPACITY。
- * @retval SYSTEM_RECORD_STORE_OK 写入和回读校验成功。
- * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT 参数非法。
- * @retval SYSTEM_RECORD_STORE_FLASH_ERROR Flash 擦除、写入或校验失败。
- * @note 只允许单一写者从任务上下文调用。
- * @note payload 在调用期间只读，不需要保持到函数返回之后。
+ * @param store_h 已成功初始化且由单一写者拥有的记录存储对象。
+ * @param version 应用记录版本，原样写入记录头。
+ * @param payload 非空只读负载缓冲区，只在本次调用期间访问。
+ * @param payload_size 负载长度，单位 byte，范围 1..SYSTEM_RECORD_STORE_PAYLOAD_CAPACITY。
+ * @retval SYSTEM_RECORD_STORE_OK 写入、回读比较和序号推进均成功。
+ * @retval SYSTEM_RECORD_STORE_INVALID_ARGUMENT store_h 未初始化，或 payload/payload_size 非法。
+ * @retval SYSTEM_RECORD_STORE_FLASH_ERROR 目标页擦除、槽位写入或回读校验失败。
+ * @pre store_h 已初始化；payload 容量至少为 payload_size；同一对象没有并发写者。
+ * @post 成功时 next_slot 前进一格，next_sequence 前进一次（UINT32_MAX 后回到 1）。
+ *       写入或回读失败时跳过故障槽且不推进序号；若故障槽已是页尾，next_slot 保持页尾。
+ *       页满时先擦除并切换另一页。
+ * @note 只允许单一写者从任务上下文调用；payload 不必在函数返回后继续有效。
+ *       不分配动态内存，Flash 操作可能阻塞。
+ * @warning 擦除/写入期间掉电可能使新槽位无效；扫描会忽略坏槽并从上一有效记录恢复。
  */
 system_record_store_status_t Sys_RecordStore_Append(
   system_record_store_t *store_h,
