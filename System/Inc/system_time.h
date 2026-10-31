@@ -14,6 +14,7 @@
 #ifndef LAYERED_EMBEDDED_C_SYSTEM_TIME_H
 #define LAYERED_EMBEDDED_C_SYSTEM_TIME_H
 
+#include "system_time_window.h"
 #include <stdint.h>
 
 #if defined(__GNUC__) || defined(__clang__)

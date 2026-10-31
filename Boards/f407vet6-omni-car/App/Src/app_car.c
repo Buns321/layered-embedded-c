@@ -23,6 +23,7 @@
 #include "system_critical.h"
 #include "system_log.h"
 #include "system_math.h"
+#include "system_time_window.h"
 #include <assert.h>
 #include <math.h>
 #include <stdbool.h>
@@ -217,19 +218,6 @@ static uint16_t app_car_ain2_pin(uint8_t wheel) {
     case 3U: return APP_CAR_AIN2_D_PIN;
     default: return APP_CAR_AIN2_A_PIN;
   }
-}
-
-/**
- * @brief 用无符号回绕安全方式判断持续时间是否到期。
- * @param now_ms 当前单调毫秒时间戳。
- * @param start_ms 起始单调毫秒时间戳，必须早于或等于 now_ms 的一个回绕周期内。
- * @param duration_ms 持续时间，单位 ms；应远小于 2^31。
- * @retval true 无符号差值 now_ms - start_ms 已达到 duration_ms。
- * @retval false 尚未达到持续时间。
- * @note 纯函数；依赖 uint32 模运算处理单次 49.7 天回绕，不修改状态。
- */
-static bool app_car_elapsed(uint32_t now_ms, uint32_t start_ms, uint32_t duration_ms) {
-  return (uint32_t)(now_ms - start_ms) >= duration_ms;
 }
 
 /**
@@ -473,7 +461,7 @@ static void app_car_update_boot_state(uint32_t now_ms) {
         app_car_enter_state(APP_CAR_BOOT_WAIT_STILL, now_ms);
         SYS_LOG_INFO("IMU", "rate configured to 10 Hz");
       } else if (
-        app_car_elapsed(
+        Sys_Time_HasElapsedMs(
           now_ms,
           s_car.state_started_ms,
           APP_CAR_IMU_CONFIG_TIMEOUT_MS
@@ -508,7 +496,7 @@ static void app_car_update_boot_state(uint32_t now_ms) {
           s_car.still_since_ms = now_ms;
           s_car.still_tracking = true;
         } else if (
-          app_car_elapsed(
+          Sys_Time_HasElapsedMs(
             now_ms,
             s_car.still_since_ms,
             APP_CAR_IMU_STILL_CONFIRM_MS
@@ -524,7 +512,7 @@ static void app_car_update_boot_state(uint32_t now_ms) {
 
       if (
         s_car.boot_state == APP_CAR_BOOT_WAIT_STILL &&
-        app_car_elapsed(
+        Sys_Time_HasElapsedMs(
           now_ms,
           s_car.state_started_ms,
           APP_CAR_IMU_STILL_TIMEOUT_MS
@@ -544,7 +532,7 @@ static void app_car_update_boot_state(uint32_t now_ms) {
         s_car.zero_done_ms = now_ms;
         app_car_enter_state(APP_CAR_BOOT_WAIT_ZERO_FRAME, now_ms);
       } else if (
-        app_car_elapsed(
+        Sys_Time_HasElapsedMs(
           now_ms,
           s_car.state_started_ms,
           APP_CAR_IMU_CONFIG_TIMEOUT_MS
@@ -572,7 +560,7 @@ static void app_car_update_boot_state(uint32_t now_ms) {
         app_car_enter_state(APP_CAR_BOOT_READY, now_ms);
         SYS_LOG_INFO("IMU", "sensor zero verified, car ready");
       } else if (
-        app_car_elapsed(
+        Sys_Time_HasElapsedMs(
           now_ms,
           s_car.state_started_ms,
           APP_CAR_IMU_ZERO_TIMEOUT_MS

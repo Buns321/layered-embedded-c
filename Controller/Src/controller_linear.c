@@ -11,6 +11,7 @@
 #include "controller_linear.h"
 #include "system_math.h"
 #include <assert.h>
+#include <stddef.h>
 
 /**
  * @brief 按线性比例更新输出并处理饱和。

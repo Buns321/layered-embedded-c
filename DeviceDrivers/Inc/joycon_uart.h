@@ -13,13 +13,12 @@
 #define LAYERED_EMBEDDED_C_JOYCON_UART_H
 
 #include "joycon_base.h"
+#include "system_byte_ring.h"
 #include "uart_base.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 #define JOYCON_UART_RX_BUFFER_SIZE 256u
-#define JOYCON_UART_RX_INDEX_MASK \
-  ((uint16_t)(JOYCON_UART_RX_BUFFER_SIZE - 1u))
 #define JOYCON_UART_FRAME_CAPACITY 64u
 
 _Static_assert(
@@ -29,8 +28,8 @@ _Static_assert(
 
 /**
  * @brief JoyCon UART 设备对象。
- * @note UART 中断只把单字节写入 256 字节环形队列（实际可存 255 字节），完整帧解析由 Process 在任务上下文完成。
- * @note frame_text 容量为 64 字节且不保存结束符；只允许任务上下文访问。rx_buffer 由 ISR 单写、任务单读。
+ * @note UART 中断只把单字节写入 rx_ring（实际可存 255 字节），完整帧解析由 Process 在任务上下文完成。
+ * @note frame_text 容量为 64 字节且不保存结束符；只允许任务上下文访问。
  * @note 对象不允许复制；uart_h 与 base.name 都是非 owning 指针，生命周期必须覆盖对象及 UART 回调注册期。
  */
 typedef struct joycon_uart_s {
@@ -39,8 +38,7 @@ typedef struct joycon_uart_s {
 
   uint8_t rx_byte;
   uint8_t rx_buffer[JOYCON_UART_RX_BUFFER_SIZE];
-  volatile uint16_t rx_write;
-  volatile uint16_t rx_read;
+  sys_byte_ring_t rx_ring;
 
   char frame_text[JOYCON_UART_FRAME_CAPACITY];
   uint16_t frame_length;
@@ -52,7 +50,6 @@ typedef struct joycon_uart_s {
 
   volatile bool     rx_rearm_pending;
   volatile uint32_t rx_byte_count;
-  volatile uint32_t rx_overflow_count;
   volatile uint32_t uart_error_count;
   volatile uint32_t rearm_error_count;
   volatile uint32_t invalid_frame_count;
@@ -89,11 +86,11 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h);
 
 /**
  * @brief 处理待重挂接收并解析环形队列中的全部字节。
- * @param joycon_h 已 Start 的对象；rx_read 只能由本任务推进。
+ * @param joycon_h 已 Start 的对象；rx_ring 只由本任务消费。
  * @param now_ms 当前单调毫秒时间戳；同一轮完成的一帧使用该时间。
  * @pre joycon_h 非空且已 Start；仅由单一 UART 任务调用，不得与 FeedByte 或其他 Process 并发。
- * @post rx_read 追上 rx_write，队列字节按序送入解析器；可能发布新快照并更新计数；如有待重挂则重试。
- * @note 不等待数据，队列为空时立即返回；ISR 只写 rx_write，任务只写 rx_read。
+ * @post rx_ring 被消费到空，队列字节按序送入解析器；可能发布新快照并更新计数；如有待重挂则重试。
+ * @note 不等待数据，队列为空时立即返回；ISR 只生产，任务只消费。
  * @warning 同一批字节共享调用时的 now_ms，不能用于逐字节计时。
  */
 void Dev_JoyCon_UART_Process(

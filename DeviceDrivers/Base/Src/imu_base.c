@@ -9,33 +9,12 @@
  */
 
 #include "imu_base.h"
+#include "system_angle.h"
 #include "system_critical.h"
 #include "system_math.h"
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
-
-/**
- * @brief 把有限角度换算到等价的 [-180, 180] 度区间。
- * @param angle_deg 待归一化角度，单位 deg；必须为有限值。
- * @return 与输入相差 360 deg 整数倍的等价角度；正负 180 deg 原样保留。
- * @pre angle_deg 必须有限；无穷值会使循环无法结束，NaN 会原样传播。
- * @post 不修改全局状态；纯函数，可从任意上下文安全并发调用。
- * @note 私有辅助函数，不分配内存；大角度通过逐次减 360 deg 收敛。
- * @warning 调用方必须先完成有限性检查，不能把传感器 NaN/Inf 直接传入。
- */
-static float imu_wrap_deg(float angle_deg) {
-  float wrapped = angle_deg;
-
-  while (wrapped > 180.0f) {
-    wrapped -= 360.0f;
-  }
-  while (wrapped < -180.0f) {
-    wrapped += 360.0f;
-  }
-
-  return wrapped;
-}
 
 /**
  * @brief 按通道数组下标定位 IMU 样本中的浮点字段。
@@ -149,7 +128,12 @@ static bool imu_merge_frame(
     }
 
     if (channel == IMU_CHANNEL_INDEX_YAW) {
-      value = imu_wrap_deg(value - yaw_offset_deg);
+      float wrapped_deg = 0.0f;
+      if (!Sys_Angle_WrapDegrees(value - yaw_offset_deg, &wrapped_deg)) {
+        sample->valid_mask &= ~mask;
+        continue;
+      }
+      value = wrapped_deg;
     }
 
     float *value_slot = imu_value_slot(sample, channel);
@@ -499,10 +483,14 @@ void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h) {
   Sys_Critical_Enter();
 
   if ((imu_h->sample.valid_mask & IMU_CHANNEL_YAW) != 0u) {
-    imu_h->yaw_offset_deg = imu_wrap_deg(
-      imu_h->yaw_offset_deg + imu_h->sample.yaw_deg
-    );
-    imu_h->sample.yaw_deg = 0.0f;
+    float wrapped_deg = 0.0f;
+    if (Sys_Angle_WrapDegrees(
+          imu_h->yaw_offset_deg + imu_h->sample.yaw_deg,
+          &wrapped_deg
+        )) {
+      imu_h->yaw_offset_deg = wrapped_deg;
+      imu_h->sample.yaw_deg = 0.0f;
+    }
   }
 
   Sys_Critical_Exit();

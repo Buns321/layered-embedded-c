@@ -11,6 +11,7 @@
 #include "controller_compose.h"
 #include "system_math.h"
 #include <assert.h>
+#include <stddef.h>
 
 /**
  * @brief 用相同输入执行全部子控制律并求输出和。

@@ -10,6 +10,7 @@
 
 #include "mpu6050_i2c.h"
 #include "system_critical.h"
+#include "system_time_window.h"
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
@@ -143,19 +144,6 @@ static platform_status_t mpu6050_read_reg(
   uint8_t *value
 ) {
   return mpu6050_read_regs(mpu6050_i2c_h, reg, value, 1u);
-}
-
-/**
- * @brief 按无符号回绕语义判断毫秒截止时间是否到达。
- * @param now_ms 当前单调毫秒时间戳，单位 ms。
- * @param deadline_ms 目标毫秒时间戳，单位 ms；须与 now_ms 使用同一时基。
- * @retval true (int32_t)(now_ms - deadline_ms) >= 0，即已经到达截止时间。
- * @retval false 距离截止时间仍小于半个 uint32_t 计数范围。
- * @post 纯函数；不修改参数、不访问硬件，也不产生错误快照。
- * @note 依赖无符号差值时有符号转换实现定义行为；两个时间戳应保持在 INT32_MAX 毫秒以内。
- */
-static bool mpu6050_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
-  return (int32_t)(now_ms - deadline_ms) >= 0;
 }
 
 /**
@@ -825,7 +813,7 @@ static void mpu6050_process_calibration(
 ) {
   assert(mpu6050_i2c_h);
 
-  if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->next_sample_ms)) {
+  if (!Sys_Time_HasReachedMs(now_ms, mpu6050_i2c_h->next_sample_ms)) {
     return;
   }
 
@@ -876,7 +864,7 @@ static void mpu6050_process_ready(
 ) {
   assert(mpu6050_i2c_h);
 
-  if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->next_sample_ms)) {
+  if (!Sys_Time_HasReachedMs(now_ms, mpu6050_i2c_h->next_sample_ms)) {
     return;
   }
 
@@ -953,7 +941,7 @@ static void mpu6050_process(imu_base_t *imu_h, uint32_t now_ms) {
       break;
 
     case MPU6050_STATE_RESET_WAIT:
-      if (!mpu6050_time_reached(now_ms, mpu6050_i2c_h->state_deadline_ms)) {
+      if (!Sys_Time_HasReachedMs(now_ms, mpu6050_i2c_h->state_deadline_ms)) {
         return;
       }
       if (mpu6050_configure(mpu6050_i2c_h) != PLATFORM_STATUS_OK) {

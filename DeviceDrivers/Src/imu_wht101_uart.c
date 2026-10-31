@@ -9,6 +9,7 @@
  */
 
 #include "imu_wht101_uart.h"
+#include "system_time_window.h"
 #include <assert.h>
 #include <stdint.h>
 
@@ -34,7 +35,7 @@ static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms);
  * @param uart_h 触发事件的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 imu_wht101_uart_t 指针。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_byte_count 递增；队列未满时写入并推进 rx_write，满时递增 rx_overflow_count 并请求重同步。
+ * @post rx_byte_count 递增；字节环未满时写入，满时递增自身丢弃计数并请求重同步。
  * @note 不在 ISR 中解析帧；随后尝试重新挂接接收。
  * @warning 重挂失败会触发 assert；队列溢出丢弃当前字节。
  */
@@ -68,7 +69,7 @@ static void imu_wht101_get_status(
 
   uint64_t error_count =
     (uint64_t)imu_wht101_uart_h->rx_error_count +
-    (uint64_t)imu_wht101_uart_h->rx_overflow_count +
+    (uint64_t)Sys_ByteRing_GetDroppedBytes(&imu_wht101_uart_h->rx_ring) +
     (uint64_t)imu_wht101_uart_h->rx_checksum_error_count;
 
   if (error_count > UINT32_MAX) {
@@ -225,10 +226,12 @@ void Dev_IMU_WHT101_UART_Init(
   imu_h->config_failed           = false;
   imu_h->rate_pending_value      = 0u;
   imu_h->rx_byte                 = 0;
-  imu_h->rx_write                = 0;
-  imu_h->rx_read                 = 0;
+  assert(Sys_ByteRing_Init(
+    &imu_h->rx_ring,
+    imu_h->rx_buffer,
+    sizeof(imu_h->rx_buffer)
+  ));
   imu_h->rx_byte_count           = 0;
-  imu_h->rx_overflow_count       = 0;
   imu_h->rx_error_count          = 0;
   imu_h->rx_checksum_error_count = 0;
   imu_h->rx_resync_requested     = false;
@@ -258,7 +261,7 @@ static void imu_wht101_rearm_receive(imu_wht101_uart_t *imu_wht101_uart_h) {
  * @param uart_h 触发事件的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 imu_wht101_uart_t 指针。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_byte_count 递增；队列未满时写入并推进 rx_write，满时递增 rx_overflow_count 并请求重同步。
+ * @post rx_byte_count 递增；字节环未满时写入，满时递增自身丢弃计数并请求重同步。
  * @note 不在 ISR 中解析帧；随后尝试重新挂接接收。
  * @warning 重挂失败会触发 assert；队列溢出丢弃当前字节。
  */
@@ -269,15 +272,11 @@ static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context) {
 
   imu_wht101_uart_h->rx_byte_count++;
 
-  uint16_t next_write =
-    (imu_wht101_uart_h->rx_write + 1u) & IMU_WHT101_RX_INDEX_MASK;
-
-  if (next_write == imu_wht101_uart_h->rx_read) {
-    imu_wht101_uart_h->rx_overflow_count++;
+  if (!Sys_ByteRing_PushFromISR(
+        &imu_wht101_uart_h->rx_ring,
+        imu_wht101_uart_h->rx_byte
+      )) {
     imu_wht101_uart_h->rx_resync_requested = true;
-  } else {
-    imu_wht101_uart_h->rx_buffer[imu_wht101_uart_h->rx_write] = imu_wht101_uart_h->rx_byte;
-    imu_wht101_uart_h->rx_write = next_write;
   }
 
   imu_wht101_rearm_receive(imu_wht101_uart_h);
@@ -321,18 +320,6 @@ static void imu_wht101_apply_resync(imu_wht101_uart_t *imu_wht101_uart_h) {
   imu_wht101_uart_h->state = IMU_WHT101_STATE_SYNCING_1;
   imu_wht101_uart_h->frame_idx = 0;
   imu_wht101_uart_h->rx_resync_requested = false;
-}
-
-/**
- * @brief 以有符号差值判断毫秒截止时间是否已到达。
- * @param now_ms 当前单调毫秒时间戳，单位 ms。
- * @param deadline_ms 目标毫秒时间戳，单位 ms；由 now_ms + 延迟计算并使用无符号回绕。
- * @return now_ms 等于或晚于 deadline_ms 时返回 true，否则返回 false。
- * @note 使用 int32 差值，适用于两次时间戳相差不超过约 24.8 天的单调时钟。
- * @warning 超过半个计数周期时判断无意义；调用方必须保证 now_ms 单调。
- */
-static bool imu_wht101_time_reached(uint32_t now_ms, uint32_t deadline_ms) {
-  return (int32_t)(now_ms - deadline_ms) >= 0;
 }
 
 /**
@@ -424,7 +411,7 @@ static void imu_wht101_config_process(
 
   if (
     imu_wht101_uart_h->config_state == IMU_WHT101_CONFIG_IDLE ||
-    !imu_wht101_time_reached(now_ms, imu_wht101_uart_h->config_deadline_ms)
+    !Sys_Time_HasReachedMs(now_ms, imu_wht101_uart_h->config_deadline_ms)
   ) {
     imu_wht101_config_start_next(imu_wht101_uart_h, now_ms);
     return;
@@ -523,12 +510,10 @@ static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms) {
   assert(imu_h);
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
 
-  while (imu_wht101_uart_h->rx_read != imu_wht101_uart_h->rx_write) {
+  uint8_t byte = 0u;
+  while (Sys_ByteRing_Pop(&imu_wht101_uart_h->rx_ring, &byte)) {
     imu_wht101_apply_resync(imu_wht101_uart_h);
 
-    uint8_t byte = imu_wht101_uart_h->rx_buffer[imu_wht101_uart_h->rx_read];
-    imu_wht101_uart_h->rx_read =
-      (imu_wht101_uart_h->rx_read + 1u) & IMU_WHT101_RX_INDEX_MASK;
     Dev_IMU_WHT101_UART_FeedByte(imu_wht101_uart_h, byte, now_ms);
   }
 

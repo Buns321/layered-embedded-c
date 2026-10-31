@@ -293,7 +293,7 @@ static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
  * @param uart_h 触发事件的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 joycon_uart_t 指针，由 UART 后端原样回传。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_byte_count 递增；队列未满时写入一字节并推进 rx_write，满时只递增 rx_overflow_count；随后尝试重挂接收。
+ * @post rx_byte_count 递增；字节环未满时写入一字节，满时递增自身的丢弃计数；随后尝试重挂接收。
  * @note 不在 ISR 中解析 ASCII，也不调用临界区或阻塞 API。
  * @warning 队列实际容量为 255 字节；溢出字节被丢弃，错误仅通过计数暴露。
  */
@@ -307,15 +307,7 @@ static void joycon_rx_complete_cb(
 
   joycon_h->rx_byte_count++;
 
-  uint16_t next_write =
-    (joycon_h->rx_write + 1u) & JOYCON_UART_RX_INDEX_MASK;
-
-  if (next_write == joycon_h->rx_read) {
-    joycon_h->rx_overflow_count++;
-  } else {
-    joycon_h->rx_buffer[joycon_h->rx_write] = joycon_h->rx_byte;
-    joycon_h->rx_write = next_write;
-  }
+  (void)Sys_ByteRing_PushFromISR(&joycon_h->rx_ring, joycon_h->rx_byte);
 
   joycon_rearm_receive(joycon_h);
 }
@@ -359,6 +351,11 @@ void Dev_JoyCon_UART_Init(
   assert(joycon_h && name && uart_h);
 
   (void)memset(joycon_h, 0, sizeof(*joycon_h));
+  assert(Sys_ByteRing_Init(
+    &joycon_h->rx_ring,
+    joycon_h->rx_buffer,
+    sizeof(joycon_h->rx_buffer)
+  ));
   Dev_JoyCon_Base_Init(&joycon_h->base, name, &joycon_ops_uart);
   joycon_h->uart_h = uart_h;
 }
@@ -395,11 +392,11 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
 
 /**
  * @brief 处理待重挂接收并解析环形队列中的全部字节。
- * @param joycon_h 已 Start 的对象；rx_read 只能由本任务推进。
+ * @param joycon_h 已 Start 的对象；rx_ring 只由本任务消费。
  * @param now_ms 当前单调毫秒时间戳；同一轮完成的一帧使用该时间。
  * @pre joycon_h 非空且已 Start；仅由单一 UART 任务调用，不得与 FeedByte 或其他 Process 并发。
- * @post rx_read 追上 rx_write，队列字节按序送入解析器；可能发布新快照并更新计数；如有待重挂则重试。
- * @note 不等待数据，队列为空时立即返回；ISR 只写 rx_write，任务只写 rx_read。
+ * @post rx_ring 被消费到空，队列字节按序送入解析器；可能发布新快照并更新计数；如有待重挂则重试。
+ * @note 不等待数据，队列为空时立即返回；ISR 只生产，任务只消费。
  * @warning 同一批字节共享调用时的 now_ms，不能用于逐字节计时。
  */
 void Dev_JoyCon_UART_Process(
@@ -412,10 +409,8 @@ void Dev_JoyCon_UART_Process(
     joycon_rearm_receive(joycon_h);
   }
 
-  while (joycon_h->rx_read != joycon_h->rx_write) {
-    uint8_t byte = joycon_h->rx_buffer[joycon_h->rx_read];
-    joycon_h->rx_read =
-      (joycon_h->rx_read + 1u) & JOYCON_UART_RX_INDEX_MASK;
+  uint8_t byte = 0u;
+  while (Sys_ByteRing_Pop(&joycon_h->rx_ring, &byte)) {
     Dev_JoyCon_UART_FeedByte(joycon_h, byte, now_ms);
   }
 }
@@ -555,7 +550,8 @@ static void dev_joycon_uart_getstatusop(
     .received_bytes = joycon_uart_h->rx_byte_count,
     .parsed_frames = joycon_uart_h->parsed_frame_count,
     .invalid_frames = joycon_uart_h->invalid_frame_count,
-    .rx_overflow_count = joycon_uart_h->rx_overflow_count,
+    .rx_overflow_count =
+      Sys_ByteRing_GetDroppedBytes(&joycon_uart_h->rx_ring),
     .uart_error_count = joycon_uart_h->uart_error_count,
     .rearm_error_count = joycon_uart_h->rearm_error_count,
     .last_frame_ms = joycon_uart_h->input.time_ms,

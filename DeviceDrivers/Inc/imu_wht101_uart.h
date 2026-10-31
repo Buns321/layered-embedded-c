@@ -13,6 +13,7 @@
 #define LAYERED_EMBEDDED_C_IMU_WHT101_UART_H
 
 #include "imu_base.h"
+#include "system_byte_ring.h"
 #include "uart_base.h"
 #include <stdbool.h>
 
@@ -83,13 +84,10 @@ typedef enum imu_wht101_config_state_e {
 #define IMU_WHT101_CALIYAW_ZERO    0x0000
 
 #define IMU_WHT101_RX_BUFFER_SIZE 256u
-#define IMU_WHT101_RX_INDEX_MASK \
-  ((uint16_t)(IMU_WHT101_RX_BUFFER_SIZE - 1u))
 
 /**
  * @brief WHT101 对象。
- * @note rx_buffer 是 256 字节单字节中断接收环形队列（实际可存 255 字节）；
- *       由 ISR 单写 rx_write、任务单读 rx_read，解析在 process 中完成。
+ * @note rx_ring 使用 256 字节中断单写、任务单读环形队列，解析在 process 中完成。
  * @note frame、frame_idx、state、config_state 和 pending 标志只允许任务上下文访问。
  * @note 置零和输出速率配置通过 zero_pending / rate_pending 非阻塞推进；同时请求时置零优先。
  * @note uart_h 与 imu_base.filter_h 都是非 owning 指针，生命周期必须覆盖对象和回调注册期。
@@ -114,11 +112,9 @@ typedef struct imu_wht101_uart_s {
 
   uint8_t rx_byte;
   uint8_t rx_buffer[IMU_WHT101_RX_BUFFER_SIZE];
-  volatile uint16_t rx_write;
-  volatile uint16_t rx_read;
+  sys_byte_ring_t rx_ring;
 
   volatile uint32_t rx_byte_count;
-  volatile uint32_t rx_overflow_count;
   volatile uint32_t rx_error_count;
   volatile uint32_t rx_checksum_error_count;
   volatile bool rx_resync_requested;

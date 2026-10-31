@@ -11,6 +11,7 @@
 #include "telemetry_base.h"
 #include "system_math.h"
 #include <assert.h>
+#include <stddef.h>
 
 /**
  * @brief 绑定遥测名称与具体协议操作表。
