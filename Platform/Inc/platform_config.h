@@ -146,14 +146,6 @@
 #define PLATFORM_ENABLE_RNG 0
 #endif
 
-#ifndef PLATFORM_ENABLE_IWDG
-#define PLATFORM_ENABLE_IWDG 0
-#endif
-
-#ifndef PLATFORM_ENABLE_WWDG
-#define PLATFORM_ENABLE_WWDG 0
-#endif
-
 #if PLATFORM_ENABLE_PWM_TIM1 && PLATFORM_ENABLE_ENCODER_TIM1
 #error "TIM1 cannot be enabled as both PWM and encoder"
 #endif

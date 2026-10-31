@@ -3,9 +3,7 @@ param(
   [string]$PortName,
 
   [ValidateRange(1, 60)]
-  [int]$TimeoutSeconds = 8,
-
-  [switch]$SkipResetTests
+  [int]$TimeoutSeconds = 8
 )
 
 Set-StrictMode -Version Latest
@@ -138,36 +136,6 @@ try {
     Write-Host "Hardware suite: FAIL (no summary)"
   }
 
-  if (-not $SkipResetTests) {
-    $serial.DiscardInBuffer()
-    $serial.Write("IWDG`r`n")
-    $iwdg = Read-Until `
-      -Port $serial `
-      -Pattern "F103 READY" `
-      -TimeoutMs ($TimeoutSeconds * 1000)
-    if ($iwdg -match "F103 READY iwdg=1 wwdg=0") {
-      Write-Host "IWDG reset: PASS"
-    }
-    else {
-      $failures.Add("IWDG reset flag was not observed.") | Out-Null
-      Write-Host "IWDG reset: FAIL"
-    }
-
-    Start-Sleep -Milliseconds 250
-    $serial.DiscardInBuffer()
-    $serial.Write("WWDG`r`n")
-    $wwdg = Read-Until `
-      -Port $serial `
-      -Pattern "F103 READY" `
-      -TimeoutMs ($TimeoutSeconds * 1000)
-    if ($wwdg -match "F103 READY iwdg=0 wwdg=1") {
-      Write-Host "WWDG reset: PASS"
-    }
-    else {
-      $failures.Add("WWDG reset flag was not observed.") | Out-Null
-      Write-Host "WWDG reset: FAIL"
-    }
-  }
 }
 finally {
   if ($serial.IsOpen) {
