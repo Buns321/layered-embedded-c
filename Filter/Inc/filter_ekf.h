@@ -88,7 +88,7 @@ typedef struct filter_ekf_state_s {
   float dt_s;
   /** @brief 已完成的核心更新次数。 */
   uint32_t update_count;
-  /** @brief 当前姿态是否可用于消费。 */
+  /** @brief 当前姿态是否可用于消费；占位核心发布时固定为 false。 */
   bool valid;
   /** @brief true 表示姿态由未实现的占位核心发布。 */
   bool placeholder;

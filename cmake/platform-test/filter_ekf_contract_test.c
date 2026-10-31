@@ -80,8 +80,8 @@ static filter_sample_t make_complete_input(uint32_t time_ms) {
 
 /**
  * @brief 验证 EKF 占位姿态输出与时间步钳制。
- * @post 成功返回时，首次完整输入产生有效的横滚、俯仰和偏航占位输出，状态为
- *       valid/placeholder、更新计数为 1、四元数为单位四元数，dt 等于最小周期
+ * @post 成功返回时，首次完整输入产生占位姿态但清除姿态有效位，状态为
+ *       invalid/placeholder、更新计数为 1、四元数为单位四元数，dt 等于最小周期
  *       0.001 s；120 ms 的第二次输入使 dt 变为 0.020 s。
  * @warning 任一 assert 失败都会终止测试进程，不返回可恢复的错误状态。
  * @note 测试对象位于栈上，返回后失效；EKF 核心仍为占位实现，结果不可用于控制。
@@ -93,14 +93,14 @@ static void test_placeholder_and_time(void) {
   filter_sample_t input = make_complete_input(100u);
   filter_sample_t output;
   Filter_Base_Update(&ekf.filter_base, &input, &output);
-  assert((output.valid_mask & 0x07u) == 0x07u);
+  assert((output.valid_mask & 0x07u) == 0u);
   assert(floats_near(output.value[0], 0.0f, 1e-6f));
   assert(floats_near(output.value[1], 0.0f, 1e-6f));
   assert(floats_near(output.value[2], 0.0f, 1e-6f));
 
   filter_ekf_state_t state;
   Filter_Ekf_GetState(&ekf, &state);
-  assert(state.valid);
+  assert(!state.valid);
   assert(state.placeholder);
   assert(state.update_count == 1u);
   assert(floats_near(state.dt_s, s_default_config.min_dt_s, 1e-6f));

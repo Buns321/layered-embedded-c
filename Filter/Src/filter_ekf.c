@@ -240,7 +240,7 @@ static bool filter_ekf_inputframeisusable(const filter_sample_t *input) {
  * @param accel_mps2 三轴加速度，单位 m/s²；当前占位核心不读取。
  * @param dt_s 本次融合时间步，单位 s；已由调用方夹紧到配置范围。
  * @pre 输入通道完整且配置已应用；当前函数是占位实现。
- * @post 发布单位四元数、零姿态，state.placeholder 和 state.valid 均为 true；不推进协方差。
+ * @post 发布单位四元数、零姿态并令 state.placeholder 为 true、state.valid 为 false；不推进协方差。
  * @warning 本核心未实现预测/校正，姿态不可用于闭环控制。
  * @note 不分配动态内存；后续替换核心时必须维持状态单位契约。
  */
@@ -264,7 +264,7 @@ static void filter_ekf_coreupdate(
   filter_h->state.pitch_rad = 0.0f;
   filter_h->state.yaw_rad = 0.0f;
   filter_h->state.placeholder = true;
-  filter_h->state.valid = true;
+  filter_h->state.valid = false;
 }
 
 /**
@@ -272,7 +272,7 @@ static void filter_ekf_coreupdate(
  * @param filter_h 已初始化的 EKF 对象，不能为 NULL。
  * @param output 调用方拥有的输出样本，base 已预复制 input；不能为 NULL。
  * @pre state.roll_rad、pitch_rad、yaw_rad 已由核心更新。
- * @post 通道 0..2 分别写入 yaw/roll/pitch（deg）；state.valid 为 true 时置有效位，否则清除。
+ * @post 通道 0..2 分别写入 yaw/roll/pitch（deg）；仅 state.valid 为 true 且非占位时置有效位。
  * @note 内部角度为 rad，输出边界转为 deg；不修改角速度通道或时间戳，不分配动态内存。
  */
 static void filter_ekf_publishattitude(
@@ -295,7 +295,7 @@ static void filter_ekf_publishattitude(
   output->value[FILTER_EKF_IMU_PITCH_CHANNEL] =
     filter_h->state.pitch_rad * FILTER_EKF_RAD_TO_DEG;
 
-  if (filter_h->state.valid) {
+  if (filter_h->state.valid && !filter_h->state.placeholder) {
     output->valid_mask |= yaw_mask | roll_mask | pitch_mask;
   } else {
     output->valid_mask &= ~(yaw_mask | roll_mask | pitch_mask);
