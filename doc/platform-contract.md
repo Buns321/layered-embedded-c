@@ -133,7 +133,7 @@ GPIO 写、PWM 比较值写入等不返回 HAL 状态的快速路径可以保持
 | converter | ADC、DAC | start/stop、DMA、完成事件、缓冲区 |
 | timer | PWM、Encoder | start/stop、计数/比较、位宽查询 |
 | registry | GPIO、EXTI | 静态身份、直接操作、单所有者回调 |
-| service | RTC、Flash、CRC、RNG、IWDG、WWDG | 参数校验、能力、错误、状态机 |
+| service | RTC、Flash、CRC、RNG | 参数校验、能力、错误、状态机 |
 
 模块的具体事件内容可以不同，但状态、校验、回调注册、错误和生命周期必须
 遵循本文规则。

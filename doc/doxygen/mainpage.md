@@ -29,8 +29,8 @@ HAL / CMSIS / FreeRTOS
 - **Controller**：轮级 SISO 控制律（线性、PID、compose）。
 - **Policy**：底盘级 MIMO 运动策略（当前为 omni 运动学）。
 - **Filter**：固定容量多通道滤波、IMU 六轴校正与七状态 EKF 接口壳层。
-- **System**：数学、检查、限幅、延时、临界区、Fault、看门狗、RTT 日志、
-  DWT 时间和双页 Flash 记录存储。
+- **System**：数学、检查、限幅、延时、临界区、Fault、RTT 日志、DWT 时间和
+  双页 Flash 记录存储。
 - **RTOS**：F407 运动控制任务；F103 速通任务一的 100 Hz ImuEkfTask 和
   50 Hz VofaTask。
 - **App**：F407 四轮小车与 F103 MPU6050 自动标定、JustFloat 和参数入口。

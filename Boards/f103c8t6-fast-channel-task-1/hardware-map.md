@@ -113,7 +113,7 @@ I/O -> PA0
 
 ## 7. USART1 链路
 
-USART1 使用单一物理回调所有者：
+USART1 使用共享 `uart_link_t` 作为单一物理回调所有者：
 
 - TX：32 通道 JustFloat，DMA1 Channel 4
 - RX：单字节中断，写入 256 字节环形缓冲

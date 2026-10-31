@@ -30,7 +30,7 @@
 | `App/` | 本板业务入口 |
 | `RTOS/` | 本板任务入口 |
 | `cmake/` | ARM GCC 工具链与 CubeMX 构建描述 |
-| `STM32F407XX_FLASH.ld` | 链接脚本 |
+| `STM32F407xx_FLASH.ld` | 链接脚本 |
 | `startup_stm32f407xx.s` | 启动文件 |
 
 共享 System、Platform F4、DeviceDrivers、Controller、Policy、Filter 和
@@ -51,7 +51,7 @@
 - 每个外设生成独立的 `MX_*_Init()`。
 
 当前 STM32CubeMX 6.18.1 对 CRC/RNG 这类无引脚 IP 可能回退为保留已有源码。
-重新生成后必须检查 `stm32f4xx_hal_conf.h` 仍启用 CRC/RNG/IWDG/WWDG，且板级
+重新生成后必须检查 `stm32f4xx_hal_conf.h` 仍启用 CRC/RNG，且板级
 `cmake/stm32cubemx/CMakeLists.txt` 仍包含对应 HAL 源文件和 `Core/Src/crc.c`、
 `Core/Src/rng.c`。
 

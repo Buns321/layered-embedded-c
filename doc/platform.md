@@ -25,8 +25,8 @@ Platform 负责运行期操作：
 - 计数器、状态和错误快照读取。
 - HAL 回调到 Platform 回调的分发。
 
-除运行期启动不可逆的 IWDG/WWDG 外，Platform 实现不得调用 `HAL_*_Init()`、
-`HAL_GPIO_Init()`、`HAL_NVIC_SetPriority()` 或 `__HAL_RCC_*_CLK_ENABLE()`。
+Platform 实现不得调用 `HAL_*_Init()`、`HAL_GPIO_Init()`、
+`HAL_NVIC_SetPriority()` 或 `__HAL_RCC_*_CLK_ENABLE()`。
 
 ## 2. 公共与私有文件
 
@@ -73,8 +73,6 @@ PLATFORM_ENABLE_UART2=1
 PLATFORM_ENABLE_UART3=1
 PLATFORM_ENABLE_CRC=1
 PLATFORM_ENABLE_RNG=1
-PLATFORM_ENABLE_IWDG=1
-PLATFORM_ENABLE_WWDG=1
 ```
 
 F103C8T6 正式目标始终启用：
@@ -83,8 +81,6 @@ F103C8T6 正式目标始终启用：
 PLATFORM_ENABLE_GPIO_D=1
 PLATFORM_ENABLE_GPIO_E=0
 PLATFORM_ENABLE_CRC=1
-PLATFORM_ENABLE_IWDG=1
-PLATFORM_ENABLE_WWDG=1
 ```
 
 默认开启的 `F103_TEST` 额外启用：
@@ -103,9 +99,8 @@ PLATFORM_ENABLE_UART3=1
 `cmake/platform-check/` 另行编译 F1/F4 支持的全部实例和替代定时器组合，
 这些宏不代表当前正式板级目标已经启用对应外设。
 
-除 IWDG/WWDG 由 Platform 在运行期持有 handle 外，如果启用了实例但 CubeMX
-没有生成对应 handle，Platform 编译失败。这样可以在编译期发现 `.ioc`、HAL
-源文件和 Platform 配置不一致。
+如果启用了实例但 CubeMX 没有生成对应 handle，Platform 编译失败。这样可以在
+编译期发现 `.ioc`、HAL 源文件和 Platform 配置不一致。
 
 ## 4. PWM 契约
 
@@ -154,22 +149,13 @@ UART、I2C、SPI、CAN、ADC、DAC 统一使用 typed event 回调：
 - `Platform_UART_GetLastError()` 返回 PE/NE/FE/ORE/DMA 等错误位。
 - 新操作成功启动后，HAL ErrorCode 由 HAL 或显式 abort/clear 路径复位。
 
-## 9. CRC、RNG 与看门狗
+## 9. CRC 与 RNG
 
 CRC 和 RNG 的结构性初始化由 CubeMX/Core 负责：
 
 - `MX_CRC_Init()` 生成 `hcrc` 并开启 CRC 时钟。
 - `MX_RNG_Init()` 生成 `hrng` 并开启 RNG 时钟。
 - Platform 只提供 CRC 重置、32 位字累积/计算和 RNG 取数/错误快照。
-
-IWDG 和 WWDG 是运行期安全策略，具有不可逆启动语义：
-
-- 不在 `main()` 早期自动调用 CubeMX 的看门狗启动函数。
-- `Platform_IWDG_Start()` 和 `Platform_WWDG_Start()` 在监控任务准备好后配置并启动。
-- IWDG 根据目标毫秒数选择预分频和重装值，超时受 LSI 偏差影响。
-- WWDG 根据 PCLK1 选择预分频，并验证刷新窗口。
-- 这是 Platform 内允许执行运行期结构配置和时钟使能的明确例外。
-- `Sys_Watchdog` 只依赖 Platform IWDG，不再直接访问 IWDG 寄存器。
 
 ## 10. 新增外设流程
 

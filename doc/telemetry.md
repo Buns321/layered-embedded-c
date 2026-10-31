@@ -210,10 +210,12 @@ USART2 当前配置按板区分：
 `Boards/f103c8t6-fast-channel-task-1/` 使用 USART1：
 
 - TX DMA1 Channel 4，115200 8N1，32 通道 JustFloat，50 Hz。
-- RX 单字节中断，进入 256 字节环形缓冲。
-- 板级 Link 是物理 UART 的唯一回调所有者。
+- RX 单字节中断，进入 `system_byte_ring` 管理的 256 字节环形缓冲。
+- 共享 `uart_link_t` 是物理 UART 的唯一回调所有者。
 - `justfloat_uart_t` 使用 Link 提供的虚拟 `uart_base_t`，保持共享回调契约不变。
-- RX 支持 `SET <参数> <值>` 和 `RESET EKF`，TX 不输出 ASCII 应答。
+- `uart_link_t` 只负责 RX 环形缓冲、重挂和文本行组帧；板级 App 解析
+  `SET <参数> <值>` 和 `RESET EKF`，其中通用空白切分和有限 float 解析由
+  `system_text` 提供，TX 不输出 ASCII 应答。
 
 32 通道每帧 132 字节，50 Hz 时约 6600 B/s，占 115200 8N1 线路容量约 57%。
 命令结果显示在 JustFloat 第 31 通道。

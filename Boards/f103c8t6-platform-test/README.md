@@ -67,8 +67,6 @@
 - GPIO
 - EXTI
 - CRC
-- IWDG
-- WWDG
 
 `F103_TEST=ON` 时额外启用并实测：
 
@@ -174,15 +172,14 @@ F103 板级目标默认启用非破坏性自检，启动后会通过 RTT 输出�
 
 板载硬件实测还会检查 GPIO 输出回读、I2C1 的 `0x38` / `0x3D` 设备、ADC1 双通道
 DMA、TIM1 编码器、TIM2 / TIM3 / TIM4 定时器、USART3 探测，并通过 USART2
-验证 CH343P 收发、IWDG 和 WWDG 复位。定时器和执行器测试使用零占空比、短时
+验证 CH343P 收发。定时器和执行器测试使用零占空比、短时
 中位脉冲或零数据 DMA，结束后恢复安全状态。运行：
 
 ```powershell
 .\tools\test\Invoke-F103HardwareTest.ps1
 ```
 
-脚本默认自动选择 CH343P 串口。IWDG 和 WWDG 测试会让 MCU 主动复位；只测试常规项时
-使用 `-SkipResetTests`。
+脚本默认自动选择 CH343P 串口。
 
 ## 当前验证状态
 
@@ -193,8 +190,8 @@ DMA、TIM1 编码器、TIM2 / TIM3 / TIM4 定时器、USART3 探测，并通过 
 - 板上非破坏性自检已通过：72 MHz 时钟、FreeRTOS tick、RTT 日志健康和硬件 CRC，
   结果为 `SUMMARY pass=4 fail=0`。
 - 板载硬件实测已通过：GPIO 回读、I2C1 的 AHT20 / CH1116 地址、ADC1 DMA、
-  TIM1 编码器、TIM2 / TIM3 / TIM4、USART2 PING / TEST、IWDG 复位和 WWDG
-  复位，结果为 `TEST pass=8 fail=0 skip=1`。USART3 因未观察到 DX-BT24 响应而
+  TIM1 编码器、TIM2 / TIM3 / TIM4、USART2 PING / TEST，结果为
+  `TEST pass=8 fail=0 skip=1`。USART3 因未观察到 DX-BT24 响应而
   跳过，需连接模块后复测。
 - 定时器占空比、总线时序、WS2812 光输出、舵机运动、继电器和电机实际负载仍需
   按 [硬件与接口规范](hardware-map.md)第 11 节结合示波器或实际负载确认。

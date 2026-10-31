@@ -7,15 +7,15 @@
 
 已完成并通过工具链构建的是**基础设施层**：
 
-- **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG / IWDG / WWDG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
+- **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
 - **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、UART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、JoyCon ASCII 命令、遥测（base + FireWater / JustFloat UART）。
 - **Controller**：轮级 SISO 控制契约、线性控制律、PID、compose。
 - **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
 - **Chassis**：底盘生命周期基类 + omni 底盘。
 - **Filter**：样本、base、低通、透传、chain、distributor、IMU 六轴校正和
   七状态 EKF 接口壳层。
-- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、看门狗、
-  日志 base、SEGGER RTT、DWT 时间辅助和双页 Flash 记录存储。
+- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、日志 base、
+  SEGGER RTT、DWT 时间辅助和双页 Flash 记录存储。
 - **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已接入 100 Hz
   四轮 PID、WHT101 上电归零、JoyCon 命令、50 Hz JustFloat 和 RTT 监控，
   F103 继续使用自己的 CubeMX 任务配置。

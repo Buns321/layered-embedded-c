@@ -115,7 +115,7 @@ F407 JustFloat 通道定义：
 | 14 | JoyCon `ly` 归一化值 | `[-1,1]` |
 | 15 | JoyCon `rx` 归一化值 | `[-1,1]` |
 
-当前板级 `.ioc` 没有启用 I2C、SPI、ADC、DAC、CAN、RTC、IWDG 或 WWDG 实例。
+当前板级 `.ioc` 没有启用 I2C、SPI、ADC、DAC、CAN 或 RTC 实例。
 共享 Platform 对这些实例提供编译检查，不代表它们已经在当前板级初始化。
 
 ## 7. 验证边界

@@ -2,7 +2,7 @@ PROJECT_NAME           = "layered-embedded-c"
 PROJECT_BRIEF          = "面向 STM32F4 与 STM32F1 的分层嵌入式 C 基础设施"
 OUTPUT_DIRECTORY       = build/doxygen
 CREATE_SUBDIRS         = NO
-OUTPUT_LANGUAGE        = Chinese
+OUTPUT_LANGUAGE        = English
 OPTIMIZE_OUTPUT_FOR_C  = YES
 MARKDOWN_SUPPORT       = YES
 AUTOLINK_SUPPORT       = YES
@@ -99,9 +99,7 @@ PREDEFINED             = USE_FREERTOS STM32F4xx \
                          PLATFORM_ENABLE_RTC=1 \
                          PLATFORM_ENABLE_FLASH=1 \
                          PLATFORM_ENABLE_CRC=1 \
-                         PLATFORM_ENABLE_RNG=1 \
-                         PLATFORM_ENABLE_IWDG=1 \
-                         PLATFORM_ENABLE_WWDG=1
+                         PLATFORM_ENABLE_RNG=1
 INCLUDE_PATH           = Platform/Inc \
                          DeviceDrivers/Base/Inc \
                          DeviceDrivers/Inc \

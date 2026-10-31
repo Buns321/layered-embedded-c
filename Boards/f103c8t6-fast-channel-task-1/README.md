@@ -10,7 +10,7 @@ JustFloat 实时波形输出。EKF 的核心预测与校正暂留空，由使用
 | --- | --- |
 | `f103c8t6-fast-channel-task-1.ioc` | CubeMX 配置 |
 | `Core/` | CubeMX 生成代码与 USER CODE 板级接入 |
-| `App/` | 板级配置、标定状态机、UART1 链路和遥测 |
+| `App/` | 板级配置、IMU 标定会话、UART 命令和遥测 |
 | `RTOS/` | ImuEkfTask 与 VofaTask |
 | `cmake/` | ARM GCC、HAL、FreeRTOS 和生成源文件列表 |
 | `Drivers/` | STM32F1 HAL 与 CMSIS |
@@ -19,6 +19,16 @@ JustFloat 实时波形输出。EKF 的核心预测与校正暂留空，由使用
 
 共享的 Platform F1、DeviceDrivers、Filter 和 System 直接从仓库根目录接入，
 本工程不复制共享层。硬件连接见 [hardware-map.md](hardware-map.md)。
+
+App 内部按职责拆分为：
+
+- `app_fast_channel`：板级装配和任务入口。
+- `app_imu_session`：IMU 管线编排和一致快照。
+- `app_calibration_flow`：初始姿态、陀螺零偏和六面标定状态机。
+- `app_calibration_record`：Flash 校准记录和活动配置。
+- `app_attitude_reference`：直接姿态和陀螺积分参考。
+- `app_status_indicator`：蜂鸣器和 LED 提示。
+- `app_fast_channel_telemetry`：32 通道遥测映射。
 
 ## 运行流程
 
@@ -53,9 +63,9 @@ Flash 写入失败时不双鸣，继续寻找下一面；最终仍进入主程�
 - 姿态弧度到框架 `deg` 的发布转换
 - 实际采样时间差计算与夹紧
 - 默认参数、在线参数校验和帧边界原子应用
-- 单位四元数、零姿态和 `PLACEHOLDER` 状态发布
+- 单位四元数、零姿态和 `PLACEHOLDER` 状态发布；占位姿态不置有效位
 
-核心未实现前，遥测中的 EKF 姿态不是有效估计，不得用于控制。
+核心未实现前，遥测中的 EKF 姿态不是有效估计，`valid` 为 false，不得用于控制。
 
 ## 在线调参
 

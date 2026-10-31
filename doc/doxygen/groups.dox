@@ -46,7 +46,7 @@
 
 /**
  * @defgroup system 系统服务
- * @brief 数学、检查、限幅、延时、临界区、Fault、看门狗与日志。
+ * @brief 数学、检查、限幅、延时、临界区、Fault 与日志。
  */
 
 /**

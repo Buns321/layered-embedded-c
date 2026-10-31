@@ -107,9 +107,10 @@ MPU6050 没有磁力计。只有注册滤波器提供 yaw 时，`IMU_CHANNEL_YAW
   `filter_ekf_t`。
 - `imu_base.sample` 和 MPU 驱动提交的滤波帧包含标定后的六轴及 EKF 姿态。
 
-六面标定状态机属于板级 App，不写 MPU6050 寄存器做加速度校准。每个成功面追加
-一条 Flash 记录，记录包含陀螺零偏、已完成轴加速度 offset/scale、面掩码和
-CRC32。超时或初始 `-Z` 跳过时使用最近一次有效 Flash 记录。
+六面标定状态机属于板级 App，当前拆分为任务一的 `app_calibration_flow` 和
+`app_calibration_record`，不写 MPU6050 寄存器做加速度校准。每个成功面追加一条
+Flash 记录，记录包含陀螺零偏、已完成轴加速度 offset/scale、面掩码和 CRC32。
+超时或初始 `-Z` 跳过时使用最近一次有效 Flash 记录。
 
 EKF 框架边界仍使用现有 IMU schema：
 
@@ -117,7 +118,8 @@ EKF 框架边界仍使用现有 IMU schema：
 - 输出 roll/pitch/yaw：`deg`
 
 `filter_ekf_t` 内部预测/校正、协方差、在线参数和 `Filter_Ekf_GetState()` 使用
-`rad`、`rad/s`。当前 EKF 核心为占位实现，只发布零姿态且 `placeholder = true`。
+`rad`、`rad/s`。当前 EKF 核心为占位实现，只发布零姿态，
+`placeholder = true` 且 `valid = false`，不得进入闭环。
 
 速通任务一在 I2C1 初始化前用 PB6/PB7 执行总线恢复脉冲。上电初始判断和陀螺
 零偏采集允许高达 10 deg/s 的未标定原始角速度；零偏应用后，六面流程改用

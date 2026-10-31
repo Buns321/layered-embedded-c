@@ -54,20 +54,16 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 回调注册统一返回 `platform_status_t`
 - [x] 每个物理实例只允许注册一次；重复注册统一返回 `PLATFORM_STATUS_BUSY`
 - [x] EXTI 取消特殊覆盖语义，与其他外设统一回调所有权
-- [x] 增加原生 fake-backend watchdog/RTC/Flash 契约测试，覆盖能力、状态和错误差异
+- [x] 增加原生 fake-backend RTC/Flash 契约测试，覆盖能力、状态和错误差异
 - [ ] 扩展 `cmake/platform-check`，验证两系列公共 API 签名和行为可编译
 
 **第一批确定性修复**
-- [x] IWDG 仅在 HAL 启动成功后设置 started 状态
-- [x] WWDG 根据实际 PCLK1 返回可用最大超时，修正 F103 的 49 ms 声明
 - [x] RTC 的非法实例、空指针和参数错误在 F1/F4 采用相同返回与错误位
 - [x] `Platform_SPI_GetDataWidth` 改为 `status + out`，不再用 8-bit 表示失败
 - [x] CAN 参数错误、状态错误和 HAL 错误统一写入 `GetLastError`
 - [x] 消除同一公共错误条件同时 `assert` 和返回错误的混合实现
 
 **分组重构**
-- [x] watchdog 组：先完成公共状态机和双平台行为一致
-- [x] watchdog 试点：公共逻辑位于 `Platform/Src/common/`，F1/F4 仅保留 backend
 - [x] service 组：RTC、Flash 统一参数校验、错误快照和复位/擦除语义
 - [x] transfer 组：UART、I2C、SPI、CAN 统一 typed event、回调所有权、
   参数错误和错误快照
@@ -84,8 +80,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
   表达，不改变普通函数签名
 - [x] 公共参数校验、状态机、错误映射和回调分发迁入 `Platform/Src/common/`
 - [x] F1/F4 目录只保留 handle 映射、HAL 调用、时钟和硬件能力差异
-- [x] 已完成 watchdog、RTC、Flash、UART、I2C、SPI、CAN、ADC、DAC、
-  PWM、Encoder、GPIO、EXTI、CRC、RNG 的 common/backend 拆分
+- [x] 已完成 RTC、Flash、UART、I2C、SPI、CAN、ADC、DAC、PWM、Encoder、
+  GPIO、EXTI、CRC、RNG 的 common/backend 拆分
 - [ ] CMake 拆出 `platform_common` 与 `platform_f1/f4_backend` 目标
 - [x] 每个分组成员完成后同时构建 F4/F103 Debug、Release 与 `-Werror`
 
@@ -116,7 +112,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 为 `Platform_PWM_SetCompare` 增加 AUTORELOAD 夹紧
 - [x] 保留 f1 平台
 - [x] 为 STM32F103C8T6 建立独立 CMake 目标、F1 HAL、CM3 FreeRTOS、启动文件和链接脚本
-- [x] 完成 STM32F103C8T6 板上时钟、RTT、FreeRTOS、CRC、IWDG、WWDG 验证
+- [x] 完成 STM32F103C8T6 板上时钟、RTT、FreeRTOS、CRC 验证
 
 ## Platform · 外设扩展
 **架构**：每个外设按“接口 / F4 实现 / F1 实现”拆分。`Platform/Inc/platform_xxx.h` 只定义枚举身份、状态码和 API，不包含 HAL 类型；`Platform/Src/stm32f4/platform_xxx.c` 负责 F4 HAL 映射与回调；F1 实现按需补，未实现时构建不选入。CubeMX 继续负责外设初始化，HAL 源文件单独注册。
@@ -124,9 +120,6 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **接口**
 - [x] `platform_crc.h`：硬件 CRC 重置、32 位字累积与计算
 - [x] `platform_rng.h`：硬件随机数读取与错误快照
-- [x] `platform_iwdg.h`：按毫秒启动、刷新与复位标志
-- [x] `platform_wwdg.h`：窗口 watchdog 启动、刷新与复位标志
-- [x] `system_watchdog` 改为通过 Platform IWDG 启动、刷新和读取复位标志
 - [x] `platform_i2c.h`：7 位地址主机阻塞/IT/DMA、内存传输、abort 与错误快照
 - [x] `platform_spi.h`：主机 8/16 位传输、阻塞/IT/DMA 路径与 abort
 - [x] `platform_adc.h`：轮询、IT、DMA 与单通道阻塞读取
@@ -138,12 +131,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **F4 实现**
 - [x] `stm32f4/platform_crc.c`
 - [x] `stm32f4/platform_rng.c`
-- [x] `stm32f4/platform_iwdg.c`
-- [x] `stm32f4/platform_wwdg.c`
 - [ ] 板上验证 CRC 已知向量和连续累积结果
 - [ ] 板上验证 RNG 启动、超时和错误状态
-- [ ] 板上验证 IWDG 目标超时与复位标志
-- [ ] 板上验证 WWDG 刷新窗口和复位标志
 - [x] `stm32f4/platform_i2c.c`
 - [x] `stm32f4/platform_spi.c`
 - [x] `stm32f4/platform_adc.c`
@@ -155,7 +144,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 
 **F1 与构建**
 - [x] F103 目标接入板内 App / RTOS 与共享 Controller / Policy / Filter / DeviceDrivers base
-- [x] F1 GPIO、EXTI、CRC、IWDG、WWDG 实现
+- [x] F1 GPIO、EXTI、CRC 实现
 - [x] F1 USART1–3、PWM TIM1、Encoder TIM2–4、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC、Flash 实现
 - [x] F103 目标补入 I2C、SPI、ADC、CAN、RTC、UART、TIM HAL 头文件与源文件
 - [x] F4/F1 独立 Platform 全实例 Debug、Release 构建通过 `-Wall -Wextra`
@@ -363,12 +352,11 @@ MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFl
 - [x] 修复 `SYS_ABS` 对 `INT_MIN`/`LONG_MIN`/`LLONG_MIN` 的未定义行为，默认使用饱和版本
 
 ## System · 运行时与并发
-**架构**：System 负责 CPU/运行时服务，不承载具体外设策略；上层通过它获得临界区、故障诊断、复位原因、看门狗策略和低功耗能力。
+**架构**：System 负责 CPU/运行时服务，不承载具体外设策略；上层通过它获得临界区、故障诊断、复位原因和低功耗能力。
 - [x] 新增 `system_critical`：任务/ISR 临界区与原子访问封装，RTOS 与裸机两套实现
 - [x] 新增 `system_fault`：HardFault/MemManage/BusFault/UsageFault 诊断，保存 CFSR/HFSR/MMFAR/BFAR 与 MSP/PSP
 - [ ] 为 fault handler 增加 R0–R3/PC/LR/xPSR 栈帧捕获（naked wrapper）
 - [ ] 新增 `system_reset`：复位原因读取、记录与启动分流
-- [x] 新增 `system_watchdog`：任务 check-in + 统一喂狗策略，禁止驱动直接喂狗
 - [x] 新增 `system_log_base`、`system_log` 与 SEGGER RTT 后端
 - [x] RTT 使用非阻塞 skip 模式并统计丢弃字节与竞争次数
 - [x] `main()` 在调度器启动前安全初始化 RTT 日志
@@ -391,8 +379,7 @@ MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFl
 - [ ] `Error_Handler` 在停机前通过设备抽象切断电机输出
 - [x] 在 App 装配层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
 - [ ] 定义板级 NVIC 优先级配置常量，在 CubeMX MSP 中引用
-- [ ] 明确 STBY 硬件下拉与复位安全状态，确保看门狗/复位时电机不会保持使能
-- [x] 启动时读取并记录 IWDG/WWDG 复位原因
+- [ ] 明确 STBY 硬件下拉与复位安全状态，确保复位时电机不会保持使能
 - [ ] F407 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
 - [x] F103 统一 `.ioc` 与 `main.c` 的 8 MHz HSE、PLL x9 和 72 MHz 配置
 - [ ] 为使用的 EXTI 引脚建立板级映射
