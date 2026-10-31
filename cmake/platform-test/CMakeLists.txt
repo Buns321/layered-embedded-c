@@ -25,6 +25,8 @@ add_executable(imu_pipeline_test
     ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
+    ${REPO_ROOT}/System/Src/system_angle.c
+    ${REPO_ROOT}/System/Src/system_byte_ring.c
 )
 
 add_executable(filter_imu_calibration_contract_test
@@ -38,15 +40,62 @@ add_executable(app_calibration_contract_test
     ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_calibration.c
 )
 
+add_executable(app_attitude_reference_contract_test
+    app_attitude_reference_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_attitude_reference.c
+    ${REPO_ROOT}/System/Src/system_angle.c
+)
+
+add_executable(app_calibration_record_contract_test
+    app_calibration_record_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_calibration_record.c
+)
+
+add_executable(app_calibration_flow_contract_test
+    app_calibration_flow_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_calibration_flow.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_calibration.c
+)
+
+add_executable(app_status_indicator_contract_test
+    app_status_indicator_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_status_indicator.c
+)
+
 add_executable(app_command_parser_contract_test
     app_command_parser_contract_test.c
     ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_command_parser.c
+    ${REPO_ROOT}/System/Src/system_text.c
 )
 
-add_executable(app_uart_link_contract_test
-    app_uart_link_contract_test.c
-    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_uart_link.c
-    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_command_parser.c
+add_executable(system_text_contract_test
+    system_text_contract_test.c
+    ${REPO_ROOT}/System/Src/system_text.c
+)
+
+add_executable(system_time_window_contract_test
+    system_time_window_contract_test.c
+)
+
+add_executable(system_angle_contract_test
+    system_angle_contract_test.c
+    ${REPO_ROOT}/System/Src/system_angle.c
+)
+
+add_executable(system_byte_ring_contract_test
+    system_byte_ring_contract_test.c
+    ${REPO_ROOT}/System/Src/system_byte_ring.c
+)
+
+add_executable(app_fast_channel_telemetry_contract_test
+    app_fast_channel_telemetry_contract_test.c
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Src/app_fast_channel_telemetry.c
+)
+
+add_executable(uart_link_contract_test
+    uart_link_contract_test.c
+    ${REPO_ROOT}/DeviceDrivers/Src/uart_link.c
+    ${REPO_ROOT}/System/Src/system_byte_ring.c
 )
 
 add_executable(filter_ekf_contract_test
@@ -64,12 +113,6 @@ add_executable(system_record_store_contract_test
 add_executable(system_critical_contract_test
     system_critical_contract_test.c
     ${REPO_ROOT}/System/Src/system_critical.c
-)
-
-add_executable(platform_watchdog_contract_test
-    watchdog_contract_test.c
-    ${REPO_ROOT}/Platform/Src/common/platform_iwdg_common.c
-    ${REPO_ROOT}/Platform/Src/common/platform_wwdg_common.c
 )
 
 add_executable(platform_rtc_contract_test
@@ -159,12 +202,7 @@ add_executable(joycon_uart_contract_test
     ${REPO_ROOT}/DeviceDrivers/Base/Src/joycon_base.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
-)
-
-add_executable(stm32f1_watchdog_backend_test
-    stm32f1_watchdog_backend_test.c
-    ${REPO_ROOT}/Platform/Src/stm32f1/platform_iwdg.c
-    ${REPO_ROOT}/Platform/Src/stm32f1/platform_wwdg.c
+    ${REPO_ROOT}/System/Src/system_byte_ring.c
 )
 
 target_include_directories(platform_validation_test PRIVATE
@@ -195,22 +233,116 @@ target_include_directories(app_calibration_contract_test PRIVATE
     ${REPO_ROOT}/System/Inc
 )
 
-target_include_directories(app_command_parser_contract_test PRIVATE
-    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
-)
-
-target_include_directories(app_uart_link_contract_test PRIVATE
+target_include_directories(app_attitude_reference_contract_test PRIVATE
     ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
     ${REPO_ROOT}/DeviceDrivers/Base/Inc
     ${REPO_ROOT}/DeviceDrivers/Inc
     ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
     ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
 )
 
-target_compile_definitions(app_uart_link_contract_test PRIVATE
+target_compile_definitions(app_attitude_reference_contract_test PRIVATE
     PLATFORM_ENABLE_UART1=1
     PLATFORM_ENABLE_I2C1=1
+)
+
+target_include_directories(app_calibration_record_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(app_calibration_record_contract_test PRIVATE
+    PLATFORM_ENABLE_FLASH=1
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_I2C1=1
+)
+
+target_include_directories(app_calibration_flow_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(app_calibration_flow_contract_test PRIVATE
+    PLATFORM_ENABLE_FLASH=1
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_I2C1=1
+)
+
+target_include_directories(app_status_indicator_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(app_status_indicator_contract_test PRIVATE
+    PLATFORM_ENABLE_FLASH=1
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_I2C1=1
+)
+
+target_include_directories(app_command_parser_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(system_text_contract_test PRIVATE
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(system_time_window_contract_test PRIVATE
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(system_angle_contract_test PRIVATE
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(system_byte_ring_contract_test PRIVATE
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(app_fast_channel_telemetry_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f103c8t6-fast-channel-task-1/App/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(app_fast_channel_telemetry_contract_test PRIVATE
+    PLATFORM_ENABLE_UART1=1
+    PLATFORM_ENABLE_I2C1=1
+    PLATFORM_ENABLE_FLASH=1
     TELEMETRY_CHANNEL_CAPACITY=32
+)
+
+target_include_directories(uart_link_contract_test PRIVATE
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Platform/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_compile_definitions(uart_link_contract_test PRIVATE
+    PLATFORM_ENABLE_UART1=1
 )
 
 target_include_directories(filter_ekf_contract_test PRIVATE
@@ -238,17 +370,6 @@ target_include_directories(system_critical_contract_test PRIVATE
 target_compile_definitions(system_critical_contract_test PRIVATE
     USE_FREERTOS=1
     STM32F1xx=1
-)
-
-target_include_directories(platform_watchdog_contract_test PRIVATE
-    ${REPO_ROOT}/Platform/Inc
-    ${REPO_ROOT}/Platform/Src
-)
-
-target_compile_definitions(platform_watchdog_contract_test PRIVATE
-    PLATFORM_ENABLE_IWDG=1
-    PLATFORM_ENABLE_WWDG=1
-    STM32F4xx=1
 )
 
 target_include_directories(platform_rtc_contract_test PRIVATE
@@ -406,18 +527,6 @@ target_compile_definitions(system_log_contract_test PRIVATE
     SYS_LOG_EXTERNAL_TIME_SOURCE=Sys_Log_TestGetTimeMs
 )
 
-target_include_directories(stm32f1_watchdog_backend_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/stm32f1_hal_stub
-    ${REPO_ROOT}/Platform/Inc
-    ${REPO_ROOT}/Platform/Src
-)
-
-target_compile_definitions(stm32f1_watchdog_backend_test PRIVATE
-    STM32F1xx=1
-    PLATFORM_ENABLE_IWDG=1
-    PLATFORM_ENABLE_WWDG=1
-)
-
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(platform_validation_test PRIVATE
         -Wall
@@ -439,12 +548,57 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(app_attitude_reference_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_calibration_record_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_calibration_flow_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_status_indicator_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
     target_compile_options(app_command_parser_contract_test PRIVATE
         -Wall
         -Wextra
         -Werror
     )
-    target_compile_options(app_uart_link_contract_test PRIVATE
+    target_compile_options(system_text_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(system_time_window_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(system_angle_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(system_byte_ring_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(app_fast_channel_telemetry_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(uart_link_contract_test PRIVATE
         -Wall
         -Wextra
         -Werror
@@ -460,11 +614,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Werror
     )
     target_compile_options(system_critical_contract_test PRIVATE
-        -Wall
-        -Wextra
-        -Werror
-    )
-    target_compile_options(platform_watchdog_contract_test PRIVATE
         -Wall
         -Wextra
         -Werror
@@ -554,19 +703,18 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
-    target_compile_options(stm32f1_watchdog_backend_test PRIVATE
-        -Wall
-        -Wextra
-        -Werror
-    )
 endif()
 
 if(NOT MSVC)
     target_link_libraries(imu_pipeline_test PRIVATE m)
     target_link_libraries(filter_imu_calibration_contract_test PRIVATE m)
     target_link_libraries(app_calibration_contract_test PRIVATE m)
+    target_link_libraries(app_attitude_reference_contract_test PRIVATE m)
+    target_link_libraries(app_calibration_flow_contract_test PRIVATE m)
     target_link_libraries(app_command_parser_contract_test PRIVATE m)
-    target_link_libraries(app_uart_link_contract_test PRIVATE m)
+    target_link_libraries(system_text_contract_test PRIVATE m)
+    target_link_libraries(system_angle_contract_test PRIVATE m)
+    target_link_libraries(app_fast_channel_telemetry_contract_test PRIVATE m)
     target_link_libraries(filter_ekf_contract_test PRIVATE m)
 endif()
 
@@ -588,12 +736,48 @@ add_test(
     COMMAND app_calibration_contract_test
 )
 add_test(
+    NAME app_attitude_reference_contract_test
+    COMMAND app_attitude_reference_contract_test
+)
+add_test(
+    NAME app_calibration_record_contract_test
+    COMMAND app_calibration_record_contract_test
+)
+add_test(
+    NAME app_calibration_flow_contract_test
+    COMMAND app_calibration_flow_contract_test
+)
+add_test(
+    NAME app_status_indicator_contract_test
+    COMMAND app_status_indicator_contract_test
+)
+add_test(
     NAME app_command_parser_contract_test
     COMMAND app_command_parser_contract_test
 )
 add_test(
-    NAME app_uart_link_contract_test
-    COMMAND app_uart_link_contract_test
+    NAME system_text_contract_test
+    COMMAND system_text_contract_test
+)
+add_test(
+    NAME system_time_window_contract_test
+    COMMAND system_time_window_contract_test
+)
+add_test(
+    NAME system_angle_contract_test
+    COMMAND system_angle_contract_test
+)
+add_test(
+    NAME system_byte_ring_contract_test
+    COMMAND system_byte_ring_contract_test
+)
+add_test(
+    NAME app_fast_channel_telemetry_contract_test
+    COMMAND app_fast_channel_telemetry_contract_test
+)
+add_test(
+    NAME uart_link_contract_test
+    COMMAND uart_link_contract_test
 )
 add_test(
     NAME filter_ekf_contract_test
@@ -606,10 +790,6 @@ add_test(
 add_test(
     NAME system_critical_contract_test
     COMMAND system_critical_contract_test
-)
-add_test(
-    NAME platform_watchdog_contract_test
-    COMMAND platform_watchdog_contract_test
 )
 add_test(
     NAME platform_rtc_contract_test
@@ -678,8 +858,4 @@ add_test(
 add_test(
     NAME joycon_uart_contract_test
     COMMAND joycon_uart_contract_test
-)
-add_test(
-    NAME stm32f1_watchdog_backend_test
-    COMMAND stm32f1_watchdog_backend_test
 )
