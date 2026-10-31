@@ -14,6 +14,15 @@
 #ifndef LAYERED_EMBEDDED_C_APP_FAST_CHANNEL_CONFIG_H
 #define LAYERED_EMBEDDED_C_APP_FAST_CHANNEL_CONFIG_H
 
+/**
+ * @brief 板级遥测通道容量。
+ * @note CMake 可显式传入相同值；本定义保证单独打开源码时 IntelliSense
+ *       和静态分析也使用任务一的 32 通道配置。
+ */
+#ifndef TELEMETRY_CHANNEL_CAPACITY
+#define TELEMETRY_CHANNEL_CAPACITY 32u
+#endif
+
 #include "mpu6050_i2c.h"
 #include "platform_gpio.h"
 #include "platform_i2c.h"
@@ -143,8 +152,8 @@
 /** @brief LED GPIO 引脚掩码。 */
 #define APP_LED_PIN ((uint16_t)0x2000u)
 
-/** @brief JustFloat 通道数。 */
-#define APP_TELEMETRY_CHANNEL_COUNT 32u
+/** @brief JustFloat 实际发送通道数。 */
+#define APP_TELEMETRY_CHANNEL_COUNT TELEMETRY_CHANNEL_CAPACITY
 
 /** @brief UART 参数命令行最大长度，不含换行符。 */
 #define APP_UART_COMMAND_CAPACITY 64u

@@ -18,17 +18,14 @@ typedef struct f103_hardware_test_summary_s {
 } f103_hardware_test_summary_t;
 
 /**
- * @brief 读取并清除 IWDG/WWDG 复位标志，注册 USART2/ADC 回调并发送上电信息。
+ * @brief 注册 USART2/ADC 回调并发送上电信息。
  * @pre 所有 CubeMX 外设初始化完成、RTOS 调度器已启动，且在任务上下文调用；
  *      USART2 和 ADC1 已按测试固件配置启用。
- * @post 保存本次启动的 IWDG/WWDG 复位标志；按注册结果配置 UART2/ADC1 回调；
- *       尝试以单字节 IT 接收启动 USART2；尝试通过 DMA 发送
- *       "F103 READY iwdg=0/1 wwdg=0/1" 上电信息，发送失败时仅清除忙标志且不重试。
+ * @post 按注册结果配置 UART2/ADC1 回调；尝试以单字节 IT 接收启动 USART2；
+ *       尝试通过 DMA 发送 "F103 READY" 上电信息，发送失败时仅清除忙标志且不重试。
  * @note 回调注册失败只记录 SYS_LOG，不中止初始化；后续命令收发可能不可用。
  * @note 该函数无返回值，调用方必须通过日志、F103_HardwareTest_RunAll() 或
  *       USART2 命令观察结果。
- * @note 复位标志由 Platform 读取后清除；先读取 IWDG 再读取 WWDG，若两种标志
- *       同时置位，后读取的 WWDG 将因共享锁存状态被清除而报告 false。
  * @warning 应在调度器启动后调用一次；重复调用会使回调注册返回 BUSY，并可能
  *          使 USART2 接收重挂失败而进入待重挂状态。
  */
@@ -42,7 +39,7 @@ void F103_HardwareTest_Init(void);
  *      I2C1、ADC1、TIM1-TIM4、USART3；在任务上下文调用。
  * @post 输出 BEGIN 和 SUMMARY 日志；各子测试结束后的硬件状态见各自说明。
  * @note 执行顺序固定：GPIO 回读、AHT20、OLED、ADC DMA、TIM1 编码器、
- *       TIM2、TIM3、TIM4、USART3 探测；IWDG/WWDG 不在本函数内触发。
+ *       TIM2、TIM3、TIM4、USART3 探测。
  * @warning 会短暂拉高 PA7/PB0/PB5/PB9/PA11、改写 TIM1 计数器为 1234 并停止编码器、
  *          让 TIM4_CH3 输出约 1.5 ms 中位脉冲，且 USART3 收发可能各阻塞 100 ms。
  *          执行前必须确认继电器、蜂鸣器、舵机和编码器连接处于安全状态。
@@ -61,8 +58,7 @@ f103_hardware_test_summary_t F103_HardwareTest_RunAll(void);
  * @note 忽略 CR；超长命令仅保留前 63 个字符，其余字节在下一个 LF 前丢弃。
  * @note 不主动轮询串口硬件，只处理回调已写入的状态；若调用间隔过长，64 字节
  *       环形缓冲区会满并静默丢弃新字节。
- * @warning 执行 TEST 命令会运行完整硬件套件；执行 IWDG/WWDG 命令会启动看门狗
- *          并使 MCU 复位，仅限测试固件和已连接上位机的场景使用。
+ * @warning 执行 TEST 命令会运行完整硬件套件。
  */
 void F103_HardwareTest_Process(void);
 

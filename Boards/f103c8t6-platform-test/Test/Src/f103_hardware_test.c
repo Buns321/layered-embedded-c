@@ -10,10 +10,8 @@
 #include "platform_encoder.h"
 #include "platform_gpio.h"
 #include "platform_i2c.h"
-#include "platform_iwdg.h"
 #include "platform_pwm.h"
 #include "platform_uart.h"
-#include "platform_wwdg.h"
 #include "system_delay.h"
 #include "system_log.h"
 
@@ -29,9 +27,6 @@
 #define F103_TEST_UART_TX_SIZE        192u
 #define F103_TEST_COMMAND_SIZE        64u
 #define F103_TEST_UART_DMA_TEST_SIZE  8u
-#define F103_TEST_IWDG_TIMEOUT_MS     100u
-#define F103_TEST_WWDG_TIMEOUT_MS     5u
-
 #define F103_TEST_GPIO_PIN_0  0x0001u
 #define F103_TEST_GPIO_PIN_5  0x0020u
 #define F103_TEST_GPIO_PIN_7  0x0080u
@@ -78,9 +73,6 @@ static volatile bool s_uart_rx_dma_complete;
 
 static uint32_t s_adc_dma[2];
 static volatile bool s_adc_dma_complete;
-
-static bool s_boot_iwdg_reset;
-static bool s_boot_wwdg_reset;
 
 /**
  * @brief 把 NUL 结尾字符串追加到定长文本缓冲区并保持 NUL 终止。
@@ -611,16 +603,11 @@ static bool f103_hardwaretest_commandis(
  * @post PING 发送 "PONG"；TEST 运行 F103_HardwareTest_RunAll() 并发送汇总；
  *       RX_DMA 中止当前接收、清空 8 字节 DMA 缓冲并启动新的 8 字节 DMA 接收，
  *       成功时发送 "DMA READY"，启动失败时发送 "RX_DMA START FAILED" 并恢复
- *       IT 接收；RESETFLAGS 发送启动时保存的 IWDG/WWDG 标志；
- *       IWDG/WWDG 先发送 ARMED，再启动看门狗，
- *       成功时不返回，失败时发送状态码。未知命令静默忽略，不回复也不改变状态。
- * @note 本编译单元私有辅助函数；命令按前缀匹配且区分大小写。IWDG 请求 100 ms
- *       超时，WWDG 请求 5 ms 超时且 window=0x50。PING/TEST/RX_DMA/RESETFLAGS
- *       的响应及失败状态经 f103_hardwaretest_send() 非阻塞发送，忙时可能被丢弃；
- *       IWDG/WWDG 的 ARMED 文本使用阻塞发送且其返回值被忽略。
+ *       IT 接收。未知命令静默忽略，不回复也不改变状态。
+ * @note 本编译单元私有辅助函数；命令按前缀匹配且区分大小写。PING/TEST/RX_DMA
+ *       的响应及失败状态经 f103_hardwaretest_send() 非阻塞发送，忙时可能被丢弃。
  * @warning TEST 会按 F103_HardwareTest_RunAll() 的契约产生硬件副作用并阻塞；
- *          IWDG/WWDG 命令会使 MCU 看门狗超时复位，正常固件和无人值守场景不得
- *          触发；RX_DMA 后需由上位机发送恰好 8 字节 "12345678"。
+ *          RX_DMA 后需由上位机发送恰好 8 字节 "12345678"。
  */
 static void f103_hardwaretest_handlecommand(const char *command) {
   if (f103_hardwaretest_commandis(command, "PING")) {
@@ -668,87 +655,6 @@ static void f103_hardwaretest_handlecommand(const char *command) {
     return;
   }
 
-  if (f103_hardwaretest_commandis(command, "RESETFLAGS")) {
-    char response[96];
-    f103_hardware_test_text_t text = {
-      .data = response,
-      .capacity = sizeof(response),
-      .length = 0u,
-    };
-    response[0] = '\0';
-    f103_hardwaretest_append(&text, "RESETFLAGS iwdg=");
-    f103_hardwaretest_appenduint(&text, s_boot_iwdg_reset ? 1u : 0u);
-    f103_hardwaretest_append(&text, " wwdg=");
-    f103_hardwaretest_appenduint(&text, s_boot_wwdg_reset ? 1u : 0u);
-    f103_hardwaretest_append(&text, "\r\n");
-    f103_hardwaretest_send(response);
-    return;
-  }
-
-  if (f103_hardwaretest_commandis(command, "IWDG")) {
-    (void)Platform_UART_Transmit(
-      PLATFORM_UART_2,
-      (const uint8_t *)"IWDG ARMED\r\n",
-      12u,
-      F103_TEST_UART_TIMEOUT_MS
-    );
-    const platform_status_t status = Platform_IWDG_Start(
-      PLATFORM_IWDG_1,
-      F103_TEST_IWDG_TIMEOUT_MS
-    );
-    SYS_LOG_INFO("HW", "iwdg start status=%lu", (unsigned long)status);
-    if (status == PLATFORM_STATUS_OK) {
-      for (;;) {
-      }
-    }
-
-    char response[64];
-    f103_hardware_test_text_t text = {
-      .data = response,
-      .capacity = sizeof(response),
-      .length = 0u,
-    };
-    response[0] = '\0';
-    f103_hardwaretest_append(&text, "IWDG START FAILED status=");
-    f103_hardwaretest_appenduint(&text, status);
-    f103_hardwaretest_append(&text, "\r\n");
-    f103_hardwaretest_send(response);
-    return;
-  }
-
-  if (f103_hardwaretest_commandis(command, "WWDG")) {
-    const platform_wwdg_config_t config = {
-      .timeout_ms = F103_TEST_WWDG_TIMEOUT_MS,
-      .window = 0x50u,
-    };
-    (void)Platform_UART_Transmit(
-      PLATFORM_UART_2,
-      (const uint8_t *)"WWDG ARMED\r\n",
-      12u,
-      F103_TEST_UART_TIMEOUT_MS
-    );
-    const platform_status_t status = Platform_WWDG_Start(
-      PLATFORM_WWDG_1,
-      &config
-    );
-    SYS_LOG_INFO("HW", "wwdg start status=%lu", (unsigned long)status);
-    if (status == PLATFORM_STATUS_OK) {
-      for (;;) {
-      }
-    }
-
-    char response[64];
-    f103_hardware_test_text_t text = {
-      .data = response,
-      .capacity = sizeof(response),
-      .length = 0u,
-    };
-    response[0] = '\0';
-    f103_hardwaretest_append(&text, "WWDG START FAILED status=");
-    f103_hardwaretest_appenduint(&text, status);
-    f103_hardwaretest_append(&text, "\r\n");
-    f103_hardwaretest_send(response);
-  }
 }
 
 /**
@@ -842,24 +748,18 @@ static void f103_hardwaretest_adccallback(
 }
 
 /**
- * @brief 读取并清除 IWDG/WWDG 复位标志，注册 USART2/ADC 回调并发送上电信息。
+ * @brief 注册 USART2/ADC 回调并发送上电信息。
  * @pre 所有 CubeMX 外设初始化完成、RTOS 调度器已启动，且在任务上下文调用；
  *      USART2 和 ADC1 已按测试固件配置启用。
- * @post 保存本次启动的 IWDG/WWDG 复位标志；按注册结果配置 UART2/ADC1 回调；
- *       尝试以单字节 IT 接收启动 USART2；尝试通过 DMA 发送
- *       "F103 READY iwdg=0/1 wwdg=0/1" 上电信息，发送失败时仅清除忙标志且不重试。
+ * @post 按注册结果配置 UART2/ADC1 回调；尝试以单字节 IT 接收启动 USART2；
+ *       尝试通过 DMA 发送 "F103 READY" 上电信息，发送失败时仅清除忙标志且不重试。
  * @note 回调注册失败只记录 SYS_LOG，不中止初始化；后续命令收发可能不可用。
  * @note 该函数无返回值，调用方必须通过日志、F103_HardwareTest_RunAll() 或
  *       USART2 命令观察结果。
- * @note 复位标志由 Platform 读取后清除；先读取 IWDG 再读取 WWDG，若两种标志
- *       同时置位，后读取的 WWDG 将因共享锁存状态被清除而报告 false。
  * @warning 应在调度器启动后调用一次；重复调用会使回调注册返回 BUSY，并可能
  *          使 USART2 接收重挂失败而进入待重挂状态。
  */
 void F103_HardwareTest_Init(void) {
-  s_boot_iwdg_reset = Platform_IWDG_WasReset(PLATFORM_IWDG_1);
-  s_boot_wwdg_reset = Platform_WWDG_WasReset(PLATFORM_WWDG_1);
-
   const platform_uart_callback_binding_t uart_callbacks = {
     .callback = f103_hardwaretest_uartcallback,
     .context = NULL,
@@ -884,25 +784,7 @@ void F103_HardwareTest_Init(void) {
   );
 
   f103_hardwaretest_armuartreceive();
-  char boot_message[96];
-  f103_hardware_test_text_t boot_text = {
-    .data = boot_message,
-    .capacity = sizeof(boot_message),
-    .length = 0u,
-  };
-  boot_message[0] = '\0';
-  f103_hardwaretest_append(&boot_text, "F103 READY iwdg=");
-  f103_hardwaretest_appenduint(
-    &boot_text,
-    s_boot_iwdg_reset ? 1u : 0u
-  );
-  f103_hardwaretest_append(&boot_text, " wwdg=");
-  f103_hardwaretest_appenduint(
-    &boot_text,
-    s_boot_wwdg_reset ? 1u : 0u
-  );
-  f103_hardwaretest_append(&boot_text, "\r\n");
-  f103_hardwaretest_send(boot_message);
+  f103_hardwaretest_send("F103 READY\r\n");
 }
 
 /**
@@ -913,7 +795,7 @@ void F103_HardwareTest_Init(void) {
  *      I2C1、ADC1、TIM1-TIM4、USART3；在任务上下文调用。
  * @post 输出 BEGIN 和 SUMMARY 日志；各子测试结束后的硬件状态见各自说明。
  * @note 执行顺序固定：GPIO 回读、AHT20、OLED、ADC DMA、TIM1 编码器、
- *       TIM2、TIM3、TIM4、USART3 探测；IWDG/WWDG 不在本函数内触发。
+ *       TIM2、TIM3、TIM4、USART3 探测。
  * @warning 会短暂拉高 PA7/PB0/PB5/PB9/PA11、改写 TIM1 计数器为 1234 并停止编码器、
  *          让 TIM4_CH3 输出约 1.5 ms 中位脉冲，且 USART3 收发可能各阻塞 100 ms。
  *          执行前必须确认继电器、蜂鸣器、舵机和编码器连接处于安全状态。
@@ -923,12 +805,7 @@ void F103_HardwareTest_Init(void) {
 f103_hardware_test_summary_t F103_HardwareTest_RunAll(void) {
   f103_hardware_test_summary_t summary = {0u, 0u, 0u};
 
-  SYS_LOG_INFO(
-    "HW",
-    "BEGIN reset_iwdg=%u reset_wwdg=%u",
-    s_boot_iwdg_reset ? 1u : 0u,
-    s_boot_wwdg_reset ? 1u : 0u
-  );
+  SYS_LOG_INFO("HW", "BEGIN");
 
   f103_hardwaretest_report(
     "platform_gpio_readback",
@@ -996,8 +873,7 @@ f103_hardware_test_summary_t F103_HardwareTest_RunAll(void) {
  * @note 忽略 CR；超长命令仅保留前 63 个字符，其余字节在下一个 LF 前丢弃。
  * @note 不主动轮询串口硬件，只处理回调已写入的状态；若调用间隔过长，64 字节
  *       环形缓冲区会满并静默丢弃新字节。
- * @warning 执行 TEST 命令会运行完整硬件套件；执行 IWDG/WWDG 命令会启动看门狗
- *          并使 MCU 复位，仅限测试固件和已连接上位机的场景使用。
+ * @warning 执行 TEST 命令会运行完整硬件套件。
  */
 void F103_HardwareTest_Process(void) {
   if (s_uart_rx_dma_complete) {
