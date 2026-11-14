@@ -47,13 +47,14 @@ typedef struct filter_imu_calibration_s {
  * @param filter_h 待初始化的校正滤波器存储；可处于未初始化状态，不能为 NULL。
  * @param name 非空只读名称；生命周期必须覆盖滤波器对象。
  * @param config 非空初始参数；加速度比例系数每轴须在 0.1..10，陀螺零偏绝对值不超过 720 deg/s。
- * @retval true 参数有效，对象已清零、绑定并完成 reset。
- * @retval false filter_h、name 或 config 为空，或配置含非有限值/超范围比例/超范围零偏；对象保持不变。
+ * @retval FILTER_STATUS_OK 参数有效，对象已清零、绑定并完成 reset。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h、name 或 config 为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG 配置含非有限值、超范围比例或超范围零偏。
  * @pre 只在任务初始化阶段调用，且 filter_h 未被其他上下文使用。
  * @post 成功时 corrected_frames 为 0，配置被复制并持久保存；失败时不修改 filter_h。
  * @note 不分配动态内存；输入通道 schema 与 IMU 固定通道 3..8 一致。
  */
-bool Filter_ImuCalibration_Init(
+filter_status_t Filter_ImuCalibration_Init(
   filter_imu_calibration_t *filter_h,
   const char *name,
   const filter_imu_calibration_config_t *config
@@ -63,13 +64,14 @@ bool Filter_ImuCalibration_Init(
  * @brief 在帧边界更新六轴校正参数。
  * @param filter_h 已初始化的校正滤波器，不能为 NULL。
  * @param config 非空候选参数；校验规则与 Filter_ImuCalibration_Init 相同。
- * @retval true 参数有效，已在临界区内完整提交。
- * @retval false 任一指针为空或参数无效，原配置保持不变。
+ * @retval FILTER_STATUS_OK 参数有效，已在临界区内完整提交。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h 或 config 为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG 参数无效，原配置保持不变。
  * @pre filter_h 已成功初始化；调用方拥有 config，函数只读取它。
  * @post 成功时后续 update 使用新配置；update 通过临界区复制配置，不会观察到半更新状态。
  * @note 可从参数任务调用；配置提交与帧内读取由 Sys_Critical 串行化，不分配动态内存。
  */
-bool Filter_ImuCalibration_SetConfig(
+filter_status_t Filter_ImuCalibration_SetConfig(
   filter_imu_calibration_t *filter_h,
   const filter_imu_calibration_config_t *config
 );

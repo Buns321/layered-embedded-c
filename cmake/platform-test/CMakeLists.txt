@@ -104,6 +104,25 @@ add_executable(filter_ekf_contract_test
     ${REPO_ROOT}/Filter/Src/filter_ekf.c
 )
 
+add_executable(filter_base_contract_test
+    filter_base_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+)
+
+add_executable(filter_lowpass_contract_test
+    filter_lowpass_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_lowpass.c
+)
+
+add_executable(filter_topology_contract_test
+    filter_topology_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_chain.c
+    ${REPO_ROOT}/Filter/Src/filter_distributor.c
+    ${REPO_ROOT}/Filter/Src/filter_passthrough.c
+)
+
 add_executable(system_record_store_contract_test
     system_record_store_contract_test.c
     ${REPO_ROOT}/System/Src/system_record_store.c
@@ -346,6 +365,23 @@ target_compile_definitions(uart_link_contract_test PRIVATE
 )
 
 target_include_directories(filter_ekf_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_base_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_lowpass_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_topology_contract_test PRIVATE
     ${REPO_ROOT}/Filter/Base/Inc
     ${REPO_ROOT}/Filter/Inc
     ${REPO_ROOT}/System/Inc
@@ -608,6 +644,21 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(filter_base_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(filter_lowpass_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(filter_topology_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
     target_compile_options(system_record_store_contract_test PRIVATE
         -Wall
         -Wextra
@@ -782,6 +833,18 @@ add_test(
 add_test(
     NAME filter_ekf_contract_test
     COMMAND filter_ekf_contract_test
+)
+add_test(
+    NAME filter_base_contract_test
+    COMMAND filter_base_contract_test
+)
+add_test(
+    NAME filter_lowpass_contract_test
+    COMMAND filter_lowpass_contract_test
+)
+add_test(
+    NAME filter_topology_contract_test
+    COMMAND filter_topology_contract_test
 )
 add_test(
     NAME system_record_store_contract_test

@@ -48,11 +48,20 @@ typedef struct filter_distributor_s {
  * @param name 非空只读名称；生命周期必须覆盖分发器对象。
  * @param routes 非空路由表；前 route_count 项在调用期间只读。
  * @param route_count 路由数，范围 1..FILTER_DISTRIBUTOR_CAPACITY。
+ * @retval FILTER_STATUS_OK 路由表有效，分发器已完成初始化。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h、name 或 routes 为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG 路由数量、滤波器、通道索引或输出冲突非法。
  * @pre 每条路由的输入/输出数量在 1..FILTER_ROUTE_CAPACITY 内，索引小于 FILTER_CHANNEL_CAPACITY。
  * @post 路由表复制入对象、剩余槽位清零，并 reset 全部唯一子滤波器。
- * @note Debug 构建拒绝重复滤波器、同一路由内重复索引和跨路由重复输出；仅初始化阶段调用。
+ * @post 失败时对象保持不变。
+ * @note 重复滤波器、同一路由内重复索引和跨路由重复输出均被拒绝。
  */
-void Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name, const filter_distributor_route_t *routes, uint8_t route_count);
+filter_status_t Filter_Distributor_Init(
+  filter_distributor_t *filter_h,
+  const char *name,
+  const filter_distributor_route_t *routes,
+  uint8_t route_count
+);
 
 /** @} */
 

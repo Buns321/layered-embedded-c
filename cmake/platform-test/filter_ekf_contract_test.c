@@ -88,7 +88,10 @@ static filter_sample_t make_complete_input(uint32_t time_ms) {
  */
 static void test_placeholder_and_time(void) {
   filter_ekf_t ekf;
-  assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
+  assert(
+    Filter_Ekf_Init(&ekf, "ekf", &s_default_config) ==
+    FILTER_STATUS_OK
+  );
 
   filter_sample_t input = make_complete_input(100u);
   filter_sample_t output;
@@ -121,7 +124,10 @@ static void test_placeholder_and_time(void) {
  */
 static void test_incomplete_input(void) {
   filter_ekf_t ekf;
-  assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
+  assert(
+    Filter_Ekf_Init(&ekf, "ekf", &s_default_config) ==
+    FILTER_STATUS_OK
+  );
 
   filter_sample_t input = {
     .valid_mask = (1u << 5) | (1u << 8),
@@ -146,37 +152,53 @@ static void test_incomplete_input(void) {
  */
 static void test_online_parameters(void) {
   filter_ekf_t ekf;
-  assert(Filter_Ekf_Init(&ekf, "ekf", &s_default_config));
+  assert(
+    Filter_Ekf_Init(&ekf, "ekf", &s_default_config) ==
+    FILTER_STATUS_OK
+  );
 
   filter_ekf_config_t invalid_config = s_default_config;
   invalid_config.max_dt_s = invalid_config.min_dt_s * 0.5f;
-  assert(!Filter_Ekf_Init(&ekf, "ekf", &invalid_config));
+  assert(
+    Filter_Ekf_Init(&ekf, "ekf", &invalid_config) ==
+    FILTER_STATUS_INVALID_CONFIG
+  );
 
-  assert(Filter_Ekf_SetParameter(
-    &ekf,
-    FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
-    0.2f
-  ));
-  assert(!Filter_Ekf_SetParameter(
-    &ekf,
-    FILTER_EKF_PARAM_COUNT,
-    1.0f
-  ));
-  assert(!Filter_Ekf_SetParameter(
-    &ekf,
-    FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
-    0.0f
-  ));
-  assert(!Filter_Ekf_SetParameter(
-    &ekf,
-    FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
-    NAN
-  ));
-  assert(!Filter_Ekf_SetParameter(
-    &ekf,
-    FILTER_EKF_PARAM_ACCEL_NORM_MIN,
-    12.0f
-  ));
+  assert(
+    Filter_Ekf_SetParameter(
+      &ekf,
+      FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
+      0.2f
+    ) == FILTER_STATUS_OK
+  );
+  assert(
+    Filter_Ekf_SetParameter(
+      &ekf,
+      FILTER_EKF_PARAM_COUNT,
+      1.0f
+    ) == FILTER_STATUS_INVALID_ARGUMENT
+  );
+  assert(
+    Filter_Ekf_SetParameter(
+      &ekf,
+      FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
+      0.0f
+    ) == FILTER_STATUS_INVALID_CONFIG
+  );
+  assert(
+    Filter_Ekf_SetParameter(
+      &ekf,
+      FILTER_EKF_PARAM_ACCEL_MEASUREMENT_NOISE,
+      NAN
+    ) == FILTER_STATUS_INVALID_CONFIG
+  );
+  assert(
+    Filter_Ekf_SetParameter(
+      &ekf,
+      FILTER_EKF_PARAM_ACCEL_NORM_MIN,
+      12.0f
+    ) == FILTER_STATUS_INVALID_CONFIG
+  );
 
   filter_ekf_config_t before;
   Filter_Ekf_GetConfig(&ekf, &before);

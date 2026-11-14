@@ -193,10 +193,9 @@ bool App_CalibrationRecord_Apply(
     config.gyro_bias_dps[axis] =
       record->gyro_bias_radps[axis] * APP_CALIBRATION_RAD_TO_DEG;
   }
-  bool applied = Filter_ImuCalibration_SetConfig(
-    store_h->filter_h,
-    &config
-  );
+  bool applied =
+    Filter_ImuCalibration_SetConfig(store_h->filter_h, &config) ==
+    FILTER_STATUS_OK;
   if (!applied) {
     store_h->flash_write_failed = true;
   }

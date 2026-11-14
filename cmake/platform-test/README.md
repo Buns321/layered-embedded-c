@@ -10,6 +10,9 @@ RTC/Flash/UART/I2C/SPI/CAN/ADC/DAC/PWM/Encoder/EXTI/GPIO/CRC/RNG 公共状态机
 CRLF 组帧、行溢出和虚拟 UART TX 完成转发；快速通道遥测契约测试覆盖 32 通道映射、
 占位 EKF 掩码和命令状态发布。`system_text` 契约测试覆盖 ASCII 忽略大小写比较、
 固定容量空白切分、CR 处理、非法容量和严格有限 float 解析。
+Filter 基类测试覆盖构造器失败不变性、可选回调、输入预复制、非法掩码与非有限
+通道清洗、时间戳保护和 reset 转发；低通、chain 与 distributor 测试覆盖配置
+拒绝、状态复位、失败不变性和路由冲突。
 毫秒窗口、字节环和角度归一化测试覆盖 32 位时间回绕、SPSC 环形缓冲边界、
 deg/rad 周期归一化及非有限输入。快速通道 App 测试还覆盖参考姿态、校准记录
 持久化事件、初始倒置跳过和蜂鸣器/LED 时序。

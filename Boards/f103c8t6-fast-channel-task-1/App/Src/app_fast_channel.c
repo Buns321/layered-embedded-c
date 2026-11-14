@@ -82,7 +82,11 @@ static bool app_fastchannel_applycommand(
     return false;
   }
 
-  return Filter_Ekf_SetParameter(&s_ekf, parameter, command->value);
+  return Filter_Ekf_SetParameter(
+    &s_ekf,
+    parameter,
+    command->value
+  ) == FILTER_STATUS_OK;
 }
 
 /**
@@ -136,11 +140,13 @@ platform_status_t App_FastChannel_Init(void) {
   const filter_imu_calibration_config_t default_calibration = {
     .accel_scale = {1.0f, 1.0f, 1.0f},
   };
-  if (!Filter_ImuCalibration_Init(
-        &s_calibration_filter,
-        "imu_calibration",
-        &default_calibration
-      )) {
+  if (
+    Filter_ImuCalibration_Init(
+      &s_calibration_filter,
+      "imu_calibration",
+      &default_calibration
+    ) != FILTER_STATUS_OK
+  ) {
     return PLATFORM_STATUS_ERROR;
   }
 
@@ -160,7 +166,7 @@ platform_status_t App_FastChannel_Init(void) {
     .min_dt_s = APP_EKF_MIN_DT_S,
     .max_dt_s = APP_EKF_MAX_DT_S,
   };
-  if (!Filter_Ekf_Init(&s_ekf, "ekf", &ekf_config)) {
+  if (Filter_Ekf_Init(&s_ekf, "ekf", &ekf_config) != FILTER_STATUS_OK) {
     return PLATFORM_STATUS_ERROR;
   }
 
@@ -168,12 +174,16 @@ platform_status_t App_FastChannel_Init(void) {
     &s_calibration_filter.filter_base,
     &s_ekf.filter_base,
   };
-  Filter_Chain_Init(
-    &s_filter_chain,
-    "imu_chain",
-    filter_stages,
-    2u
-  );
+  if (
+    Filter_Chain_Init(
+      &s_filter_chain,
+      "imu_chain",
+      filter_stages,
+      2u
+    ) != FILTER_STATUS_OK
+  ) {
+    return PLATFORM_STATUS_ERROR;
+  }
 
   uart_link_config_t link_config = {
     .name = "uart1_link",

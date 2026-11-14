@@ -27,19 +27,21 @@ volatile uint32_t g_sys_log_fast_mask;
  * @brief 记录滤波器配置提交调用的测试替身。
  * @param filter_h 滤波器对象；测试忽略。
  * @param config 非空配置；测试不访问。
- * @return s_set_config_result。
+ * @return s_set_config_result 对应的 Filter 状态。
  * @pre config 非空。
  * @post s_set_config_calls 加一。
  * @note 不访问真实滤波器。
  */
-bool Filter_ImuCalibration_SetConfig(
+filter_status_t Filter_ImuCalibration_SetConfig(
   filter_imu_calibration_t *filter_h,
   const filter_imu_calibration_config_t *config
 ) {
   (void)filter_h;
   assert(config);
   s_set_config_calls++;
-  return s_set_config_result;
+  return s_set_config_result
+    ? FILTER_STATUS_OK
+    : FILTER_STATUS_INVALID_CONFIG;
 }
 
 /**

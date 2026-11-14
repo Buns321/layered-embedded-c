@@ -325,24 +325,21 @@ typedef struct {
 /**
  * @brief 验证姿态滤波器更新结果。
  * @param filter_h 滤波器基对象；本测试替身不访问该参数。
- * @param input 输入样本；本测试替身不读取该参数。
- * @param output 待修改的滤波器输出样本；必须非空且可写。
- * @pre Dev_IMU_Base 已先把输入通道复制到 output，允许本函数覆盖指定通道。
- * @post 清除 output.valid_mask 中的 GYRO_X，置位 YAW，并把 yaw 值写为 45.0 度。
- * @warning 传 NULL 输出会直接解引用并终止进程。
+ * @param sample base 已预复制并清洗的可读写样本。
+ * @pre Dev_IMU_Base 已先把输入通道复制到 sample，允许本函数覆盖指定通道。
+ * @post 清除 sample.valid_mask 中的 GYRO_X，置位 YAW，并把 yaw 值写为 45.0 度。
+ * @warning 传 NULL sample 会直接解引用并终止进程。
  * @note 该行为用于验证 base 会合并新增姿态通道并尊重滤波器清除的通道。
  */
 static void test_attitude_filter_update(
   filter_base_t *filter_h,
-  const filter_sample_t *input,
-  filter_sample_t *output
+  filter_sample_t *sample
 ) {
   (void)filter_h;
-  (void)input;
 
-  output->valid_mask &= ~IMU_CHANNEL_GYRO_X;
-  output->valid_mask |= IMU_CHANNEL_YAW;
-  output->value[IMU_CHANNEL_INDEX_YAW] = 45.0f;
+  sample->valid_mask &= ~IMU_CHANNEL_GYRO_X;
+  sample->valid_mask |= IMU_CHANNEL_YAW;
+  sample->value[IMU_CHANNEL_INDEX_YAW] = 45.0f;
 }
 
 /**
@@ -374,7 +371,12 @@ static const filter_ops_t s_test_attitude_filter_ops = {
 static int test_partial_imu_frames(void) {
   test_imu_t imu = {0};
   filter_passthrough_t passthrough;
-  Filter_Passthrough_Init(&passthrough, "imu-test-passthrough");
+  CHECK(
+    Filter_Passthrough_Init(
+      &passthrough,
+      "imu-test-passthrough"
+    ) == FILTER_STATUS_OK
+  );
 
   Dev_IMU_Base_Init(
     &imu.base,
@@ -450,10 +452,15 @@ static int test_partial_imu_frames(void) {
 static int test_filter_adds_attitude_and_clears_channel(void) {
   test_imu_t imu = {0};
   test_attitude_filter_t filter = {0};
-  Filter_Base_Init(
-    &filter.base,
-    "imu-test-attitude-filter",
-    &s_test_attitude_filter_ops
+  const filter_config_t config = {
+    .name = "imu-test-attitude-filter",
+  };
+  CHECK(
+    Filter_Base_Construct(
+      &filter.base,
+      &config,
+      &s_test_attitude_filter_ops
+    ) == FILTER_STATUS_OK
   );
 
   Dev_IMU_Base_Init(
@@ -531,7 +538,12 @@ static int test_wht101_passthrough_pipeline(void) {
   Dev_UART_Base_Init(&usart.base, "wht-test-usart", &s_test_uart_ops);
 
   filter_passthrough_t passthrough;
-  Filter_Passthrough_Init(&passthrough, "wht-test-passthrough");
+  CHECK(
+    Filter_Passthrough_Init(
+      &passthrough,
+      "wht-test-passthrough"
+    ) == FILTER_STATUS_OK
+  );
 
   imu_wht101_uart_t imu = {0};
   Dev_IMU_WHT101_UART_Init(
@@ -623,7 +635,12 @@ static int test_mpu6050_acquisition(void) {
   fake_i2c_reset();
 
   filter_passthrough_t passthrough;
-  Filter_Passthrough_Init(&passthrough, "mpu-test-passthrough");
+  CHECK(
+    Filter_Passthrough_Init(
+      &passthrough,
+      "mpu-test-passthrough"
+    ) == FILTER_STATUS_OK
+  );
 
   mpu6050_i2c_t mpu = {0};
   const uint8_t axis_source[3] = {0u, 1u, 2u};
@@ -699,7 +716,12 @@ static int test_mpu6050_axis_mapping_and_probe_failure(void) {
   fake_i2c_reset();
 
   filter_passthrough_t passthrough;
-  Filter_Passthrough_Init(&passthrough, "mpu-axis-passthrough");
+  CHECK(
+    Filter_Passthrough_Init(
+      &passthrough,
+      "mpu-axis-passthrough"
+    ) == FILTER_STATUS_OK
+  );
 
   mpu6050_i2c_t mpu = {0};
   const uint8_t axis_source[3] = {1u, 0u, 2u};

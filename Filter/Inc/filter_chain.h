@@ -34,11 +34,20 @@ typedef struct filter_chain_s {
  * @param name 非空只读名称；生命周期必须覆盖链对象。
  * @param filter_stage_h 非空级联表；前 stage_count 项必须非空、已初始化且互不重复。
  * @param stage_count 级数，范围 1..FILTER_CHAIN_CAPACITY。
+ * @retval FILTER_STATUS_OK 级联表有效，链已完成初始化。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h、name 或级联表为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG 级数、自引用、空 stage、无效回调或重复项非法。
  * @pre 任一 stage 不能指向 filter_h 自身的基对象；表项生命周期必须覆盖链对象。
  * @post 级联表复制入对象、剩余槽位清零，并按顺序 reset 全部 stage。
- * @note Debug 构建检查自引用和重复项；仅允许初始化阶段单线程调用。
+ * @post 失败时对象保持不变。
+ * @note 仅允许初始化阶段单线程调用。
  */
-void Filter_Chain_Init(filter_chain_t *filter_h, const char *name, filter_base_t *const *filter_stage_h, uint8_t stage_count);
+filter_status_t Filter_Chain_Init(
+  filter_chain_t *filter_h,
+  const char *name,
+  filter_base_t *const *filter_stage_h,
+  uint8_t stage_count
+);
 
 /** @} */
 

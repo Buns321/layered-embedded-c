@@ -129,12 +129,21 @@ controller_status_t update(
 ### Filter
 
 - `filter_sample_t` 固定 16 通道，包含 `value[]`、`valid_mask`、`time_ms`。
-- `Filter_Base_Update` 先把输入全量复制到输出，再调用具体滤波器的 `update`。
+- `Filter_Base_Construct` 统一执行公共参数校验、派生配置校验和具体字段初始化，
+  成功后再绑定 base 并调用 reset；具体 `Init` 只组装派生配置并调用构造器。
+- `filter_config_t.data` 由具体 `init` 解释为对应配置或初始化数据；`init/update/reset`
+  回调均为可选，空 `update/reset` 分别表示透传和无状态。`init` 必须在首次写入
+  对象前完成全部可失败检查，`data` 引用的存储不得与正在构造的对象重叠。
+- `Filter_Base_Update` 先把输入全量复制到输出，清除非法掩码位和非有限有效通道，
+  再把输出原地交给具体滤波器的 `update`；返回前再次清洗并恢复输入时间戳。
+- 具体滤波器的 `filter_ops_t.update` 只接收一个可读写样本，不再重复检查空指针、
+  输入输出别名、通道范围和时间戳；模块配置在构造器或配置提交时校验一次。
+- Filter 公共配置入口使用 `filter_status_t`；失败时不留下半初始化对象。
 - IMU 通道 0–8 固定为 yaw、roll、pitch、gyro XYZ、accel XYZ；具体驱动只置位
   本帧更新的通道，`imu_base_t` 合并异步帧并保存逐通道时间戳。
 - MPU6050 首版提交 accel/gyro 六通道；yaw/roll/pitch 由后续注册的姿态滤波
   或 Kalman 输出，驱动本身不内置滤波算法。
-- 低通、透传、chain、distributor 都依赖这个预复制语义。
+- 低通、透传、chain、distributor 都依赖这个预复制和统一清洗语义。
 - Distributor 的路由输出会覆盖预复制通道；跨路由写同一输出通道在 Init 阶段拒绝。
 - `filter_imu_calibration_t` 在统一 IMU schema 上应用陀螺零偏和加速度
   offset/scale，原始帧由 `imu_base.raw_sample` 保留。
@@ -319,7 +328,9 @@ EKF 核心占位期间仍发布零姿态，但状态标记为 `PLACEHOLDER` 且 
 - **新控制律**：实现 `controller_ops_t`（`update` / `reset`），内嵌 `controller_base_t`。
 - **新 policy**：实现对应底盘的 policy ops，内嵌对应 policy base。
 - **新底盘**：内嵌 `chassis_base_t`，持有自己的执行器、IMU、policy，实现 `update` / `stop` / `estop`。
-- **新滤波器**：实现 `filter_ops_t`（`update` / `reset`）。
+- **新滤波器**：定义自己的初始化数据类型，实现可选的 `init` / `update` /
+  `reset`，把初始化数据挂到 `filter_config_t.data` 并通过
+  `Filter_Base_Construct` 初始化。
 - **新 MCU**：增加 `Platform/Src/<mcu>/`，补家族宏、HAL/CMSIS、启动文件、链接脚本和构建目标。
 
 ## 11. 当前状态

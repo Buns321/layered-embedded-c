@@ -115,6 +115,11 @@
 - 所有 init 先校验指针、数量、枚举和关键常数。
 - 能失败的具体 init 返回 `platform_status_t` 或对应状态。
 - 需要两段式初始化时，具体 init 负责芯片配置与 ops 绑定，base init 负责通用状态和依赖注入。
+- Filter 的具体 init 和接受外部配置的提交接口统一返回 `filter_status_t`；
+  具体 init 通过 `Filter_Base_Construct` 复用公共校验、派生初始化、绑定和 reset。
+- Filter 的具体 `init` 解释 `filter_config_t.data`；`filter_ops_t` 的
+  `init` / `update` / `reset` 可为空，分别表示无派生配置、透传和无状态。
+  公共样本合同由 `Filter_Base_Update` 统一检查。
 - 初始化顺序见 `architecture.md`。
 
 ## 4. 错误处理
@@ -123,7 +128,7 @@
   统一返回 `PLATFORM_STATUS_INVALID_ARGUMENT`，不得依赖 `assert`，详见
   [Platform 公共契约](platform-contract.md)。
 - 运行时错误用状态枚举或返回值：`platform_status_t`、`dev_uart_status_t`、
-  `controller_status_t`。
+  `controller_status_t`、`filter_status_t`。
 - 对外部输入（传感器、串口、命令）做有限值检查；非有限值清零或返回 ERROR。
 - 不静默忽略初始化失败；调用方必须检查。
 

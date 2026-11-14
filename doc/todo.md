@@ -215,7 +215,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 保留 Filter Base 的输入预复制语义，Distributor 允许覆盖预复制通道，修复同通道路由断言冲突
 - [x] 将 Filter base、Lowpass、Chain、Distributor 加入 `CMakeLists.txt` 和 include 路径
 - [x] 为 `FILTER_CHANNEL_CAPACITY` 增加编译期上限检查，避免掩码移位超过 32 位
-- [ ] 为 Filter Base、Lowpass、Chain、Distributor 增加可执行的单元测试和组合测试
+- [x] 通过 `Filter_Base_Construct` 复用公共校验、派生初始化、base 绑定和 reset
+- [x] 为 Filter Base、Lowpass、Chain、Distributor 增加公共合同和组合测试
 - [ ] 新增 `filter_kalman_t` 具体实现，基于样本有效位支持预测与校正
 - [x] 定义统一 IMU 九通道枚举，覆盖姿态、gyro XYZ 与 accel XYZ
 - [x] MPU6050 原始六轴提交给已注册滤波器

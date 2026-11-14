@@ -81,6 +81,39 @@ static bool filter_ekf_configisvalid(const filter_ekf_config_t *config) {
 }
 
 /**
+ * @brief 校验并初始化 EKF 具体参数。
+ * @param filter_h 待构造的 EKF 对象，不能为 NULL。
+ * @param filter_config 非空基配置；data 指向 filter_ekf_config_t。
+ * @retval FILTER_STATUS_OK EKF 参数有效。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT EKF 参数指针为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG EKF 参数范围或组合关系无效。
+ * @pre filter_config->data 指向调用期间有效的 EKF 配置。
+ * @post 成功时活动、默认和待提交参数均初始化；失败时不修改 EKF 对象。
+ * @note 私有构造回调，不分配动态内存。
+ */
+static filter_status_t filter_ekf_init(
+  filter_base_t *filter_h,
+  const filter_config_t *filter_config
+) {
+  filter_ekf_t *filter_ekf_h = (filter_ekf_t *)filter_h;
+  const filter_ekf_config_t *config =
+    (const filter_ekf_config_t *)filter_config->data;
+
+  if (config == NULL) {
+    return FILTER_STATUS_INVALID_ARGUMENT;
+  }
+  if (!filter_ekf_configisvalid(config)) {
+    return FILTER_STATUS_INVALID_CONFIG;
+  }
+
+  filter_ekf_h->config = *config;
+  filter_ekf_h->default_config = *config;
+  filter_ekf_h->pending_config = *config;
+  filter_ekf_h->pending_mask = 0u;
+  return FILTER_STATUS_OK;
+}
+
+/**
  * @brief 定位配置结构中可设置的字段。
  * @param config 可写的候选配置，不能为 NULL。
  * @param parameter 参数身份；FILTER_EKF_PARAM_COUNT 及更大值无对应字段。
@@ -154,12 +187,11 @@ static void filter_ekf_initializecovariance(filter_ekf_t *filter_h) {
  * @brief 在安全点应用待处理的 EKF 配置。
  * @param filter_h 已初始化的 EKF 对象，不能为 NULL。
  * @pre 仅在 EKF 更新的安全点调用；pending_config 与 pending_mask 可在临界区内一致读取。
- * @post pending_mask 清零；候选配置有效时替换 active config，否则 pending_config 回退到 active config。
+ * @post pending_mask 清零；已经过 SetParameter 完整校验的 pending_config 替换
+ *       active config。
  * @note 不修改协方差或姿态；不分配动态内存，调用方负责与其他参数写入串行化。
  */
 static void filter_ekf_applypendingconfig(filter_ekf_t *filter_h) {
-  assert(filter_h);
-
   filter_ekf_config_t pending_config;
   uint32_t pending_mask;
 
@@ -173,11 +205,8 @@ static void filter_ekf_applypendingconfig(filter_ekf_t *filter_h) {
     return;
   }
 
-  if (filter_ekf_configisvalid(&pending_config)) {
-    filter_h->config = pending_config;
-  } else {
-    filter_h->pending_config = filter_h->config;
-  }
+  assert(filter_ekf_configisvalid(&pending_config));
+  filter_h->config = pending_config;
 }
 
 /**
@@ -270,35 +299,42 @@ static void filter_ekf_coreupdate(
 /**
  * @brief 发布 EKF 姿态结果到 IMU 姿态通道。
  * @param filter_h 已初始化的 EKF 对象，不能为 NULL。
- * @param output 调用方拥有的输出样本，base 已预复制 input；不能为 NULL。
+ * @param sample base 已预复制并清洗的样本，可原地写入姿态通道。
  * @pre state.roll_rad、pitch_rad、yaw_rad 已由核心更新。
  * @post 通道 0..2 分别写入 yaw/roll/pitch（deg）；仅 state.valid 为 true 且非占位时置有效位。
  * @note 内部角度为 rad，输出边界转为 deg；不修改角速度通道或时间戳，不分配动态内存。
  */
 static void filter_ekf_publishattitude(
   filter_ekf_t *filter_h,
-  filter_sample_t *output
+  filter_sample_t *sample
 ) {
-  assert(filter_h && output);
-
-  const uint32_t yaw_mask =
-    (uint32_t)1u << FILTER_EKF_IMU_YAW_CHANNEL;
-  const uint32_t roll_mask =
-    (uint32_t)1u << FILTER_EKF_IMU_ROLL_CHANNEL;
-  const uint32_t pitch_mask =
-    (uint32_t)1u << FILTER_EKF_IMU_PITCH_CHANNEL;
-
-  output->value[FILTER_EKF_IMU_YAW_CHANNEL] =
+  float yaw_deg =
     filter_h->state.yaw_rad * FILTER_EKF_RAD_TO_DEG;
-  output->value[FILTER_EKF_IMU_ROLL_CHANNEL] =
+  float roll_deg =
     filter_h->state.roll_rad * FILTER_EKF_RAD_TO_DEG;
-  output->value[FILTER_EKF_IMU_PITCH_CHANNEL] =
+  float pitch_deg =
     filter_h->state.pitch_rad * FILTER_EKF_RAD_TO_DEG;
 
   if (filter_h->state.valid && !filter_h->state.placeholder) {
-    output->valid_mask |= yaw_mask | roll_mask | pitch_mask;
+    (void)Filter_Sample_WriteFiniteChannel(
+      sample,
+      FILTER_EKF_IMU_YAW_CHANNEL,
+      yaw_deg
+    );
+    (void)Filter_Sample_WriteFiniteChannel(
+      sample,
+      FILTER_EKF_IMU_ROLL_CHANNEL,
+      roll_deg
+    );
+    (void)Filter_Sample_WriteFiniteChannel(
+      sample,
+      FILTER_EKF_IMU_PITCH_CHANNEL,
+      pitch_deg
+    );
   } else {
-    output->valid_mask &= ~(yaw_mask | roll_mask | pitch_mask);
+    Filter_Sample_ClearChannel(sample, FILTER_EKF_IMU_YAW_CHANNEL);
+    Filter_Sample_ClearChannel(sample, FILTER_EKF_IMU_ROLL_CHANNEL);
+    Filter_Sample_ClearChannel(sample, FILTER_EKF_IMU_PITCH_CHANNEL);
   }
 }
 
@@ -325,8 +361,7 @@ static void filter_ekf_reset(filter_base_t *filter_h) {
 /**
  * @brief 执行 EKF 单步更新。
  * @param filter_h 已初始化的 EKF 基对象，不能为 NULL。
- * @param input 只读 IMU 固定通道样本，不能为 NULL；需要通道 3..8 全部有效。
- * @param output 调用方拥有的输出样本，base 已预复制 input。
+ * @param sample base 已预复制并清洗的 IMU 样本；完整融合需要通道 3..8 全部有效。
  * @pre 单写者调用；time_ms 单调；配置中的 dt 范围有效。
  * @post 先应用待提交配置并推进 dt；缺通道时 state.valid=false 且姿态位清除；
  *       通道完整时执行核心、增加 update_count 并发布姿态。
@@ -335,34 +370,32 @@ static void filter_ekf_reset(filter_base_t *filter_h) {
  */
 static void filter_ekf_update(
   filter_base_t *filter_h,
-  const filter_sample_t *input,
-  filter_sample_t *output
+  filter_sample_t *sample
 ) {
-  assert(filter_h && input && output);
   filter_ekf_t *filter_ekf_h = (filter_ekf_t *)filter_h;
 
   filter_ekf_applypendingconfig(filter_ekf_h);
-  float dt_s = filter_ekf_clampdeltatime(filter_ekf_h, input->time_ms);
+  float dt_s = filter_ekf_clampdeltatime(filter_ekf_h, sample->time_ms);
 
-  if (!filter_ekf_inputframeisusable(input)) {
+  if (!filter_ekf_inputframeisusable(sample)) {
     filter_ekf_h->state.valid = false;
     filter_ekf_h->state.dt_s = dt_s;
-    filter_ekf_publishattitude(filter_ekf_h, output);
+    filter_ekf_publishattitude(filter_ekf_h, sample);
     return;
   }
 
   float gyro_radps[3] = {
-    input->value[FILTER_EKF_IMU_GYRO_X_CHANNEL] *
+    sample->value[FILTER_EKF_IMU_GYRO_X_CHANNEL] *
       FILTER_EKF_DEG_TO_RAD,
-    input->value[FILTER_EKF_IMU_GYRO_Y_CHANNEL] *
+    sample->value[FILTER_EKF_IMU_GYRO_Y_CHANNEL] *
       FILTER_EKF_DEG_TO_RAD,
-    input->value[FILTER_EKF_IMU_GYRO_Z_CHANNEL] *
+    sample->value[FILTER_EKF_IMU_GYRO_Z_CHANNEL] *
       FILTER_EKF_DEG_TO_RAD,
   };
   float accel_mps2[3] = {
-    input->value[FILTER_EKF_IMU_ACCEL_X_CHANNEL],
-    input->value[FILTER_EKF_IMU_ACCEL_Y_CHANNEL],
-    input->value[FILTER_EKF_IMU_ACCEL_Z_CHANNEL],
+    sample->value[FILTER_EKF_IMU_ACCEL_X_CHANNEL],
+    sample->value[FILTER_EKF_IMU_ACCEL_Y_CHANNEL],
+    sample->value[FILTER_EKF_IMU_ACCEL_Z_CHANNEL],
   };
 
   filter_ekf_coreupdate(
@@ -373,10 +406,11 @@ static void filter_ekf_update(
   );
   filter_ekf_h->state.dt_s = dt_s;
   filter_ekf_h->state.update_count++;
-  filter_ekf_publishattitude(filter_ekf_h, output);
+  filter_ekf_publishattitude(filter_ekf_h, sample);
 }
 
 static const filter_ops_t filter_ops_ekf = {
+  .init = filter_ekf_init,
   .update = filter_ekf_update,
   .reset = filter_ekf_reset,
 };
@@ -386,33 +420,31 @@ static const filter_ops_t filter_ops_ekf = {
  * @param filter_h 待初始化的 EKF 存储；可处于未初始化状态，不能为 NULL。
  * @param name 非空只读名称；生命周期必须覆盖 EKF 对象。
  * @param config 非空默认参数；噪声和门限必须为规定的正有限值，max_dt_s 不小于 min_dt_s。
- * @retval true 参数有效，EKF 状态、默认参数、待提交参数和协方差已初始化。
- * @retval false filter_h/name/config 为空或配置无效；filter_h 保持不变。
+ * @retval FILTER_STATUS_OK 参数有效，EKF 状态、默认参数、待提交参数和协方差已初始化。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h、name 或 config 为空。
+ * @retval FILTER_STATUS_INVALID_CONFIG 配置范围或组合关系无效。
  * @pre 仅允许在任务初始化阶段单线程调用，且对象未被其他上下文使用。
  * @post update_count 清零、四元数为单位四元数、placeholder 为 true，pending_mask 为 0。
  * @note 当前核心为占位实现，该函数只建立接口和参数状态；不分配动态内存。
  */
-bool Filter_Ekf_Init(
+filter_status_t Filter_Ekf_Init(
   filter_ekf_t *filter_h,
   const char *name,
   const filter_ekf_config_t *config
 ) {
-  if (
-    filter_h == NULL ||
-    name == NULL ||
-    !filter_ekf_configisvalid(config)
-  ) {
-    return false;
+  if (filter_h == NULL) {
+    return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
-  memset(filter_h, 0, sizeof(*filter_h));
-  Filter_Base_Init(&filter_h->filter_base, name, &filter_ops_ekf);
-  filter_h->config = *config;
-  filter_h->default_config = *config;
-  filter_h->pending_config = *config;
-  filter_h->pending_mask = 0u;
-  Filter_Base_Reset(&filter_h->filter_base);
-  return true;
+  const filter_config_t constructor_config = {
+    .name = name,
+    .data = config,
+  };
+  return Filter_Base_Construct(
+    &filter_h->filter_base,
+    &constructor_config,
+    &filter_ops_ekf
+  );
 }
 
 /**
@@ -423,23 +455,26 @@ bool Filter_Ekf_Init(
  *              BIAS_PROCESS_NOISE/INITIAL_BIAS_VARIANCE 为 (rad/s)²，
  *              ACCEL_MEASUREMENT_NOISE 为 (m/s²)²，ACCEL_NORM_MIN/MAX 为 m/s²，
  *              GYRO_LIMIT/BIAS_LIMIT 为 rad/s，MIN_DT/MAX_DT 为 s。
- * @retval true 候选配置整体有效，已合并进待提交配置。
- * @retval false filter_h 为空、参数身份非法、value 非有限，或候选配置未通过组合范围校验。
+ * @retval FILTER_STATUS_OK 候选配置整体有效，已合并进待提交配置。
+ * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h 为空或参数身份非法。
+ * @retval FILTER_STATUS_INVALID_CONFIG value 非有限或候选配置未通过组合范围校验。
  * @pre 单参数写者调用；value 必须与 parameter 的物理量一致，函数不进行单位换算。
  * @post 成功时待提交配置更新且 pending_mask 置位，下一帧开始时一次性应用；失败时活动配置和已有待提交值不变。
  * @note 与 update 的配置应用通过临界区交换快照；不修改正在使用的滤波状态或协方差。
  */
-bool Filter_Ekf_SetParameter(
+filter_status_t Filter_Ekf_SetParameter(
   filter_ekf_t *filter_h,
   filter_ekf_parameter_t parameter,
   float value
 ) {
   if (
     filter_h == NULL ||
-    (uint32_t)parameter >= (uint32_t)FILTER_EKF_PARAM_COUNT ||
-    !SYS_ISFINITE(value)
+    (uint32_t)parameter >= (uint32_t)FILTER_EKF_PARAM_COUNT
   ) {
-    return false;
+    return FILTER_STATUS_INVALID_ARGUMENT;
+  }
+  if (!SYS_ISFINITE(value)) {
+    return FILTER_STATUS_INVALID_CONFIG;
   }
 
   filter_ekf_config_t candidate;
@@ -453,20 +488,18 @@ bool Filter_Ekf_SetParameter(
   Sys_Critical_Exit();
 
   float *field = filter_ekf_configfield(&candidate, parameter);
-  if (field == NULL) {
-    return false;
-  }
+  assert(field != NULL);
   *field = value;
 
   if (!filter_ekf_configisvalid(&candidate)) {
-    return false;
+    return FILTER_STATUS_INVALID_CONFIG;
   }
 
   Sys_Critical_Enter();
   filter_h->pending_config = candidate;
   filter_h->pending_mask = pending_mask | ((uint32_t)1u << parameter);
   Sys_Critical_Exit();
-  return true;
+  return FILTER_STATUS_OK;
 }
 
 /**

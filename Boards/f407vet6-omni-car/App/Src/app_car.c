@@ -692,7 +692,14 @@ platform_status_t App_Car_Init(void) {
 
   (void)memset(&s_car, 0, sizeof(s_car));
 
-  Filter_Passthrough_Init(&s_imu_filter, "imu_passthrough");
+  if (
+    Filter_Passthrough_Init(
+      &s_imu_filter,
+      "imu_passthrough"
+    ) != FILTER_STATUS_OK
+  ) {
+    return PLATFORM_STATUS_ERROR;
+  }
 
   platform_status_t status = Dev_UART_Port_Init(
     &s_imu_uart_port,
