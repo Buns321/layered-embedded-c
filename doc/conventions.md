@@ -12,6 +12,8 @@
 | `Filter_*` | Filter API |
 | `Sys_*` | System 数学/延时 API |
 | `Sys_Log_*` | System 日志 API |
+| `App_*` | App 应用入口和公共 API |
+| `Core_*` | Core 板级装配入口 |
 | `RTOS_*` | RTOS 任务入口 |
 | `*_t` | 公共 typedef，全小写蛇形并以 `_t` 结尾 |
 | `*_base_t` | 抽象接口 |
@@ -99,6 +101,20 @@
 - 本规则适用于新增和修改的标识符。存量不合规标识符按模块单独迁移，不得把
   单位后缀迁移混入无关功能改动。
 
+### 1.5 应用依赖头
+
+- 每个 App 公共模块使用独立依赖头：
+  `App/Inc/<app_module>_dependencies.h`。
+- struct 标签为 `<app_module>_dependencies_s`，typedef 为
+  `<app_module>_dependencies_t`。
+- include guard 使用
+  `LAYERED_EMBEDDED_C_<APP_MODULE>_DEPENDENCIES_H`。
+- 依赖集合是接口数据，不是对象句柄；类型和参数都不添加 `_h`。
+- 依赖参数统一命名为 `dependencies`。
+- 依赖中的长期对象指针使用 `<role>_h`。
+- Core/Board 入口头固定为 `Core/Board/Inc/core_board.h`，入口函数固定为
+  `Core_Board_Init`。
+
 ## 2. 对象模型
 
 - base 必须是具体类型的第一个成员。
@@ -107,20 +123,21 @@
 - 上层只持有 base 视图，例如 `&motor.motor_base`。
 - 不复制 base 对象；复制会切片。
 - 不使用动态内存，所有对象静态定义。
-- 日志与遥测都遵循 base/ops；具体 RTT、FireWater、JustFloat 对象的 base
-  必须是首成员。
+- 日志和遥测遵循 base/ops；具体后端或协议对象的 base 必须是首成员。
 
 ## 3. 初始化
 
 - 所有 init 先校验指针、数量、枚举和关键常数。
 - 能失败的具体 init 返回 `platform_status_t` 或对应状态。
+- `Core_Board_Init()` 返回 `platform_status_t`。
+- App 公共初始化入口返回 `bool`，`true` 表示成功，`false` 表示失败。
 - 需要两段式初始化时，具体 init 负责芯片配置与 ops 绑定，base init 负责通用状态和依赖注入。
 - Filter 的具体 init 和接受外部配置的提交接口统一返回 `filter_status_t`；
   具体 init 通过 `Filter_Base_Construct` 复用公共校验、派生初始化、绑定和 reset。
 - Filter 的具体 `init` 解释 `filter_config_t.data`；`filter_ops_t` 的
   `init` / `update` / `reset` 可为空，分别表示无派生配置、透传和无状态。
   公共样本合同由 `Filter_Base_Update` 统一检查。
-- 初始化顺序见 `architecture.md`。
+- 初始化顺序见 [框架契约](framework-contract.md)。
 
 ## 4. 错误处理
 
@@ -192,7 +209,7 @@
 
 - 项目自有注释、文档和 Doxygen 描述统一使用简体中文。
 - 类型名、函数名、参数名、宏、协议名、芯片外设名和通用缩写保留原文，例如
-  `platform_status_t`、UART、DMA、I2C、MPU6050。
+  `platform_status_t`、UART、DMA、I2C。
 - 禁止保留整句英文说明；引用数据手册原文时，应在中文说明后附最小必要原文。
 - 注释至少说明：单位、范围、所有权、调用上下文、失败行为和并发限制。
 - 所有公共 API 与私有函数的 Doxygen 注释不得只包含 `@brief`。公共 API 的
@@ -213,14 +230,18 @@
 ### 8.3 检查与排除
 
 - 提交前至少重新生成一次 Doxygen；生成警告必须为零，并检查分组归属。
-- 契约适用于 `App/`、`Controller/`、`DeviceDrivers/`、`Filter/`、`Policy/`、
-  `Platform/`、`RTOS/`、`System/` 及项目维护的主机测试。
+- 契约适用于 `App/`、`Controller/`、`Core/Board/`、`DeviceDrivers/`、
+  `Filter/`、`Policy/`、`Platform/`、`RTOS/`、`System/` 及项目维护的主机测试。
 - `Drivers/`、`Middlewares/`、CubeMX 生成文件和第三方源码不套用本契约，也不得
   为统一格式而手工修改。
 
 ## 9. 依赖规则
 
-- 上层依赖 base 接口，不依赖具体驱动。
+- `Core/Board/` 依赖 App 公共依赖契约，并负责创建、初始化、填写和注入该依赖。
+- App 依赖 `DeviceDrivers` base/domain 接口、选定算法公共接口和 System 公共接口。
+- RTOS 依赖 App 公共入口和 CMSIS-RTOS2。
+- Core/Board 负责具体设备、Platform 实例、硬件映射和对象装配。
+- App 和 RTOS 不依赖 Core/Board 私有实现。
 - HAL 类型只能出现在 `Platform/Src/`。
 - Platform 公共头只放不依赖 HAL 类型的枚举、数据结构、回调和声明。
 - Platform 不调用 `HAL_*_Init()`，外设结构配置归 CubeMX/Core。
@@ -228,13 +249,19 @@
 - 未启用实例通过 `platform_config.h` 排除在公共枚举之外。
 - 回调注册只在初始化阶段进行，一个物理实例只有一个回调所有者。
 - IT/DMA 源和目的缓冲区在完成或错误回调前必须保持有效。
+- CMake 使用 `layered_app`、`layered_rtos`、`layered_core_board` 和
+  `layered_app_portability_fixture` 表达依赖边界。
+- `layered_app` 的 include 白名单只包含 App 公共头、base/domain、
+  选定算法公共头和 System 公共头。
+- `layered_rtos` 的 include 白名单只包含 App 公共头和 CMSIS-RTOS2。
+- `layered_core_board` 包含 App 依赖契约、Platform、具体设备和算法实现。
 - 使用 CMake 的 `target_include_directories`，不在源码里写大量 `../../`。
 - `Drivers/`、`Middlewares/` 不手改；CubeMX 生成代码只改 USER CODE 区。
 
 ## 10. 构建要求
 
 - 提交前至少完成受影响目标的 Debug 构建；修改共享 Platform 或 System 代码时，
-  同时验证 F4 与 F103 目标。
+  同时验证全部受支持 backend 和受影响板级目标。
 - 不引入动态内存。
 - 新增源文件同步加入 `CMakeLists.txt`。
 - 新增公共头文件同步加入 Doxygen 的 `INPUT`。

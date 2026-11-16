@@ -11,15 +11,29 @@
 #include "chassis_omni.h"
 #include "system_math.h"
 #include <assert.h>
+#include <math.h>
 
 /**
- * @brief 清零平动/自转命令，并对四轮依次下发零目标与制动请求。
+ * @brief 保存 Omni 底盘的车体系速度命令。
+ * @param chassis_h 底盘的 chassis_base 视图；必须来自已初始化的 chassis_omni_t 首位成员。
+ * @param twist 车体系速度命令；不可为 NULL，各分量必须有限。
+ * @pre chassis_h 已初始化，且与 Update/Stop/EStop 串行调用。
+ * @post command 被复制，非有限分量替换为 0。
+ * @note 只保存命令，不读取 IMU 或改变电机输出。
+ */
+static void chassis_omni_setmotion(
+  chassis_base_t *chassis_h,
+  const chassis_twist_t *twist
+);
+
+/**
+ * @brief 清空车体系速度命令，并对四轮依次下发零目标与制动请求。
  * @param chassis_h 底盘的 chassis_base 视图；非 NULL，且必须来自已初始化的 chassis_omni_t 首位成员。
  * @pre chassis_h 已由 Chassis_Omni_Init 初始化，四个电机指针非 NULL，且没有其他上下文并发改写底盘或电机。
- * @pre 只能在控制/安全任务上下文调用；本函数会写 v/omega 并进入 Dev_Motor_Base_Brake。
- * @post v 和 omega 被置为 0，dir 保持不变；每个电机的目标速度先被置 0，再调用 Dev_Motor_Base_Brake。
+ * @pre 只能在控制/安全任务上下文调用；本函数会清空 command 并进入 Dev_Motor_Base_Brake。
+ * @post command 全部分量置零；每个电机的目标速度先被置 0，再调用 Dev_Motor_Base_Brake。
  * @post 电机处于 DISABLE 时，基类 Brake 只清除目标、当前速度和控制状态，不会输出硬件制动；处于 ENABLE/BRAKE 时会复位控制律并执行具体驱动的制动。
- * @note 本函数不清除 dir、IMU/策略指针或 imu_timeout_ms；不分配内存，也不直接访问 GPIO/PWM。
+ * @note 本函数不清除 IMU/策略指针或 imu_timeout_ms；不分配内存，也不直接访问 GPIO/PWM。
  * @warning 无锁且非 ISR 安全；逐个电机操作期间可被更高优先级上下文观察，必须由调用方保证底盘生命周期和控制独占。
  */
 static void chassis_omni_stop(chassis_base_t *chassis_h);
@@ -63,14 +77,24 @@ static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
 
   const float deg_to_rad = 3.14159265358979323846f / 180.0f;
   float yaw_rad = imu_sample.yaw_deg * deg_to_rad;
+  float linear_speed_mps = hypotf(
+    chassis_omni_h->command.vx_body_mps,
+    chassis_omni_h->command.vy_body_mps
+  );
+  float direction_rad =
+    atan2f(
+      chassis_omni_h->command.vy_body_mps,
+      chassis_omni_h->command.vx_body_mps
+    ) +
+    yaw_rad;
   float wheel_speed[CHASSIS_OMNI_WHEEL_COUNT] = {0};
 
   Policy_Omni_Base_Solve(
     chassis_omni_h->policy_h,
-    chassis_omni_h->v,
-    chassis_omni_h->dir,
+    linear_speed_mps,
+    direction_rad,
     yaw_rad,
-    chassis_omni_h->omega,
+    chassis_omni_h->command.wz_radps,
     wheel_speed
   );
 
@@ -81,13 +105,13 @@ static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
 }
 
 /**
- * @brief 清零平动/自转命令，并对四轮依次下发零目标与制动请求。
+ * @brief 清空车体系速度命令，并对四轮依次下发零目标与制动请求。
  * @param chassis_h 底盘的 chassis_base 视图；非 NULL，且必须来自已初始化的 chassis_omni_t 首位成员。
  * @pre chassis_h 已由 Chassis_Omni_Init 初始化，四个电机指针非 NULL，且没有其他上下文并发改写底盘或电机。
- * @pre 只能在控制/安全任务上下文调用；本函数会写 v/omega 并进入 Dev_Motor_Base_Brake。
- * @post v 和 omega 被置为 0，dir 保持不变；每个电机的目标速度先被置 0，再调用 Dev_Motor_Base_Brake。
+ * @pre 只能在控制/安全任务上下文调用；本函数会清空 command 并进入 Dev_Motor_Base_Brake。
+ * @post command 全部分量置零；每个电机的目标速度先被置 0，再调用 Dev_Motor_Base_Brake。
  * @post 电机处于 DISABLE 时，基类 Brake 只清除目标、当前速度和控制状态，不会输出硬件制动；处于 ENABLE/BRAKE 时会复位控制律并执行具体驱动的制动。
- * @note 本函数不清除 dir、IMU/策略指针或 imu_timeout_ms；不分配内存，也不直接访问 GPIO/PWM。
+ * @note 本函数不清除 IMU/策略指针或 imu_timeout_ms；不分配内存，也不直接访问 GPIO/PWM。
  * @warning 无锁且非 ISR 安全；逐个电机操作期间可被更高优先级上下文观察，必须由调用方保证底盘生命周期和控制独占。
  */
 static void chassis_omni_stop(chassis_base_t *chassis_h) {
@@ -95,8 +119,7 @@ static void chassis_omni_stop(chassis_base_t *chassis_h) {
 
   chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
 
-  chassis_omni_h->v     = 0.0f;
-  chassis_omni_h->omega = 0.0f;
+  chassis_omni_h->command = (chassis_twist_t){0};
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
     assert(chassis_omni_h->motor_h[i]);
@@ -110,7 +133,8 @@ static void chassis_omni_stop(chassis_base_t *chassis_h) {
  * @param chassis_h 底盘的 chassis_base 视图；非 NULL，且必须来自已初始化的 chassis_omni_t 首位成员。
  * @pre chassis_h 已由 Chassis_Omni_Init 初始化，四个电机指针非 NULL，且无其他上下文并发控制这些电机。
  * @pre 仅供 Chassis_Base_EStop 通过 chassis_ops_omni 在控制/安全上下文调用。
- * @post v 和 omega 被置为 0，dir 保持不变；每个电机经 Dev_Motor_Base_Disable 写零功率、拉低 STBY，并清除目标/当前速度及控制器状态。
+ * @post command 全部分量置零；每个电机经 Dev_Motor_Base_Disable 写零功率、拉低 STBY，
+ *       并清除目标/当前速度及控制器状态。
  * @post 本函数不执行短路制动；被禁用电机需要显式 Dev_Motor_Base_Enable 才能恢复输出。
  * @note 禁用会作用于具体驱动共享的 STBY 组，可能同时封锁未直接传入本底盘的电机；不修改 IMU 超时或策略配置。
  * @warning 无锁且非 ISR 安全；急停无法原子覆盖四轮，且共享 STBY 的最终电平取决于所有组内写者的调用顺序。
@@ -120,8 +144,7 @@ static void chassis_omni_estop(chassis_base_t *chassis_h) {
 
   chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
 
-  chassis_omni_h->v     = 0.0f;
-  chassis_omni_h->omega = 0.0f;
+  chassis_omni_h->command = (chassis_twist_t){0};
 
   for (uint8_t i = 0; i < CHASSIS_OMNI_WHEEL_COUNT; i++) {
     assert(chassis_omni_h->motor_h[i]);
@@ -130,6 +153,7 @@ static void chassis_omni_estop(chassis_base_t *chassis_h) {
 }
 
 static const chassis_ops_t chassis_ops_omni = {
+  .set_motion = chassis_omni_setmotion,
   .update = chassis_omni_update,
   .stop   = chassis_omni_stop,
   .estop  = chassis_omni_estop,
@@ -145,7 +169,8 @@ static const chassis_ops_t chassis_ops_omni = {
  * @param imu_timeout_ms yaw 通道最大允许年龄，单位 ms；必须大于 0，超过该年龄的 yaw 会触发底盘停机。
  * @pre chassis_h、name、motor_h 中四个元素、imu_h、policy_h 非 NULL；仅调试构建会断言空指针和重复电机指针。
  * @pre 电机、IMU 和策略均已完成各自初始化，且没有控制任务并发读取该底盘对象。
- * @post chassis_base 已绑定 update/stop/estop 操作表，四个电机指针和 IMU/策略指针已保存，v/dir/omega 均为 0，imu_timeout_ms 已保存。
+ * @post chassis_base 已绑定 set_motion/update/stop/estop 操作表，四个电机指针和
+ *       IMU/策略指针已保存，command 全部分量为 0，imu_timeout_ms 已保存。
  * @note 不分配内存，不复制 name 或任何被指向对象；初始化本身不读取 IMU、不启动电机、不改变 GPIO/PWM 输出。
  * @warning 非 ISR 安全；只允许在设备装配阶段、控制任务启动前调用。发布构建会信任调用方满足非空和去重前置条件。
  */
@@ -182,38 +207,55 @@ void Chassis_Omni_Init(
 
   chassis_h->imu_h    = imu_h;
   chassis_h->policy_h = policy_h;
-  chassis_h->v      = 0.0f;
-  chassis_h->dir    = 0.0f;
-  chassis_h->omega  = 0.0f;
+  chassis_h->command = (chassis_twist_t){0};
   chassis_h->imu_timeout_ms = imu_timeout_ms;
 }
 
 /**
- * @brief 保存 Omni 底盘的世界系平动与自转命令。
- * @param chassis_h 已初始化的 Omni 底盘对象；非 NULL。
- * @param v 世界系平动速度，单位 m/s；必须有限，本函数不施加速度幅值上限。
- * @param dir 世界系行进方向，单位 rad，逆时针为正；必须有限，不要求归一化到固定周期。
- * @param omega 自转角速度，单位 rad/s，逆时针为正；必须有限，本函数不施加角速度幅值上限。
- * @pre chassis_h 已由 Chassis_Omni_Init 初始化，且与 Update/Stop/EStop 在同一控制上下文串行执行。
- * @post 三个命令字段被逐个写入；非有限值在调试构建触发断言并中止，在定义 NDEBUG 的构建中被逐项替换为 0。
- * @note 只保存命令，不读取 IMU、不解算轮速、不改变电机目标或硬件输出；实际解算在 Chassis_Base_Update 中完成。
- * @note 不对 v/dir/omega 做归一化或限幅，超出底盘能力的命令由策略、控制律和电机 max_duty 后续约束。
- * @warning 三字段非原子更新；从 ISR 或其他任务并发调用会让 Update 观察到混合命令，必须由调用方互斥。
+ * @brief 保存 Omni 底盘的车体系速度命令。
+ * @param chassis_h 底盘的 chassis_base 视图；必须来自已初始化的 chassis_omni_t 首位成员。
+ * @param twist 车体系速度命令；不可为 NULL，各分量必须有限。
+ * @pre chassis_h 已初始化，且与 Update/Stop/EStop 串行调用。
+ * @post command 被复制，非有限分量替换为 0。
+ * @note 只保存命令，不读取 IMU 或改变电机输出。
  */
-void Chassis_Omni_SetMotion(chassis_omni_t *chassis_h, float v, float dir, float omega) {
-  assert(chassis_h);
+static void chassis_omni_setmotion(
+  chassis_base_t *chassis_h,
+  const chassis_twist_t *twist
+) {
+  assert(chassis_h && twist);
 
   assert(
-    SYS_ISFINITE(v)     &&
-    SYS_ISFINITE(dir)   &&
-    SYS_ISFINITE(omega)
+    SYS_ISFINITE(twist->vx_body_mps) &&
+    SYS_ISFINITE(twist->vy_body_mps) &&
+    SYS_ISFINITE(twist->wz_radps)
   );
 
-  if (!SYS_ISFINITE(v))     v     = 0.0f;
-  if (!SYS_ISFINITE(dir))   dir   = 0.0f;
-  if (!SYS_ISFINITE(omega)) omega = 0.0f;
+  chassis_omni_t *chassis_omni_h = (chassis_omni_t *)chassis_h;
+  chassis_omni_h->command = *twist;
+  if (!SYS_ISFINITE(chassis_omni_h->command.vx_body_mps)) {
+    chassis_omni_h->command.vx_body_mps = 0.0f;
+  }
+  if (!SYS_ISFINITE(chassis_omni_h->command.vy_body_mps)) {
+    chassis_omni_h->command.vy_body_mps = 0.0f;
+  }
+  if (!SYS_ISFINITE(chassis_omni_h->command.wz_radps)) {
+    chassis_omni_h->command.wz_radps = 0.0f;
+  }
+}
 
-  chassis_h->v     = v;
-  chassis_h->dir   = dir;
-  chassis_h->omega = omega;
+/**
+ * @brief 保存 Omni 底盘的车体系速度命令。
+ * @param chassis_h 已初始化的 Omni 底盘对象；非 NULL。
+ * @param twist 车体系速度命令；不可为 NULL，各分量必须有限。
+ * @pre chassis_h 已初始化，且与 Update/Stop/EStop 串行调用。
+ * @post command 被复制，非有限分量替换为 0。
+ * @note 兼容具体类型调用；新代码应优先使用 Chassis_Base_SetMotion。
+ */
+void Chassis_Omni_SetMotion(
+  chassis_omni_t *chassis_h,
+  const chassis_twist_t *twist
+) {
+  assert(chassis_h);
+  Chassis_Base_SetMotion(&chassis_h->base, twist);
 }

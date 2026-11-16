@@ -7,8 +7,8 @@
  * @brief RTOS 共享静态对象接口。
  * @addtogroup rtos
  * @{
- * @note F407 小车对象由 App_Car 静态持有，RTOS 任务通过 App API 访问；
- *       本头文件保留为后续确有跨任务共享对象时的集中入口。
+ * @note F407 小车设备对象由 Core/Board 静态持有，RTOS 任务通过 App API 访问；
+ *       本头文件保留为后续确有跨任务运行时对象时的集中入口。
  */
 
 #ifndef LAYERED_EMBEDDED_C_RTOS_SHARED_H

@@ -100,6 +100,61 @@ set(LAYERED_PLATFORM_BACKEND stm32f4)
 set(LAYERED_HAL_TARGET stm32cubemx)
 add_subdirectory(${REPO_ROOT}/cmake/framework framework)
 
+add_library(layered_app STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_boot.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_command.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_control.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_motion.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_safety.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_telemetry.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car_internal.h
+)
+target_include_directories(layered_app PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
+)
+target_include_directories(layered_app PRIVATE
+    ${REPO_ROOT}/Controller/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/System/Inc
+)
+target_link_libraries(layered_app PUBLIC
+    layered_device_base
+)
+
+add_library(layered_core_board STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Board/Src/core_board.c
+)
+target_include_directories(layered_core_board PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Board/Inc
+)
+target_link_libraries(layered_core_board PUBLIC
+    layered_app
+    layered_framework
+)
+
+add_library(layered_rtos STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_control.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_monitor.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_shared.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_uart.c
+)
+target_include_directories(layered_rtos PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
+)
+target_include_directories(layered_rtos PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc
+    ${REPO_ROOT}/System/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
+)
+target_link_libraries(layered_rtos PUBLIC
+    layered_app
+)
+
 # 第三方源码可能产生本项目无法控制的告警。
 if(TARGET STM32_Drivers)
     target_compile_options(STM32_Drivers PRIVATE -Wno-unused-parameter)
@@ -115,28 +170,15 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # 向可执行目标添加源文件
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_blink.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_blink.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_car.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_car.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_car_config.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Src/app_motor_demo.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_motor_demo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_shared.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_shared.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_config.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_monitor.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_monitor.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_control.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_control.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_uart.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc/rtos_uart.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Board/Inc/core_board.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_car_dependencies.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_car_motion.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc/app_car_runtime.h
 )
 
 # 添加头文件搜索路径
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Board/Inc
 )
 
 # 使用 C++ 文件时移除错误的 libob.a 库依赖
@@ -144,6 +186,9 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
 # 添加链接库
 target_link_libraries(${CMAKE_PROJECT_NAME}
+    layered_core_board
+    layered_rtos
+    layered_app
     layered_framework
     stm32cubemx
 )

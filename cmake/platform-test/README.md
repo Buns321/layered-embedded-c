@@ -17,6 +17,12 @@ Filter 基类测试覆盖构造器失败不变性、可选回调、输入预复�
 deg/rad 周期归一化及非有限输入。快速通道 App 测试还覆盖参考姿态、校准记录
 持久化事件、初始倒置跳过和蜂鸣器/LED 时序。
 
+`layered_app_portability_fixture` 验证最小 App 的依赖注入和执行流程。
+F407 App/RTOS 依赖扫描检查禁止头文件，确保业务和调度源码不直接引用
+Platform、具体驱动或 Core/Board 私有实现。
+`chassis_omni_contract_test` 覆盖车体系 twist 到 Omni Policy 的转换和 IMU
+失效停车路径。
+
 ```powershell
 cmake -S cmake/platform-test -B build/platform-test -G Ninja `
   -DCMAKE_C_COMPILER='C:/Users/surface/AppData/Local/Programs/CLion 2026.2.3.1/bin/mingw/bin/gcc.exe'

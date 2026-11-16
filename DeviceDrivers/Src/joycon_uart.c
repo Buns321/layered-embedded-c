@@ -43,8 +43,21 @@ static void dev_joycon_uart_getstatusop(
   joycon_base_t *joycon_h,
   joycon_status_t *status
 );
+/**
+ * @brief 通过 base 操作表推进 JoyCon 设备处理。
+ * @param joycon_h base 视图；必须指向 joycon_uart_t 的首成员。
+ * @param now_ms 当前单调毫秒时间戳，单位 ms。
+ * @pre joycon_h 指向完整具体对象。
+ * @post 消费接收队列并更新输入快照。
+ * @note 私有回调，不直接对外公开。
+ */
+static void dev_joycon_uart_processop(
+  joycon_base_t *joycon_h,
+  uint32_t now_ms
+);
 
 static const joycon_ops_t joycon_ops_uart = {
+  .process = dev_joycon_uart_processop,
   .get_input = dev_joycon_uart_getinputop,
   .get_status = dev_joycon_uart_getstatusop,
 };
@@ -413,6 +426,26 @@ void Dev_JoyCon_UART_Process(
   while (Sys_ByteRing_Pop(&joycon_h->rx_ring, &byte)) {
     Dev_JoyCon_UART_FeedByte(joycon_h, byte, now_ms);
   }
+}
+
+/**
+ * @brief 通过 base 操作表推进 JoyCon 设备处理。
+ * @param joycon_h base 视图；必须指向 joycon_uart_t 的首成员。
+ * @param now_ms 当前单调毫秒时间戳，单位 ms。
+ * @pre joycon_h 指向完整具体对象。
+ * @post 消费接收队列并更新输入快照。
+ * @note 私有回调，不直接对外公开。
+ */
+static void dev_joycon_uart_processop(
+  joycon_base_t *joycon_h,
+  uint32_t now_ms
+) {
+  assert(joycon_h);
+
+  Dev_JoyCon_UART_Process(
+    (joycon_uart_t *)joycon_h,
+    now_ms
+  );
 }
 
 /**

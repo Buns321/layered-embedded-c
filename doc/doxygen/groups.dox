@@ -55,6 +55,11 @@
  */
 
 /**
+ * @defgroup core_board Core Board
+ * @brief 板级对象定义、硬件映射、依赖装配和初始化入口。
+ */
+
+/**
  * @defgroup app 应用层
  * @brief 业务逻辑（预留）。
  */

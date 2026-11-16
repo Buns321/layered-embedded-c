@@ -25,6 +25,7 @@
 | --- | --- |
 | `f407vet6.ioc` | CubeMX 配置 |
 | `Core/` | CubeMX 生成代码和用户初始化 |
+| `Core/Board/` | 手写板级对象、硬件映射和 App 依赖注入 |
 | `Drivers/` | STM32F4 HAL、CMSIS 和设备头 |
 | `Middlewares/` | 板内 FreeRTOS 与 CMSIS-RTOS V2 |
 | `App/` | 本板业务入口 |
@@ -35,6 +36,20 @@
 
 共享 System、Platform F4、DeviceDrivers、Controller、Policy、Filter 和
 `Middlewares/Third_Party/SEGGER_RTT/` 从仓库根目录接入。本板不复制这些共享层。
+
+F407 小车已完成 App/Core/Board 分层迁移：
+
+- `Core_Board_Init()` 定义在 `Core/Board/Src/core_board.c`。
+- App 通过 `app_car_dependencies_t` 接收底盘基础接口、电机数组、IMU、输入和遥测服务。
+- `layered_app`、`layered_rtos` 和 `layered_core_board` 在板级 CMake 中建立。
+- CubeMX 生成的 FreeRTOS 任务槽调用 `RTOS/` 中的任务入口。
+- `app_car.c` 只负责初始化和任务入口协调；命令、启动、安全、控制和遥测
+  分别位于独立 App 源文件。
+- `app_car_motion` 封装底盘 twist、电机闭环、使能/停止/急停和轮速读取。
+- App 只依赖 `chassis_base_t` 和运行时电机数量，不引用 Omni 具体类型或轮数常量。
+- App 以车体系 `vx_body_mps`、`vy_body_mps`、`wz_radps` 提交底盘命令。
+- 编码器每米计数、轮距、PWM 量程等板级物理参数位于 Core/Board 私有配置。
+- `layered_app` include 白名单只保留 App 公共头、base 接口和 System 公共头。
 
 ## CubeMX 基线
 
@@ -60,10 +75,26 @@
 再由有效 JoyCon 命令使能闭环。
 
 控制任务以 100 Hz 运行四轮速度 PID，UARTTask 每 2 ms 处理 WHT101 和 JoyCon，
-MonitorTask 以 50 Hz 发送 JustFloat，并通过 SEGGER RTT 输出低频状态日志。
+MonitorTask 以 100 Hz 运行检查并按 50 Hz 节流发送 JustFloat，通过 SEGGER RTT
+输出低频状态日志。
 
 HSE 引脚已出现在 CubeMX 引脚配置中，但当前 `SystemClock_Config()` 使用 HSI，
 因此不能把外部晶振当作当前时钟源。
+
+## 验证状态
+
+本轮已完成：
+
+- Debug 构建和链接。
+- Release 构建和链接。
+- App 业务模块拆分：命令、启动、安全、控制和遥测。
+- F407/F103 Platform 全层 Debug 与 Release 编译检查。
+- `cmake/platform-test` 全部主机契约测试。
+- App/RTOS 禁止依赖扫描。
+- `layered_app_portability_fixture` 主机执行与 F1/F4 编译检查。
+
+本轮未执行真实板卡烧录和运行验证。WHT101、JoyCon、JustFloat、电机闭环和
+启动归零流程的实板行为仍需后续联调确认。
 
 ## 构建
 

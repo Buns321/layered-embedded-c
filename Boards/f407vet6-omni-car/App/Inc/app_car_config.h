@@ -12,11 +12,11 @@
 #ifndef LAYERED_EMBEDDED_C_APP_CAR_CONFIG_H
 #define LAYERED_EMBEDDED_C_APP_CAR_CONFIG_H
 
-#include "platform_gpio.h"
-#include "platform_pwm.h"
-
 /** @brief 轮速 PID 控制周期（s），必须与 ControlTask 调度周期一致。 */
 #define APP_CAR_CONTROL_PERIOD_S 0.01f
+
+/** @brief JustFloat 遥测通道数。 */
+#define APP_CAR_TELEMETRY_CHANNEL_COUNT 16u
 
 /** @brief JustFloat 发送周期（ms）。 */
 #define APP_CAR_TELEMETRY_PERIOD_MS 20u
@@ -55,22 +55,13 @@
 #define APP_CAR_MAX_LINEAR_MPS 0.30f
 
 /** @brief 整车最大自转角速度（rad/s），待标定。 */
-#define APP_CAR_MAX_ANGULAR_RPS 1.50f
+#define APP_CAR_MAX_ANGULAR_RADPS 1.50f
 
-/** @brief JoyCon 归一化输入死区，待标定。 */
-#define APP_CAR_COMMAND_DEADBAND 0.03f
+/** @brief 归一化输入死区，范围为 [0, 1]，待标定。 */
+#define APP_CAR_COMMAND_DEADBAND_NORM 0.03f
 
 /** @brief 单轮目标速度上限（m/s），应覆盖平动与自转叠加。 */
 #define APP_CAR_MAX_WHEEL_MPS 1.00f
-
-/** @brief 编码器每米计数，包含减速比和轮径，待标定。 */
-#define APP_CAR_COUNTS_PER_METER 1000.0f
-
-/** @brief 四轮中心到车体中心的距离（m），待标定。 */
-#define APP_CAR_WHEEL_DISTANCE_M 0.12f
-
-/** @brief PWM duty 量程；当前 TIM1 ARR 为 999。 */
-#define APP_CAR_PWM_MAX_DUTY 1000
 
 /** @brief 轮速 PID 比例增益（duty / (m/s)），待整定。 */
 #define APP_CAR_PID_KP 1000.0f
@@ -86,34 +77,6 @@
 
 /** @brief PID 微分一阶低通时间常数（s）。 */
 #define APP_CAR_PID_DERIVATIVE_TAU_S 0.02f
-
-/** @brief AB 组 TB6612 共用 STBY：PC13。 */
-#define APP_CAR_STBY_AB_PORT PLATFORM_GPIO_PORT_C
-#define APP_CAR_STBY_AB_PIN  ((uint16_t)0x2000u)
-
-/** @brief CD 组 TB6612 共用 STBY：PE5。 */
-#define APP_CAR_STBY_CD_PORT PLATFORM_GPIO_PORT_E
-#define APP_CAR_STBY_CD_PIN  ((uint16_t)0x0020u)
-
-#define APP_CAR_AIN1_A_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN1_A_PIN  ((uint16_t)0x0001u)
-#define APP_CAR_AIN2_A_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN2_A_PIN  ((uint16_t)0x0002u)
-
-#define APP_CAR_AIN1_B_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN1_B_PIN  ((uint16_t)0x0004u)
-#define APP_CAR_AIN2_B_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN2_B_PIN  ((uint16_t)0x0008u)
-
-#define APP_CAR_AIN1_C_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN1_C_PIN  ((uint16_t)0x0010u)
-#define APP_CAR_AIN2_C_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN2_C_PIN  ((uint16_t)0x0020u)
-
-#define APP_CAR_AIN1_D_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN1_D_PIN  ((uint16_t)0x0040u)
-#define APP_CAR_AIN2_D_PORT PLATFORM_GPIO_PORT_D
-#define APP_CAR_AIN2_D_PIN  ((uint16_t)0x0080u)
 
 /** @} */
 

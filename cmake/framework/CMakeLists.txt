@@ -322,8 +322,18 @@ target_link_libraries(layered_device_base PUBLIC
   layered_system
 )
 
-set(LAYERED_DEVICE_DRIVER_SOURCES
+layered_add_framework_library(layered_device_domain
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/chassis_omni.c
+)
+target_include_directories(layered_device_domain PUBLIC
+  ${LAYERED_REPO_ROOT}/DeviceDrivers/Inc
+)
+target_link_libraries(layered_device_domain PUBLIC
+  layered_device_base
+  layered_policy
+)
+
+set(LAYERED_DEVICE_DRIVER_SOURCES
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/firewater_uart.c
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
@@ -379,6 +389,7 @@ add_library(layered_framework INTERFACE)
 target_link_libraries(layered_framework INTERFACE
   layered_platform
   layered_system
+  layered_device_domain
   layered_device_drivers
   layered_controller
   layered_filter

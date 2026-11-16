@@ -2,16 +2,22 @@
 
 ## 1. 目标
 
-Platform 的公共行为必须跨 STM32F1/F4 保持一致。允许不同的内容仅包括：
+Platform 的公共行为必须跨已支持的 MCU backend 保持一致。当前实现覆盖
+STM32F1 和 STM32F4，后续 MCU 通过新增 backend 接入。
+
+允许不同的内容仅包括：
 
 - 编译期可用实例数量和实例编号。
 - 定时器、计数器等硬件位宽。
 - 外设能力集合，例如 DMA 请求或 RTC 唤醒定时器。
 - HAL handle 映射、时钟和寄存器差异。
 
-F1/F4 不得在参数校验、返回值、错误快照、回调所有权、异步状态机和 abort
-语义上产生差异。公共 API 必须保持同一签名，不支持的能力通过
+不同 backend 不得在参数校验、返回值、错误快照、回调所有权、异步状态机和
+abort 语义上产生差异。公共 API 保持同一签名，不支持的能力通过
 `PLATFORM_STATUS_UNSUPPORTED` 表达，不通过删除函数或改变返回类型表达。
+
+CMake 通过 `LAYERED_PLATFORM_BACKEND` 选择 backend。Core/Board、DeviceDrivers、
+Controller、Policy、Filter、App 和 RTOS 通过 Platform 公共头使用外设。
 
 ## 2. 状态码
 
@@ -146,7 +152,7 @@ GPIO 写、PWM 比较值写入等不返回 HAL 状态的快速路径可以保持
 Platform/Src/common/
 ```
 
-F1/F4 目录只保留：
+各 MCU 后端目录只保留：
 
 - HAL handle 映射。
 - HAL 调用和状态转换。
@@ -155,10 +161,22 @@ F1/F4 目录只保留：
 
 公共代码不得包含 HAL 类型。
 
+新增 MCU backend：
+
+1. 实现 `Platform/Inc/` 公共接口。
+2. 在 `Platform/Src/<mcu>/` 提供 HAL 映射和状态转换。
+3. 在 `platform_config.h` 和 CMake 中声明可用实例。
+4. 接入对应 System backend 和 CMSIS-RTOS2 port。
+5. 运行公共契约测试、全实例编译检查和目标板验证。
+
+System 公共头提供硬件无关的数学、检查、时间、临界区和记录存储接口。
+STM32/DWT/CMSIS 等实现位于 System backend。
+
 ## 12. 验收
 
-- 同一组契约测试分别以 F1/F4 配置编译并运行。
+- 同一组契约测试分别以各 backend 配置编译并运行。
 - 同一输入产生相同状态和通用错误位。
 - Debug 与 Release 的参数错误行为一致。
 - 同类模块的注册、完成、错误和 abort 模式一致。
-- F1/F4 全实例编译检查、`-Werror` 和板上基础验证通过。
+- 当前 F1/F4 全实例编译检查、`-Werror` 和板上基础验证通过。
+- 新 MCU backend 通过同一公共契约测试后纳入支持矩阵。

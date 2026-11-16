@@ -78,7 +78,8 @@ MPU6050 通过 Platform I2C 使用 7 位地址和逻辑实例。具体 I2C 外�
 - CubeMX 生成实际 `i2c.c` / `i2c.h`、引脚、时钟和 handle。
 - CMake 打开 `PLATFORM_BUILD_I2C` 并定义至少一个
   `PLATFORM_ENABLE_I2Cx=1`。
-- App 装配层静态定义 MPU6050、滤波器和采样任务归属。
+- Core/Board 静态定义 MPU6050 和滤波器并完成设备接线；RTOS 与 App 使用注入的
+  IMU 接口。
 
 F103 与 F407 使用同一驱动源码，不包含 MCU 家族条件编译。
 

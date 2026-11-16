@@ -1,10 +1,14 @@
 # layered-embedded-c
 
-面向 STM32F407 和 STM32F103 的分层嵌入式 C 工程：用静态设备模型、base + 具体实现、
-注入式控制律与运动策略，把 HAL、设备驱动、控制、运动解算和上层任务分开。
+面向 STM32F407 和 STM32F103 的分层嵌入式 C 工程：应用开发集中在 App 和 RTOS，
+具体设备、硬件映射和对象装配集中在 Core/Board，共享框架提供 HAL 封装、设备
+接口、控制、运动解算、滤波和系统服务。
 
 ## 当前状态
 
+F407 小车已完成 App/Core/Board 迁移，并将 App 内部拆分为命令、启动、安全、
+控制和遥测模块；F103 继续按
+[迁移路线](doc/todo.md)逐步完成边界调整。
 已完成并通过工具链构建的是**基础设施层**：
 
 - **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
@@ -16,15 +20,19 @@
   七状态 EKF 接口壳层。
 - **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、日志 base、
   SEGGER RTT、DWT 时间辅助和双页 Flash 记录存储。
-- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；F407 已接入 100 Hz
+- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；RTOS 固定使用
+  CMSIS-RTOS2；F407 已接入 100 Hz
   四轮 PID、WHT101 上电归零、JoyCon 命令、50 Hz JustFloat 和 RTT 监控，
   F103 继续使用自己的 CubeMX 任务配置。
+- **Core/Board**：F407 已建立板级装配区，负责具体设备、资源映射、依赖注入和
+  `Core_Board_Init()`；App 通过 `app_car_dependencies_t` 接收逻辑服务。
 - **Boards**：`Boards/f103c8t6-platform-test/`、
   `Boards/f103c8t6-fast-channel-task-1/` 和
   `Boards/f407vet6-omni-car/` 是三个平级、独立的
   固件工程，各自持有 CubeMX、HAL、FreeRTOS、App、RTOS、启动文件、链接脚本和
-  CMake presets。共享的 Platform、DeviceDrivers、Controller、Policy、Filter、
-  System 仍位于仓库根目录。工程目录统一采用 `<mcu>-<name>` 命名。
+  CMake presets。F407 已在板级工程内建立 Core/Board 边界，F103 迁移待完成。
+  共享的 Platform、DeviceDrivers、Controller、Policy、Filter、System 仍位于
+  仓库根目录。工程目录统一采用 `<mcu>-<name>` 命名。
 
 尚未完成或暂缓：
 
@@ -123,7 +131,9 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 
 ## 文档
 
+- [框架契约](doc/framework-contract.md)
 - [架构说明](doc/architecture.md)
+- [应用示例](doc/examples/README.md)
 - [单位与量纲](doc/units.md)
 - [编码约定](doc/conventions.md)
 - [IMU 与 MPU6050](doc/imu.md)
@@ -154,11 +164,13 @@ $env:OPENOCD_EXE = "D:\path\to\openocd.exe"
 | `System/` | 数学、检查、延时 |
 | `Middlewares/Third_Party/SEGGER_RTT/` | 两块板共享的可选 RTT 日志后端 |
 | `doc/` | 文档 |
-| `Boards/<mcu>-<name>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、App、RTOS、启动文件和链接脚本 |
+| `Boards/<mcu>-<name>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、Core/Board、App、RTOS、启动文件和链接脚本 |
 
 ## 设计要点
 
 - **静态设备模型**：设备在编译期确定，上层只接触 base 接口。
+- **应用与板级分离**：App 编写业务，Core/Board 完成硬件映射、对象装配和依赖注入。
+- **RTOS 固定 CMSIS-RTOS2**：任务负责调度和转发，业务状态机位于 App。
 - **base 首成员**：具体类型通过首成员嵌入 base，回调里强转回具体类型。
 - **注入式算法**：电机注入 `controller_base_t`，底盘注入对应类型的 policy base。
 - **无动态内存**：所有对象静态定义。

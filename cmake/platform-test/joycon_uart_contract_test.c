@@ -180,7 +180,7 @@ static int test_valid_frames_and_optional_newline(void) {
   CHECK(fake_uart_reset(&uart, &joycon) == 0);
 
   feed_text(&uart, &joycon, "[j,100,-100,50,0]\r\n");
-  Dev_JoyCon_UART_Process(&joycon, 100u);
+  Dev_JoyCon_Base_Process(&joycon.base, 100u);
 
   CHECK(Dev_JoyCon_Base_GetInput(&joycon.base, &input));
   CHECK(input.left_x == 1.0f);
