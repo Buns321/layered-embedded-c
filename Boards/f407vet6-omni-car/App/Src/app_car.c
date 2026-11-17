@@ -54,6 +54,7 @@ bool App_Car_Init(
   s_car.dependencies_h = dependencies;
   App_Car_Motion_Init(&s_car.motion, dependencies);
   app_car_enter_state(&s_car, APP_CAR_BOOT_RATE_CONFIG, 0U);
+  s_car.control_heartbeat_valid = true;
   s_car.initialized = true;
   SYS_LOG_INFO("CAR", "app initialized, motors disabled");
   return true;

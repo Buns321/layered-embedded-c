@@ -75,8 +75,9 @@ bool App_Car_Init(
 | UARTTask | 2 ms | `App_Car_ProcessInputs(now_ms)` |
 | MonitorTask | 10 ms | `App_Car_ProcessMonitor(now_ms)` |
 
-RTOS 负责任务入口、周期和 `now_ms` 转换。CubeMX 生成的 `freertos.c`
-保留任务槽、任务属性和内核初始化。
+CubeMX 负责任务属性、静态 TCB、静态栈和任务创建；RTOS 层负责薄任务入口、
+周期和 `now_ms` 转换。三个任务共享 `RTOS_Periodic_RunTask()`，通过静态配置
+注入 App runtime 函数。
 
 ## 初始化
 
@@ -92,7 +93,7 @@ if (!App_Car_Init(&dependencies)) {
 }
 
 osKernelInitialize();
-MX_FREERTOS_Init();
+MX_FREERTOS_Init(); /* CubeMX 创建静态 TCB、静态栈和任务。 */
 osKernelStart();
 ```
 

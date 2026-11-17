@@ -137,7 +137,7 @@ target_link_libraries(layered_core_board PUBLIC
 add_library(layered_rtos STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_control.c
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_monitor.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_shared.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_periodic.c
     ${CMAKE_CURRENT_SOURCE_DIR}/RTOS/Src/rtos_uart.c
 )
 target_include_directories(layered_rtos PUBLIC
@@ -187,10 +187,23 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # 添加链接库
 target_link_libraries(${CMAKE_PROJECT_NAME}
     layered_core_board
+    -Wl,--whole-archive
     layered_rtos
+    -Wl,--no-whole-archive
     layered_app
     layered_framework
     stm32cubemx
+)
+
+add_custom_command(
+    TARGET ${CMAKE_PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+        -DNM_EXECUTABLE=${CMAKE_NM}
+        -DELF_FILE=$<TARGET_FILE:${CMAKE_PROJECT_NAME}>
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/verify_rtos_symbols.cmake
+    COMMENT "检查 RTOS 强任务入口和动态堆符号"
+    VERBATIM
 )
 
 # 可选的 Doxygen 文档目标

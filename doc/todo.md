@@ -349,13 +349,14 @@ F103 速通任务一已接入 100 Hz ImuEkfTask、50 Hz VofaTask 和 USART1 命�
 - [x] F407 `Core_Board_Init()` 按索引完成设备、控制律、底盘和 policy 接线
 - [x] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
 - [x] 上层接线按 AB、CD 两组管理 STBY，禁止单电机依赖 STBY 停机
-- [x] `rtos_control.c` 实现 `RTOS_Control_StartTask`，固定周期调用底盘 update 与四个电机 update
-- [x] `rtos_control.c` 维护控制心跳
-- [x] `rtos_uart.c` 实现 `RTOS_UART_StartTask`，周期处理 WHT101 与 JoyCon
-- [ ] `rtos_monitor.c` 补齐控制任务死亡与电机堵转时的停机动作
-- [x] 用板级强符号替换 `Core/Src/freertos.c` 中三个任务的 `__weak` 运行实现
-- [ ] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
-- [ ] 为 Idle/Timer Task 提供静态内存并关闭 FreeRTOS 动态分配
+- [x] `RTOS_Periodic_RunTask()` 统一承载固定周期任务循环
+- [x] ControlTask 周期调用底盘 update 与四个电机 update，并维护控制心跳
+- [x] UARTTask 周期处理 WHT101 与 JoyCon
+- [ ] 补齐控制任务死亡与电机堵转时的独立安全停机动作
+- [x] 用 CubeMX 生成应用任务、静态 TCB/栈和弱占位入口
+- [x] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
+- [x] 为应用、Idle 和 Timer 任务提供静态内存并关闭 FreeRTOS 动态分配
+- [x] 使用 CubeMX 移除未使用的 defaultTask 并同步生成文件
 - [ ] 开启并实现 `configCHECK_FOR_STACK_OVERFLOW`
 - [ ] 开启并实现 `configUSE_MALLOC_FAILED_HOOK`
 - [ ] 评估 `configGENERATE_RUN_TIME_STATS` 与任务运行时间统计
@@ -401,7 +402,7 @@ MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFl
 
 ## Core/Board 与 App 装配
 **架构**：Core/Board 负责具体设备、硬件映射、对象装配和依赖注入；App 负责业务状态和安全策略。
-- [x] `Core/Src/main.c` 不再直接依赖 `RTOS/Inc/rtos_shared.h`
+- [x] `Core/Src/main.c` 不再直接依赖 RTOS 私有实现头
 - [x] 建立 F407 `Core_Board_Init()` 板级装配入口
 - [ ] 建立 F103 `Core_Board_Init()` 板级装配入口
 - [x] 建立 `app_car_dependencies_t`

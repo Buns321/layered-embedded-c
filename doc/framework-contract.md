@@ -9,7 +9,8 @@
 
 - 应用开发者维护 `App/` 和 `RTOS/`。
 - `App/` 承载业务状态机、控制决策、安全策略、命令语义和输出内容。
-- `RTOS/` 使用 CMSIS-RTOS2，负责任务、周期、优先级、栈和 OS 原语。
+- `RTOS/` 使用 CMSIS-RTOS2，负责任务入口、周期和 OS 原语；CubeMX 配置任务
+  属性、优先级、静态 TCB 和静态栈。
 - `Core/Board/` 承载具体设备、硬件映射和对象装配。
 - 更换板卡时，App 业务逻辑和 RTOS 任务结构保持复用。
 - 更换 MCU 时，通过替换 Core 板级装配、Platform backend、System backend、
@@ -22,10 +23,10 @@
 
 | 角色 | 代码范围 | 主要职责 |
 | --- | --- | --- |
-| 应用开发者 | `App/`、`RTOS/` | 业务逻辑、应用状态、安全策略、任务调度 |
-| 板级适配者 | `Core/Board/`、CubeMX 配置 | 硬件映射、设备初始化、对象装配、依赖注入 |
+| 应用开发者 | `App/`、`RTOS/` | 业务逻辑、应用状态、安全策略、任务入口和周期 |
+| 板级适配者 | `Core/Board/`、CubeMX 配置 | 硬件映射、设备初始化、对象装配、任务配置和依赖注入 |
 | 框架维护者 | `Platform/`、`DeviceDrivers/`、`Controller/`、`Policy/`、`Filter/`、`System/` | 通用驱动、算法、服务和平台契约 |
-| CubeMX | `Core/` 生成文件 | 时钟、引脚、外设结构、DMA、NVIC 和生成代码 |
+| CubeMX | `Core/` 生成文件 | 时钟、引脚、外设结构、DMA、NVIC、静态任务和生成代码 |
 
 个人项目可以由同一人承担多个角色。代码职责按上述边界维护。
 
@@ -113,9 +114,7 @@ if (!App_<Module>_Init(&dependencies)) {
 
 osKernelInitialize();
 
-if (!RTOS_Init()) {
-  Error_Handler();
-}
+MX_FREERTOS_Init(); /* CubeMX 创建静态任务、TCB 和栈。 */
 
 osKernelStart();
 ```
@@ -128,7 +127,7 @@ osKernelStart();
 - `App_<Module>_Init()` 只初始化应用状态，保存依赖指针。
 - App 初始化入口返回 `bool`：`true` 表示成功，`false` 表示失败。
 - App 依赖由 Core/Board 静态对象提供，生命周期覆盖整个固件运行期。
-- RTOS 在 App 初始化成功后创建任务。
+- `MX_FREERTOS_Init()` 在 App 初始化成功后创建 CubeMX 配置的静态任务。
 - 所有可失败初始化返回明确成功状态或错误状态。
 
 ## 6. App 契约
@@ -237,13 +236,14 @@ RTOS 固定使用 CMSIS-RTOS2。
 
 RTOS 负责：
 
-- 初始化和创建任务。
-- 配置任务栈、优先级和属性。
-- 使用静态 TCB 和静态任务栈。
+- 提供任务入口和固定周期循环。
+- 将 CubeMX 创建的任务转发到 App 公共入口。
 - 维护周期、截止时间和调度策略。
 - 创建队列、信号量、事件组、互斥量和任务通知。
 - 生成统一单调时间并传给 App。
 - 在任务上下文调用 App 公共入口。
+
+CubeMX 负责任务属性、静态 TCB、静态任务栈和 `osThreadNew()` 调用。
 
 通用任务形态：
 
@@ -313,6 +313,7 @@ CubeMX 生成文件负责：
 - 外设结构初始化。
 - DMA 和 NVIC 配置。
 - `MX_*_Init()` 和 HAL handle。
+- CMSIS-RTOS2 任务配置、静态 TCB、静态栈和任务创建。
 
 `main.c` 的 `USER CODE` 区域负责顶层组合：
 

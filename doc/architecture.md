@@ -27,7 +27,7 @@ App
     └── 业务状态、控制决策、安全策略、命令和输出
 
 RTOS
-    └── CMSIS-RTOS2 任务、周期、优先级、栈和 OS 原语
+    └── CMSIS-RTOS2 薄任务入口、周期和 OS 原语
 
 共享框架
     ├── Platform
@@ -83,7 +83,8 @@ App -> DeviceDrivers base/domain / Controller / Policy / Filter / System
 ### RTOS
 
 - RTOS 固定使用 CMSIS-RTOS2。
-- RTOS 负责任务、静态栈、优先级、周期、队列、信号量和事件组。
+- CubeMX 负责任务属性、静态 TCB、静态栈和任务创建。
+- RTOS 层负责薄任务入口、周期、队列、信号量和事件组。
 - RTOS 将 tick 转换为统一毫秒时间并传给 App。
 - RTOS 任务循环保持调度和转发职责。
 - 超时、状态迁移和业务决策位于 App。
@@ -151,9 +152,7 @@ if (!App_<Module>_Init(&dependencies)) {
 
 osKernelInitialize();
 
-if (!RTOS_Init()) {
-  Error_Handler();
-}
+MX_FREERTOS_Init(); /* CubeMX 创建静态任务、TCB 和栈。 */
 
 osKernelStart();
 ```
@@ -164,7 +163,7 @@ osKernelStart();
 - Core/Board 在调度器启动前完成静态装配。
 - App 依赖由 Core/Board 创建、填写并发布。
 - App 只保存依赖指针，不拥有依赖对象。
-- RTOS 在 App 初始化成功后创建任务。
+- `MX_FREERTOS_Init()` 在 App 初始化成功后创建 CubeMX 配置的静态任务。
 - 初始化失败停止启动流程。
 
 ## 6. 通用数据流

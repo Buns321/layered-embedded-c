@@ -165,6 +165,9 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+/* CubeMX 的 CMSIS-RTOS2 模板会生成 Dynamic / Static；本板明确关闭动态分配。 */
+#undef configSUPPORT_DYNAMIC_ALLOCATION
+#define configSUPPORT_DYNAMIC_ALLOCATION 0
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */

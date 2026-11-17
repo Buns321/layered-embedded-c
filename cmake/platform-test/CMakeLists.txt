@@ -1018,3 +1018,11 @@ add_test(
       -DSOURCE_DIR=${REPO_ROOT}/Boards/f407vet6-omni-car/RTOS
       -P ${REPO_ROOT}/cmake/check_layer_dependencies.cmake
 )
+add_test(
+    NAME f407_rtos_public_dependency_boundary
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMODE=rtos_public
+      -DSOURCE_DIR=${REPO_ROOT}/Boards/f407vet6-omni-car/RTOS/Inc
+      -P ${REPO_ROOT}/cmake/check_layer_dependencies.cmake
+)

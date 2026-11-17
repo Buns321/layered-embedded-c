@@ -29,6 +29,7 @@
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
+typedef StaticTask_t osStaticThreadDef_t;
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
@@ -47,32 +48,40 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
 /* Definitions for MonitorTask */
 osThreadId_t MonitorTaskHandle;
+uint32_t MonitorTaskStack[ 512 ];
+osStaticThreadDef_t MonitorTaskTCB;
 const osThreadAttr_t MonitorTask_attributes = {
   .name = "MonitorTask",
-  .stack_size = 512 * 4,
+  .cb_mem = &MonitorTaskTCB,
+  .cb_size = sizeof(MonitorTaskTCB),
+  .stack_mem = &MonitorTaskStack[0],
+  .stack_size = sizeof(MonitorTaskStack),
   .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for ControlTask */
 osThreadId_t ControlTaskHandle;
+uint32_t ControlTaskStack[ 1024 ];
+osStaticThreadDef_t ControlTaskTCB;
 const osThreadAttr_t ControlTask_attributes = {
   .name = "ControlTask",
-  .stack_size = 1024 * 4,
+  .cb_mem = &ControlTaskTCB,
+  .cb_size = sizeof(ControlTaskTCB),
+  .stack_mem = &ControlTaskStack[0],
+  .stack_size = sizeof(ControlTaskStack),
   .priority = (osPriority_t) osPriorityRealtime,
 };
 /* Definitions for UARTTask */
 osThreadId_t UARTTaskHandle;
+uint32_t UARTTaskStack[ 1024 ];
+osStaticThreadDef_t UARTTaskTCB;
 const osThreadAttr_t UARTTask_attributes = {
   .name = "UARTTask",
-  .stack_size = 1024 * 4,
+  .cb_mem = &UARTTaskTCB,
+  .cb_size = sizeof(UARTTaskTCB),
+  .stack_mem = &UARTTaskStack[0],
+  .stack_size = sizeof(UARTTaskStack),
   .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -81,7 +90,6 @@ const osThreadAttr_t UARTTask_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void *argument);
 void RTOS_Monitor_StartTask(void *argument);
 void RTOS_Control_StartTask(void *argument);
 void RTOS_UART_StartTask(void *argument);
@@ -115,9 +123,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
   /* creation of MonitorTask */
   MonitorTaskHandle = osThreadNew(RTOS_Monitor_StartTask, NULL, &MonitorTask_attributes);
 
@@ -128,32 +133,19 @@ void MX_FREERTOS_Init(void) {
   UARTTaskHandle = osThreadNew(RTOS_UART_StartTask, NULL, &UARTTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  if (
+    MonitorTaskHandle == NULL ||
+    ControlTaskHandle == NULL ||
+    UARTTaskHandle == NULL
+  ) {
+    Error_Handler();
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
-}
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
-{
-  /* USER CODE BEGIN StartDefaultTask */
-  (void)argument;
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Header_RTOS_Monitor_StartTask */
