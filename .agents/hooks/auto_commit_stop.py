@@ -4,7 +4,8 @@
 方案 A（Checkpoint 模式）：
 - 仅在工作分支提交，严禁在 main / master / detached HEAD 上提交。
 - 无改动、处于 merge/rebase 状态、或用户取消/报错中断时跳过。
-- 从 lastUserInput 与变更目录确定性生成 Conventional Commit 信息并附带 [auto-commit]。
+- 基于实际变更文件生成简洁的 Conventional Commit 标题（附 [auto-commit]），
+  并将用户指令摘要与变更列表写入 commit body。
 """
 
 from __future__ import annotations
@@ -55,6 +56,8 @@ def detect_commit_type(changed_files: list[str], user_input: str) -> str:
     lower_in = user_input.lower()
     if all(f.startswith("doc/") or f.endswith(".md") for f in changed_files):
         return "docs"
+    if any(k in lower_in for k in ("format", "clang-format", "格式化")):
+        return "style"
     if any(k in lower_in for k in ("fix", "bug", "修复", "报错", "失败")):
         return "fix"
     if any(k in lower_in for k in ("refactor", "重构", "拆分", "迁移", "整理")):
@@ -63,22 +66,55 @@ def detect_commit_type(changed_files: list[str], user_input: str) -> str:
         return "test"
     if all(
         f.startswith((".agents/", ".githooks/", "tools/"))
-        or f in ("AGENTS.md", ".clang-tidy", ".clang-format")
+        or f in ("AGENTS.md", ".clang-tidy", ".clang-format", ".gitignore")
         for f in changed_files
     ):
         return "chore"
     return "feat"
 
 
-def build_summary(user_input: str) -> str:
-    clean = re.sub(r"\s+", " ", user_input).strip()
-    if not clean:
+def build_file_summary(status_lines: list[tuple[str, str]]) -> str:
+    if not status_lines:
         return "checkpoint changes"
-    # 截取首句/前 56 个字符保持标题紧凑
-    clean = re.split(r"[。！？\n]", clean, maxsplit=1)[0].strip()
-    if len(clean) > 56:
-        clean = clean[:53].rstrip() + "..."
-    return clean or "checkpoint changes"
+
+    verbs = {"A": "add", "M": "update", "D": "remove", "R": "rename"}
+    codes = {code[0] for code, _ in status_lines}
+    verb = verbs.get(next(iter(codes)), "update") if len(codes) == 1 else "update"
+
+    names = [Path(p).name for _, p in status_lines]
+    if len(names) == 1:
+        return f"{verb} {names[0]}"
+    if len(names) == 2:
+        return f"{verb} {names[0]} and {names[1]}"
+    return f"{verb} {names[0]}, {names[1]} (+{len(names) - 2} files)"
+
+
+def build_commit_message(
+    status_lines: list[tuple[str, str]],
+    kept_files: list[str],
+    user_input: str,
+) -> str:
+    ctype = detect_commit_type(kept_files, user_input)
+    scope = detect_scope(kept_files)
+    summary = build_file_summary(status_lines)
+    title = f"{ctype}({scope}): {summary} [auto-commit]"
+
+    body_lines: list[str] = []
+    clean_prompt = re.sub(r"\s+", " ", user_input).strip()
+    if clean_prompt:
+        if len(clean_prompt) > 120:
+            clean_prompt = clean_prompt[:117].rstrip() + "..."
+        body_lines.append(f"Prompt: {clean_prompt}")
+    if kept_files:
+        body_lines.append("Files:")
+        for f in kept_files[:15]:
+            body_lines.append(f"- {f}")
+        if len(kept_files) > 15:
+            body_lines.append(f"- ... (+{len(kept_files) - 15} more)")
+
+    if not body_lines:
+        return title
+    return title + "\n\n" + "\n".join(body_lines)
 
 
 def main() -> None:
@@ -88,7 +124,6 @@ def main() -> None:
         print(json.dumps({}))
         return
 
-    # 仅在正常完成一轮对话时提交，避免取消/异常/循环继续中重复提交
     if payload.get("continuationActive"):
         print(json.dumps({}))
         return
@@ -127,30 +162,26 @@ def main() -> None:
 
     # 4. 暂存变更（排除超大文件）
     run_git(["add", "-A"], cwd)
-    staged_res = run_git(["diff", "--cached", "--name-only"], cwd)
-    staged_files = [line.strip() for line in staged_res.stdout.splitlines() if line.strip()]
-    if not staged_files:
+    ns_res = run_git(["diff", "--cached", "--name-status"], cwd)
+    status_lines: list[tuple[str, str]] = []
+    for line in ns_res.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) >= 2:
+            code = parts[0]
+            rel = parts[-1].strip()
+            fpath = cwd / rel
+            if fpath.is_file() and fpath.stat().st_size > MAX_AUTO_STAGE_BYTES:
+                run_git(["reset", "HEAD", "--", rel], cwd)
+            else:
+                status_lines.append((code, rel))
+
+    if not status_lines:
         print(json.dumps({}))
         return
 
-    kept_files: list[str] = []
-    for rel in staged_files:
-        fpath = cwd / rel
-        if fpath.is_file() and fpath.stat().st_size > MAX_AUTO_STAGE_BYTES:
-            run_git(["reset", "HEAD", "--", rel], cwd)
-        else:
-            kept_files.append(rel)
-
-    if not kept_files:
-        print(json.dumps({}))
-        return
-
-    # 5. 生成 Conventional Commit 信息并提交（--no-verify 作 checkpoint）
+    kept_files = [rel for _, rel in status_lines]
     user_input = payload.get("lastUserInput") or ""
-    ctype = detect_commit_type(kept_files, user_input)
-    scope = detect_scope(kept_files)
-    summary = build_summary(user_input)
-    msg = f"{ctype}({scope}): {summary} [auto-commit]"
+    msg = build_commit_message(status_lines, kept_files, user_input)
 
     run_git(["commit", "--no-verify", "-m", msg], cwd)
     print(json.dumps({}))
