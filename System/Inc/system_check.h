@@ -25,8 +25,7 @@
 SYS_MATH_INLINE bool Sys_IsNanF32(float x) {
   sys_math_f32_bits_t v;
   v.f = x;
-  return ((v.u & 0x7F800000u) == 0x7F800000u) &&
-         ((v.u & 0x007FFFFFu) != 0u);
+  return ((v.u & 0x7F800000u) == 0x7F800000u) && ((v.u & 0x007FFFFFu) != 0u);
 }
 
 /**
@@ -101,10 +100,7 @@ SYS_MATH_INLINE bool Sys_IsFiniteF64(double x) {
  * @return x 为 NaN 时返回 true。
  * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
  */
-#define SYS_ISNAN(x) _Generic((x), \
-  float:  Sys_IsNanF32, \
-  double: Sys_IsNanF64 \
-)(x)
+#define SYS_ISNAN(x) _Generic((x), float: Sys_IsNanF32, double: Sys_IsNanF64)(x)
 
 /**
  * @brief 判断浮点数是否为正无穷或负无穷。
@@ -112,10 +108,7 @@ SYS_MATH_INLINE bool Sys_IsFiniteF64(double x) {
  * @return x 为正负无穷时返回 true。
  * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
  */
-#define SYS_ISINF(x) _Generic((x), \
-  float:  Sys_IsInfF32, \
-  double: Sys_IsInfF64 \
-)(x)
+#define SYS_ISINF(x) _Generic((x), float: Sys_IsInfF32, double: Sys_IsInfF64)(x)
 
 /**
  * @brief 判断浮点数是否为有限值。
@@ -123,11 +116,62 @@ SYS_MATH_INLINE bool Sys_IsFiniteF64(double x) {
  * @return x 既不是 NaN 也不是无穷时返回 true。
  * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
  */
-#define SYS_ISFINITE(x) _Generic((x), \
-  float:  Sys_IsFiniteF32, \
-  double: Sys_IsFiniteF64 \
-)(x)
+#define SYS_ISFINITE(x) _Generic((x), float: Sys_IsFiniteF32, double: Sys_IsFiniteF64)(x)
+
+/**
+ * @brief 判断单精度浮点数是否为严格大于零的有限值。
+ * @param x 待检查的 float 值。
+ * @retval true x 为有限值且 x > 0.0f。
+ * @retval false x 非有限或 x <= 0.0f。
+ * @note 纯函数，不修改 x 或共享状态；可在任务或 ISR 中调用。
+ */
+SYS_MATH_INLINE bool Sys_IsPositiveFiniteF32(float x) { return Sys_IsFiniteF32(x) && x > 0.0f; }
+
+/**
+ * @brief 判断双精度浮点数是否为严格大于零的有限值。
+ * @param x 待检查的 double 值。
+ * @retval true x 为有限值且 x > 0.0。
+ * @retval false x 非有限或 x <= 0.0。
+ * @note 纯函数，不修改 x 或共享状态；可在任务或 ISR 中调用。
+ */
+SYS_MATH_INLINE bool Sys_IsPositiveFiniteF64(double x) { return Sys_IsFiniteF64(x) && x > 0.0; }
+
+/**
+ * @brief 判断单精度浮点数是否为非负有限值。
+ * @param x 待检查的 float 值。
+ * @retval true x 为有限值且 x >= 0.0f。
+ * @retval false x 非有限或 x < 0.0f。
+ * @note 纯函数，不修改 x 或共享状态；可在任务或 ISR 中调用。
+ */
+SYS_MATH_INLINE bool Sys_IsNonNegativeFiniteF32(float x) { return Sys_IsFiniteF32(x) && x >= 0.0f; }
+
+/**
+ * @brief 判断双精度浮点数是否为非负有限值。
+ * @param x 待检查的 double 值。
+ * @retval true x 为有限值且 x >= 0.0。
+ * @retval false x 非有限或 x < 0.0。
+ * @note 纯函数，不修改 x 或共享状态；可在任务或 ISR 中调用。
+ */
+SYS_MATH_INLINE bool Sys_IsNonNegativeFiniteF64(double x) { return Sys_IsFiniteF64(x) && x >= 0.0; }
+
+/**
+ * @brief 判断浮点数是否为严格大于零的有限值。
+ * @param x 单精度或双精度浮点值；其类型必须为 float 或 double。
+ * @return x 有限且严格大于零时返回 true。
+ * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
+ */
+#define SYS_IS_POS_FINITE(x)                                                                       \
+  _Generic((x), float: Sys_IsPositiveFiniteF32, double: Sys_IsPositiveFiniteF64)(x)
+
+/**
+ * @brief 判断浮点数是否为非负有限值。
+ * @param x 单精度或双精度浮点值；其类型必须为 float 或 double。
+ * @return x 有限且大于等于零时返回 true。
+ * @note `_Generic` 控制表达式不求值，x 作为实参只求值一次。
+ */
+#define SYS_IS_NONNEG_FINITE(x)                                                                    \
+  _Generic((x), float: Sys_IsNonNegativeFiniteF32, double: Sys_IsNonNegativeFiniteF64)(x)
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_SYSTEM_CHECK_H
+#endif // LAYERED_EMBEDDED_C_SYSTEM_CHECK_H

@@ -10,18 +10,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CHECK(condition) do {                                                \
-  if (!(condition)) {                                                        \
-    (void)fprintf(                                                           \
-      stderr,                                                                \
-      "%s:%d: check failed: %s\n",                                           \
-      __FILE__,                                                              \
-      __LINE__,                                                              \
-      #condition                                                             \
-    );                                                                       \
-    return 1;                                                                \
-  }                                                                          \
-} while (0)
+#define CHECK(condition)                                                                           \
+  do {                                                                                             \
+    if (!(condition)) {                                                                            \
+      (void)fprintf(stderr, "%s:%d: check failed: %s\n", __FILE__, __LINE__, #condition);          \
+      return 1;                                                                                    \
+    }                                                                                              \
+  } while (0)
 
 static uint8_t *s_rx_buffer;
 static uint16_t s_rx_size;
@@ -36,9 +31,7 @@ static dev_uart_status_t s_receive_status;
  * @note 必须与 Sys_Critical_Exit 成对调用，用于观察测试中临界区进入/退出次数。
  * @warning 这不是真实临界区，不提供互斥或中断保护；生产 System 实现才有对应语义。
  */
-void Sys_Critical_Enter(void) {
-  s_critical_nesting++;
-}
+void Sys_Critical_Enter(void) { s_critical_nesting++; }
 
 /**
  * @brief 减少测试临界嵌套计数。
@@ -63,11 +56,7 @@ void Sys_Critical_Exit(void) {
  * @post s_rx_buffer 更新为 data，s_rx_size 更新为 size，s_receive_calls 加一。
  * @note 无论返回成功还是失败都会记录并计数；不启动真实 UART 中断或 DMA。
  */
-static dev_uart_status_t fake_receive_it(
-  uart_base_t *uart_h,
-  uint8_t *data,
-  uint16_t size
-) {
+static dev_uart_status_t fake_receive_it(uart_base_t *uart_h, uint8_t *data, uint16_t size) {
   (void)uart_h;
 
   s_rx_buffer = data;
@@ -77,7 +66,7 @@ static dev_uart_status_t fake_receive_it(
 }
 
 static const uart_ops_t s_fake_uart_ops = {
-  .receive_it = fake_receive_it,
+    .receive_it = fake_receive_it,
 };
 
 /**
@@ -92,10 +81,7 @@ static const uart_ops_t s_fake_uart_ops = {
  *       部分初始化，调用方必须停止后续步骤。
  * @note 使用返回码而非 assert 报告早期失败；不访问真实串口。
  */
-static int fake_uart_reset(
-  uart_base_t *uart_h,
-  joycon_uart_t *joycon_h
-) {
+static int fake_uart_reset(uart_base_t *uart_h, joycon_uart_t *joycon_h) {
   s_rx_buffer = NULL;
   s_rx_size = 0u;
   s_receive_calls = 0u;
@@ -107,11 +93,10 @@ static int fake_uart_reset(
   if (Dev_JoyCon_UART_Start(joycon_h) != DEV_UART_OK) {
     return 1;
   }
-  if (s_rx_buffer != &joycon_h->rx_byte || s_rx_size != 1u) {
+  if (s_rx_buffer != &joycon_h->rx_stream.rx_byte || s_rx_size != 1u) {
     return 1;
   }
-  if (uart_h->callbacks.rx_complete_cb == NULL ||
-      uart_h->callbacks.err_cb == NULL) {
+  if (uart_h->callbacks.rx_complete_cb == NULL || uart_h->callbacks.err_cb == NULL) {
     return 1;
   }
 
@@ -128,18 +113,11 @@ static int fake_uart_reset(
  *       回调重新挂接时 s_rx_buffer、s_rx_size 和 s_receive_calls 会再次更新。
  * @warning 当前触发是测试线程中的同步回调，不是真实 ISR；缓冲区失效会导致崩溃。
  */
-static void feed_rx_byte(
-  uart_base_t *uart_h,
-  joycon_uart_t *joycon_h,
-  uint8_t byte
-) {
+static void feed_rx_byte(uart_base_t *uart_h, joycon_uart_t *joycon_h, uint8_t byte) {
   (void)joycon_h;
 
   *s_rx_buffer = byte;
-  uart_h->callbacks.rx_complete_cb(
-    uart_h,
-    uart_h->callbacks.context
-  );
+  uart_h->callbacks.rx_complete_cb(uart_h, uart_h->callbacks.context);
 }
 
 /**
@@ -152,11 +130,7 @@ static void feed_rx_byte(
  * @note 文本可含 CR/LF，解析器按帧规则处理；空字符串只产生零次注入。
  * @warning 非 NUL 结尾的 text 会越界读取；真实 ISR 语义仍由同步回调模拟。
  */
-static void feed_text(
-  uart_base_t *uart_h,
-  joycon_uart_t *joycon_h,
-  const char *text
-) {
+static void feed_text(uart_base_t *uart_h, joycon_uart_t *joycon_h, const char *text) {
   size_t length = strlen(text);
   for (size_t i = 0u; i < length; i++) {
     feed_rx_byte(uart_h, joycon_h, (uint8_t)text[i]);
@@ -180,7 +154,7 @@ static int test_valid_frames_and_optional_newline(void) {
   CHECK(fake_uart_reset(&uart, &joycon) == 0);
 
   feed_text(&uart, &joycon, "[j,100,-100,50,0]\r\n");
-  Dev_JoyCon_UART_Process(&joycon, 100u);
+  Dev_JoyCon_Base_Process(&joycon.base, 100u);
 
   CHECK(Dev_JoyCon_Base_GetInput(&joycon.base, &input));
   CHECK(input.left_x == 1.0f);
@@ -219,13 +193,8 @@ static int test_invalid_frames_keep_last_snapshot(void) {
   joycon_input_t input = {0};
   joycon_status_t status = {0};
   const char *invalid_frames[] = {
-    "[x,1,2,3,4]",
-    "[j,101,0,0,0]",
-    "[j,-101,0,0,0]",
-    "[j,1,2,3]",
-    "[j,1,2,3,4,]",
-    "[j,1.2.3,0,0,0]",
-    "[j,-,2,3,4]",
+      "[x,1,2,3,4]",  "[j,101,0,0,0]",   "[j,-101,0,0,0]", "[j,1,2,3]",
+      "[j,1,2,3,4,]", "[j,1.2.3,0,0,0]", "[j,-,2,3,4]",
   };
 
   CHECK(fake_uart_reset(&uart, &joycon) == 0);
@@ -337,7 +306,7 @@ static int test_start_failure_is_recoverable(void) {
   s_receive_status = DEV_UART_ERROR;
 
   CHECK(Dev_JoyCon_UART_Start(&joycon) == DEV_UART_ERROR);
-  CHECK(joycon.rx_rearm_pending);
+  CHECK(joycon.rx_stream.rearm_pending);
 
   Dev_JoyCon_UART_GetStatus(&joycon, &status);
   CHECK(status.is_started);
@@ -346,7 +315,7 @@ static int test_start_failure_is_recoverable(void) {
   s_receive_status = DEV_UART_OK;
   Dev_JoyCon_UART_Process(&joycon, 50u);
 
-  CHECK(!joycon.rx_rearm_pending);
+  CHECK(!joycon.rx_stream.rearm_pending);
   Dev_JoyCon_UART_GetStatus(&joycon, &status);
   CHECK(status.rearm_error_count == 1u);
   return 0;

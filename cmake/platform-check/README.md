@@ -9,8 +9,9 @@
 - Platform common 与 F1/F4 backend
 - DeviceDrivers Base 与具体驱动
 - Controller、Policy、Filter
-- System、RTOS、App
+- System、RTOS、App、Core/Board
 - IMU base、MPU6050 和滤波组合
+- App portability fixture
 
 每层使用独立对象目标并启用 `-Wall -Wextra -Werror`。源文件按层递归收集，
 `CONFIGURE_DEPENDS` 会在新增 `.c` 文件后自动重新配置，避免新增模块漏出编译检查。

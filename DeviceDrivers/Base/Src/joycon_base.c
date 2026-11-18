@@ -15,26 +15,30 @@
  * @brief 绑定 JoyCon 名称与只读查询操作表。
  * @param joycon_h 调用方持有的 JoyCon 基类存储；不可为 NULL，所有权不转移。
  * @param name 只读调试名称，生命周期必须覆盖设备对象；不可为 NULL。
- * @param ops 静态操作表；不可为 NULL，get_input 与 get_status 必须可用。
+ * @param ops 静态操作表；不可为 NULL，process、get_input 与 get_status 必须可用。
  * @pre 设备尚未并发发布，name 与 ops 在设备使用期间保持有效。
  * @post 只保存绑定，不启动 UART、不解析报文，也不改变最近输入。
  * @note 仅限初始化阶段调用；不加锁且不分配内存，重复调用会覆盖已有绑定。
  */
-void Dev_JoyCon_Base_Init(
-  joycon_base_t *joycon_h,
-  const char *name,
-  const joycon_ops_t *ops
-) {
-  assert(
-    joycon_h &&
-    name &&
-    ops &&
-    ops->get_input &&
-    ops->get_status
-  );
+void Dev_JoyCon_Base_Init(joycon_base_t *joycon_h, const char *name, const joycon_ops_t *ops) {
+  assert(joycon_h && name && ops && ops->process && ops->get_input && ops->get_status);
 
   joycon_h->name = name;
   joycon_h->ops = ops;
+}
+
+/**
+ * @brief 委托具体 JoyCon 设备处理待解析数据。
+ * @param joycon_h 已初始化的 JoyCon 句柄；不可为 NULL，所有权不转移。
+ * @param now_ms 当前单调毫秒时间戳，单位 ms。
+ * @pre 已绑定非空 process 操作；只允许单一输入任务调用。
+ * @post 具体设备消费接收队列并可能发布新的输入快照。
+ * @note 不加锁；同一设备的 Process 与其他写操作必须串行化。
+ */
+void Dev_JoyCon_Base_Process(joycon_base_t *joycon_h, uint32_t now_ms) {
+  assert(joycon_h && joycon_h->ops && joycon_h->ops->process);
+
+  joycon_h->ops->process(joycon_h, now_ms);
 }
 
 /**
@@ -47,16 +51,8 @@ void Dev_JoyCon_Base_Init(
  * @post 四轴范围为 [-1, 1]，time_ms 为解析时刻的单调毫秒时间戳。
  * @note 上层可在其他任务读取；复制是快照语义，不转移任何缓冲区所有权。
  */
-bool Dev_JoyCon_Base_GetInput(
-  joycon_base_t *joycon_h,
-  joycon_input_t *input
-) {
-  assert(
-    joycon_h &&
-    joycon_h->ops &&
-    joycon_h->ops->get_input &&
-    input
-  );
+bool Dev_JoyCon_Base_GetInput(joycon_base_t *joycon_h, joycon_input_t *input) {
+  assert(joycon_h && joycon_h->ops && joycon_h->ops->get_input && input);
 
   return joycon_h->ops->get_input(joycon_h, input);
 }
@@ -70,16 +66,8 @@ bool Dev_JoyCon_Base_GetInput(
  * @note 字节数与帧数单位分别为 bytes 和帧；时间字段为单调毫秒并允许回绕。
  * @warning 本层不加锁；是否可与其他任务并发调用取决于具体实现。
  */
-void Dev_JoyCon_Base_GetStatus(
-  joycon_base_t *joycon_h,
-  joycon_status_t *status
-) {
-  assert(
-    joycon_h &&
-    joycon_h->ops &&
-    joycon_h->ops->get_status &&
-    status
-  );
+void Dev_JoyCon_Base_GetStatus(joycon_base_t *joycon_h, joycon_status_t *status) {
+  assert(joycon_h && joycon_h->ops && joycon_h->ops->get_status && status);
 
   joycon_h->ops->get_status(joycon_h, status);
 }

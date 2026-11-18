@@ -62,6 +62,10 @@ rules.ninja
 *.swo
 *~
 
+# ---- Python ----
+__pycache__/
+*.pyc
+
 # ---- 临时文件 ----
 *.bak
 *.tmp

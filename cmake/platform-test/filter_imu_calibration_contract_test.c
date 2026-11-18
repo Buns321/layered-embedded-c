@@ -58,7 +58,10 @@ static void test_identity_defaults(void) {
     .accel_scale = {1.0f, 1.0f, 1.0f},
   };
   filter_imu_calibration_t calibration;
-  assert(Filter_ImuCalibration_Init(&calibration, "cal", &config));
+  assert(
+    Filter_ImuCalibration_Init(&calibration, "cal", &config) ==
+    FILTER_STATUS_OK
+  );
 
   filter_sample_t input = {
     .valid_mask =
@@ -93,18 +96,23 @@ static void test_correction_and_update(void) {
     .accel_scale = {1.0f, 1.0f, 1.0f},
   };
   filter_imu_calibration_t calibration;
-  assert(Filter_ImuCalibration_Init(
-    &calibration,
-    "cal",
-    &initial
-  ));
+  assert(
+    Filter_ImuCalibration_Init(
+      &calibration,
+      "cal",
+      &initial
+    ) == FILTER_STATUS_OK
+  );
 
   const filter_imu_calibration_config_t corrected = {
     .accel_offset_mps2 = {0.5f, -1.0f, 0.25f},
     .accel_scale = {2.0f, 0.5f, 1.25f},
     .gyro_bias_dps = {1.0f, -2.0f, 0.5f},
   };
-  assert(Filter_ImuCalibration_SetConfig(&calibration, &corrected));
+  assert(
+    Filter_ImuCalibration_SetConfig(&calibration, &corrected) ==
+    FILTER_STATUS_OK
+  );
 
   filter_sample_t input = {
     .valid_mask =
@@ -137,25 +145,38 @@ static void test_correction_and_update(void) {
 /**
  * @brief 验证空配置、非法比例和超限陀螺偏置被拒绝。
  * @post 成功返回时，NULL 配置初始化失败，零比例和 721 deg/s 偏置的
- *       SetConfig 调用均返回 false；失败后读回的比例仍为 1，说明原配置未改变。
+ *       SetConfig 调用均返回 FILTER_STATUS_INVALID_CONFIG；失败后读回的比例仍为 1，
+ *       说明原配置未改变。
  * @warning 任一 assert 失败都会终止测试进程，不返回可恢复的错误状态。
  * @note 测试对象位于栈上，返回后失效；非法配置不会写入全局状态或硬件。
  */
 static void test_invalid_configuration(void) {
   filter_imu_calibration_t calibration;
-  assert(!Filter_ImuCalibration_Init(&calibration, "cal", NULL));
+  assert(
+    Filter_ImuCalibration_Init(&calibration, "cal", NULL) ==
+    FILTER_STATUS_INVALID_ARGUMENT
+  );
 
   filter_imu_calibration_config_t config = {
     .accel_scale = {1.0f, 1.0f, 1.0f},
   };
-  assert(Filter_ImuCalibration_Init(&calibration, "cal", &config));
+  assert(
+    Filter_ImuCalibration_Init(&calibration, "cal", &config) ==
+    FILTER_STATUS_OK
+  );
 
   config.accel_scale[1] = 0.0f;
-  assert(!Filter_ImuCalibration_SetConfig(&calibration, &config));
+  assert(
+    Filter_ImuCalibration_SetConfig(&calibration, &config) ==
+    FILTER_STATUS_INVALID_CONFIG
+  );
 
   config.accel_scale[1] = 1.0f;
   config.gyro_bias_dps[2] = 721.0f;
-  assert(!Filter_ImuCalibration_SetConfig(&calibration, &config));
+  assert(
+    Filter_ImuCalibration_SetConfig(&calibration, &config) ==
+    FILTER_STATUS_INVALID_CONFIG
+  );
 
   filter_imu_calibration_config_t readback;
   Filter_ImuCalibration_GetConfig(&calibration, &readback);

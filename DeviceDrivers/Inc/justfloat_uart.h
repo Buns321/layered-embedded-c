@@ -13,13 +13,13 @@
 #define LAYERED_EMBEDDED_C_JUSTFLOAT_UART_H
 
 #include "telemetry_base.h"
+#include "telemetry_uart_tx.h"
 #include "uart_base.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 #define JUSTFLOAT_FRAME_TAIL_SIZE 4u
-#define JUSTFLOAT_UART_TX_CAPACITY \
-  ((TELEMETRY_CHANNEL_CAPACITY * 4u) + JUSTFLOAT_FRAME_TAIL_SIZE)
+#define JUSTFLOAT_UART_TX_CAPACITY ((TELEMETRY_CHANNEL_CAPACITY * 4u) + JUSTFLOAT_FRAME_TAIL_SIZE)
 
 /**
  * @brief JustFloat UART 设备对象。
@@ -28,14 +28,10 @@
  */
 typedef struct justfloat_uart_s {
   telemetry_base_t base;
-  uart_base_t *uart_h;
   uint8_t channel_count;
 
   uint8_t tx_buffer[JUSTFLOAT_UART_TX_CAPACITY];
-  volatile bool busy;
-  volatile uint32_t sent_frames;
-  volatile uint32_t dropped_frames;
-  volatile uint32_t error_count;
+  telemetry_uart_tx_t tx;
 } justfloat_uart_t;
 
 /**
@@ -51,13 +47,9 @@ typedef struct justfloat_uart_s {
  * @warning 本对象取得 uart_h 的设备级回调槽所有权；不得再注册其他回调或并发初始化，
  *          也不得在已有 DMA 发送时调用，否则旧完成事件将无法归还给原所有者。
  */
-void Dev_JustFloat_UART_Init(
-  justfloat_uart_t *telemetry_h,
-  const char *name,
-  uart_base_t *uart_h,
-  uint8_t channel_count
-);
+void Dev_JustFloat_UART_Init(justfloat_uart_t *telemetry_h, const char *name, uart_base_t *uart_h,
+                             uint8_t channel_count);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_JUSTFLOAT_UART_H
+#endif // LAYERED_EMBEDDED_C_JUSTFLOAT_UART_H

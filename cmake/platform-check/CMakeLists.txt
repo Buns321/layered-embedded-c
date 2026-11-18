@@ -44,6 +44,9 @@ file(GLOB_RECURSE POLICY_CHECK_SOURCES CONFIGURE_DEPENDS
 file(GLOB_RECURSE RTOS_CHECK_SOURCES CONFIGURE_DEPENDS
     ${BOARD_ROOT}/RTOS/Src/*.c
 )
+file(GLOB_RECURSE CORE_BOARD_CHECK_SOURCES CONFIGURE_DEPENDS
+    ${BOARD_ROOT}/Core/Board/Src/*.c
+)
 file(GLOB_RECURSE SYSTEM_CHECK_SOURCES CONFIGURE_DEPENDS
     ${REPO_ROOT}/System/Src/*.c
 )
@@ -148,6 +151,7 @@ if(PLATFORM_CHECK_FAMILY STREQUAL "F4")
       ${REPO_ROOT}/Filter/Inc
       ${REPO_ROOT}/Policy/Base/Inc
       ${REPO_ROOT}/Policy/Inc
+      ${BOARD_ROOT}/Core/Board/Inc
       ${BOARD_ROOT}/RTOS/Inc
       ${REPO_ROOT}/System/Inc
       ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/include
@@ -357,6 +361,7 @@ elseif(PLATFORM_CHECK_FAMILY STREQUAL "F1")
       ${REPO_ROOT}/Filter/Inc
       ${REPO_ROOT}/Policy/Base/Inc
       ${REPO_ROOT}/Policy/Inc
+      ${BOARD_ROOT}/Core/Board/Inc
       ${BOARD_ROOT}/RTOS/Inc
       ${REPO_ROOT}/System/Inc
       ${BOARD_ROOT}/Middlewares/Third_Party/FreeRTOS/Source/include
@@ -481,9 +486,17 @@ add_layer_check(filter ${FILTER_CHECK_SOURCES})
 add_layer_check(system ${SYSTEM_CHECK_SOURCES})
 add_layer_check(rtos ${RTOS_CHECK_SOURCES})
 add_layer_check(app ${APP_CHECK_SOURCES})
+if(CORE_BOARD_CHECK_SOURCES)
+  add_layer_check(core_board ${CORE_BOARD_CHECK_SOURCES})
+endif()
+add_layer_check(
+    app_portability_fixture
+    ${REPO_ROOT}/cmake/platform-test/app_portability_fixture.c
+)
 
 foreach(source_group
     APP_CHECK_SOURCES
+    CORE_BOARD_CHECK_SOURCES
     CONTROLLER_CHECK_SOURCES
     DEVICE_BASE_CHECK_SOURCES
     DEVICE_DRIVER_CHECK_SOURCES

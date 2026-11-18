@@ -15,10 +15,8 @@
 
 #define APP_CALIBRATION_RAD_TO_DEG 57.295779513082320876f
 
-_Static_assert(
-  sizeof(app_calibration_record_t) <= SYSTEM_RECORD_STORE_PAYLOAD_CAPACITY,
-  "calibration record exceeds record store capacity"
-);
+_Static_assert(sizeof(app_calibration_record_t) <= SYSTEM_RECORD_STORE_PAYLOAD_CAPACITY,
+               "calibration record exceeds record store capacity");
 
 /**
  * @brief 校验从 Flash 读取的记录版本、掩码和数值范围。
@@ -30,32 +28,20 @@ _Static_assert(
  * @post 不修改记录或外部状态。
  * @note 内部辅助函数，不访问 Flash、不分配内存。
  */
-static bool app_calibrationrecord_isvalid(
-  const app_calibration_record_t *record,
-  uint16_t version,
-  uint32_t payload_size
-) {
-  if (
-    record == NULL ||
-    version != APP_CALIBRATION_RECORD_VERSION ||
-    payload_size != sizeof(*record) ||
-    (record->face_mask & ~((uint32_t)APP_FACE_ALL)) != 0u ||
-    (
-      record->completed_axis_mask &
-      ~((uint32_t)APP_CALIBRATION_AXIS_COMPLETE_MASK)
-    ) != 0u
-  ) {
+static bool app_calibrationrecord_isvalid(const app_calibration_record_t *record, uint16_t version,
+                                          uint32_t payload_size) {
+  if (record == NULL || version != APP_CALIBRATION_RECORD_VERSION ||
+      payload_size != sizeof(*record) || (record->face_mask & ~((uint32_t)APP_FACE_ALL)) != 0u ||
+      (record->completed_axis_mask & ~((uint32_t)APP_CALIBRATION_AXIS_COMPLETE_MASK)) != 0u) {
     return false;
   }
 
   for (uint8_t axis = 0u; axis < APP_CALIBRATION_AXIS_COUNT; axis++) {
-    if (
-      !SYS_ISFINITE(record->gyro_bias_radps[axis]) ||
-      !SYS_ISFINITE(record->accel_offset_mps2[axis]) ||
-      !SYS_ISFINITE(record->accel_scale_ratio[axis]) ||
-      record->accel_scale_ratio[axis] < APP_ACCEL_SCALE_MIN ||
-      record->accel_scale_ratio[axis] > APP_ACCEL_SCALE_MAX
-    ) {
+    if (!SYS_ISFINITE(record->gyro_bias_radps[axis]) ||
+        !SYS_ISFINITE(record->accel_offset_mps2[axis]) ||
+        !SYS_ISFINITE(record->accel_scale_ratio[axis]) ||
+        record->accel_scale_ratio[axis] < APP_ACCEL_SCALE_MIN ||
+        record->accel_scale_ratio[axis] > APP_ACCEL_SCALE_MAX) {
       return false;
     }
   }
@@ -69,9 +55,7 @@ static bool app_calibrationrecord_isvalid(
  * @post 全部字段清零，三轴 accel_scale_ratio 均为 1。
  * @note 不访问 Flash、不分配内存。
  */
-void App_CalibrationRecord_InitDefaults(
-  app_calibration_record_t *record
-) {
+void App_CalibrationRecord_InitDefaults(app_calibration_record_t *record) {
   assert(record);
   memset(record, 0, sizeof(*record));
   for (uint8_t axis = 0u; axis < APP_CALIBRATION_AXIS_COUNT; axis++) {
@@ -89,10 +73,8 @@ void App_CalibrationRecord_InitDefaults(
  * @post 成功时 active_record 为默认值、Flash 状态清零、initialized 为 true。
  * @note 不访问 Flash、不分配内存。
  */
-bool App_CalibrationRecord_Init(
-  app_calibration_record_store_t *store_h,
-  filter_imu_calibration_t *filter_h
-) {
+bool App_CalibrationRecord_Init(app_calibration_record_store_t *store_h,
+                                filter_imu_calibration_t *filter_h) {
   if (store_h == NULL || filter_h == NULL) {
     return false;
   }
@@ -116,20 +98,14 @@ bool App_CalibrationRecord_Init(
  * @post 成功时 active_record 更新；失败时保留默认或已有活动记录，并锁存失败标志。
  * @note 可能同步扫描和擦除 Flash；不分配内存，只允许初始化阶段调用。
  */
-bool App_CalibrationRecord_Load(
-  app_calibration_record_store_t *store_h
-) {
+bool App_CalibrationRecord_Load(app_calibration_record_store_t *store_h) {
   if (store_h == NULL || !store_h->initialized) {
     return false;
   }
 
-  system_record_store_status_t store_status = Sys_RecordStore_Init(
-    &store_h->record_store,
-    PLATFORM_FLASH_1,
-    APP_CALIBRATION_FLASH_ADDRESS,
-    APP_CALIBRATION_FLASH_PAGE_SIZE,
-    APP_CALIBRATION_RECORD_MAGIC
-  );
+  system_record_store_status_t store_status =
+      Sys_RecordStore_Init(&store_h->record_store, PLATFORM_FLASH_1, APP_CALIBRATION_FLASH_ADDRESS,
+                           APP_CALIBRATION_FLASH_PAGE_SIZE, APP_CALIBRATION_RECORD_MAGIC);
   if (store_status != SYSTEM_RECORD_STORE_OK) {
     store_h->flash_write_failed = true;
     SYS_LOG_ERROR("FLASH", "record store init failed");
@@ -139,17 +115,10 @@ bool App_CalibrationRecord_Load(
   app_calibration_record_t record;
   uint16_t version = 0u;
   uint32_t payload_size = 0u;
-  store_status = Sys_RecordStore_LoadLatest(
-    &store_h->record_store,
-    &version,
-    &record,
-    sizeof(record),
-    &payload_size
-  );
-  if (
-    store_status != SYSTEM_RECORD_STORE_OK ||
-    !app_calibrationrecord_isvalid(&record, version, payload_size)
-  ) {
+  store_status = Sys_RecordStore_LoadLatest(&store_h->record_store, &version, &record,
+                                            sizeof(record), &payload_size);
+  if (store_status != SYSTEM_RECORD_STORE_OK ||
+      !app_calibrationrecord_isvalid(&record, version, payload_size)) {
     return false;
   }
 
@@ -174,15 +143,9 @@ bool App_CalibrationRecord_Load(
  * @post 成功时滤波器后续帧使用该记录；失败时滤波器配置保持不变。
  * @note 不写 Flash、不分配内存。
  */
-bool App_CalibrationRecord_Apply(
-  app_calibration_record_store_t *store_h,
-  const app_calibration_record_t *record
-) {
-  if (
-    store_h == NULL ||
-    store_h->filter_h == NULL ||
-    record == NULL
-  ) {
+bool App_CalibrationRecord_Apply(app_calibration_record_store_t *store_h,
+                                 const app_calibration_record_t *record) {
+  if (store_h == NULL || store_h->filter_h == NULL || record == NULL) {
     return false;
   }
 
@@ -190,13 +153,9 @@ bool App_CalibrationRecord_Apply(
   for (uint8_t axis = 0u; axis < APP_CALIBRATION_AXIS_COUNT; axis++) {
     config.accel_offset_mps2[axis] = record->accel_offset_mps2[axis];
     config.accel_scale[axis] = record->accel_scale_ratio[axis];
-    config.gyro_bias_dps[axis] =
-      record->gyro_bias_radps[axis] * APP_CALIBRATION_RAD_TO_DEG;
+    config.gyro_bias_dps[axis] = record->gyro_bias_radps[axis] * APP_CALIBRATION_RAD_TO_DEG;
   }
-  bool applied = Filter_ImuCalibration_SetConfig(
-    store_h->filter_h,
-    &config
-  );
+  bool applied = Filter_ImuCalibration_SetConfig(store_h->filter_h, &config) == FILTER_STATUS_OK;
   if (!applied) {
     store_h->flash_write_failed = true;
   }
@@ -213,26 +172,14 @@ bool App_CalibrationRecord_Apply(
  * @post 成功时 active_record 更新并清除 flash_write_failed；失败时置位该标志。
  * @note 可能阻塞执行 Flash 擦写；不分配内存。
  */
-bool App_CalibrationRecord_Commit(
-  app_calibration_record_store_t *store_h,
-  const app_calibration_record_t *record
-) {
-  if (
-    store_h == NULL ||
-    !store_h->initialized ||
-    record == NULL
-  ) {
+bool App_CalibrationRecord_Commit(app_calibration_record_store_t *store_h,
+                                  const app_calibration_record_t *record) {
+  if (store_h == NULL || !store_h->initialized || record == NULL) {
     return false;
   }
 
-  if (
-    Sys_RecordStore_Append(
-      &store_h->record_store,
-      APP_CALIBRATION_RECORD_VERSION,
-      record,
-      sizeof(*record)
-    ) != SYSTEM_RECORD_STORE_OK
-  ) {
+  if (Sys_RecordStore_Append(&store_h->record_store, APP_CALIBRATION_RECORD_VERSION, record,
+                             sizeof(*record)) != SYSTEM_RECORD_STORE_OK) {
     store_h->flash_write_failed = true;
     return false;
   }
@@ -257,9 +204,8 @@ bool App_CalibrationRecord_Commit(
  * @post 不修改记录或 Flash 状态。
  * @note 返回指针不得由调用方释放；并发写入时调用方须串行化。
  */
-const app_calibration_record_t *App_CalibrationRecord_GetActive(
-  const app_calibration_record_store_t *store_h
-) {
+const app_calibration_record_t *
+App_CalibrationRecord_GetActive(const app_calibration_record_store_t *store_h) {
   assert(store_h);
   return &store_h->active_record;
 }
@@ -272,9 +218,7 @@ const app_calibration_record_t *App_CalibrationRecord_GetActive(
  * @post 不修改状态。
  * @note 该值表示初始化加载结果，不表示最近一次提交是否成功。
  */
-bool App_CalibrationRecord_HasFlashRecord(
-  const app_calibration_record_store_t *store_h
-) {
+bool App_CalibrationRecord_HasFlashRecord(const app_calibration_record_store_t *store_h) {
   return store_h != NULL && store_h->flash_record_valid;
 }
 
@@ -286,8 +230,6 @@ bool App_CalibrationRecord_HasFlashRecord(
  * @post 不修改状态。
  * @note 标志只在成功提交或重新初始化后清除。
  */
-bool App_CalibrationRecord_HasFlashFailure(
-  const app_calibration_record_store_t *store_h
-) {
+bool App_CalibrationRecord_HasFlashFailure(const app_calibration_record_store_t *store_h) {
   return store_h != NULL && store_h->flash_write_failed;
 }

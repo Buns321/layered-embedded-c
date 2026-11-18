@@ -4,6 +4,7 @@
  * @ingroup platform
  */
 
+#include "platform_callback_internal.h"
 #include "platform_error_internal.h"
 #include "platform_uart_backend.h"
 #include <stddef.h>
@@ -22,15 +23,10 @@ static bool uart_cb_registered[PLATFORM_UART_INSTANCE_COUNT];
  *       成功时不修改快照。
  * @note 内部辅助函数；不分配内存、不阻塞，快照并发限制由 platform_error_record() 决定。
  */
-static platform_status_t platform_uart_finish(
-  platform_uart_instance_t uart,
-  platform_status_t status
-) {
+static platform_status_t platform_uart_finish(platform_uart_instance_t uart,
+                                              platform_status_t status) {
   if (status != PLATFORM_STATUS_OK) {
-    platform_error_record(
-      &uart_error[uart],
-      platform_error_from_status(status)
-    );
+    platform_error_record(&uart_error[uart], platform_error_from_status(status));
   }
   return status;
 }
@@ -45,15 +41,9 @@ static platform_status_t platform_uart_finish(
  * @post 纯查询；不访问 UART、不修改输入对象或模块状态。
  * @note 内部辅助函数；不分配内存，阻塞方向由调用接口决定。
  */
-static bool platform_uart_validate(
-  platform_uart_instance_t uart,
-  const void *data,
-  uint16_t size
-) {
-  return (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT &&
-         platform_uart_backend_is_valid(uart) &&
-         data != NULL &&
-         size != 0U;
+static bool platform_uart_validate(platform_uart_instance_t uart, const void *data, uint16_t size) {
+  return (uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT && platform_uart_backend_is_valid(uart) &&
+         data != NULL && size != 0U;
 }
 
 /**
@@ -63,14 +53,9 @@ static bool platform_uart_validate(
  * @post uart 位于槽位范围内时记录 PLATFORM_ERROR_INVALID_ARGUMENT；越界值不访问数组。
  * @note 内部辅助函数；不访问 UART 硬件、不分配内存、不阻塞。
  */
-static platform_status_t platform_uart_invalid(
-  platform_uart_instance_t uart
-) {
+static platform_status_t platform_uart_invalid(platform_uart_instance_t uart) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
-    platform_error_record(
-      &uart_error[uart],
-      PLATFORM_ERROR_INVALID_ARGUMENT
-    );
+    platform_error_record(&uart_error[uart], PLATFORM_ERROR_INVALID_ARGUMENT);
   }
   return PLATFORM_STATUS_INVALID_ARGUMENT;
 }
@@ -83,22 +68,15 @@ static platform_status_t platform_uart_invalid(
  * @warning 由 HAL 中断回调调用，执行上下文为中断；不得阻塞或分配内存。
  * @note 不保留事件或缓冲区指针；一个物理实例只有一个回调所有者。
  */
-void platform_uart_dispatch_event(
-  platform_uart_instance_t uart,
-  platform_uart_event_type_t type
-) {
-  if (
-    (uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT ||
-    !uart_cb_registered[uart]
-  ) {
+void platform_uart_dispatch_event(platform_uart_instance_t uart, platform_uart_event_type_t type) {
+  if ((uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT || !uart_cb_registered[uart]) {
     return;
   }
 
   platform_uart_event_t event = {
-    .type = type,
-    .error = type == PLATFORM_UART_EVENT_ERROR
-               ? platform_uart_backend_get_error(uart)
-               : PLATFORM_UART_ERROR_NONE,
+      .type = type,
+      .error = type == PLATFORM_UART_EVENT_ERROR ? platform_uart_backend_get_error(uart)
+                                                 : PLATFORM_UART_ERROR_NONE,
   };
   if (uart_cb[uart].callback != NULL) {
     uart_cb[uart].callback(uart, &event, uart_cb[uart].context);
@@ -121,22 +99,15 @@ void platform_uart_dispatch_event(
  * @warning 只能在任务上下文调用；同一实例的事务必须串行化，pdata 必须覆盖整个调用。
  * @note 不分配内存、不自动重新挂起接收；失败时记录对应 PLATFORM_ERROR_* 位。
  */
-platform_status_t Platform_UART_Receive(
-  platform_uart_instance_t uart,
-  uint8_t *pdata,
-  uint16_t size,
-  uint32_t timeout
-) {
+platform_status_t Platform_UART_Receive(platform_uart_instance_t uart, uint8_t *pdata,
+                                        uint16_t size, uint32_t timeout) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_receive(uart, pdata, size, timeout)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_receive(uart, pdata, size, timeout));
 }
 
 /**
@@ -155,22 +126,15 @@ platform_status_t Platform_UART_Receive(
  * @warning 只能在任务上下文调用；同一实例的事务必须串行化，pdata 必须覆盖整个调用。
  * @note 不分配内存；失败时记录对应 PLATFORM_ERROR_* 位。
  */
-platform_status_t Platform_UART_Transmit(
-  platform_uart_instance_t uart,
-  const uint8_t *pdata,
-  uint16_t size,
-  uint32_t timeout
-) {
+platform_status_t Platform_UART_Transmit(platform_uart_instance_t uart, const uint8_t *pdata,
+                                         uint16_t size, uint32_t timeout) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_transmit(uart, pdata, size, timeout)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_transmit(uart, pdata, size, timeout));
 }
 
 /**
@@ -187,21 +151,15 @@ platform_status_t Platform_UART_Transmit(
  * @warning pdata 必须在 RX 完成、错误或中止前保持有效且不得并发访问；回调在中断上下文执行。
  * @note Platform 不复制缓冲区，也不自动重新挂起接收；重新挂接收由设备驱动负责。
  */
-platform_status_t Platform_UART_ReceiveIT(
-  platform_uart_instance_t uart,
-  uint8_t *pdata,
-  uint16_t size
-) {
+platform_status_t Platform_UART_ReceiveIT(platform_uart_instance_t uart, uint8_t *pdata,
+                                          uint16_t size) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_receive_it(uart, pdata, size)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_receive_it(uart, pdata, size));
 }
 
 /**
@@ -218,21 +176,15 @@ platform_status_t Platform_UART_ReceiveIT(
  * @warning pdata 必须在 TX 完成、错误或中止前保持有效且内容不变；回调在中断上下文执行。
  * @note Platform 不复制缓冲区，也不自动重新启动发送。
  */
-platform_status_t Platform_UART_TransmitIT(
-  platform_uart_instance_t uart,
-  const uint8_t *pdata,
-  uint16_t size
-) {
+platform_status_t Platform_UART_TransmitIT(platform_uart_instance_t uart, const uint8_t *pdata,
+                                           uint16_t size) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_transmit_it(uart, pdata, size)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_transmit_it(uart, pdata, size));
 }
 
 /**
@@ -246,24 +198,19 @@ platform_status_t Platform_UART_TransmitIT(
  * @retval PLATFORM_STATUS_ERROR HAL 或 DMA 无法启动请求。
  * @pre MX_USARTx_UART_Init() 和 CubeMX RX DMA 配置已完成；如需事件，回调已在启动前注册。
  * @post 返回 OK 只表示请求已接受；完成、错误或中止通过回调异步通知。
- * @warning pdata 必须在 RX 完成、错误或中止前保持有效且不得并发访问；半完成时只能访问已完成的那一半。
+ * @warning pdata 必须在 RX
+ * 完成、错误或中止前保持有效且不得并发访问；半完成时只能访问已完成的那一半。
  * @note Platform 不复制缓冲区，也不自动重新挂起接收；重新挂接收由设备驱动负责。
  */
-platform_status_t Platform_UART_ReceiveDMA(
-  platform_uart_instance_t uart,
-  uint8_t *pdata,
-  uint16_t size
-) {
+platform_status_t Platform_UART_ReceiveDMA(platform_uart_instance_t uart, uint8_t *pdata,
+                                           uint16_t size) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_receive_dma(uart, pdata, size)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_receive_dma(uart, pdata, size));
 }
 
 /**
@@ -280,21 +227,15 @@ platform_status_t Platform_UART_ReceiveDMA(
  * @warning pdata 必须在 TX 完成、错误或中止前保持有效且内容不变；回调在中断上下文执行。
  * @note Platform 不复制缓冲区，也不自动重新启动发送。
  */
-platform_status_t Platform_UART_TransmitDMA(
-  platform_uart_instance_t uart,
-  const uint8_t *pdata,
-  uint16_t size
-) {
+platform_status_t Platform_UART_TransmitDMA(platform_uart_instance_t uart, const uint8_t *pdata,
+                                            uint16_t size) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_validate(uart, pdata, size)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_transmit_dma(uart, pdata, size)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_transmit_dma(uart, pdata, size));
 }
 
 /**
@@ -309,19 +250,14 @@ platform_status_t Platform_UART_TransmitDMA(
  * @warning 只能在任务上下文调用；内部可能同步等待 HAL 完成中止。
  * @note 调用开始时清除软件错误快照；不释放接收缓冲区。
  */
-platform_status_t Platform_UART_AbortReceive(
-  platform_uart_instance_t uart
-) {
+platform_status_t Platform_UART_AbortReceive(platform_uart_instance_t uart) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_backend_is_valid(uart)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_abort_receive(uart)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_abort_receive(uart));
 }
 
 /**
@@ -336,19 +272,14 @@ platform_status_t Platform_UART_AbortReceive(
  * @warning 只能在任务上下文调用；内部可能同步等待 HAL 完成中止。
  * @note 调用开始时清除软件错误快照；不释放发送缓冲区。
  */
-platform_status_t Platform_UART_AbortTransmit(
-  platform_uart_instance_t uart
-) {
+platform_status_t Platform_UART_AbortTransmit(platform_uart_instance_t uart) {
   if ((uint32_t)uart < PLATFORM_UART_INSTANCE_COUNT) {
     platform_error_reset(&uart_error[uart]);
   }
   if (!platform_uart_backend_is_valid(uart)) {
     return platform_uart_invalid(uart);
   }
-  return platform_uart_finish(
-    uart,
-    platform_uart_backend_abort_transmit(uart)
-  );
+  return platform_uart_finish(uart, platform_uart_backend_abort_transmit(uart));
 }
 
 /**
@@ -386,9 +317,7 @@ platform_status_t Platform_UART_Abort(platform_uart_instance_t uart) {
  *          调用，并遵守该接口的并发限制。
  * @note 保留该接口仅为兼容旧调用，不分配内存。
  */
-platform_status_t Platform_UART_ClearBuffer(
-  platform_uart_instance_t uart
-) {
+platform_status_t Platform_UART_ClearBuffer(platform_uart_instance_t uart) {
   return Platform_UART_AbortReceive(uart);
 }
 
@@ -418,22 +347,13 @@ uint32_t Platform_UART_GetLastError(platform_uart_instance_t uart) {
  * @warning 回调在中断上下文执行；事件对象只在回调期间有效，不得阻塞、分配内存或保存指针。
  * @note 每个实例仅允许成功注册一次；context 的生命周期由调用方维护。
  */
-platform_status_t Platform_UART_RegisterCallback(
-  platform_uart_instance_t uart,
-  const platform_uart_callback_binding_t *callbacks
-) {
-  if (
-    (uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT ||
-    callbacks == NULL ||
-    !platform_uart_backend_is_valid(uart)
-  ) {
+platform_status_t
+Platform_UART_RegisterCallback(platform_uart_instance_t uart,
+                               const platform_uart_callback_binding_t *callbacks) {
+  if ((uint32_t)uart >= PLATFORM_UART_INSTANCE_COUNT || callbacks == NULL ||
+      !platform_uart_backend_is_valid(uart)) {
     return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  if (uart_cb_registered[uart]) {
-    return PLATFORM_STATUS_BUSY;
-  }
-
-  uart_cb[uart] = *callbacks;
-  uart_cb_registered[uart] = true;
-  return PLATFORM_STATUS_OK;
+  return platform_callback_register_slot(&uart_cb_registered[uart], &uart_cb[uart], callbacks,
+                                         sizeof(*callbacks));
 }

@@ -57,33 +57,30 @@ static void imu_wht101_uart_err_cb(uart_base_t *uart_h, void *context);
  * @param status 输出缓冲区；调用方拥有，函数完整覆盖已声明字段。
  * @pre 两个指针非空；经 ops 表调用时传入的必须是具体对象首地址。
  * @post status 的设备字段为启动标志、配置忙碌状态、失败标志和错误计数总和。
- * @note valid_mask、sample_count 等管线字段由 imu_base 在 Dev_IMU_Base_GetStatus 中补填，本函数不写。
+ * @note valid_mask、sample_count 等管线字段由 imu_base 在 Dev_IMU_Base_GetStatus
+ * 中补填，本函数不写。
  * @note 错误计数以 64 位求和后饱和到 UINT32_MAX；不在 ISR 中调用。
  */
-static void imu_wht101_get_status(
-  imu_base_t *imu_h,
-  imu_status_t *status
-) {
+static void imu_wht101_get_status(imu_base_t *imu_h, imu_status_t *status) {
   assert(imu_h && status);
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
 
-  uint64_t error_count =
-    (uint64_t)imu_wht101_uart_h->rx_error_count +
-    (uint64_t)Sys_ByteRing_GetDroppedBytes(&imu_wht101_uart_h->rx_ring) +
-    (uint64_t)imu_wht101_uart_h->rx_checksum_error_count;
+  uint64_t error_count = (uint64_t)imu_wht101_uart_h->rx_error_count +
+                         (uint64_t)imu_wht101_uart_h->rx_stream.uart_error_count +
+                         (uint64_t)imu_wht101_uart_h->rx_stream.rearm_error_count +
+                         (uint64_t)Dev_UartRxStream_GetDroppedBytes(&imu_wht101_uart_h->rx_stream) +
+                         (uint64_t)imu_wht101_uart_h->rx_checksum_error_count;
 
   if (error_count > UINT32_MAX) {
     error_count = UINT32_MAX;
   }
 
   *status = (imu_status_t){
-    .is_started      = imu_wht101_uart_h->is_started,
-    .is_busy         =
-      imu_wht101_uart_h->config_state != IMU_WHT101_CONFIG_IDLE ||
-      imu_wht101_uart_h->zero_pending ||
-      imu_wht101_uart_h->rate_pending,
-    .last_request_failed = imu_wht101_uart_h->config_failed,
-    .error_count     = (uint32_t)error_count,
+      .is_started = imu_wht101_uart_h->is_started,
+      .is_busy = imu_wht101_uart_h->config_state != IMU_WHT101_CONFIG_IDLE ||
+                 imu_wht101_uart_h->zero_pending || imu_wht101_uart_h->rate_pending,
+      .last_request_failed = imu_wht101_uart_h->config_failed,
+      .error_count = (uint32_t)error_count,
   };
 }
 
@@ -95,15 +92,15 @@ static void imu_wht101_get_status(
  * @note 只发起请求，不等待 UART 写入完成；不得在 ISR 中调用。
  */
 static void imu_wht101_set_zero(imu_base_t *imu_h) {
-  imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t*)imu_h;
+  imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
   Dev_IMU_WHT101_UART_SetZero(imu_wht101_uart_h);
 }
 
 static const imu_ops_t imu_ops_wht101 = {
-  .start      = imu_wht101_start,
-  .process    = imu_wht101_process,
-  .get_status = imu_wht101_get_status,
-  .set_zero   = imu_wht101_set_zero,
+    .start = imu_wht101_start,
+    .process = imu_wht101_process,
+    .get_status = imu_wht101_get_status,
+    .set_zero = imu_wht101_set_zero,
 };
 
 /******************************************************************************/
@@ -118,24 +115,11 @@ static const imu_ops_t imu_ops_wht101 = {
  * @post 发送 5 字节命令（0xFF、0xAA、reg、value 低字节、value 高字节）；命令缓冲为栈上局部量。
  * @note 使用 10 ms 超时；返回非 OK 时本函数不改写计数，由调用方决定如何记录。
  */
-static dev_uart_status_t imu_wht101_write_reg(
-  imu_wht101_uart_t *imu_wht101_uart_h,
-  imu_wht101_reg_t reg,
-  uint16_t val
-) {
-  uint8_t cmd[IMU_WHT101_WRITE_LEN] = {
-    IMU_WHT101_WRITE_HDR1,
-    IMU_WHT101_WRITE_HDR2,
-    (uint8_t)reg,
-    (uint8_t)(val & 0xFF),
-    (uint8_t)((val >> 8) & 0xFF)
-  };
-  return Dev_UART_Base_Transmit(
-    imu_wht101_uart_h->uart_h,
-    cmd,
-    IMU_WHT101_WRITE_LEN,
-    10u
-  );
+static dev_uart_status_t imu_wht101_write_reg(imu_wht101_uart_t *imu_wht101_uart_h,
+                                              imu_wht101_reg_t reg, uint16_t val) {
+  uint8_t cmd[IMU_WHT101_WRITE_LEN] = {IMU_WHT101_WRITE_HDR1, IMU_WHT101_WRITE_HDR2, (uint8_t)reg,
+                                       (uint8_t)(val & 0xFF), (uint8_t)((val >> 8) & 0xFF)};
+  return Dev_UART_Base_Transmit(imu_wht101_uart_h->uart_h, cmd, IMU_WHT101_WRITE_LEN, 10u);
 }
 
 /******************************************************************************/
@@ -178,15 +162,11 @@ static float imu_wht101_parse_gyro(const imu_wht101_uart_t *imu_wht101_uart_h) {
  * @post 构造只含该通道的 filter_sample_t 并提交；滤波结果由 imu_base 合并发布。
  * @note 提交返回值被有意忽略；失败只可能来自 imu_base 的通道校验，不在此重试。
  */
-static void imu_wht101_submit_channel(
-  imu_wht101_uart_t *imu_wht101_uart_h,
-  imu_channel_index_t channel,
-  float value,
-  uint32_t now_ms
-) {
+static void imu_wht101_submit_channel(imu_wht101_uart_t *imu_wht101_uart_h,
+                                      imu_channel_index_t channel, float value, uint32_t now_ms) {
   filter_sample_t sample = {
-    .valid_mask = (uint32_t)1u << channel,
-    .time_ms = now_ms,
+      .valid_mask = (uint32_t)1u << channel,
+      .time_ms = now_ms,
   };
   sample.value[channel] = value;
   (void)Dev_IMU_Base_SubmitSample(&imu_wht101_uart_h->imu_base, &sample);
@@ -206,54 +186,25 @@ static void imu_wht101_submit_channel(
  * @note 必须在任务上下文、Start 之前调用；重复初始化会丢弃未完成的配置请求状态。
  * @warning 不分配动态内存；对象、name、uart_h 和 filter_h 的生命周期必须覆盖整个使用期。
  */
-void Dev_IMU_WHT101_UART_Init(
-  imu_wht101_uart_t *imu_h,
-  const char *name,
-  uart_base_t *uart_h,
-  filter_base_t *filter_h
-) {
+void Dev_IMU_WHT101_UART_Init(imu_wht101_uart_t *imu_h, const char *name, uart_base_t *uart_h,
+                              filter_base_t *filter_h) {
   assert(imu_h && uart_h && filter_h);
 
   Dev_IMU_Base_Init(&imu_h->imu_base, name, &imu_ops_wht101, filter_h);
-  imu_h->uart_h                   = uart_h;
-  imu_h->state                   = IMU_WHT101_STATE_SYNCING_1;
-  imu_h->frame_idx               = 0;
-  imu_h->is_started              = false;
-  imu_h->config_state            = IMU_WHT101_CONFIG_IDLE;
-  imu_h->config_deadline_ms      = 0u;
-  imu_h->zero_pending            = false;
-  imu_h->rate_pending            = false;
-  imu_h->config_failed           = false;
-  imu_h->rate_pending_value      = 0u;
-  imu_h->rx_byte                 = 0;
-  assert(Sys_ByteRing_Init(
-    &imu_h->rx_ring,
-    imu_h->rx_buffer,
-    sizeof(imu_h->rx_buffer)
-  ));
-  imu_h->rx_byte_count           = 0;
-  imu_h->rx_error_count          = 0;
+  imu_h->uart_h = uart_h;
+  imu_h->state = IMU_WHT101_STATE_SYNCING_1;
+  imu_h->frame_idx = 0;
+  imu_h->is_started = false;
+  imu_h->config_state = IMU_WHT101_CONFIG_IDLE;
+  imu_h->config_deadline_ms = 0u;
+  imu_h->zero_pending = false;
+  imu_h->rate_pending = false;
+  imu_h->config_failed = false;
+  imu_h->rate_pending_value = 0u;
+  assert(
+      Dev_UartRxStream_Init(&imu_h->rx_stream, uart_h, imu_h->rx_buffer, sizeof(imu_h->rx_buffer)));
+  imu_h->rx_error_count = 0;
   imu_h->rx_checksum_error_count = 0;
-  imu_h->rx_resync_requested     = false;
-}
-
-/**
- * @brief 重新挂接单字节中断接收。
- * @param imu_wht101_uart_h 已绑定 uart_h 的对象；rx_byte 是接收目标。
- * @pre 对象与 uart_h 非空；在任务或 UART 中断上下文调用，rx_byte 地址在完成前保持有效。
- * @post 调用 Dev_UART_ReceiveIT 请求 1 字节接收。
- * @note 本实现要求重挂成功：非 DEV_UART_OK 立即 assert 终止，不设置待重挂标志。
- * @warning 该严格断言意味着 UART 后端短暂 BUSY 也会触发故障；宿主机测试必须提供成功的替身。
- */
-static void imu_wht101_rearm_receive(imu_wht101_uart_t *imu_wht101_uart_h) {
-  assert(imu_wht101_uart_h);
-  dev_uart_status_t status = Dev_UART_ReceiveIT(
-    imu_wht101_uart_h->uart_h,
-    &imu_wht101_uart_h->rx_byte,
-    1u
-  );
-  assert(status == DEV_UART_OK);
-  (void)status;
 }
 
 /**
@@ -261,25 +212,15 @@ static void imu_wht101_rearm_receive(imu_wht101_uart_t *imu_wht101_uart_h) {
  * @param uart_h 触发事件的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 imu_wht101_uart_t 指针。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_byte_count 递增；字节环未满时写入，满时递增自身丢弃计数并请求重同步。
- * @note 不在 ISR 中解析帧；随后尝试重新挂接接收。
- * @warning 重挂失败会触发 assert；队列溢出丢弃当前字节。
+ * @post 字节入队并尝试重挂接收；队列溢出时请求重同步。
+ * @note 不在 ISR 中解析帧。
  */
 static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)context;
   assert(imu_wht101_uart_h && uart_h == imu_wht101_uart_h->uart_h);
   (void)uart_h;
 
-  imu_wht101_uart_h->rx_byte_count++;
-
-  if (!Sys_ByteRing_PushFromISR(
-        &imu_wht101_uart_h->rx_ring,
-        imu_wht101_uart_h->rx_byte
-      )) {
-    imu_wht101_uart_h->rx_resync_requested = true;
-  }
-
-  imu_wht101_rearm_receive(imu_wht101_uart_h);
+  Dev_UartRxStream_OnRxComplete(&imu_wht101_uart_h->rx_stream);
 }
 
 /**
@@ -287,39 +228,34 @@ static void imu_wht101_rx_complete_cb(uart_base_t *uart_h, void *context) {
  * @param uart_h 触发错误的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 imu_wht101_uart_t 指针。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_error_count 递增，rx_resync_requested 置 true，并尝试重新挂接接收。
- * @note 解析器在任务侧消费 rx_resync_requested 后回到帧头同步状态。
- * @warning 重挂失败会触发 assert；错误事件本身不携带更多诊断信息。
+ * @post 错误计数递增，请求重同步并尝试重新挂接接收。
+ * @note 解析器在任务侧消费重同步请求后回到帧头同步状态。
  */
 static void imu_wht101_uart_err_cb(uart_base_t *uart_h, void *context) {
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)context;
   assert(imu_wht101_uart_h && uart_h == imu_wht101_uart_h->uart_h);
   (void)uart_h;
 
-  imu_wht101_uart_h->rx_error_count++;
-  imu_wht101_uart_h->rx_resync_requested = true;
-
-  imu_wht101_rearm_receive(imu_wht101_uart_h);
+  Dev_UartRxStream_OnError(&imu_wht101_uart_h->rx_stream);
 }
 
 /**
  * @brief 消费 ISR 重同步请求并复位帧解析状态。
  * @param imu_wht101_uart_h 任务侧正在解析的对象。
  * @pre imu_wht101_uart_h 非空；只允许单一解析任务调用。
- * @post 若 rx_resync_requested 为 true，则 state 回到 SYNCING_1、frame_idx 清零并清除该标志；
+ * @post 若存在重同步请求，则 state 回到 SYNCING_1、frame_idx 清零并清除该标志；
  *       否则不做任何修改。
  * @note 本函数不丢弃 rx 环形队列中已入队字节，后续字节会被当作新帧起点重新同步。
  */
 static void imu_wht101_apply_resync(imu_wht101_uart_t *imu_wht101_uart_h) {
   assert(imu_wht101_uart_h);
 
-  if (!imu_wht101_uart_h->rx_resync_requested) {
+  if (!Dev_UartRxStream_TakeResync(&imu_wht101_uart_h->rx_stream)) {
     return;
   }
 
   imu_wht101_uart_h->state = IMU_WHT101_STATE_SYNCING_1;
   imu_wht101_uart_h->frame_idx = 0;
-  imu_wht101_uart_h->rx_resync_requested = false;
 }
 
 /**
@@ -332,11 +268,8 @@ static void imu_wht101_apply_resync(imu_wht101_uart_t *imu_wht101_uart_h) {
  * @post 成功时不改计数；失败时递增 rx_error_count 并置 config_failed。
  * @note 本函数只负责一次阻塞写，不推进 config_state；状态转移由调用方完成。
  */
-static bool imu_wht101_config_write(
-  imu_wht101_uart_t *imu_wht101_uart_h,
-  imu_wht101_reg_t reg,
-  uint16_t value
-) {
+static bool imu_wht101_config_write(imu_wht101_uart_t *imu_wht101_uart_h, imu_wht101_reg_t reg,
+                                    uint16_t value) {
   dev_uart_status_t status = imu_wht101_write_reg(imu_wht101_uart_h, reg, value);
   if (status != DEV_UART_OK) {
     imu_wht101_uart_h->rx_error_count++;
@@ -354,10 +287,7 @@ static bool imu_wht101_config_write(
  * @post 有待处理请求时发送 KEY 解锁并进入对应 WAIT 状态；无请求或事务忙时不改变状态。
  * @note 置零优先于速率；发送失败时 config_write 记录错误并保持 IDLE。
  */
-static void imu_wht101_config_start_next(
-  imu_wht101_uart_t *imu_wht101_uart_h,
-  uint32_t now_ms
-) {
+static void imu_wht101_config_start_next(imu_wht101_uart_t *imu_wht101_uart_h, uint32_t now_ms) {
   assert(imu_wht101_uart_h);
 
   if (imu_wht101_uart_h->config_state != IMU_WHT101_CONFIG_IDLE) {
@@ -367,10 +297,7 @@ static void imu_wht101_config_start_next(
   if (imu_wht101_uart_h->zero_pending) {
     imu_wht101_uart_h->zero_pending = false;
 
-    if (!imu_wht101_config_write(
-          imu_wht101_uart_h,
-          IMU_WHT101_REG_KEY,
-          IMU_WHT101_KEY_UNLOCK)) {
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_KEY, IMU_WHT101_KEY_UNLOCK)) {
       return;
     }
 
@@ -382,10 +309,7 @@ static void imu_wht101_config_start_next(
   if (imu_wht101_uart_h->rate_pending) {
     imu_wht101_uart_h->rate_pending = false;
 
-    if (!imu_wht101_config_write(
-          imu_wht101_uart_h,
-          IMU_WHT101_REG_KEY,
-          IMU_WHT101_KEY_UNLOCK)) {
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_KEY, IMU_WHT101_KEY_UNLOCK)) {
       return;
     }
 
@@ -399,77 +323,63 @@ static void imu_wht101_config_start_next(
  * @param imu_wht101_uart_h 配置事务所属的 IMU 对象；必须由任务上下文单写者持有并已由 Init 初始化。
  * @param now_ms 当前单调毫秒时间戳，与本状态机的软延时比较。
  * @pre 仅由 process 在任务上下文按周期调用；单写者。
- * @post 空闲时尝试启动下一请求；到期时依次写 CALIYAW/RRATE 与 SAVE，成功后回 IDLE 并清除 config_failed。
+ * @post 空闲时尝试启动下一请求；到期时依次写 CALIYAW/RRATE 与 SAVE，成功后回 IDLE 并清除
+ * config_failed。
  * @note 延时只保证命令间隔，不读取设备应答；失败时回到 IDLE 并保留 config_failed。
  * @warning 同时排队置零和速率时，两个事务串行执行，总耗时约 800 ms。
  */
-static void imu_wht101_config_process(
-  imu_wht101_uart_t *imu_wht101_uart_h,
-  uint32_t now_ms
-) {
+static void imu_wht101_config_process(imu_wht101_uart_t *imu_wht101_uart_h, uint32_t now_ms) {
   assert(imu_wht101_uart_h);
 
-  if (
-    imu_wht101_uart_h->config_state == IMU_WHT101_CONFIG_IDLE ||
-    !Sys_Time_HasReachedMs(now_ms, imu_wht101_uart_h->config_deadline_ms)
-  ) {
+  if (imu_wht101_uart_h->config_state == IMU_WHT101_CONFIG_IDLE ||
+      !Sys_Time_HasReachedMs(now_ms, imu_wht101_uart_h->config_deadline_ms)) {
     imu_wht101_config_start_next(imu_wht101_uart_h, now_ms);
     return;
   }
 
   switch (imu_wht101_uart_h->config_state) {
-    case IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW:
-      if (!imu_wht101_config_write(
-            imu_wht101_uart_h,
-            IMU_WHT101_REG_CALIYAW,
-            IMU_WHT101_CALIYAW_ZERO)) {
-        imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-        return;
-      }
-      imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_ZERO_WAIT_SAVE;
-      imu_wht101_uart_h->config_deadline_ms = now_ms + IMU_WHT101_DELAY_SAVE_MS;
-      break;
-
-    case IMU_WHT101_CONFIG_ZERO_WAIT_SAVE:
-      if (!imu_wht101_config_write(
-            imu_wht101_uart_h,
-            IMU_WHT101_REG_SAVE,
-            IMU_WHT101_SAVE_VALUE)) {
-        imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-        return;
-      }
+  case IMU_WHT101_CONFIG_ZERO_WAIT_CALIYAW:
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_CALIYAW,
+                                 IMU_WHT101_CALIYAW_ZERO)) {
       imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-      imu_wht101_uart_h->config_failed = false;
-      break;
+      return;
+    }
+    imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_ZERO_WAIT_SAVE;
+    imu_wht101_uart_h->config_deadline_ms = now_ms + IMU_WHT101_DELAY_SAVE_MS;
+    break;
 
-    case IMU_WHT101_CONFIG_RATE_WAIT_WRITE:
-      if (!imu_wht101_config_write(
-            imu_wht101_uart_h,
-            IMU_WHT101_REG_RRATE,
-            imu_wht101_uart_h->rate_pending_value)) {
-        imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-        return;
-      }
-      imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_RATE_WAIT_SAVE;
-      imu_wht101_uart_h->config_deadline_ms = now_ms + IMU_WHT101_DELAY_WRITE_MS;
-      break;
-
-    case IMU_WHT101_CONFIG_RATE_WAIT_SAVE:
-      if (!imu_wht101_config_write(
-            imu_wht101_uart_h,
-            IMU_WHT101_REG_SAVE,
-            IMU_WHT101_SAVE_VALUE)) {
-        imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-        return;
-      }
+  case IMU_WHT101_CONFIG_ZERO_WAIT_SAVE:
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_SAVE, IMU_WHT101_SAVE_VALUE)) {
       imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
-      imu_wht101_uart_h->config_failed = false;
-      break;
+      return;
+    }
+    imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
+    imu_wht101_uart_h->config_failed = false;
+    break;
 
-    case IMU_WHT101_CONFIG_IDLE:
-    default:
-      assert(0);
-      break;
+  case IMU_WHT101_CONFIG_RATE_WAIT_WRITE:
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_RRATE,
+                                 imu_wht101_uart_h->rate_pending_value)) {
+      imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
+      return;
+    }
+    imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_RATE_WAIT_SAVE;
+    imu_wht101_uart_h->config_deadline_ms = now_ms + IMU_WHT101_DELAY_WRITE_MS;
+    break;
+
+  case IMU_WHT101_CONFIG_RATE_WAIT_SAVE:
+    if (!imu_wht101_config_write(imu_wht101_uart_h, IMU_WHT101_REG_SAVE, IMU_WHT101_SAVE_VALUE)) {
+      imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
+      return;
+    }
+    imu_wht101_uart_h->config_state = IMU_WHT101_CONFIG_IDLE;
+    imu_wht101_uart_h->config_failed = false;
+    break;
+
+  case IMU_WHT101_CONFIG_IDLE:
+  default:
+    assert(0);
+    break;
   }
 }
 
@@ -487,13 +397,13 @@ static void imu_wht101_start(imu_base_t *imu_h) {
   assert(!imu_wht101_uart_h->is_started);
 
   dev_uart_callbacks_t callbacks = {
-    .rx_complete_cb = imu_wht101_rx_complete_cb,
-    .err_cb     = imu_wht101_uart_err_cb,
-    .context    = imu_wht101_uart_h,
+      .rx_complete_cb = imu_wht101_rx_complete_cb,
+      .err_cb = imu_wht101_uart_err_cb,
+      .context = imu_wht101_uart_h,
   };
 
   Dev_UART_RegisterCallback(imu_wht101_uart_h->uart_h, &callbacks);
-  imu_wht101_rearm_receive(imu_wht101_uart_h);
+  (void)Dev_UartRxStream_Rearm(&imu_wht101_uart_h->rx_stream);
 
   imu_wht101_uart_h->is_started = true;
 }
@@ -510,8 +420,10 @@ static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms) {
   assert(imu_h);
   imu_wht101_uart_t *imu_wht101_uart_h = (imu_wht101_uart_t *)imu_h;
 
+  Dev_UartRxStream_EnsureArmed(&imu_wht101_uart_h->rx_stream);
+
   uint8_t byte = 0u;
-  while (Sys_ByteRing_Pop(&imu_wht101_uart_h->rx_ring, &byte)) {
+  while (Dev_UartRxStream_Pop(&imu_wht101_uart_h->rx_stream, &byte)) {
     imu_wht101_apply_resync(imu_wht101_uart_h);
 
     Dev_IMU_WHT101_UART_FeedByte(imu_wht101_uart_h, byte, now_ms);
@@ -532,68 +444,57 @@ static void imu_wht101_process(imu_base_t *imu_h, uint32_t now_ms) {
  * @note 失败不返回错误码；提交失败由 imu_base 内部断言/过滤处理，本函数不重试。
  * @warning 必须在 Start 之后调用，否则 Dev_IMU_Base_SubmitSample 断言失败。
  */
-void Dev_IMU_WHT101_UART_FeedByte(
-  imu_wht101_uart_t *imu_h,
-  uint8_t byte,
-  uint32_t now_ms
-) {
+void Dev_IMU_WHT101_UART_FeedByte(imu_wht101_uart_t *imu_h, uint8_t byte, uint32_t now_ms) {
   assert(imu_h);
 
   switch (imu_h->state) {
-    case IMU_WHT101_STATE_SYNCING_1:
-      if (byte == IMU_WHT101_FRAME_HEADER) {
-        imu_h->frame[0] = byte;
-        imu_h->frame_idx = 1;
-        imu_h->state = IMU_WHT101_STATE_SYNCING_2;
-      }
-      break;
-
-    case IMU_WHT101_STATE_SYNCING_2:
-      if (byte == IMU_WHT101_TYPE_GYRO || byte == IMU_WHT101_TYPE_ANGLE) {
-        imu_h->frame[1] = byte;
-        imu_h->frame_idx = 2;
-        imu_h->state = IMU_WHT101_STATE_RECEIVING_DATA;
-      } else if (byte == IMU_WHT101_FRAME_HEADER) {
-        imu_h->frame[0] = byte;
-        imu_h->frame_idx = 1;
-      } else {
-        imu_h->state = IMU_WHT101_STATE_SYNCING_1;
-      }
-      break;
-
-    case IMU_WHT101_STATE_RECEIVING_DATA:
-      imu_h->frame[imu_h->frame_idx++] = byte;
-      if (imu_h->frame_idx == IMU_WHT101_FRAME_LEN - 1) {
-        imu_h->state = IMU_WHT101_STATE_CALCULATING_SUM;
-      }
-      break;
-
-    case IMU_WHT101_STATE_CALCULATING_SUM: {
-      imu_h->frame[IMU_WHT101_FRAME_LEN - 1] = byte;
-      uint8_t sum = 0;
-      for (int i = 0; i < IMU_WHT101_FRAME_LEN - 1; i++) sum += imu_h->frame[i];
-      if (sum == imu_h->frame[IMU_WHT101_FRAME_LEN - 1]) {
-        if (imu_h->frame[1] == IMU_WHT101_TYPE_GYRO) {
-          imu_wht101_submit_channel(
-            imu_h,
-            IMU_CHANNEL_INDEX_GYRO_Z,
-            imu_wht101_parse_gyro(imu_h),
-            now_ms
-          );
-        } else if (imu_h->frame[1] == IMU_WHT101_TYPE_ANGLE) {
-          imu_wht101_submit_channel(
-            imu_h,
-            IMU_CHANNEL_INDEX_YAW,
-            imu_wht101_parse_angle(imu_h),
-            now_ms
-          );
-        }
-      } else {
-        imu_h->rx_checksum_error_count++;
-      }
-      imu_h->state = IMU_WHT101_STATE_SYNCING_1;
-      break;
+  case IMU_WHT101_STATE_SYNCING_1:
+    if (byte == IMU_WHT101_FRAME_HEADER) {
+      imu_h->frame[0] = byte;
+      imu_h->frame_idx = 1;
+      imu_h->state = IMU_WHT101_STATE_SYNCING_2;
     }
+    break;
+
+  case IMU_WHT101_STATE_SYNCING_2:
+    if (byte == IMU_WHT101_TYPE_GYRO || byte == IMU_WHT101_TYPE_ANGLE) {
+      imu_h->frame[1] = byte;
+      imu_h->frame_idx = 2;
+      imu_h->state = IMU_WHT101_STATE_RECEIVING_DATA;
+    } else if (byte == IMU_WHT101_FRAME_HEADER) {
+      imu_h->frame[0] = byte;
+      imu_h->frame_idx = 1;
+    } else {
+      imu_h->state = IMU_WHT101_STATE_SYNCING_1;
+    }
+    break;
+
+  case IMU_WHT101_STATE_RECEIVING_DATA:
+    imu_h->frame[imu_h->frame_idx++] = byte;
+    if (imu_h->frame_idx == IMU_WHT101_FRAME_LEN - 1) {
+      imu_h->state = IMU_WHT101_STATE_CALCULATING_SUM;
+    }
+    break;
+
+  case IMU_WHT101_STATE_CALCULATING_SUM: {
+    imu_h->frame[IMU_WHT101_FRAME_LEN - 1] = byte;
+    uint8_t sum = 0;
+    for (int i = 0; i < IMU_WHT101_FRAME_LEN - 1; i++)
+      sum += imu_h->frame[i];
+    if (sum == imu_h->frame[IMU_WHT101_FRAME_LEN - 1]) {
+      if (imu_h->frame[1] == IMU_WHT101_TYPE_GYRO) {
+        imu_wht101_submit_channel(imu_h, IMU_CHANNEL_INDEX_GYRO_Z, imu_wht101_parse_gyro(imu_h),
+                                  now_ms);
+      } else if (imu_h->frame[1] == IMU_WHT101_TYPE_ANGLE) {
+        imu_wht101_submit_channel(imu_h, IMU_CHANNEL_INDEX_YAW, imu_wht101_parse_angle(imu_h),
+                                  now_ms);
+      }
+    } else {
+      imu_h->rx_checksum_error_count++;
+    }
+    imu_h->state = IMU_WHT101_STATE_SYNCING_1;
+    break;
+  }
   }
 }
 
@@ -602,7 +503,8 @@ void Dev_IMU_WHT101_UART_FeedByte(
  * @param imu_h 已 Start 的对象；请求只置位 pending 标志。
  * @pre imu_h 非空且 is_started 为 true；只能由单一任务调用，不得与 process 并发。
  * @post zero_pending 置 true，config_failed 清零；实际“解锁、CALIYAW、保存”由后续 process 推进。
- * @note 非阻塞，不等待设备应答，也不改变 imu_base 的 yaw 偏移；成功/失败通过状态快照的 is_busy 与 last_request_failed 观察。
+ * @note 非阻塞，不等待设备应答，也不改变 imu_base 的 yaw 偏移；成功/失败通过状态快照的 is_busy 与
+ * last_request_failed 观察。
  * @warning 若已有配置事务进行中，本请求会等到该事务空闲后执行；不会取消正在进行的写入。
  */
 void Dev_IMU_WHT101_UART_SetZero(imu_wht101_uart_t *imu_h) {

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == "HEAD" ]]; then
+  echo "[TBD 拦截] 严禁直接在 '$branch' 分支提交！请先切出工作分支（如 git checkout -b feat/xxx）。" >&2
+  exit 1
+fi
+
+python3 tools/check.py --profile quick --scope staged

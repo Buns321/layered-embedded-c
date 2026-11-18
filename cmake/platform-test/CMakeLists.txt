@@ -23,6 +23,7 @@ add_executable(imu_pipeline_test
     ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
     ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/uart_rx_stream.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
     ${REPO_ROOT}/System/Src/system_angle.c
@@ -102,6 +103,25 @@ add_executable(filter_ekf_contract_test
     filter_ekf_contract_test.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_ekf.c
+)
+
+add_executable(filter_base_contract_test
+    filter_base_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+)
+
+add_executable(filter_lowpass_contract_test
+    filter_lowpass_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_lowpass.c
+)
+
+add_executable(filter_topology_contract_test
+    filter_topology_contract_test.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Filter/Src/filter_chain.c
+    ${REPO_ROOT}/Filter/Src/filter_distributor.c
+    ${REPO_ROOT}/Filter/Src/filter_passthrough.c
 )
 
 add_executable(system_record_store_contract_test
@@ -202,8 +222,77 @@ add_executable(joycon_uart_contract_test
     ${REPO_ROOT}/DeviceDrivers/Base/Src/joycon_base.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/uart_rx_stream.c
     ${REPO_ROOT}/System/Src/system_byte_ring.c
 )
+
+add_executable(layered_app_portability_fixture
+    app_portability_fixture.c
+)
+target_compile_options(layered_app_portability_fixture PRIVATE
+    -Wall
+    -Wextra
+    -Werror
+)
+
+add_executable(app_car_dependencies_contract_test
+    app_car_dependencies_contract_test.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_boot.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_command.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_control.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_motion.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_safety.c
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src/app_car_telemetry.c
+    ${REPO_ROOT}/Controller/Base/Src/controller_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/chassis_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/encoder_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/imu_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/joycon_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/motor_base.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/telemetry_base.c
+    ${REPO_ROOT}/DeviceDrivers/Src/chassis_omni.c
+    ${REPO_ROOT}/Filter/Base/Src/filter_base.c
+    ${REPO_ROOT}/Policy/Base/Src/policy_omni_base.c
+    ${REPO_ROOT}/System/Src/system_angle.c
+)
+target_include_directories(app_car_dependencies_contract_test PRIVATE
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Inc
+    ${REPO_ROOT}/Boards/f407vet6-omni-car/App/Src
+    ${REPO_ROOT}/Controller/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Policy/Base/Inc
+    ${REPO_ROOT}/System/Inc
+)
+target_compile_options(app_car_dependencies_contract_test PRIVATE
+    -Wall
+    -Wextra
+    -Werror
+)
+target_link_libraries(app_car_dependencies_contract_test PRIVATE m)
+
+add_executable(chassis_omni_contract_test
+    chassis_omni_contract_test.c
+    ${REPO_ROOT}/DeviceDrivers/Base/Src/chassis_base.c
+    ${REPO_ROOT}/DeviceDrivers/Src/chassis_omni.c
+    ${REPO_ROOT}/Policy/Base/Src/policy_omni_base.c
+)
+target_include_directories(chassis_omni_contract_test PRIVATE
+    ${REPO_ROOT}/Controller/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Base/Inc
+    ${REPO_ROOT}/DeviceDrivers/Inc
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Policy/Base/Inc
+    ${REPO_ROOT}/System/Inc
+)
+target_compile_options(chassis_omni_contract_test PRIVATE
+    -Wall
+    -Wextra
+    -Werror
+)
+target_link_libraries(chassis_omni_contract_test PRIVATE m)
 
 target_include_directories(platform_validation_test PRIVATE
     ${REPO_ROOT}/Platform/Src
@@ -346,6 +435,23 @@ target_compile_definitions(uart_link_contract_test PRIVATE
 )
 
 target_include_directories(filter_ekf_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_base_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_lowpass_contract_test PRIVATE
+    ${REPO_ROOT}/Filter/Base/Inc
+    ${REPO_ROOT}/Filter/Inc
+    ${REPO_ROOT}/System/Inc
+)
+
+target_include_directories(filter_topology_contract_test PRIVATE
     ${REPO_ROOT}/Filter/Base/Inc
     ${REPO_ROOT}/Filter/Inc
     ${REPO_ROOT}/System/Inc
@@ -608,6 +714,21 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Werror
     )
+    target_compile_options(filter_base_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(filter_lowpass_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
+    target_compile_options(filter_topology_contract_test PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+    )
     target_compile_options(system_record_store_contract_test PRIVATE
         -Wall
         -Wextra
@@ -784,6 +905,18 @@ add_test(
     COMMAND filter_ekf_contract_test
 )
 add_test(
+    NAME filter_base_contract_test
+    COMMAND filter_base_contract_test
+)
+add_test(
+    NAME filter_lowpass_contract_test
+    COMMAND filter_lowpass_contract_test
+)
+add_test(
+    NAME filter_topology_contract_test
+    COMMAND filter_topology_contract_test
+)
+add_test(
     NAME system_record_store_contract_test
     COMMAND system_record_store_contract_test
 )
@@ -858,4 +991,40 @@ add_test(
 add_test(
     NAME joycon_uart_contract_test
     COMMAND joycon_uart_contract_test
+)
+add_test(
+    NAME layered_app_portability_fixture
+    COMMAND layered_app_portability_fixture
+)
+add_test(
+    NAME app_car_dependencies_contract_test
+    COMMAND app_car_dependencies_contract_test
+)
+add_test(
+    NAME chassis_omni_contract_test
+    COMMAND chassis_omni_contract_test
+)
+add_test(
+    NAME f407_app_dependency_boundary
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMODE=app
+      -DSOURCE_DIR=${REPO_ROOT}/Boards/f407vet6-omni-car/App
+      -P ${REPO_ROOT}/cmake/check_layer_dependencies.cmake
+)
+add_test(
+    NAME f407_rtos_dependency_boundary
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMODE=rtos
+      -DSOURCE_DIR=${REPO_ROOT}/Boards/f407vet6-omni-car/RTOS
+      -P ${REPO_ROOT}/cmake/check_layer_dependencies.cmake
+)
+add_test(
+    NAME f407_rtos_public_dependency_boundary
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMODE=rtos_public
+      -DSOURCE_DIR=${REPO_ROOT}/Boards/f407vet6-omni-car/RTOS/Inc
+      -P ${REPO_ROOT}/cmake/check_layer_dependencies.cmake
 )

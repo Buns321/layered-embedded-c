@@ -1,13 +1,42 @@
-# TODO
+# 迁移路线
 
-## 当前里程碑
+> 状态：路线图
+> 架构门禁：以 [框架契约](framework-contract.md)为准。
+> 本文记录功能基线和后续迁移任务，不作为架构验收依据。
+
+## 架构迁移
+
+- [x] 在 F407 建立 `Core/Board/` 手写装配区。
+- [ ] 在 F103 建立 `Core/Board/` 手写装配区。
+- [x] 新增 `app_car_dependencies.h`。
+- [ ] 新增 `app_fast_channel_dependencies.h`。
+- [x] 实现 F407 `Core_Board_Init()` 并完成静态对象装配。
+- [ ] 实现 F103 `Core_Board_Init()`。
+- [x] 将 F407 设备对象、硬件映射和初始化迁入 Core/Board。
+- [ ] 将 F103 设备对象、Filter Chain、UART 和记录存储装配迁入 Core/Board。
+- [x] 将 F407 App 初始化入口改为 `bool App_Car_Init(dependencies)`。
+- [ ] 将 F103 App 初始化入口改为依赖注入形式。
+- [x] 拆分 F407 硬件映射与产品配置。
+- [ ] 拆分 F103 硬件映射与产品配置。
+- [x] 在 F407 建立 `layered_app`、`layered_rtos` 和 `layered_core_board`。
+- [x] 增加 `layered_app_portability_fixture`。
+- [x] 增加 F407 禁止依赖扫描和 App-only 编译检查。
+- [x] 同步 F407 板级 README 到迁移后的实际接线。
+- [x] 将 F407 App 拆分为命令、启动、安全、控制和遥测模块。
+- [x] 新增 `app_car_motion`，封装底盘与电机运动执行顺序。
+- [x] F407 App 改用 `chassis_base_t` 和运行时 `motor_count`，移除 Omni 类型依赖。
+- [x] 将 F407 板级物理常数迁入 Core/Board 私有配置。
+- [x] 收紧 `layered_app` include 白名单，移除具体驱动和未使用目录。
+- [ ] 完成 F407 迁移后的真实板卡烧录与行为验证。
+
+## 功能基线
 **状态**：核心分层、F4/F1 Platform 全部支持外设、F103 基础目标、设备驱动、
 控制/策略、Filter、System 基础服务、RTT 日志和两种 UART 遥测协议均已实现并通过构建。
 - [x] F4 与 F103 的 Debug、Release、无 RTT 三种配置构建通过
 - [x] 全局 `-Wall -Wextra` 无警告，且 `-Werror` 独立构建通过
 - [x] SEGGER RTT 日志 base、门面、后端和启动初始化
 - [x] FireWater / JustFloat 遥测设备与 UART DMA 发送
-- [x] F407 App 对象装配与 RTOS 运行链路接线
+- [x] F407 RTOS 运行链路接线
 - [x] 轮速 PID、控制器契约和主机测试
 - [x] F407 遥测通道 schema、50 Hz 周期发送与 USART2 115200 配置
 - [ ] 轮速 PID 参数标定和四轮实板验证
@@ -215,7 +244,8 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 - [x] 保留 Filter Base 的输入预复制语义，Distributor 允许覆盖预复制通道，修复同通道路由断言冲突
 - [x] 将 Filter base、Lowpass、Chain、Distributor 加入 `CMakeLists.txt` 和 include 路径
 - [x] 为 `FILTER_CHANNEL_CAPACITY` 增加编译期上限检查，避免掩码移位超过 32 位
-- [ ] 为 Filter Base、Lowpass、Chain、Distributor 增加可执行的单元测试和组合测试
+- [x] 通过 `Filter_Base_Construct` 复用公共校验、派生初始化、base 绑定和 reset
+- [x] 为 Filter Base、Lowpass、Chain、Distributor 增加公共合同和组合测试
 - [ ] 新增 `filter_kalman_t` 具体实现，基于样本有效位支持预测与校正
 - [x] 定义统一 IMU 九通道枚举，覆盖姿态、gyro XYZ 与 accel XYZ
 - [x] MPU6050 原始六轴提交给已注册滤波器
@@ -236,7 +266,7 @@ transfer / converter / timer / registry 分组，同组接口采用同一设计�
 **架构**：`chassis_base_t` 只承载生命周期（update/stop/estop）；具体底盘内嵌 base，持有自己的执行器、IMU、Policy 和命令。底盘负责解算与下发目标，闭环仍在各电机内部。
 - [x] 新增 `chassis_base_t`
 - [x] 新增 `chassis_omni_t`，持有 `motor_base_t *wheel[4]`、`imu_base_t *imu`、`policy_omni_base_t *policy`
-- [x] `chassis_omni_t` 提供 `set_motion(v, dir, omega)`
+- [x] 底盘 base 提供车体系 `chassis_twist_t` 运动命令
 - [x] `chassis_omni_t` 提供 `update`：读取 yaw、调用 policy 解算、向四个电机下发目标
 - [x] `chassis_omni_t` 根据 yaw 有效位和时间戳拒绝过期数据并锁存制动
 - [x] `Dev_Motor_Base_Brake` 进入保持制动状态，恢复控制必须显式重新 Enable
@@ -313,19 +343,20 @@ DMA 输出。协议设备拥有独立 TX 缓冲，DMA 忙时整帧丢弃。UART 
 
 ## RTOS
 **架构**：静态对象按索引接线，第 i 个电机配第 i 个编码器与控制律，四个电机挂在同一个底盘下。一个固定周期任务驱动整条回路：底盘解算并下发，再逐轮运行闭环。Monitor 通过心跳与堵转标志监控。
-**状态**：F407 已按 100 Hz 控制、2 ms UART 和 50 Hz 监控周期接入；
+**状态**：F407 已按 100 Hz 控制、2 ms UART、100 Hz 监控和 50 Hz 遥测周期接入；
 F103 速通任务一已接入 100 Hz ImuEkfTask、50 Hz VofaTask 和 USART1 命令链路。
-- [x] F407 App 静态定义电机、编码器、控制律、底盘、IMU、JoyCon、policy 对象
-- [x] `App_Car_Init` 按索引完成电机、编码器、控制律、底盘、policy 的接线
+- [x] F407 将电机、编码器、控制律、底盘、IMU、JoyCon、policy 对象迁入 Core/Board
+- [x] F407 `Core_Board_Init()` 按索引完成设备、控制律、底盘和 policy 接线
 - [x] 确定四轮编号，并在电机数组、policy 安装角数组、底盘 wheel 数组中保持一致
 - [x] 上层接线按 AB、CD 两组管理 STBY，禁止单电机依赖 STBY 停机
-- [x] `rtos_control.c` 实现 `RTOS_Control_StartTask`，固定周期调用底盘 update 与四个电机 update
-- [x] `rtos_control.c` 维护控制心跳
-- [x] `rtos_uart.c` 实现 `RTOS_UART_StartTask`，周期处理 WHT101 与 JoyCon
-- [ ] `rtos_monitor.c` 补齐控制任务死亡与电机堵转时的停机动作
-- [x] 用板级强符号替换 `Core/Src/freertos.c` 中三个任务的 `__weak` 运行实现
-- [ ] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
-- [ ] 为 Idle/Timer Task 提供静态内存并关闭 FreeRTOS 动态分配
+- [x] `RTOS_Periodic_RunTask()` 统一承载固定周期任务循环
+- [x] ControlTask 周期调用底盘 update 与四个电机 update，并维护控制心跳
+- [x] UARTTask 周期处理 WHT101 与 JoyCon
+- [ ] 补齐控制任务死亡与电机堵转时的独立安全停机动作
+- [x] 用 CubeMX 生成应用任务、静态 TCB/栈和弱占位入口
+- [x] 将应用任务的 `osThreadNew` 动态创建改为静态 TCB/栈分配
+- [x] 为应用、Idle 和 Timer 任务提供静态内存并关闭 FreeRTOS 动态分配
+- [x] 使用 CubeMX 移除未使用的 defaultTask 并同步生成文件
 - [ ] 开启并实现 `configCHECK_FOR_STACK_OVERFLOW`
 - [ ] 开启并实现 `configUSE_MALLOC_FAILED_HOOK`
 - [ ] 评估 `configGENERATE_RUN_TIME_STATS` 与任务运行时间统计
@@ -339,8 +370,8 @@ F103 速通任务一已接入 100 Hz ImuEkfTask、50 Hz VofaTask 和 USART1 命�
 **架构**：业务逻辑只通过底盘入口下发运动命令，不直接接触电机。
 **状态**：F407 已实现 JoyCon 到 omni 底盘的完整命令链；F103 速通任务一已实现
 MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFloat。
-- [x] F407 业务逻辑通过 `Chassis_Omni_SetMotion` 下发运动命令
-- [x] F407 建立 JoyCon ASCII 命令到世界系 `v/dir/omega` 的链路
+- [x] F407 业务逻辑通过 `Chassis_Base_SetMotion` 下发车体系 twist
+- [x] F407 建立 JoyCon ASCII 命令到 `vx_body/vy_body/wz` 的链路
 
 ## System
 **架构**：时基统一——RTOS 下毫秒延时使用内核延时，裸机下使用 DWT；
@@ -369,15 +400,19 @@ MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFl
 - [ ] 评估 SWO/ITM 与 DBGMCU freeze，补齐调试日志与暂停策略
 - [x] 新增 `system_record_store`：双 Flash 页、CRC32、最新记录选择和默认回退
 
-## Core / App 装配
-**架构**：Core 保持 CubeMX 生成内容；具体设备对象、依赖注入和运行链路由 App 装配层负责。
-- [x] `Core/Src/main.c` 不再直接依赖 `RTOS/Inc/rtos_shared.h`
-- [x] 建立 F407 `App_Car_Init()` 初始化入口
+## Core/Board 与 App 装配
+**架构**：Core/Board 负责具体设备、硬件映射、对象装配和依赖注入；App 负责业务状态和安全策略。
+- [x] `Core/Src/main.c` 不再直接依赖 RTOS 私有实现头
+- [x] 建立 F407 `Core_Board_Init()` 板级装配入口
+- [ ] 建立 F103 `Core_Board_Init()` 板级装配入口
+- [x] 建立 `app_car_dependencies_t`
+- [ ] 建立 `app_fast_channel_dependencies_t`
+- [x] 将 `App_Car_Init()` 拆分为 Core/Board 装配和 App 状态初始化
 - [x] F103 USART2 与命令接收共用时启用 NVIC 并补充 `USART2_IRQHandler`
 - [x] F407 JoyCon 使用 USART3 RX 中断并启用 USART3 IRQ handler
 - [x] F407 JustFloat 使用 USART2 TX DMA，波特率 115200
 - [ ] `Error_Handler` 在停机前通过设备抽象切断电机输出
-- [x] 在 App 装配层集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
+- [x] 在 Core/Board 中集中定义四轮编号、PWM/方向/STBY、编码器映射和成对 STBY 关系
 - [ ] 定义板级 NVIC 优先级配置常量，在 CubeMX MSP 中引用
 - [ ] 明确 STBY 硬件下拉与复位安全状态，确保复位时电机不会保持使能
 - [ ] F407 记录 TIM7 HAL 时基与 FreeRTOS SysTick 的关系和优先级
@@ -386,10 +421,13 @@ MPU6050 自动标定、Flash 校准恢复、EKF 参数入口和 32 通道 JustFl
 
 ## 构建
 **说明**：CubeMX 生成的构建骨架与手写模块统一在板级 `CMakeLists.txt` 注册，新增模块随源文件加入编译。
-- [ ] 按 Platform、DeviceDrivers、Controller、Policy、RTOS、App 拆分目标，用构建系统约束依赖方向
+- [x] 建立 `layered_app`、`layered_rtos`、`layered_core_board` 和
+  `layered_app_portability_fixture`
+- [x] 配置 F407 App、RTOS 和 Core/Board 的 include 白名单
+- [x] 增加 F407 禁止依赖扫描和 App-only 编译检查
 - [x] 将新增的 policy、chassis 源文件加入 `CMakeLists.txt`
 - [x] 同步 `motor_base` 新接口到 `motor_tb6612`
-- [ ] 更新 App/RTOS 调用点并完成运行链路接线（工程链接已通过）
+- [x] 更新 F407 App/RTOS 调用点并接入 Core/Board 依赖
 - [x] 从 CMake 中移除 Algorithm、空的 controller/uart/platform_tim 文件和不再使用的旧模块
 - [x] 用 `target_include_directories` 替代大量 `../../` 相对 include
 - [x] 新增 `SYS_LOG_USE_RTT` CMake 开关并验证关闭后无 SEGGER 依赖

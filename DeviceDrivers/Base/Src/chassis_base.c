@@ -15,23 +15,29 @@
  * @brief 绑定底盘名称与生命周期操作表。
  * @param chassis_h 调用方持有的底盘基类存储；不可为 NULL，所有权不转移。
  * @param name 只读调试名称，生命周期必须覆盖底盘对象；不可为 NULL。
- * @param ops 静态操作表；不可为 NULL，update、stop、estop 必须全部可用。
+ * @param ops 静态操作表；不可为 NULL，set_motion、update、stop、estop 必须全部可用。
  * @pre chassis_h 尚未并发发布，name 与 ops 在对象使用期间保持有效。
  * @post 只在基类中保存 name 与 ops，不初始化具体底盘，也不访问硬件。
  * @note 仅限初始化阶段调用；不加锁且不分配内存，重复调用会覆盖已有绑定。
  */
 void Chassis_Base_Init(chassis_base_t *chassis_h, const char *name, const chassis_ops_t *ops) {
-  assert(
-    chassis_h        &&
-    name        &&
-    ops         &&
-    ops->update &&
-    ops->stop   &&
-    ops->estop
-  );
+  assert(chassis_h && name && ops && ops->set_motion && ops->update && ops->stop && ops->estop);
 
   chassis_h->name = name;
-  chassis_h->ops  = ops;
+  chassis_h->ops = ops;
+}
+
+/**
+ * @brief 委托具体底盘保存车体系速度命令。
+ * @param chassis_h 已初始化的底盘句柄；不可为 NULL。
+ * @param twist 车体系速度命令；不可为 NULL，各分量必须有限。
+ * @pre 已绑定非空 set_motion 操作，且与 Update/Stop/EStop 串行调用。
+ * @post 具体底盘保存命令；本层不修改状态。
+ * @note 基类不加锁，不分配内存。
+ */
+void Chassis_Base_SetMotion(chassis_base_t *chassis_h, const chassis_twist_t *twist) {
+  assert(chassis_h && chassis_h->ops && chassis_h->ops->set_motion && twist);
+  chassis_h->ops->set_motion(chassis_h, twist);
 }
 
 /**

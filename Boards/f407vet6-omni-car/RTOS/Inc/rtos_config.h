@@ -12,15 +12,15 @@
 #ifndef LAYERED_EMBEDDED_C_RTOS_CONFIG_H
 #define LAYERED_EMBEDDED_C_RTOS_CONFIG_H
 
-/** @brief 控制任务调度周期（RTOS tick）。 */
-#define RTOS_CAR_CONTROL_PERIOD_TICKS 10u
+/** @brief 控制任务调度周期（ms）。 */
+#define RTOS_CAR_CONTROL_PERIOD_MS 10u
 
-/** @brief UART 任务调度周期（RTOS tick）。 */
-#define RTOS_CAR_UART_PERIOD_TICKS 2u
+/** @brief 输入任务调度周期（ms）。 */
+#define RTOS_CAR_INPUT_PERIOD_MS 2u
 
-/** @brief 监控任务调度周期（RTOS tick）。 */
-#define RTOS_CAR_MONITOR_PERIOD_TICKS 10u
+/** @brief 监控任务调度周期（ms）。 */
+#define RTOS_CAR_MONITOR_PERIOD_MS 10u
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_RTOS_CONFIG_H
+#endif // LAYERED_EMBEDDED_C_RTOS_CONFIG_H

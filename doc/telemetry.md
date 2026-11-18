@@ -200,7 +200,8 @@ USART2 当前配置按板区分：
 ### 3.7 调度建议
 
 - ControlTask 只生成或更新遥测快照。
-- MonitorTask 以 20..50 Hz 调用 `Dev_Telemetry_Base_Send()`。
+- MonitorTask 按固定周期运行，由 App 将 `Dev_Telemetry_Base_Send()` 节流到
+  20..50 Hz。
 - 不要在 ControlTask 中格式化文本或等待 DMA。
 - 不要为了遥测调用 `Dev_Encoder_Base_GetDelta()`，该接口会消费控制周期所需的增量。
 - 串口忙时接受整帧丢弃，通过 `telemetry_status_t` 暴露丢帧和错误计数。

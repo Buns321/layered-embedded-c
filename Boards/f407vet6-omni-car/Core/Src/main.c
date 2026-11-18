@@ -27,6 +27,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app_car.h"
+#include "app_car_dependencies.h"
+#include "core_board.h"
 #include "crc.h"
 #include "rng.h"
 #include "system_delay.h"
@@ -54,6 +56,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static app_car_dependencies_t s_app_dependencies;
 #if defined(SYS_LOG_USE_RTT)
 static system_log_rtt_t s_log_rtt;
 #endif
@@ -120,14 +123,20 @@ int main(void)
   Sys_Log_SetLevel(SYS_LOG_LEVEL_INFO);
   SYS_LOG_INFO("BOOT", "RTT log initialized");
 #endif
-  platform_status_t car_status = App_Car_Init();
-  if (car_status != PLATFORM_STATUS_OK)
+  platform_status_t board_status = Core_Board_Init(&s_app_dependencies);
+  if (board_status != PLATFORM_STATUS_OK)
   {
     SYS_LOG_ERROR(
       "BOOT",
-      "car initialization failed: %u",
-      (unsigned int)car_status
+      "board initialization failed: %u",
+      (unsigned int)board_status
     );
+    Error_Handler();
+  }
+
+  if (!App_Car_Init(&s_app_dependencies))
+  {
+    SYS_LOG_ERROR("BOOT", "app initialization failed");
     Error_Handler();
   }
   /* USER CODE END 2 */

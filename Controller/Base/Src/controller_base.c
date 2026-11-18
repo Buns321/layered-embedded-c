@@ -21,13 +21,15 @@
  * @post controller_h->name 和 controller_h->ops 已绑定；不分配或释放资源。
  * @note 仅用于初始化阶段，不得与同一实例的更新或复位并发。
  */
-void Ctrl_Base_Init(controller_base_t *controller_h, const char *name, const controller_ops_t *ops) {
+void Ctrl_Base_Init(controller_base_t *controller_h, const char *name,
+                    const controller_ops_t *ops) {
   assert(controller_h && name && ops && ops->reset && ops->update);
   // 不能写成 assert(controller_h && name && controller_h->ops->reset && controller_h->ops->update);
   //                                 ^~~~~~~~~           ^~~~~~~~~
-  // 断言对象应该是传入的 ops 而非 controller_h 句柄的 ops，此时 controller_h->ops 还没有被赋值，断言必报错
+  // 断言对象应该是传入的 ops 而非 controller_h 句柄的 ops，此时 controller_h->ops
+  // 还没有被赋值，断言必报错
   controller_h->name = name;
-  controller_h->ops  = ops;
+  controller_h->ops = ops;
 }
 
 /**
@@ -44,15 +46,10 @@ void Ctrl_Base_Init(controller_base_t *controller_h, const char *name, const con
  * @post 具体控制律内部状态已推进一次；ERROR 时 out 为 0，其他状态 out 为本次有效输出。
  * @note 同一实例只允许单写者调用；不分配动态内存，不在函数内部进入阻塞等待。
  */
-controller_status_t Ctrl_Base_Update(
-  controller_base_t *controller_h,
-  float target,
-  float measure,
-  float dt,
-  float *out
-) {
+controller_status_t Ctrl_Base_Update(controller_base_t *controller_h, float target, float measure,
+                                     float dt, float *out) {
   assert(controller_h && controller_h->ops && controller_h->ops->update && out);
-  assert(SYS_ISFINITE(dt) && dt > 0.0f);
+  assert(SYS_IS_POS_FINITE(dt));
   return controller_h->ops->update(controller_h, target, measure, dt, out);
 }
 
