@@ -27,10 +27,7 @@
  * @post input 含最近成功解析的归一化摇杆量；返回值反映是否存在有效帧。
  * @note 私有回调，只在 task 上下文经 ops 表调用；不得在 ISR 中调用。
  */
-static bool dev_joycon_uart_getinputop(
-  joycon_base_t *joycon_h,
-  joycon_input_t *input
-);
+static bool dev_joycon_uart_getinputop(joycon_base_t *joycon_h, joycon_input_t *input);
 /**
  * @brief 通过 base 操作表复制 JoyCon 运行状态。
  * @param joycon_h base 视图；必须指向 joycon_uart_t 的首成员。
@@ -39,10 +36,7 @@ static bool dev_joycon_uart_getinputop(
  * @post status 含启动标志、计数器和最后一帧元数据的一致快照。
  * @note 私有回调，只在 task 上下文经 ops 表调用；临界区只复制字段，不访问 UART。
  */
-static void dev_joycon_uart_getstatusop(
-  joycon_base_t *joycon_h,
-  joycon_status_t *status
-);
+static void dev_joycon_uart_getstatusop(joycon_base_t *joycon_h, joycon_status_t *status);
 /**
  * @brief 通过 base 操作表推进 JoyCon 设备处理。
  * @param joycon_h base 视图；必须指向 joycon_uart_t 的首成员。
@@ -51,15 +45,12 @@ static void dev_joycon_uart_getstatusop(
  * @post 消费接收队列并更新输入快照。
  * @note 私有回调，不直接对外公开。
  */
-static void dev_joycon_uart_processop(
-  joycon_base_t *joycon_h,
-  uint32_t now_ms
-);
+static void dev_joycon_uart_processop(joycon_base_t *joycon_h, uint32_t now_ms);
 
 static const joycon_ops_t joycon_ops_uart = {
-  .process = dev_joycon_uart_processop,
-  .get_input = dev_joycon_uart_getinputop,
-  .get_status = dev_joycon_uart_getstatusop,
+    .process = dev_joycon_uart_processop,
+    .get_input = dev_joycon_uart_getinputop,
+    .get_status = dev_joycon_uart_getstatusop,
 };
 
 /**
@@ -68,9 +59,7 @@ static const joycon_ops_t joycon_ops_uart = {
  * @return value 为空格或制表符时返回 true，否则返回 false。
  * @note 纯函数，无状态、无硬件访问；只用于字段首尾裁剪，不处理 CR/LF（由 FeedByte 丢弃）。
  */
-static bool joycon_char_is_space(char value) {
-  return value == ' ' || value == '\t';
-}
+static bool joycon_char_is_space(char value) { return value == ' ' || value == '\t'; }
 
 /**
  * @brief 清空文本组帧状态，准备接收下一帧。
@@ -97,11 +86,7 @@ static void joycon_reset_frame(joycon_uart_t *joycon_h) {
  * @post 成功时 value 为去空白后的带符号数值；失败时 value 保持原值。
  * @note 仅接受可选 '+'/'-'、十进制数字和至多一个小数点；不处理指数、NUL 结束或多字节字符。
  */
-static bool joycon_parse_value(
-  const char *text,
-  uint16_t length,
-  float *value
-) {
+static bool joycon_parse_value(const char *text, uint16_t length, float *value) {
   assert(text && value);
 
   uint16_t start = 0u;
@@ -181,11 +166,8 @@ static bool joycon_parse_value(
  * @post 成功时 input 全部字段有效；失败时 input 不被修改。
  * @note 首字段必须为单字符 'j' 或 'J'；不允许多余逗号、空字段或尾随内容。
  */
-static bool joycon_parse_frame(
-  const joycon_uart_t *joycon_h,
-  uint32_t now_ms,
-  joycon_input_t *input
-) {
+static bool joycon_parse_frame(const joycon_uart_t *joycon_h, uint32_t now_ms,
+                               joycon_input_t *input) {
   assert(joycon_h && input);
 
   float values[JOYCON_UART_VALUE_COUNT] = {0};
@@ -193,34 +175,23 @@ static bool joycon_parse_frame(
 
   for (uint16_t field = 0u; field < JOYCON_UART_FIELD_COUNT; field++) {
     uint16_t field_start = cursor;
-    while (
-      cursor < joycon_h->frame_length &&
-      joycon_h->frame_text[cursor] != ','
-    ) {
+    while (cursor < joycon_h->frame_length && joycon_h->frame_text[cursor] != ',') {
       cursor++;
     }
 
     uint16_t field_length = (uint16_t)(cursor - field_start);
 
     if (field == 0u) {
-      if (
-        field_length != 1u ||
-        (joycon_h->frame_text[field_start] != 'j' &&
-         joycon_h->frame_text[field_start] != 'J')
-      ) {
+      if (field_length != 1u ||
+          (joycon_h->frame_text[field_start] != 'j' && joycon_h->frame_text[field_start] != 'J')) {
         return false;
       }
-    } else if (!joycon_parse_value(
-                 &joycon_h->frame_text[field_start],
-                 field_length,
-                 &values[field - 1u]
-               )) {
+    } else if (!joycon_parse_value(&joycon_h->frame_text[field_start], field_length,
+                                   &values[field - 1u])) {
       return false;
     }
 
-    bool has_separator =
-      cursor < joycon_h->frame_length &&
-      joycon_h->frame_text[cursor] == ',';
+    bool has_separator = cursor < joycon_h->frame_length && joycon_h->frame_text[cursor] == ',';
 
     if (field + 1u < JOYCON_UART_FIELD_COUNT) {
       if (!has_separator) {
@@ -233,12 +204,12 @@ static bool joycon_parse_frame(
   }
 
   *input = (joycon_input_t){
-    .left_x = values[0] / JOYCON_UART_VALUE_LIMIT,
-    .left_y = values[1] / JOYCON_UART_VALUE_LIMIT,
-    .right_x = values[2] / JOYCON_UART_VALUE_LIMIT,
-    .right_y = values[3] / JOYCON_UART_VALUE_LIMIT,
-    .time_ms = now_ms,
-    .sequence = joycon_h->input.sequence + 1u,
+      .left_x = values[0] / JOYCON_UART_VALUE_LIMIT,
+      .left_y = values[1] / JOYCON_UART_VALUE_LIMIT,
+      .right_x = values[2] / JOYCON_UART_VALUE_LIMIT,
+      .right_y = values[3] / JOYCON_UART_VALUE_LIMIT,
+      .time_ms = now_ms,
+      .sequence = joycon_h->input.sequence + 1u,
   };
 
   return true;
@@ -252,10 +223,7 @@ static bool joycon_parse_frame(
  * @post 有效帧写入 input 并递增 parsed_frame_count；溢出或格式错误只递增 invalid_frame_count。
  * @note 发布使用 System 临界区，读取方最多看到上一帧或当前完整帧，不会看到半更新字段。
  */
-static void joycon_publish_frame(
-  joycon_uart_t *joycon_h,
-  uint32_t now_ms
-) {
+static void joycon_publish_frame(joycon_uart_t *joycon_h, uint32_t now_ms) {
   assert(joycon_h);
 
   if (joycon_h->frame_overflow) {
@@ -281,16 +249,13 @@ static void joycon_publish_frame(
  * @pre joycon_h 与 uart_h 非空；可在任务或 UART 中断上下文调用。
  * @post Dev_UART_ReceiveIT 成功时清除 rx_rearm_pending；失败时置位并递增 rearm_error_count。
  * @note 不阻塞、不等待；UART 后端返回任何非 OK 状态都按待重挂处理。
- * @warning 中断与任务都可能调用本函数；rx_rearm_pending 为 volatile，但实现不做互斥，调用方需保证不在同一时刻并发重挂。
+ * @warning 中断与任务都可能调用本函数；rx_rearm_pending 为
+ * volatile，但实现不做互斥，调用方需保证不在同一时刻并发重挂。
  */
 static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
   assert(joycon_h && joycon_h->uart_h);
 
-  dev_uart_status_t status = Dev_UART_ReceiveIT(
-    joycon_h->uart_h,
-    &joycon_h->rx_byte,
-    1u
-  );
+  dev_uart_status_t status = Dev_UART_ReceiveIT(joycon_h->uart_h, &joycon_h->rx_byte, 1u);
 
   if (status == DEV_UART_OK) {
     joycon_h->rx_rearm_pending = false;
@@ -310,10 +275,7 @@ static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
  * @note 不在 ISR 中解析 ASCII，也不调用临界区或阻塞 API。
  * @warning 队列实际容量为 255 字节；溢出字节被丢弃，错误仅通过计数暴露。
  */
-static void joycon_rx_complete_cb(
-  uart_base_t *uart_h,
-  void *context
-) {
+static void joycon_rx_complete_cb(uart_base_t *uart_h, void *context) {
   joycon_uart_t *joycon_h = (joycon_uart_t *)context;
   assert(joycon_h && uart_h == joycon_h->uart_h);
   (void)uart_h;
@@ -334,10 +296,7 @@ static void joycon_rx_complete_cb(
  * @note 与 WHT101 不同，本回调不请求重新同步，ASCII 解析器可从下一字节继续组帧。
  * @warning 重挂失败只通过 rearm_error_count 与状态快照暴露，本回调无法通知上层。
  */
-static void joycon_uart_error_cb(
-  uart_base_t *uart_h,
-  void *context
-) {
+static void joycon_uart_error_cb(uart_base_t *uart_h, void *context) {
   joycon_uart_t *joycon_h = (joycon_uart_t *)context;
   assert(joycon_h && uart_h == joycon_h->uart_h);
   (void)uart_h;
@@ -352,23 +311,16 @@ static void joycon_uart_error_cb(
  * @param name 调试名称；只保存指针，其生命周期必须覆盖对象。
  * @param uart_h 已初始化的 UART 后端；只保存非 owning 指针，后端必须支持中断接收。
  * @pre joycon_h、name、uart_h 非空；对象未被并发使用；同一物理 UART 没有其他回调所有者。
- * @post joycon_h 全部字段清零，base 绑定 JoyCon 操作表并保存 name，uart_h 已记录；is_started 为 false。
+ * @post joycon_h 全部字段清零，base 绑定 JoyCon 操作表并保存 name，uart_h 已记录；is_started 为
+ * false。
  * @note 不注册回调、不启动接收，也不调用 UART 传输接口，因此没有硬件副作用。
  * @note 必须在任务上下文调用，且接收启动后不得重复调用。
  */
-void Dev_JoyCon_UART_Init(
-  joycon_uart_t *joycon_h,
-  const char *name,
-  uart_base_t *uart_h
-) {
+void Dev_JoyCon_UART_Init(joycon_uart_t *joycon_h, const char *name, uart_base_t *uart_h) {
   assert(joycon_h && name && uart_h);
 
   (void)memset(joycon_h, 0, sizeof(*joycon_h));
-  assert(Sys_ByteRing_Init(
-    &joycon_h->rx_ring,
-    joycon_h->rx_buffer,
-    sizeof(joycon_h->rx_buffer)
-  ));
+  assert(Sys_ByteRing_Init(&joycon_h->rx_ring, joycon_h->rx_buffer, sizeof(joycon_h->rx_buffer)));
   Dev_JoyCon_Base_Init(&joycon_h->base, name, &joycon_ops_uart);
   joycon_h->uart_h = uart_h;
 }
@@ -377,7 +329,8 @@ void Dev_JoyCon_UART_Init(
  * @brief 注册接收/错误回调并启动单字节中断接收。
  * @param joycon_h 已由 Init 初始化且尚未启动的设备对象。
  * @retval DEV_UART_OK 回调已注册且首次单字节接收挂接成功。
- * @retval DEV_UART_ERROR 首次 Dev_UART_ReceiveIT 失败；此处 is_started 仍为 true，Process 会继续重试。
+ * @retval DEV_UART_ERROR 首次 Dev_UART_ReceiveIT 失败；此处 is_started 仍为 true，Process
+ * 会继续重试。
  * @pre joycon_h 非空且已 Init；is_started 为 false；UART 后端可用；同一物理 UART 无其他回调所有者。
  * @post 回调写入 UART 后端（覆盖原有回调），is_started 为 true；接收处于已挂接或待重挂状态。
  * @note 注册本身不阻塞，接收完成回调在中断上下文执行；只允许在任务上下文调用一次。
@@ -387,9 +340,9 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
   assert(joycon_h && joycon_h->uart_h && !joycon_h->is_started);
 
   dev_uart_callbacks_t callbacks = {
-    .rx_complete_cb = joycon_rx_complete_cb,
-    .err_cb = joycon_uart_error_cb,
-    .context = joycon_h,
+      .rx_complete_cb = joycon_rx_complete_cb,
+      .err_cb = joycon_uart_error_cb,
+      .context = joycon_h,
   };
 
   Dev_UART_RegisterCallback(joycon_h->uart_h, &callbacks);
@@ -412,10 +365,7 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
  * @note 不等待数据，队列为空时立即返回；ISR 只生产，任务只消费。
  * @warning 同一批字节共享调用时的 now_ms，不能用于逐字节计时。
  */
-void Dev_JoyCon_UART_Process(
-  joycon_uart_t *joycon_h,
-  uint32_t now_ms
-) {
+void Dev_JoyCon_UART_Process(joycon_uart_t *joycon_h, uint32_t now_ms) {
   assert(joycon_h && joycon_h->is_started);
 
   if (joycon_h->rx_rearm_pending) {
@@ -436,16 +386,10 @@ void Dev_JoyCon_UART_Process(
  * @post 消费接收队列并更新输入快照。
  * @note 私有回调，不直接对外公开。
  */
-static void dev_joycon_uart_processop(
-  joycon_base_t *joycon_h,
-  uint32_t now_ms
-) {
+static void dev_joycon_uart_processop(joycon_base_t *joycon_h, uint32_t now_ms) {
   assert(joycon_h);
 
-  Dev_JoyCon_UART_Process(
-    (joycon_uart_t *)joycon_h,
-    now_ms
-  );
+  Dev_JoyCon_UART_Process((joycon_uart_t *)joycon_h, now_ms);
 }
 
 /**
@@ -457,11 +401,7 @@ static void dev_joycon_uart_processop(
  * @post 组帧缓冲最多接收 64 字节；超长帧置溢出标志并在 ']' 时计为无效；有效帧在临界区内原子发布。
  * @note 失败不返回错误，只递增 invalid_frame_count；溢出帧丢弃且不影响上一帧快照。
  */
-void Dev_JoyCon_UART_FeedByte(
-  joycon_uart_t *joycon_h,
-  uint8_t byte,
-  uint32_t now_ms
-) {
+void Dev_JoyCon_UART_FeedByte(joycon_uart_t *joycon_h, uint8_t byte, uint32_t now_ms) {
   assert(joycon_h);
 
   if (!joycon_h->frame_active) {
@@ -510,10 +450,7 @@ void Dev_JoyCon_UART_FeedByte(
  * @post input 含最近一次成功发布的归一化摇杆量、毫秒时间戳和序号。
  * @note 复制期间进入 System 临界区，不得在 ISR 中调用；临界区只复制快照，不解析协议。
  */
-bool Dev_JoyCon_UART_GetInput(
-  joycon_uart_t *joycon_h,
-  joycon_input_t *input
-) {
+bool Dev_JoyCon_UART_GetInput(joycon_uart_t *joycon_h, joycon_input_t *input) {
   assert(joycon_h && input);
 
   return Dev_JoyCon_Base_GetInput(&joycon_h->base, input);
@@ -528,10 +465,7 @@ bool Dev_JoyCon_UART_GetInput(
  * @post input 含最近成功解析的归一化摇杆量；返回值反映是否存在有效帧。
  * @note 私有回调，只在 task 上下文经 ops 表调用；不得在 ISR 中调用。
  */
-static bool dev_joycon_uart_getinputop(
-  joycon_base_t *joycon_h,
-  joycon_input_t *input
-) {
+static bool dev_joycon_uart_getinputop(joycon_base_t *joycon_h, joycon_input_t *input) {
   assert(joycon_h && input);
 
   joycon_uart_t *joycon_uart_h = (joycon_uart_t *)joycon_h;
@@ -552,10 +486,7 @@ static bool dev_joycon_uart_getinputop(
  * @post status 含启动标志、接收/解析/无效帧/错误计数及最后一帧时间和序号，各计数为同一临界区快照。
  * @note 可在其他任务调用，不得在 ISR 中调用；计数只增不减，溢出后自然回绕。
  */
-void Dev_JoyCon_UART_GetStatus(
-  joycon_uart_t *joycon_h,
-  joycon_status_t *status
-) {
+void Dev_JoyCon_UART_GetStatus(joycon_uart_t *joycon_h, joycon_status_t *status) {
   assert(joycon_h && status);
 
   Dev_JoyCon_Base_GetStatus(&joycon_h->base, status);
@@ -569,26 +500,22 @@ void Dev_JoyCon_UART_GetStatus(
  * @post status 含启动标志、计数器和最后一帧元数据的一致快照。
  * @note 私有回调，只在 task 上下文经 ops 表调用；临界区只复制字段，不访问 UART。
  */
-static void dev_joycon_uart_getstatusop(
-  joycon_base_t *joycon_h,
-  joycon_status_t *status
-) {
+static void dev_joycon_uart_getstatusop(joycon_base_t *joycon_h, joycon_status_t *status) {
   assert(joycon_h && status);
 
   joycon_uart_t *joycon_uart_h = (joycon_uart_t *)joycon_h;
 
   Sys_Critical_Enter();
   *status = (joycon_status_t){
-    .is_started = joycon_uart_h->is_started,
-    .received_bytes = joycon_uart_h->rx_byte_count,
-    .parsed_frames = joycon_uart_h->parsed_frame_count,
-    .invalid_frames = joycon_uart_h->invalid_frame_count,
-    .rx_overflow_count =
-      Sys_ByteRing_GetDroppedBytes(&joycon_uart_h->rx_ring),
-    .uart_error_count = joycon_uart_h->uart_error_count,
-    .rearm_error_count = joycon_uart_h->rearm_error_count,
-    .last_frame_ms = joycon_uart_h->input.time_ms,
-    .sequence = joycon_uart_h->input.sequence,
+      .is_started = joycon_uart_h->is_started,
+      .received_bytes = joycon_uart_h->rx_byte_count,
+      .parsed_frames = joycon_uart_h->parsed_frame_count,
+      .invalid_frames = joycon_uart_h->invalid_frame_count,
+      .rx_overflow_count = Sys_ByteRing_GetDroppedBytes(&joycon_uart_h->rx_ring),
+      .uart_error_count = joycon_uart_h->uart_error_count,
+      .rearm_error_count = joycon_uart_h->rearm_error_count,
+      .last_frame_ms = joycon_uart_h->input.time_ms,
+      .sequence = joycon_uart_h->input.sequence,
   };
   Sys_Critical_Exit();
 }

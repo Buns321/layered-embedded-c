@@ -35,4 +35,4 @@ void RTOS_Periodic_RunTask(void *argument);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_RTOS_PERIODIC_H
+#endif // LAYERED_EMBEDDED_C_RTOS_PERIODIC_H

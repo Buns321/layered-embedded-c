@@ -1,0 +1,46 @@
+{
+  "tbd-guard": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 ./hooks/tbd_guard.py",
+        "timeout": 5
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ./hooks/tbd_guard.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "doc-gate": {
+    "PreToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ./hooks/doc_gate.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "auto-commit-stop": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ./hooks/auto_commit_stop.py",
+        "timeout": 15
+      }
+    ]
+  }
+}

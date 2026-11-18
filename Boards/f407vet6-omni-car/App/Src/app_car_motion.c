@@ -15,16 +15,10 @@
  * @post Motion 保存底盘和电机非 owning 指针。
  * @note 只允许初始化阶段调用。
  */
-void App_Car_Motion_Init(
-  app_car_motion_t *motion_h,
-  const app_car_dependencies_t *dependencies
-) {
+void App_Car_Motion_Init(app_car_motion_t *motion_h, const app_car_dependencies_t *dependencies) {
   assert(motion_h && dependencies);
-  assert(
-    dependencies->chassis_h &&
-    dependencies->motor_count > 0U &&
-    dependencies->motor_count <= APP_CAR_MOTOR_CAPACITY
-  );
+  assert(dependencies->chassis_h && dependencies->motor_count > 0U &&
+         dependencies->motor_count <= APP_CAR_MOTOR_CAPACITY);
 
   motion_h->chassis_h = dependencies->chassis_h;
   motion_h->motor_count = dependencies->motor_count;
@@ -41,10 +35,7 @@ void App_Car_Motion_Init(
  * @post 命令已提交给底盘接口。
  * @note 不推进电机闭环。
  */
-void App_Car_Motion_SetTwist(
-  app_car_motion_t *motion_h,
-  const chassis_twist_t *twist
-) {
+void App_Car_Motion_SetTwist(app_car_motion_t *motion_h, const chassis_twist_t *twist) {
   assert(motion_h && twist);
   Chassis_Base_SetMotion(motion_h->chassis_h, twist);
 }
@@ -61,10 +52,7 @@ void App_Car_Motion_SetTwist(
  * @post 底盘目标已解算；电机状态允许时全部闭环已推进。
  * @note 遇到首个控制器错误后停止后续电机更新。
  */
-app_car_motion_status_t App_Car_Motion_Update(
-  app_car_motion_t *motion_h,
-  uint32_t now_ms
-) {
+app_car_motion_status_t App_Car_Motion_Update(app_car_motion_t *motion_h, uint32_t now_ms) {
   assert(motion_h);
 
   Chassis_Base_Update(motion_h->chassis_h, now_ms);
@@ -76,10 +64,7 @@ app_car_motion_status_t App_Car_Motion_Update(
   for (uint8_t wheel = 0U; wheel < motion_h->motor_count; wheel++) {
     motor_base_t *motor_h = motion_h->motor_h[wheel];
     Dev_Motor_Base_Update(motor_h);
-    if (
-      Dev_Motor_Base_ReadControllerStatus(motor_h) ==
-      CONTROLLER_STATUS_ERROR
-    ) {
+    if (Dev_Motor_Base_ReadControllerStatus(motor_h) == CONTROLLER_STATUS_ERROR) {
       return APP_CAR_MOTION_CONTROLLER_ERROR;
     }
   }
@@ -113,9 +98,7 @@ bool App_Car_Motion_EnableMotors(app_car_motion_t *motion_h) {
  * @post 不修改状态。
  * @note 只读取电机状态。
  */
-bool App_Car_Motion_MotorsAreEnabled(
-  const app_car_motion_t *motion_h
-) {
+bool App_Car_Motion_MotorsAreEnabled(const app_car_motion_t *motion_h) {
   assert(motion_h);
 
   for (uint8_t wheel = 0U; wheel < motion_h->motor_count; wheel++) {
@@ -156,10 +139,7 @@ void App_Car_Motion_EStop(app_car_motion_t *motion_h) {
  * @post 不修改 Motion 状态。
  * @note 范围由底盘电机配置决定。
  */
-float App_Car_Motion_ReadTargetSpeed(
-  const app_car_motion_t *motion_h,
-  uint8_t wheel
-) {
+float App_Car_Motion_ReadTargetSpeed(const app_car_motion_t *motion_h, uint8_t wheel) {
   assert(motion_h && wheel < motion_h->motor_count);
   return Dev_Motor_Base_ReadTargetSpeed(motion_h->motor_h[wheel]);
 }
@@ -172,10 +152,7 @@ float App_Car_Motion_ReadTargetSpeed(
  * @post 不修改 Motion 状态。
  * @note 只反映最近一次闭环更新结果。
  */
-float App_Car_Motion_ReadCurrentSpeed(
-  const app_car_motion_t *motion_h,
-  uint8_t wheel
-) {
+float App_Car_Motion_ReadCurrentSpeed(const app_car_motion_t *motion_h, uint8_t wheel) {
   assert(motion_h && wheel < motion_h->motor_count);
   return Dev_Motor_Base_ReadCurrentSpeed(motion_h->motor_h[wheel]);
 }

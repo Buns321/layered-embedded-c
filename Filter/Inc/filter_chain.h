@@ -23,9 +23,9 @@
  * @note 每一级的输出作为下一级的输入；级数固定，不使用动态内存。
  */
 typedef struct filter_chain_s {
-  filter_base_t  filter_base;
+  filter_base_t filter_base;
   filter_base_t *filter_stage_h[FILTER_CHAIN_CAPACITY];
-  uint8_t        stage_count;
+  uint8_t stage_count;
 } filter_chain_t;
 
 /**
@@ -42,13 +42,9 @@ typedef struct filter_chain_s {
  * @post 失败时对象保持不变。
  * @note 仅允许初始化阶段单线程调用。
  */
-filter_status_t Filter_Chain_Init(
-  filter_chain_t *filter_h,
-  const char *name,
-  filter_base_t *const *filter_stage_h,
-  uint8_t stage_count
-);
+filter_status_t Filter_Chain_Init(filter_chain_t *filter_h, const char *name,
+                                  filter_base_t *const *filter_stage_h, uint8_t stage_count);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_CHAIN_H
+#endif // LAYERED_EMBEDDED_C_FILTER_CHAIN_H

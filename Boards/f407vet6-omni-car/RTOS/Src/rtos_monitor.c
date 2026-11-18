@@ -10,9 +10,9 @@
 #include "app_car_runtime.h"
 
 static const rtos_periodic_task_config_t s_monitor_loop = {
-  .name = "MonitorTask",
-  .process = App_Car_ProcessMonitor,
-  .period_ms = RTOS_CAR_MONITOR_PERIOD_MS,
+    .name = "MonitorTask",
+    .process = App_Car_ProcessMonitor,
+    .period_ms = RTOS_CAR_MONITOR_PERIOD_MS,
 };
 
 /**

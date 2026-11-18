@@ -79,11 +79,7 @@ typedef struct app_car_state_s {
  * @post 启动状态、状态开始时间和静止检测状态已更新。
  * @note 只允许输入任务调用。
  */
-void app_car_enter_state(
-  app_car_state_t *state_h,
-  app_car_boot_state_t state,
-  uint32_t now_ms
-);
+void app_car_enter_state(app_car_state_t *state_h, app_car_boot_state_t state, uint32_t now_ms);
 
 /**
  * @brief 在临界区内清除当前运动命令。
@@ -102,12 +98,8 @@ void app_car_clear_command(app_car_state_t *state_h);
  * @post 命令快照被整体覆盖并标记有效。
  * @note 使用 System 临界区保证跨任务快照一致。
  */
-void app_car_set_command(
-  app_car_state_t *state_h,
-  const joycon_input_t *input,
-  const chassis_twist_t *twist,
-  uint32_t now_ms
-);
+void app_car_set_command(app_car_state_t *state_h, const joycon_input_t *input,
+                         const chassis_twist_t *twist, uint32_t now_ms);
 
 /**
  * @brief 在临界区内复制当前运动命令。
@@ -169,10 +161,7 @@ void app_car_enable_motors(app_car_state_t *state_h);
  * @post 不修改 IMU 或样本。
  * @note 时间差按无符号回绕处理。
  */
-bool app_car_imu_yaw_is_fresh(
-  const imu_sample_t *sample,
-  uint32_t now_ms
-);
+bool app_car_imu_yaw_is_fresh(const imu_sample_t *sample, uint32_t now_ms);
 
 /**
  * @brief 推进 IMU、输入设备和启动状态机。
@@ -230,4 +219,4 @@ void app_car_process_log(app_car_state_t *state_h, uint32_t now_ms);
 
 /** @endcond */
 
-#endif //LAYERED_EMBEDDED_C_APP_CAR_INTERNAL_H
+#endif // LAYERED_EMBEDDED_C_APP_CAR_INTERNAL_H

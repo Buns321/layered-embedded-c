@@ -40,10 +40,7 @@ static bool s_initialized;
  * @post 接受命令时提交下一帧生效的 EKF 配置或默认值。
  * @note 不访问硬件、不分配内存。
  */
-static bool app_fastchannel_applycommand(
-  const app_uart_command_t *command,
-  void *context
-) {
+static bool app_fastchannel_applycommand(const app_uart_command_t *command, void *context) {
   (void)context;
   assert(command);
 
@@ -82,11 +79,7 @@ static bool app_fastchannel_applycommand(
     return false;
   }
 
-  return Filter_Ekf_SetParameter(
-    &s_ekf,
-    parameter,
-    command->value
-  ) == FILTER_STATUS_OK;
+  return Filter_Ekf_SetParameter(&s_ekf, parameter, command->value) == FILTER_STATUS_OK;
 }
 
 /**
@@ -100,11 +93,7 @@ static bool app_fastchannel_applycommand(
  * @post s_command_status 反映 ACCEPTED、REJECTED 或 FORMAT_ERROR。
  * @note 会原地修改 line；不阻塞、不分配内存。
  */
-static bool app_fastchannel_handleline(
-  char *line,
-  uint32_t now_ms,
-  void *context
-) {
+static bool app_fastchannel_handleline(char *line, uint32_t now_ms, void *context) {
   assert(line);
   (void)now_ms;
 
@@ -115,9 +104,8 @@ static bool app_fastchannel_handleline(
   }
 
   bool accepted = app_fastchannel_applycommand(&command, context);
-  s_command_status = accepted
-    ? APP_FAST_CHANNEL_COMMAND_ACCEPTED
-    : APP_FAST_CHANNEL_COMMAND_REJECTED;
+  s_command_status =
+      accepted ? APP_FAST_CHANNEL_COMMAND_ACCEPTED : APP_FAST_CHANNEL_COMMAND_REJECTED;
   return accepted;
 }
 
@@ -138,62 +126,47 @@ platform_status_t App_FastChannel_Init(void) {
   }
 
   const filter_imu_calibration_config_t default_calibration = {
-    .accel_scale = {1.0f, 1.0f, 1.0f},
+      .accel_scale = {1.0f, 1.0f, 1.0f},
   };
-  if (
-    Filter_ImuCalibration_Init(
-      &s_calibration_filter,
-      "imu_calibration",
-      &default_calibration
-    ) != FILTER_STATUS_OK
-  ) {
+  if (Filter_ImuCalibration_Init(&s_calibration_filter, "imu_calibration", &default_calibration) !=
+      FILTER_STATUS_OK) {
     return PLATFORM_STATUS_ERROR;
   }
 
   const filter_ekf_config_t ekf_config = {
-    .angle_process_noise_rad2 = APP_EKF_ANGLE_PROCESS_NOISE_RAD2,
-    .bias_process_noise_radps2 = APP_EKF_BIAS_PROCESS_NOISE_RADPS2,
-    .accel_measurement_noise_mps2_2 =
-      APP_EKF_ACCEL_MEASUREMENT_NOISE_MPS2_2,
-    .initial_angle_variance_rad2 =
-      APP_EKF_INITIAL_ANGLE_VARIANCE_RAD2,
-    .initial_bias_variance_radps2 =
-      APP_EKF_INITIAL_BIAS_VARIANCE_RADPS2,
-    .accel_norm_min_mps2 = APP_EKF_ACCEL_NORM_MIN_MPS2,
-    .accel_norm_max_mps2 = APP_EKF_ACCEL_NORM_MAX_MPS2,
-    .gyro_limit_radps = APP_EKF_GYRO_LIMIT_RADPS,
-    .bias_limit_radps = APP_EKF_BIAS_LIMIT_RADPS,
-    .min_dt_s = APP_EKF_MIN_DT_S,
-    .max_dt_s = APP_EKF_MAX_DT_S,
+      .angle_process_noise_rad2 = APP_EKF_ANGLE_PROCESS_NOISE_RAD2,
+      .bias_process_noise_radps2 = APP_EKF_BIAS_PROCESS_NOISE_RADPS2,
+      .accel_measurement_noise_mps2_2 = APP_EKF_ACCEL_MEASUREMENT_NOISE_MPS2_2,
+      .initial_angle_variance_rad2 = APP_EKF_INITIAL_ANGLE_VARIANCE_RAD2,
+      .initial_bias_variance_radps2 = APP_EKF_INITIAL_BIAS_VARIANCE_RADPS2,
+      .accel_norm_min_mps2 = APP_EKF_ACCEL_NORM_MIN_MPS2,
+      .accel_norm_max_mps2 = APP_EKF_ACCEL_NORM_MAX_MPS2,
+      .gyro_limit_radps = APP_EKF_GYRO_LIMIT_RADPS,
+      .bias_limit_radps = APP_EKF_BIAS_LIMIT_RADPS,
+      .min_dt_s = APP_EKF_MIN_DT_S,
+      .max_dt_s = APP_EKF_MAX_DT_S,
   };
   if (Filter_Ekf_Init(&s_ekf, "ekf", &ekf_config) != FILTER_STATUS_OK) {
     return PLATFORM_STATUS_ERROR;
   }
 
   filter_base_t *filter_stages[] = {
-    &s_calibration_filter.filter_base,
-    &s_ekf.filter_base,
+      &s_calibration_filter.filter_base,
+      &s_ekf.filter_base,
   };
-  if (
-    Filter_Chain_Init(
-      &s_filter_chain,
-      "imu_chain",
-      filter_stages,
-      2u
-    ) != FILTER_STATUS_OK
-  ) {
+  if (Filter_Chain_Init(&s_filter_chain, "imu_chain", filter_stages, 2u) != FILTER_STATUS_OK) {
     return PLATFORM_STATUS_ERROR;
   }
 
   uart_link_config_t link_config = {
-    .name = "uart1_link",
-    .instance = APP_UART_INSTANCE,
-    .rx_buffer = s_uart_rx_buffer,
-    .rx_capacity_bytes = sizeof(s_uart_rx_buffer),
-    .line_buffer = s_uart_line_buffer,
-    .line_capacity_bytes = sizeof(s_uart_line_buffer),
-    .line_handler = app_fastchannel_handleline,
-    .line_context = NULL,
+      .name = "uart1_link",
+      .instance = APP_UART_INSTANCE,
+      .rx_buffer = s_uart_rx_buffer,
+      .rx_capacity_bytes = sizeof(s_uart_rx_buffer),
+      .line_buffer = s_uart_line_buffer,
+      .line_capacity_bytes = sizeof(s_uart_line_buffer),
+      .line_handler = app_fastchannel_handleline,
+      .line_context = NULL,
   };
   platform_status_t status = Dev_UARTLink_Init(&s_uart_link, &link_config);
   if (status != PLATFORM_STATUS_OK) {
@@ -201,41 +174,28 @@ platform_status_t App_FastChannel_Init(void) {
   }
 
   uart_base_t *uart_view = Dev_UARTLink_GetUartView(&s_uart_link);
-  Dev_JustFloat_UART_Init(
-    &s_justfloat,
-    "justfloat",
-    uart_view,
-    (uint8_t)APP_TELEMETRY_CHANNEL_COUNT
-  );
+  Dev_JustFloat_UART_Init(&s_justfloat, "justfloat", uart_view,
+                          (uint8_t)APP_TELEMETRY_CHANNEL_COUNT);
 
   mpu6050_config_t imu_config = {
-    .i2c = APP_IMU_I2C_INSTANCE,
-    .address = (uint8_t)APP_IMU_I2C_ADDRESS,
-    .dlpf = APP_IMU_DLPF,
-    .gyro_range = APP_IMU_GYRO_RANGE,
-    .accel_range = APP_IMU_ACCEL_RANGE,
-    .sample_rate_hz = APP_IMU_SAMPLE_RATE_HZ,
-    .calibration_samples = 0u,
-    .i2c_timeout_ms = APP_IMU_I2C_TIMEOUT_MS,
-    .axis_source = {0u, 1u, 2u},
-    .axis_sign = {1, 1, 1},
+      .i2c = APP_IMU_I2C_INSTANCE,
+      .address = (uint8_t)APP_IMU_I2C_ADDRESS,
+      .dlpf = APP_IMU_DLPF,
+      .gyro_range = APP_IMU_GYRO_RANGE,
+      .accel_range = APP_IMU_ACCEL_RANGE,
+      .sample_rate_hz = APP_IMU_SAMPLE_RATE_HZ,
+      .calibration_samples = 0u,
+      .i2c_timeout_ms = APP_IMU_I2C_TIMEOUT_MS,
+      .axis_source = {0u, 1u, 2u},
+      .axis_sign = {1, 1, 1},
   };
-  status = Dev_MPU6050_I2C_Init(
-    &s_imu,
-    "mpu6050",
-    &imu_config,
-    &s_filter_chain.filter_base
-  );
+  status = Dev_MPU6050_I2C_Init(&s_imu, "mpu6050", &imu_config, &s_filter_chain.filter_base);
   if (status != PLATFORM_STATUS_OK) {
     return status;
   }
   Dev_IMU_Base_Start(&s_imu.imu_base);
 
-  status = App_ImuSession_Init(
-    &s_imu.imu_base,
-    &s_ekf,
-    &s_calibration_filter
-  );
+  status = App_ImuSession_Init(&s_imu.imu_base, &s_ekf, &s_calibration_filter);
   if (status != PLATFORM_STATUS_OK) {
     return status;
   }
@@ -286,14 +246,8 @@ void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
   uart_link_status_t link_status;
   Dev_UARTLink_GetStatus(&s_uart_link, &link_status);
 
-  App_FastChannelTelemetry_Process(
-    &s_telemetry,
-    &s_justfloat.base,
-    &snapshot,
-    &link_status,
-    s_command_status,
-    now_ms
-  );
+  App_FastChannelTelemetry_Process(&s_telemetry, &s_justfloat.base, &snapshot, &link_status,
+                                   s_command_status, now_ms);
 }
 
 /**
@@ -303,9 +257,7 @@ void App_FastChannel_ProcessTelemetry(uint32_t now_ms) {
  * @post 获得一致的 IMU、EKF、标定和性能统计快照。
  * @note 使用短临界区复制；不分配内存。
  */
-void App_FastChannel_GetSnapshot(
-  app_fast_channel_snapshot_t *snapshot
-) {
+void App_FastChannel_GetSnapshot(app_fast_channel_snapshot_t *snapshot) {
   assert(snapshot);
   App_ImuSession_GetSnapshot(snapshot);
 }
@@ -317,9 +269,7 @@ void App_FastChannel_GetSnapshot(
  * @post 后续公开快照包含新统计。
  * @note 不分配内存。
  */
-void App_FastChannel_ReportImuMetrics(
-  const app_task_metrics_t *metrics
-) {
+void App_FastChannel_ReportImuMetrics(const app_task_metrics_t *metrics) {
   assert(metrics);
   App_ImuSession_ReportMetrics(metrics);
 }

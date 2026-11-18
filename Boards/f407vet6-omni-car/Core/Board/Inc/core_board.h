@@ -23,10 +23,8 @@
  * @post 成功时具体设备保持静态生命周期，四轮保持禁用，WHT101 已请求 10 Hz 输出。
  * @note 重复调用返回已有依赖，不重新初始化硬件。
  */
-platform_status_t Core_Board_Init(
-  app_car_dependencies_t *dependencies
-);
+platform_status_t Core_Board_Init(app_car_dependencies_t *dependencies);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_CORE_BOARD_H
+#endif // LAYERED_EMBEDDED_C_CORE_BOARD_H

@@ -25,17 +25,9 @@
  * @post 成功时先执行 init，再绑定 name/ops，最后调用 reset；失败时不修改对象。
  * @note 仅允许初始化阶段单线程调用；init 必须在首次写入前完成全部可失败检查。
  */
-filter_status_t Filter_Base_Construct(
-  filter_base_t *filter_h,
-  const filter_config_t *config,
-  const filter_ops_t *ops
-) {
-  if (
-    filter_h == NULL ||
-    config == NULL ||
-    config->name == NULL ||
-    ops == NULL
-  ) {
+filter_status_t Filter_Base_Construct(filter_base_t *filter_h, const filter_config_t *config,
+                                      const filter_ops_t *ops) {
+  if (filter_h == NULL || config == NULL || config->name == NULL || ops == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
@@ -47,7 +39,7 @@ filter_status_t Filter_Base_Construct(
   }
 
   filter_h->name = config->name;
-  filter_h->ops  = ops;
+  filter_h->ops = ops;
 
   if (ops->reset != NULL) {
     ops->reset(filter_h);
@@ -66,14 +58,9 @@ filter_status_t Filter_Base_Construct(
  *       返回前再次清洗并恢复输入 time_ms。
  * @note 同一实例单写者调用，不分配动态内存；输出通道值是否代表物理量由具体滤波器定义。
  */
-void Filter_Base_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output) {
-  assert(
-    filter_h              &&
-    filter_h->ops         &&
-    input             &&
-    output            &&
-    input != output
-  );
+void Filter_Base_Update(filter_base_t *filter_h, const filter_sample_t *input,
+                        filter_sample_t *output) {
+  assert(filter_h && filter_h->ops && input && output && input != output);
   *output = *input;
   Filter_Sample_Sanitize(output);
   if (filter_h->ops->update != NULL) {

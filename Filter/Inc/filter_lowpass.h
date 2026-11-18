@@ -23,9 +23,9 @@
 typedef struct filter_lowpass_s {
   filter_base_t filter_base;
 
-  float    last_output     [FILTER_CHANNEL_CAPACITY];
-  uint32_t last_time_ms    [FILTER_CHANNEL_CAPACITY];
-  float    time_constant_s [FILTER_CHANNEL_CAPACITY];
+  float last_output[FILTER_CHANNEL_CAPACITY];
+  uint32_t last_time_ms[FILTER_CHANNEL_CAPACITY];
+  float time_constant_s[FILTER_CHANNEL_CAPACITY];
   uint32_t initialized_mask;
 } filter_lowpass_t;
 
@@ -41,11 +41,8 @@ typedef struct filter_lowpass_s {
  * @post 成功时全部通道使用默认时间常数，历史输出和初始化掩码清零；失败时不修改对象。
  * @note 仅允许初始化阶段单线程调用，不得与 update/reset 并发。
  */
-filter_status_t Filter_Lowpass_Init(
-  filter_lowpass_t *filter_h,
-  const char *name,
-  float default_time_constant_s
-);
+filter_status_t Filter_Lowpass_Init(filter_lowpass_t *filter_h, const char *name,
+                                    float default_time_constant_s);
 /**
  * @brief 设置某个通道的时间常数。
  * @param filter_h 已初始化的低通滤波器，不能为 NULL。
@@ -58,12 +55,9 @@ filter_status_t Filter_Lowpass_Init(
  * @post 成功时指定通道后续更新使用新时间常数；失败时配置保持不变。
  * @note 单写者调用；不分配动态内存，修改不会自动 reset 该通道。
  */
-filter_status_t Filter_Lowpass_SetChannelTimeConstant(
-  filter_lowpass_t *filter_h,
-  uint8_t channel,
-  float time_constant_s
-);
+filter_status_t Filter_Lowpass_SetChannelTimeConstant(filter_lowpass_t *filter_h, uint8_t channel,
+                                                      float time_constant_s);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_LOWPASS_H
+#endif // LAYERED_EMBEDDED_C_FILTER_LOWPASS_H

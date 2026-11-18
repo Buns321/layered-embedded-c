@@ -23,4 +23,4 @@
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_RTOS_CONFIG_H
+#endif // LAYERED_EMBEDDED_C_RTOS_CONFIG_H

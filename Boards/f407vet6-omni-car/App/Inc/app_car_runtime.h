@@ -39,4 +39,4 @@ void App_Car_ProcessMonitor(uint32_t now_ms);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_APP_CAR_RUNTIME_H
+#endif // LAYERED_EMBEDDED_C_APP_CAR_RUNTIME_H

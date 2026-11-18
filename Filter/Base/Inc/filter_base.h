@@ -41,10 +41,7 @@ typedef struct filter_config_s {
  *       失败前不得写入对象；update 接收已预复制并清洗的样本；reset 清除状态。
  */
 typedef struct filter_ops_s {
-  filter_status_t (*init)(
-    filter_base_t *filter_h,
-    const filter_config_t *config
-  );
+  filter_status_t (*init)(filter_base_t *filter_h, const filter_config_t *config);
   void (*update)(filter_base_t *filter_h, filter_sample_t *sample);
   void (*reset)(filter_base_t *filter_h);
 } filter_ops_t;
@@ -54,7 +51,7 @@ typedef struct filter_ops_s {
  */
 typedef struct filter_base_s {
   const filter_ops_t *ops;
-  const char         *name;
+  const char *name;
 } filter_base_t;
 
 /**
@@ -70,11 +67,8 @@ typedef struct filter_base_s {
  * @post 成功时先执行 init，再绑定 name/ops，最后调用 reset；失败时不修改对象。
  * @note 仅允许初始化阶段单线程调用；init 必须在首次写入前完成全部可失败检查。
  */
-filter_status_t Filter_Base_Construct(
-  filter_base_t *filter_h,
-  const filter_config_t *config,
-  const filter_ops_t *ops
-);
+filter_status_t Filter_Base_Construct(filter_base_t *filter_h, const filter_config_t *config,
+                                      const filter_ops_t *ops);
 /**
  * @brief 运行一次滤波。
  * @param filter_h 已初始化的滤波器对象，不能为 NULL。
@@ -86,7 +80,8 @@ filter_status_t Filter_Base_Construct(
  *       返回前再次清洗并恢复输入 time_ms。
  * @note 同一实例单写者调用，不分配动态内存；输出通道值是否代表物理量由具体滤波器定义。
  */
-void Filter_Base_Update(filter_base_t *filter_h, const filter_sample_t *input, filter_sample_t *output);
+void Filter_Base_Update(filter_base_t *filter_h, const filter_sample_t *input,
+                        filter_sample_t *output);
 /**
  * @brief 复位滤波器内部状态。
  * @param filter_h 已初始化的滤波器对象，不能为 NULL。
@@ -98,4 +93,4 @@ void Filter_Base_Reset(filter_base_t *filter_h);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_BASE_H
+#endif // LAYERED_EMBEDDED_C_FILTER_BASE_H

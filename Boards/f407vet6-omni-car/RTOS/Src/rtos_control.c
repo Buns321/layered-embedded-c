@@ -10,9 +10,9 @@
 #include "app_car_runtime.h"
 
 static const rtos_periodic_task_config_t s_control_loop = {
-  .name = "ControlTask",
-  .process = App_Car_ProcessControl,
-  .period_ms = RTOS_CAR_CONTROL_PERIOD_MS,
+    .name = "ControlTask",
+    .process = App_Car_ProcessControl,
+    .period_ms = RTOS_CAR_CONTROL_PERIOD_MS,
 };
 
 /**

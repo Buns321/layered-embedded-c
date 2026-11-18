@@ -28,37 +28,25 @@ typedef struct filter_distributor_init_data_s {
  * @post 成功时全部路由槽位和路由数已写入；失败时不修改分发器对象。
  * @note 私有构造回调，不分配动态内存。
  */
-static filter_status_t filter_distributor_init(
-  filter_base_t *filter_h,
-  const filter_config_t *filter_config
-) {
-  filter_distributor_t *filter_distributor_h =
-    (filter_distributor_t *)filter_h;
+static filter_status_t filter_distributor_init(filter_base_t *filter_h,
+                                               const filter_config_t *filter_config) {
+  filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
   const filter_distributor_init_data_t *init_data =
-    (const filter_distributor_init_data_t *)filter_config->data;
+      (const filter_distributor_init_data_t *)filter_config->data;
 
   if (init_data == NULL || init_data->routes == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
-  if (
-    init_data->route_count == 0u ||
-    init_data->route_count > FILTER_DISTRIBUTOR_CAPACITY
-  ) {
+  if (init_data->route_count == 0u || init_data->route_count > FILTER_DISTRIBUTOR_CAPACITY) {
     return FILTER_STATUS_INVALID_CONFIG;
   }
 
   for (uint8_t i = 0; i < init_data->route_count; i++) {
     const filter_distributor_route_t *route = &init_data->routes[i];
 
-    if (
-      route->filter_h == NULL ||
-      route->filter_h == filter_h ||
-      route->filter_h->ops == NULL ||
-      route->input_count == 0u ||
-      route->input_count > FILTER_ROUTE_CAPACITY ||
-      route->output_count == 0u ||
-      route->output_count > FILTER_ROUTE_CAPACITY
-    ) {
+    if (route->filter_h == NULL || route->filter_h == filter_h || route->filter_h->ops == NULL ||
+        route->input_count == 0u || route->input_count > FILTER_ROUTE_CAPACITY ||
+        route->output_count == 0u || route->output_count > FILTER_ROUTE_CAPACITY) {
       return FILTER_STATUS_INVALID_CONFIG;
     }
 
@@ -87,8 +75,7 @@ static filter_status_t filter_distributor_init(
     }
 
     for (uint8_t previous = 0; previous < i; previous++) {
-      const filter_distributor_route_t *previous_route =
-        &init_data->routes[previous];
+      const filter_distributor_route_t *previous_route = &init_data->routes[previous];
 
       if (route->filter_h == previous_route->filter_h) {
         return FILTER_STATUS_INVALID_CONFIG;
@@ -96,10 +83,7 @@ static filter_status_t filter_distributor_init(
 
       for (uint8_t j = 0; j < route->output_count; j++) {
         for (uint8_t k = 0; k < previous_route->output_count; k++) {
-          if (
-            route->output_index[j] ==
-            previous_route->output_index[k]
-          ) {
+          if (route->output_index[j] == previous_route->output_index[k]) {
             return FILTER_STATUS_INVALID_CONFIG;
           }
         }
@@ -109,8 +93,7 @@ static filter_status_t filter_distributor_init(
 
   for (uint8_t i = 0; i < FILTER_DISTRIBUTOR_CAPACITY; i++) {
     filter_distributor_h->routes[i] =
-      i < init_data->route_count ? init_data->routes[i] :
-      (filter_distributor_route_t){0};
+        i < init_data->route_count ? init_data->routes[i] : (filter_distributor_route_t){0};
   }
   filter_distributor_h->route_count = init_data->route_count;
   return FILTER_STATUS_OK;
@@ -136,14 +119,11 @@ static void filter_distributor_reset(filter_base_t *filter_h) {
  * @param filter_h 已初始化的分发器基对象，不能为 NULL。
  * @param sample base 已预复制并清洗的全局样本；各路由按 input_index 选取通道。
  * @pre 路由配置已在初始化阶段校验。
- * @post 每条有有效输入的路由执行一次滤波；仅把 local_output 中有效且有限的通道按 output_index 写回。
- *       无有效输入的路由跳过，未写回的全局通道保持 base 预复制值和有效位。
+ * @post 每条有有效输入的路由执行一次滤波；仅把 local_output 中有效且有限的通道按 output_index
+ * 写回。 无有效输入的路由跳过，未写回的全局通道保持 base 预复制值和有效位。
  * @note 子滤波器输出由 Filter_Base_Update 统一清洗；不分配动态内存，单写者调用。
  */
-static void filter_distributor_update(
-  filter_base_t *filter_h,
-  filter_sample_t *sample
-) {
+static void filter_distributor_update(filter_base_t *filter_h, filter_sample_t *sample) {
   filter_distributor_t *filter_distributor_h = (filter_distributor_t *)filter_h;
 
   for (uint8_t i = 0; i < filter_distributor_h->route_count; i++) {
@@ -167,11 +147,7 @@ static void filter_distributor_update(
     }
 
     filter_sample_t local_output;
-    Filter_Base_Update(
-      route->filter_h,
-      &local_input,
-      &local_output
-    );
+    Filter_Base_Update(route->filter_h, &local_input, &local_output);
 
     for (uint8_t j = 0; j < route->output_count; j++) {
       uint32_t local_mask = Filter_Sample_GetChannelMask(j);
@@ -182,19 +158,15 @@ static void filter_distributor_update(
       float output_value = local_output.value[j];
       uint8_t global_index = route->output_index[j];
 
-      (void)Filter_Sample_WriteFiniteChannel(
-        sample,
-        global_index,
-        output_value
-      );
+      (void)Filter_Sample_WriteFiniteChannel(sample, global_index, output_value);
     }
   }
 }
 
 static const filter_ops_t filter_ops_distributor = {
-  .init = filter_distributor_init,
-  .update = filter_distributor_update,
-  .reset = filter_distributor_reset,
+    .init = filter_distributor_init,
+    .update = filter_distributor_update,
+    .reset = filter_distributor_reset,
 };
 
 /**
@@ -211,27 +183,20 @@ static const filter_ops_t filter_ops_distributor = {
  * @post 失败时对象保持不变。
  * @note 重复滤波器、同一路由内重复索引和跨路由重复输出均被拒绝。
  */
-filter_status_t Filter_Distributor_Init(
-  filter_distributor_t *filter_h,
-  const char *name,
-  const filter_distributor_route_t *routes,
-  uint8_t route_count
-) {
+filter_status_t Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name,
+                                        const filter_distributor_route_t *routes,
+                                        uint8_t route_count) {
   if (filter_h == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
   const filter_distributor_init_data_t init_data = {
-    .routes = routes,
-    .route_count = route_count,
+      .routes = routes,
+      .route_count = route_count,
   };
   const filter_config_t config = {
-    .name = name,
-    .data = &init_data,
+      .name = name,
+      .data = &init_data,
   };
-  return Filter_Base_Construct(
-    &filter_h->filter_base,
-    &config,
-    &filter_ops_distributor
-  );
+  return Filter_Base_Construct(&filter_h->filter_base, &config, &filter_ops_distributor);
 }

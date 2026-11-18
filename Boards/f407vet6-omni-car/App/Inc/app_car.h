@@ -26,10 +26,8 @@
  * @post 成功时进入 RATE_CONFIG 状态，四轮保持禁用。
  * @note 不初始化具体硬件，不分配动态内存；重复调用保留已有状态。
  */
-bool App_Car_Init(
-  const app_car_dependencies_t *dependencies
-);
+bool App_Car_Init(const app_car_dependencies_t *dependencies);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_APP_CAR_H
+#endif // LAYERED_EMBEDDED_C_APP_CAR_H

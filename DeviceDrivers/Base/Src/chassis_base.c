@@ -21,18 +21,10 @@
  * @note 仅限初始化阶段调用；不加锁且不分配内存，重复调用会覆盖已有绑定。
  */
 void Chassis_Base_Init(chassis_base_t *chassis_h, const char *name, const chassis_ops_t *ops) {
-  assert(
-    chassis_h        &&
-    name        &&
-    ops         &&
-    ops->set_motion &&
-    ops->update &&
-    ops->stop   &&
-    ops->estop
-  );
+  assert(chassis_h && name && ops && ops->set_motion && ops->update && ops->stop && ops->estop);
 
   chassis_h->name = name;
-  chassis_h->ops  = ops;
+  chassis_h->ops = ops;
 }
 
 /**
@@ -43,10 +35,7 @@ void Chassis_Base_Init(chassis_base_t *chassis_h, const char *name, const chassi
  * @post 具体底盘保存命令；本层不修改状态。
  * @note 基类不加锁，不分配内存。
  */
-void Chassis_Base_SetMotion(
-  chassis_base_t *chassis_h,
-  const chassis_twist_t *twist
-) {
+void Chassis_Base_SetMotion(chassis_base_t *chassis_h, const chassis_twist_t *twist) {
   assert(chassis_h && chassis_h->ops && chassis_h->ops->set_motion && twist);
   chassis_h->ops->set_motion(chassis_h, twist);
 }

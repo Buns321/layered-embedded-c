@@ -18,7 +18,7 @@
 /** @brief 最多路由数。 */
 #define FILTER_DISTRIBUTOR_CAPACITY 8u
 /** @brief 单条路由最多输入/输出通道数。 */
-#define FILTER_ROUTE_CAPACITY       4u
+#define FILTER_ROUTE_CAPACITY 4u
 
 /**
  * @brief 一条路由：把全局输入通道映射到某个滤波器的局部输入，
@@ -56,13 +56,10 @@ typedef struct filter_distributor_s {
  * @post 失败时对象保持不变。
  * @note 重复滤波器、同一路由内重复索引和跨路由重复输出均被拒绝。
  */
-filter_status_t Filter_Distributor_Init(
-  filter_distributor_t *filter_h,
-  const char *name,
-  const filter_distributor_route_t *routes,
-  uint8_t route_count
-);
+filter_status_t Filter_Distributor_Init(filter_distributor_t *filter_h, const char *name,
+                                        const filter_distributor_route_t *routes,
+                                        uint8_t route_count);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_DISTRIBUTOR_H
+#endif // LAYERED_EMBEDDED_C_FILTER_DISTRIBUTOR_H

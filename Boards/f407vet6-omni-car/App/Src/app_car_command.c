@@ -29,20 +29,16 @@ void app_car_clear_command(app_car_state_t *state_h) {
  * @post command 被整体覆盖并置 valid。
  * @note 使用短临界区保证快照一致性。
  */
-void app_car_set_command(
-  app_car_state_t *state_h,
-  const joycon_input_t *input,
-  const chassis_twist_t *twist,
-  uint32_t now_ms
-) {
+void app_car_set_command(app_car_state_t *state_h, const joycon_input_t *input,
+                         const chassis_twist_t *twist, uint32_t now_ms) {
   Sys_Critical_Enter();
   state_h->command = (app_car_command_t){
-    .twist = *twist,
-    .joycon_left_x = input->left_x,
-    .joycon_left_y = input->left_y,
-    .joycon_right_x = input->right_x,
-    .time_ms = now_ms,
-    .valid = true,
+      .twist = *twist,
+      .joycon_left_x = input->left_x,
+      .joycon_left_y = input->left_y,
+      .joycon_right_x = input->right_x,
+      .time_ms = now_ms,
+      .valid = true,
   };
   Sys_Critical_Exit();
 }

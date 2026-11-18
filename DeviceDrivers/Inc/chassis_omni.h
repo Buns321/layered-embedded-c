@@ -25,9 +25,9 @@
  * @note motor_h[0..3] 的顺序必须与 policy_h 的安装角数组一致。
  */
 typedef struct chassis_omni_s {
-  chassis_base_t      base;
-  motor_base_t       *motor_h[CHASSIS_OMNI_WHEEL_COUNT];
-  imu_base_t         *imu_h;
+  chassis_base_t base;
+  motor_base_t *motor_h[CHASSIS_OMNI_WHEEL_COUNT];
+  imu_base_t *imu_h;
   policy_omni_base_t *policy_h;
 
   chassis_twist_t command;
@@ -41,22 +41,21 @@ typedef struct chassis_omni_s {
  * @param motor_h 四轮电机基类指针数组；四个元素均非 NULL、彼此不同，数组本身不会被保存。
  * @param imu_h 已初始化的 IMU 基类指针；不拥有所有权，必须提供有效 yaw 通道，生命周期覆盖底盘。
  * @param policy_h 已初始化的 Omni 策略基类指针；不拥有所有权，轮序必须与 motor_h 一致。
- * @param imu_timeout_ms yaw 通道最大允许年龄，单位 ms；必须大于 0，超过该年龄的 yaw 会触发底盘停机。
- * @pre chassis_h、name、motor_h 中四个元素、imu_h、policy_h 非 NULL；仅调试构建会断言空指针和重复电机指针。
+ * @param imu_timeout_ms yaw 通道最大允许年龄，单位 ms；必须大于 0，超过该年龄的 yaw
+ * 会触发底盘停机。
+ * @pre chassis_h、name、motor_h 中四个元素、imu_h、policy_h 非
+ * NULL；仅调试构建会断言空指针和重复电机指针。
  * @pre 电机、IMU 和策略均已完成各自初始化，且没有控制任务并发读取该底盘对象。
  * @post chassis_base 已绑定 set_motion/update/stop/estop 操作表，四个电机指针和
  *       IMU/策略指针已保存，command 全部分量为 0，imu_timeout_ms 已保存。
- * @note 不分配内存，不复制 name 或任何被指向对象；初始化本身不读取 IMU、不启动电机、不改变 GPIO/PWM 输出。
- * @warning 非 ISR 安全；只允许在设备装配阶段、控制任务启动前调用。发布构建会信任调用方满足非空和去重前置条件。
+ * @note 不分配内存，不复制 name 或任何被指向对象；初始化本身不读取 IMU、不启动电机、不改变 GPIO/PWM
+ * 输出。
+ * @warning 非 ISR
+ * 安全；只允许在设备装配阶段、控制任务启动前调用。发布构建会信任调用方满足非空和去重前置条件。
  */
-void Chassis_Omni_Init(
-  chassis_omni_t     *chassis_h,
-  const char         *name,
-  motor_base_t *const motor_h[CHASSIS_OMNI_WHEEL_COUNT],
-  imu_base_t         *imu_h,
-  policy_omni_base_t *policy_h,
-  uint32_t            imu_timeout_ms
-);
+void Chassis_Omni_Init(chassis_omni_t *chassis_h, const char *name,
+                       motor_base_t *const motor_h[CHASSIS_OMNI_WHEEL_COUNT], imu_base_t *imu_h,
+                       policy_omni_base_t *policy_h, uint32_t imu_timeout_ms);
 /**
  * @brief 保存 Omni 底盘的车体系速度命令。
  * @param chassis_h 已初始化的 Omni 底盘对象；非 NULL。
@@ -65,11 +64,8 @@ void Chassis_Omni_Init(
  * @post command 被复制，非有限分量替换为 0。
  * @note 兼容具体类型调用；新代码应优先使用 Chassis_Base_SetMotion。
  */
-void Chassis_Omni_SetMotion(
-  chassis_omni_t *chassis_h,
-  const chassis_twist_t *twist
-);
+void Chassis_Omni_SetMotion(chassis_omni_t *chassis_h, const chassis_twist_t *twist);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_CHASSIS_OMNI_H
+#endif // LAYERED_EMBEDDED_C_CHASSIS_OMNI_H

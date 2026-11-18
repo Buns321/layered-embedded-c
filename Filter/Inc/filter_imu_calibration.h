@@ -54,11 +54,8 @@ typedef struct filter_imu_calibration_s {
  * @post 成功时 corrected_frames 为 0，配置被复制并持久保存；失败时不修改 filter_h。
  * @note 不分配动态内存；输入通道 schema 与 IMU 固定通道 3..8 一致。
  */
-filter_status_t Filter_ImuCalibration_Init(
-  filter_imu_calibration_t *filter_h,
-  const char *name,
-  const filter_imu_calibration_config_t *config
-);
+filter_status_t Filter_ImuCalibration_Init(filter_imu_calibration_t *filter_h, const char *name,
+                                           const filter_imu_calibration_config_t *config);
 
 /**
  * @brief 在帧边界更新六轴校正参数。
@@ -71,10 +68,8 @@ filter_status_t Filter_ImuCalibration_Init(
  * @post 成功时后续 update 使用新配置；update 通过临界区复制配置，不会观察到半更新状态。
  * @note 可从参数任务调用；配置提交与帧内读取由 Sys_Critical 串行化，不分配动态内存。
  */
-filter_status_t Filter_ImuCalibration_SetConfig(
-  filter_imu_calibration_t *filter_h,
-  const filter_imu_calibration_config_t *config
-);
+filter_status_t Filter_ImuCalibration_SetConfig(filter_imu_calibration_t *filter_h,
+                                                const filter_imu_calibration_config_t *config);
 
 /**
  * @brief 复制当前六轴校正参数。
@@ -84,11 +79,9 @@ filter_status_t Filter_ImuCalibration_SetConfig(
  * @post config 获得临界区内的完整配置快照，滤波器状态不变。
  * @note 可从其他任务读取；不分配动态内存。
  */
-void Filter_ImuCalibration_GetConfig(
-  const filter_imu_calibration_t *filter_h,
-  filter_imu_calibration_config_t *config
-);
+void Filter_ImuCalibration_GetConfig(const filter_imu_calibration_t *filter_h,
+                                     filter_imu_calibration_config_t *config);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_IMU_CALIBRATION_H
+#endif // LAYERED_EMBEDDED_C_FILTER_IMU_CALIBRATION_H

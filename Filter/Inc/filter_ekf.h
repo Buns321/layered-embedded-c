@@ -123,11 +123,8 @@ typedef struct filter_ekf_s {
  * @post update_count 清零、四元数为单位四元数、placeholder 为 true，pending_mask 为 0。
  * @note 当前核心为占位实现，该函数只建立接口和参数状态；不分配动态内存。
  */
-filter_status_t Filter_Ekf_Init(
-  filter_ekf_t *filter_h,
-  const char *name,
-  const filter_ekf_config_t *config
-);
+filter_status_t Filter_Ekf_Init(filter_ekf_t *filter_h, const char *name,
+                                const filter_ekf_config_t *config);
 
 /**
  * @brief 提交一个在线参数。
@@ -141,14 +138,12 @@ filter_status_t Filter_Ekf_Init(
  * @retval FILTER_STATUS_INVALID_ARGUMENT filter_h 为空或参数身份非法。
  * @retval FILTER_STATUS_INVALID_CONFIG value 非有限或候选配置未通过组合范围校验。
  * @pre 单参数写者调用；value 必须与 parameter 的物理量一致，函数不进行单位换算。
- * @post 成功时待提交配置更新且 pending_mask 置位，下一帧开始时一次性应用；失败时活动配置和已有待提交值不变。
+ * @post 成功时待提交配置更新且 pending_mask
+ * 置位，下一帧开始时一次性应用；失败时活动配置和已有待提交值不变。
  * @note 与 update 的配置应用通过临界区交换快照；不修改正在使用的滤波状态或协方差。
  */
-filter_status_t Filter_Ekf_SetParameter(
-  filter_ekf_t *filter_h,
-  filter_ekf_parameter_t parameter,
-  float value
-);
+filter_status_t Filter_Ekf_SetParameter(filter_ekf_t *filter_h, filter_ekf_parameter_t parameter,
+                                        float value);
 
 /**
  * @brief 请求把所有参数恢复为初始化时的默认值。
@@ -167,10 +162,7 @@ void Filter_Ekf_ResetParameters(filter_ekf_t *filter_h);
  * @post config 获得 active config 的完整一致快照；pending 参数不会混入。
  * @note 可从其他任务读取；不分配动态内存，不改变 EKF 状态。
  */
-void Filter_Ekf_GetConfig(
-  const filter_ekf_t *filter_h,
-  filter_ekf_config_t *config
-);
+void Filter_Ekf_GetConfig(const filter_ekf_t *filter_h, filter_ekf_config_t *config);
 
 /**
  * @brief 复制最近一次 EKF 状态。
@@ -180,11 +172,8 @@ void Filter_Ekf_GetConfig(
  * @post state 获得姿态、零偏、dt_s、更新计数和 valid/placeholder 的一致快照。
  * @note 当前 placeholder 为 true 时姿态不可用于闭环控制；不分配动态内存。
  */
-void Filter_Ekf_GetState(
-  const filter_ekf_t *filter_h,
-  filter_ekf_state_t *state
-);
+void Filter_Ekf_GetState(const filter_ekf_t *filter_h, filter_ekf_state_t *state);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_EKF_H
+#endif // LAYERED_EMBEDDED_C_FILTER_EKF_H

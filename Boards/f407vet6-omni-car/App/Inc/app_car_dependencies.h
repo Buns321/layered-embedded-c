@@ -40,4 +40,4 @@ typedef struct app_car_dependencies_s {
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_APP_CAR_DEPENDENCIES_H
+#endif // LAYERED_EMBEDDED_C_APP_CAR_DEPENDENCIES_H

@@ -25,20 +25,13 @@ static app_car_state_t s_car;
  * @post 成功时进入 RATE_CONFIG 状态，四轮保持禁用。
  * @note 不初始化具体硬件，不分配动态内存；重复调用保留已有状态。
  */
-bool App_Car_Init(
-  const app_car_dependencies_t *dependencies
-) {
+bool App_Car_Init(const app_car_dependencies_t *dependencies) {
   if (dependencies == NULL) {
     return false;
   }
-  if (
-    dependencies->chassis_h == NULL ||
-    dependencies->imu_h == NULL ||
-    dependencies->input_h == NULL ||
-    dependencies->telemetry_h == NULL ||
-    dependencies->motor_count == 0U ||
-    dependencies->motor_count > APP_CAR_MOTOR_CAPACITY
-  ) {
+  if (dependencies->chassis_h == NULL || dependencies->imu_h == NULL ||
+      dependencies->input_h == NULL || dependencies->telemetry_h == NULL ||
+      dependencies->motor_count == 0U || dependencies->motor_count > APP_CAR_MOTOR_CAPACITY) {
     return false;
   }
   for (uint8_t wheel = 0U; wheel < dependencies->motor_count; wheel++) {

@@ -27,31 +27,21 @@ typedef struct filter_chain_init_data_s {
  * @post 成功时全部 stage 槽位和级数已写入；失败时不修改链对象。
  * @note 私有构造回调，不分配动态内存。
  */
-static filter_status_t filter_chain_init(
-  filter_base_t *filter_h,
-  const filter_config_t *filter_config
-) {
+static filter_status_t filter_chain_init(filter_base_t *filter_h,
+                                         const filter_config_t *filter_config) {
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
-  const filter_chain_init_data_t *init_data =
-    (const filter_chain_init_data_t *)filter_config->data;
+  const filter_chain_init_data_t *init_data = (const filter_chain_init_data_t *)filter_config->data;
 
   if (init_data == NULL || init_data->filter_stage_h == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
-  if (
-    init_data->stage_count == 0u ||
-    init_data->stage_count > FILTER_CHAIN_CAPACITY
-  ) {
+  if (init_data->stage_count == 0u || init_data->stage_count > FILTER_CHAIN_CAPACITY) {
     return FILTER_STATUS_INVALID_CONFIG;
   }
 
   for (uint8_t i = 0; i < init_data->stage_count; i++) {
     filter_base_t *stage_h = init_data->filter_stage_h[i];
-    if (
-      stage_h == NULL ||
-      stage_h == filter_h ||
-      stage_h->ops == NULL
-    ) {
+    if (stage_h == NULL || stage_h == filter_h || stage_h->ops == NULL) {
       return FILTER_STATUS_INVALID_CONFIG;
     }
 
@@ -64,7 +54,7 @@ static filter_status_t filter_chain_init(
 
   for (uint8_t i = 0; i < FILTER_CHAIN_CAPACITY; i++) {
     filter_chain_h->filter_stage_h[i] =
-      i < init_data->stage_count ? init_data->filter_stage_h[i] : NULL;
+        i < init_data->stage_count ? init_data->filter_stage_h[i] : NULL;
   }
   filter_chain_h->stage_count = init_data->stage_count;
   return FILTER_STATUS_OK;
@@ -93,10 +83,7 @@ static void filter_chain_reset(filter_base_t *filter_h) {
  * @post 每级输出作为下一级输入，最终样本复制回 sample；time_ms 保持输入值。
  * @note 使用两个栈上 filter_sample_t 作为交替中间缓冲；不分配动态内存，单写者调用。
  */
-static void filter_chain_update(
-  filter_base_t *filter_h,
-  filter_sample_t *sample
-) {
+static void filter_chain_update(filter_base_t *filter_h, filter_sample_t *sample) {
   filter_chain_t *filter_chain_h = (filter_chain_t *)filter_h;
 
   filter_sample_t scratch_a;
@@ -104,8 +91,7 @@ static void filter_chain_update(
   const filter_sample_t *stage_input = sample;
 
   for (uint8_t i = 0; i < filter_chain_h->stage_count; i++) {
-    filter_sample_t *stage_output =
-      ((i & 1u) == 0u) ? &scratch_a : &scratch_b;
+    filter_sample_t *stage_output = ((i & 1u) == 0u) ? &scratch_a : &scratch_b;
 
     Filter_Base_Update(filter_chain_h->filter_stage_h[i], stage_input, stage_output);
     stage_input = stage_output;
@@ -115,9 +101,9 @@ static void filter_chain_update(
 }
 
 static const filter_ops_t filter_ops_chain = {
-  .init = filter_chain_init,
-  .update = filter_chain_update,
-  .reset = filter_chain_reset,
+    .init = filter_chain_init,
+    .update = filter_chain_update,
+    .reset = filter_chain_reset,
 };
 
 /**
@@ -134,27 +120,19 @@ static const filter_ops_t filter_ops_chain = {
  * @post 失败时对象保持不变。
  * @note 仅允许初始化阶段单线程调用。
  */
-filter_status_t Filter_Chain_Init(
-  filter_chain_t *filter_h,
-  const char *name,
-  filter_base_t *const *filter_stage_h,
-  uint8_t stage_count
-) {
+filter_status_t Filter_Chain_Init(filter_chain_t *filter_h, const char *name,
+                                  filter_base_t *const *filter_stage_h, uint8_t stage_count) {
   if (filter_h == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
   const filter_chain_init_data_t init_data = {
-    .filter_stage_h = filter_stage_h,
-    .stage_count = stage_count,
+      .filter_stage_h = filter_stage_h,
+      .stage_count = stage_count,
   };
   const filter_config_t config = {
-    .name = name,
-    .data = &init_data,
+      .name = name,
+      .data = &init_data,
   };
-  return Filter_Base_Construct(
-    &filter_h->filter_base,
-    &config,
-    &filter_ops_chain
-  );
+  return Filter_Base_Construct(&filter_h->filter_base, &config, &filter_ops_chain);
 }

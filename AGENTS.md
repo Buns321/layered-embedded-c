@@ -1,69 +1,61 @@
-# Repository Guidelines
+# layered-embedded-c Agent 工程规范
 
-## Project Structure & Module Organization
+面向 STM32F407 / STM32F103 的分层嵌入式 C 工程（共享框架 `Platform/`、`DeviceDrivers/`、`Controller/`、`Policy/`、`Filter/`、`System/`，以及 `Boards/<mcu>-<name>/` 下三套独立板级固件）。
 
-Dependencies flow from each board's `App/` and `RTOS/` through shared device/algorithm layers to `Platform/` and HAL; never reverse them.
+---
 
-- `Platform/`: HAL-free contracts in `Inc/`, shared logic in `Src/common/`, and MCU adapters in `Src/stm32f4/` and `Src/stm32f1/`.
-- `DeviceDrivers/`: abstract interfaces in `Base/`; concrete drivers in `Inc/` and `Src/`.
-- `Controller/`, `Policy/`, `Filter/`, `System/`: shared algorithms and services.
-- `Boards/<mcu>-<name>/`: self-contained firmware projects. Each project owns its `.ioc`, `Core/`, `Drivers/`, `Middlewares/`, `cmake/`, `App/`, `RTOS/`, startup, linker script, hardware mapping, and CMake presets.
-- `Middlewares/Third_Party/SEGGER_RTT/`: optional RTT logger shared by board builds.
-- `cmake/platform-test/`: native C contract tests. `cmake/platform-check/`: F1/F4 compile-only checks. Documentation lives in `doc/`.
+## 1. TBD（Trunk-Based Development）铁律
 
-## Build, Test, and Development Commands
+- **严禁直接在 `main` 分支开发或提交**。所有工作必须在短生命周期工作分支（`feat/*`、`fix/*`、`refactor/*`、`docs/*`）上进行。
+- **小步快跑**：保持变更聚焦、频繁同步 `main`（`git fetch && git rebase origin/main`）。
+- **每轮自动 Checkpoint**：`.agents/hooks.json` 的 `Stop` hook 会在每轮对话结束后自动在当前工作分支创建 `[auto-commit]` checkpoint；合入 `main` 前应整理提交历史并跑通本地门禁。
 
-Install CMake 3.22+, Ninja, and `arm-none-eabi-gcc` on `PATH`.
+---
 
-```powershell
-cd Boards/f407vet6-omni-car
-cmake --preset Debug
-cmake --build --preset Debug
+## 2. 文档驱动设计实现（Doc-Driven Development）
+
+- **先读后写**：修改任何源码或配置前，必须先阅读 [tools/doc_map.json](tools/doc_map.json) 中对应路径映射的文档（`PreToolUse` `doc_gate` hook 会对此进行硬性检查）。
+- **核心文档入口**：
+  - 编码规范：[doc/conventions.md](doc/conventions.md)
+  - 架构与分层：[doc/architecture.md](doc/architecture.md)、[doc/framework-contract.md](doc/framework-contract.md)
+  - 平台契约：[doc/platform-contract.md](doc/platform-contract.md)、[doc/platform.md](doc/platform.md)
+  - 物理单位：[doc/units.md](doc/units.md)
+- **文档同步**：修改公共接口、模块边界或板级硬件映射时，必须同步更新对应文档与 [tools/doc_map.json](tools/doc_map.json)。
+
+---
+
+## 3. 嵌入式 C 编码与分层底线
+
+- **静态分配**：所有长期对象、RTOS 任务控制块与缓冲区必须静态分配；禁止在生产代码中使用 `malloc`/`calloc`/`realloc`/`free`。
+- **分层隔离**：
+  - `Platform/`、`DeviceDrivers/`、`Controller/`、`Policy/`、`Filter/`、`System/` 不得包含板级头文件或具体 MCU HAL（`Platform/` 后端与 `Core/` 除外）。
+  - `App/` 只依赖领域接口、`app_*_dependencies_t` 注入服务与 `System/` 公共接口，禁止直接操作 HAL 或板级硬件映射。
+  - `RTOS/` 固定使用 CMSIS-RTOS2，仅作薄任务入口与周期调度。
+- **零警告**：所有新增/修改代码须满足 `-Wall -Wextra` 零警告及 `.clang-tidy` 检查。
+
+---
+
+## 4. 本地多维度验证
+
+不依赖云端 CI/CD，合入 `main` 或交付任务前必须运行本地门禁：
+
+```bash
+python3 tools/check.py --profile quick   # 秒级：卫生、格式、约定、分层、文档映射
+python3 tools/check.py --profile pr      # 提交前：quick + 主机契约测试 + clang-tidy + F1/F4 Platform 编译
+python3 tools/check.py --profile full    # 全量：pr + 三块板级固件构建 + ELF 静态内存/体积检查
 ```
 
-Use the same commands in `Boards/f103c8t6-platform-test` for the F103 target. Substitute
-`Release` for release builds. Flash ELF files with ST-Link/OpenOCD; see the
-board READMEs for examples.
+---
 
-```powershell
-cmake -S cmake/platform-test -B build/platform-test -G Ninja -DCMAKE_C_COMPILER=gcc
-cmake --build build/platform-test
-ctest --test-dir build/platform-test --output-on-failure
-```
+## 5. 环境与权限边界
 
-Any CMake-supported C11 compiler works. Build `cmake/platform-check` with its
-`f4-debug` and `f1-debug` presets when changing shared code, board App, or board
-RTOS. Generate API docs from `Boards/f407vet6-omni-car` with
-`cmake --build --preset Debug --target docs`.
+- **禁止运行 `sudo`**：Agent 不得在自动化命令中使用 `sudo`（无交互式密码输入且存在安全边界）。若缺少系统工具（如 `clang-tidy`），向用户说明并请用户在本地终端手动执行安装命令。
 
-## Coding Style & Naming Conventions
+---
 
-Use C11, UTF-8, and two-space indentation (`.editorconfig`). Public functions follow `Layer_Module_Qualifier_VerbObject`, such as `Platform_UART_ReceiveIT`. Public types use `snake_case` plus `_t`; struct/enum/union tags end in `_s`/`_e`/`_u`, and handles use `<role>_h`. New or modified physical-quantity parameters, fields, locals, globals, constants, and macros end with a canonical unit suffix registered in `doc/units.md`, such as `target_speed_mps`, `control_period_s`, and `wheel_theta_rad`; `_h` remains reserved for handles.
+## 6. 专项技能（按需加载）
 
-Embed the matching `*_base_t` as the first member of concrete types. Use static `*_ops_t` tables, avoid dynamic memory, and keep HAL types inside `Platform/Src/`. Maintained comments and documentation use Simplified Chinese; identifiers remain English. Do not hand-edit `Drivers/`, `Middlewares/`, or generated CubeMX code outside `USER CODE` sections.
-
-## Testing Guidelines
-
-Native tests are plain C programs using `assert` and CTest; GCC/Clang targets compile with `-Wall -Wextra -Werror`. Name files `<module>_contract_test.c` and register new executables with both `add_executable()` and `add_test()` in `cmake/platform-test/CMakeLists.txt`.
-
-No coverage threshold applies. Add focused tests for changed HAL-free behavior, including invalid arguments and error paths. For shared code, run native tests and both F1/F4 debug checks.
-
-## Commit & Pull Request Guidelines
-
-Follow the predominant Conventional Commits style: `feat(imu): ...`, `fix(platform): ...`, `docs: ...`, `refactor: ...`, or `chore: ...`. Use a concise imperative description.
-
-Pull requests should explain behavior and scope, list verification commands, and link relevant issues. Include logs or photographs for board-facing changes. Call out CubeMX, linker, startup, or generated-file changes; exclude unrelated generated churn.
-
-## Git Review Gate
-
-- Before any mutating Git operation (`commit`, `commit --amend`, `merge`, `rebase`, `cherry-pick`, `revert`, `push`, or `tag`), run `$pre-git-review`.
-- Read-only commands such as `git status`, `git diff`, `git log`, and `git show` do not invoke the review.
-- Review the complete intended change set against this file and the affected repository documentation. New code must have zero violations, and existing code touched by the change must be brought into compliance. Full-repository historical debt is a separate audit and must not be silently bundled into an unrelated commit.
-- Changes that add, remove, relax, or redefine constraints, conventions, architecture, interface contracts, units, ownership, safety rules, or hardware rules in `AGENTS.md`, project skills, or maintained repository documentation require explicit human approval in the current conversation. Approval must identify the affected file or semantic change; an implementation request does not imply approval to rewrite governing rules. Missing approval fails the review.
-- Ordinary code comments and non-normative small documentation edits do not require human approval, but they must still pass the full review. A comment or documentation edit that changes normative semantics is treated as a protected documentation change.
-- Every failed review must identify each failure with file and line, violated rule or document clause, required fix, and the exact documentation that must be reread. The report must prominently stop the Git operation and require the agent to consult the documentation before editing again.
-- Behavioral changes require focused tests or regression coverage. Without matching test evidence, the review fails. Never weaken, delete, skip, or falsify tests to obtain a pass.
-- If review fails, fix the violations and rerun every affected check. Stop and ask when behavior is ambiguous or two consecutive attempts produce no net improvement.
-- For board-facing changes, automated review, tests, and builds gate local commits. Push and pull requests additionally require hardware verification evidence unless the user explicitly accepts the remaining risk.
-- Do not bypass the review with `--no-verify`, skipped tests, relaxed warnings, or equivalent workarounds.
-- The review does not grant permission to mutate Git state. Execute a commit, push, or other Git operation only when the user requested that operation.
+详细操作流程位于 `.agents/skills/`：
+- `tbd-workflow`：TBD 分支生命周期、checkpoint 整理与合入流程
+- `doc-driven-dev`：文档映射查询、契约对齐与文档同步规范
+- `local-verify`：本地多维度测试矩阵、`clang-tidy` 与交叉编译排障

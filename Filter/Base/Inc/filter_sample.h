@@ -28,8 +28,7 @@ _Static_assert(FILTER_CHANNEL_CAPACITY <= 32u, "FILTER_CHANNEL_CAPACITY must not
 #if FILTER_CHANNEL_CAPACITY == 32u
 #define FILTER_CHANNEL_MASK UINT32_MAX
 #else
-#define FILTER_CHANNEL_MASK \
-  ((uint32_t)((1u << FILTER_CHANNEL_CAPACITY) - 1u))
+#define FILTER_CHANNEL_MASK ((uint32_t)((1u << FILTER_CHANNEL_CAPACITY) - 1u))
 #endif
 
 /**
@@ -39,7 +38,7 @@ _Static_assert(FILTER_CHANNEL_CAPACITY <= 32u, "FILTER_CHANNEL_CAPACITY must not
  * @warning valid_mask 中超出 FILTER_CHANNEL_CAPACITY 的位必须为 0。
  */
 typedef struct filter_sample_s {
-  float    value[FILTER_CHANNEL_CAPACITY];
+  float value[FILTER_CHANNEL_CAPACITY];
   uint32_t valid_mask;
   uint32_t time_ms;
 } filter_sample_t;
@@ -67,12 +66,8 @@ static inline uint32_t Filter_Sample_GetChannelMask(uint8_t channel) {
  * @post 不修改样本；Debug 构建会断言非法通道。
  * @note 纯查询函数，不检查对应通道值是否有限。
  */
-static inline bool Filter_Sample_ChannelIsValid(
-  const filter_sample_t *sample,
-  uint8_t channel
-) {
-  return sample != NULL &&
-         (sample->valid_mask & Filter_Sample_GetChannelMask(channel)) != 0u;
+static inline bool Filter_Sample_ChannelIsValid(const filter_sample_t *sample, uint8_t channel) {
+  return sample != NULL && (sample->valid_mask & Filter_Sample_GetChannelMask(channel)) != 0u;
 }
 
 /**
@@ -83,10 +78,7 @@ static inline bool Filter_Sample_ChannelIsValid(
  * @post sample->valid_mask 中对应通道位被清零，其他通道位和数值不变。
  * @note 不修改通道值，不分配动态内存；并发写入须由调用方串行化。
  */
-static inline void Filter_Sample_ClearChannel(
-  filter_sample_t *sample,
-  uint8_t channel
-) {
+static inline void Filter_Sample_ClearChannel(filter_sample_t *sample, uint8_t channel) {
   assert(sample);
   sample->valid_mask &= ~Filter_Sample_GetChannelMask(channel);
 }
@@ -102,11 +94,8 @@ static inline void Filter_Sample_ClearChannel(
  * @post 有限结果写入通道并置位；非有限结果清除对应有效位。
  * @note 纯本地状态更新，不转义 value 的物理单位，不分配动态内存。
  */
-static inline bool Filter_Sample_WriteFiniteChannel(
-  filter_sample_t *sample,
-  uint8_t channel,
-  float value
-) {
+static inline bool Filter_Sample_WriteFiniteChannel(filter_sample_t *sample, uint8_t channel,
+                                                    float value) {
   uint32_t channel_mask = Filter_Sample_GetChannelMask(channel);
 
   assert(sample);
@@ -134,10 +123,7 @@ static inline void Filter_Sample_Sanitize(filter_sample_t *sample) {
   sample->valid_mask &= FILTER_CHANNEL_MASK;
   for (uint8_t channel = 0u; channel < FILTER_CHANNEL_CAPACITY; channel++) {
     uint32_t channel_mask = Filter_Sample_GetChannelMask(channel);
-    if (
-      (sample->valid_mask & channel_mask) != 0u &&
-      !SYS_ISFINITE(sample->value[channel])
-    ) {
+    if ((sample->valid_mask & channel_mask) != 0u && !SYS_ISFINITE(sample->value[channel])) {
       sample->valid_mask &= ~channel_mask;
     }
   }
@@ -145,4 +131,4 @@ static inline void Filter_Sample_Sanitize(filter_sample_t *sample) {
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_FILTER_SAMPLE_H
+#endif // LAYERED_EMBEDDED_C_FILTER_SAMPLE_H

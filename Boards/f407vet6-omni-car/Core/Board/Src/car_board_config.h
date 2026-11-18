@@ -69,4 +69,4 @@
 /** @brief D 轮 AIN2 引脚。 */
 #define CAR_BOARD_AIN2_D_PIN ((uint16_t)0x0080u)
 
-#endif //LAYERED_EMBEDDED_C_CAR_BOARD_CONFIG_H
+#endif // LAYERED_EMBEDDED_C_CAR_BOARD_CONFIG_H

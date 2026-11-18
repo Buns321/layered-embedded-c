@@ -19,18 +19,12 @@
  * @post 不修改 RTOS 状态。
  * @note 当前频率为 1000 Hz 时直接返回 tick，避免每次执行除法。
  */
-static uint32_t rtos_periodic_ticks_to_ms(
-  uint32_t tick_count,
-  uint32_t tick_freq_hz
-) {
+static uint32_t rtos_periodic_ticks_to_ms(uint32_t tick_count, uint32_t tick_freq_hz) {
   assert(tick_freq_hz > 0u);
   if (tick_freq_hz == 1000u) {
     return tick_count;
   }
-  return (uint32_t)(
-    ((uint64_t)tick_count * 1000u) /
-    tick_freq_hz
-  );
+  return (uint32_t)(((uint64_t)tick_count * 1000u) / tick_freq_hz);
 }
 
 /**
@@ -42,10 +36,7 @@ static uint32_t rtos_periodic_ticks_to_ms(
  * @post 不修改 RTOS 状态。
  * @note 向上取整避免配置周期短于一个 tick 时变成忙循环。
  */
-static uint32_t rtos_periodic_ms_to_ticks(
-  uint32_t period_ms,
-  uint32_t tick_freq_hz
-) {
+static uint32_t rtos_periodic_ms_to_ticks(uint32_t period_ms, uint32_t tick_freq_hz) {
   assert(period_ms > 0u && tick_freq_hz > 0u);
   uint64_t scaled = (uint64_t)period_ms * tick_freq_hz;
   uint32_t tick_count = (uint32_t)((scaled + 999u) / 1000u);
@@ -63,13 +54,11 @@ static uint32_t rtos_periodic_ms_to_ticks(
 void RTOS_Periodic_RunTask(void *argument) {
   assert(argument);
 
-  const rtos_periodic_task_config_t *config =
-    (const rtos_periodic_task_config_t *)argument;
+  const rtos_periodic_task_config_t *config = (const rtos_periodic_task_config_t *)argument;
   assert(config->name && config->process && config->period_ms > 0u);
 
   uint32_t tick_freq_hz = osKernelGetTickFreq();
-  uint32_t period_tick_count =
-    rtos_periodic_ms_to_ticks(config->period_ms, tick_freq_hz);
+  uint32_t period_tick_count = rtos_periodic_ms_to_ticks(config->period_ms, tick_freq_hz);
   uint32_t next_wake_tick = osKernelGetTickCount();
 
   SYS_LOG_INFO("RTOS", "%s started", config->name);

@@ -14,14 +14,14 @@
 #include <assert.h>
 #include <stddef.h>
 
-#define FILTER_IMU_CAL_GYRO_X_CHANNEL   3u
-#define FILTER_IMU_CAL_GYRO_Y_CHANNEL   4u
-#define FILTER_IMU_CAL_GYRO_Z_CHANNEL   5u
-#define FILTER_IMU_CAL_ACCEL_X_CHANNEL  6u
-#define FILTER_IMU_CAL_ACCEL_Y_CHANNEL  7u
-#define FILTER_IMU_CAL_ACCEL_Z_CHANNEL  8u
-#define FILTER_IMU_CAL_SCALE_MIN        0.1f
-#define FILTER_IMU_CAL_SCALE_MAX        10.0f
+#define FILTER_IMU_CAL_GYRO_X_CHANNEL 3u
+#define FILTER_IMU_CAL_GYRO_Y_CHANNEL 4u
+#define FILTER_IMU_CAL_GYRO_Z_CHANNEL 5u
+#define FILTER_IMU_CAL_ACCEL_X_CHANNEL 6u
+#define FILTER_IMU_CAL_ACCEL_Y_CHANNEL 7u
+#define FILTER_IMU_CAL_ACCEL_Z_CHANNEL 8u
+#define FILTER_IMU_CAL_SCALE_MIN 0.1f
+#define FILTER_IMU_CAL_SCALE_MAX 10.0f
 #define FILTER_IMU_CAL_GYRO_BIAS_MAX_DPS 720.0f
 
 /**
@@ -33,20 +33,15 @@
  * @post 不修改配置，也不产生任何全局状态变化。
  * @note 常量上限见本文件 FILTER_IMU_CAL_* 宏；不分配动态内存。
  */
-static bool filter_imucalibration_configisvalid(
-  const filter_imu_calibration_config_t *config
-) {
+static bool filter_imucalibration_configisvalid(const filter_imu_calibration_config_t *config) {
   assert(config);
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
-    if (
-      !SYS_ISFINITE(config->accel_offset_mps2[axis]) ||
-      !SYS_ISFINITE(config->accel_scale[axis]) ||
-      !SYS_ISFINITE(config->gyro_bias_dps[axis]) ||
-      config->accel_scale[axis] < FILTER_IMU_CAL_SCALE_MIN ||
-      config->accel_scale[axis] > FILTER_IMU_CAL_SCALE_MAX ||
-      SYS_ABS(config->gyro_bias_dps[axis]) > FILTER_IMU_CAL_GYRO_BIAS_MAX_DPS
-    ) {
+    if (!SYS_ISFINITE(config->accel_offset_mps2[axis]) ||
+        !SYS_ISFINITE(config->accel_scale[axis]) || !SYS_ISFINITE(config->gyro_bias_dps[axis]) ||
+        config->accel_scale[axis] < FILTER_IMU_CAL_SCALE_MIN ||
+        config->accel_scale[axis] > FILTER_IMU_CAL_SCALE_MAX ||
+        SYS_ABS(config->gyro_bias_dps[axis]) > FILTER_IMU_CAL_GYRO_BIAS_MAX_DPS) {
       return false;
     }
   }
@@ -65,14 +60,11 @@ static bool filter_imucalibration_configisvalid(
  * @post 成功时校正配置已复制；失败时不修改滤波器对象。
  * @note 私有构造回调，不分配动态内存。
  */
-static filter_status_t filter_imucalibration_init(
-  filter_base_t *filter_h,
-  const filter_config_t *filter_config
-) {
-  filter_imu_calibration_t *imu_calibration_h =
-    (filter_imu_calibration_t *)filter_h;
+static filter_status_t filter_imucalibration_init(filter_base_t *filter_h,
+                                                  const filter_config_t *filter_config) {
+  filter_imu_calibration_t *imu_calibration_h = (filter_imu_calibration_t *)filter_h;
   const filter_imu_calibration_config_t *config =
-    (const filter_imu_calibration_config_t *)filter_config->data;
+      (const filter_imu_calibration_config_t *)filter_config->data;
 
   if (config == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
@@ -95,11 +87,7 @@ static filter_status_t filter_imucalibration_init(
  * @post 不修改任何对象或配置，只返回本次计算结果。
  * @note 纯计算函数；不分配动态内存。
  */
-static float filter_imucalibration_apply(
-  float value,
-  float offset,
-  float scale
-) {
+static float filter_imucalibration_apply(float value, float offset, float scale) {
   return (value - offset) * scale;
 }
 
@@ -111,8 +99,7 @@ static float filter_imucalibration_apply(
  * @note 不分配动态内存；不修改 filter_base 或六轴参数。
  */
 static void filter_imucalibration_reset(filter_base_t *filter_h) {
-  filter_imu_calibration_t *imu_calibration_h =
-    (filter_imu_calibration_t *)filter_h;
+  filter_imu_calibration_t *imu_calibration_h = (filter_imu_calibration_t *)filter_h;
   imu_calibration_h->corrected_frames = 0u;
 }
 
@@ -126,12 +113,8 @@ static void filter_imucalibration_reset(filter_base_t *filter_h) {
  *       校正结果非有限的通道会清除有效位；corrected_frames 自增一次。
  * @note 陀螺输出仍为 deg/s，加速度输出为 m/s²；单写者调用，不分配动态内存。
  */
-static void filter_imucalibration_update(
-  filter_base_t *filter_h,
-  filter_sample_t *sample
-) {
-  filter_imu_calibration_t *imu_calibration_h =
-    (filter_imu_calibration_t *)filter_h;
+static void filter_imucalibration_update(filter_base_t *filter_h, filter_sample_t *sample) {
+  filter_imu_calibration_t *imu_calibration_h = (filter_imu_calibration_t *)filter_h;
   filter_imu_calibration_config_t config;
 
   Sys_Critical_Enter();
@@ -139,41 +122,29 @@ static void filter_imucalibration_update(
   Sys_Critical_Exit();
 
   const uint32_t gyro_channels[3] = {
-    FILTER_IMU_CAL_GYRO_X_CHANNEL,
-    FILTER_IMU_CAL_GYRO_Y_CHANNEL,
-    FILTER_IMU_CAL_GYRO_Z_CHANNEL,
+      FILTER_IMU_CAL_GYRO_X_CHANNEL,
+      FILTER_IMU_CAL_GYRO_Y_CHANNEL,
+      FILTER_IMU_CAL_GYRO_Z_CHANNEL,
   };
   const uint32_t accel_channels[3] = {
-    FILTER_IMU_CAL_ACCEL_X_CHANNEL,
-    FILTER_IMU_CAL_ACCEL_Y_CHANNEL,
-    FILTER_IMU_CAL_ACCEL_Z_CHANNEL,
+      FILTER_IMU_CAL_ACCEL_X_CHANNEL,
+      FILTER_IMU_CAL_ACCEL_Y_CHANNEL,
+      FILTER_IMU_CAL_ACCEL_Z_CHANNEL,
   };
 
   for (uint8_t axis = 0u; axis < 3u; axis++) {
     uint32_t gyro_mask = Filter_Sample_GetChannelMask(gyro_channels[axis]);
     if ((sample->valid_mask & gyro_mask) != 0u) {
-      float corrected =
-        sample->value[gyro_channels[axis]] -
-        config.gyro_bias_dps[axis];
-      (void)Filter_Sample_WriteFiniteChannel(
-        sample,
-        (uint8_t)gyro_channels[axis],
-        corrected
-      );
+      float corrected = sample->value[gyro_channels[axis]] - config.gyro_bias_dps[axis];
+      (void)Filter_Sample_WriteFiniteChannel(sample, (uint8_t)gyro_channels[axis], corrected);
     }
 
     uint32_t accel_mask = Filter_Sample_GetChannelMask(accel_channels[axis]);
     if ((sample->valid_mask & accel_mask) != 0u) {
-      float corrected = filter_imucalibration_apply(
-        sample->value[accel_channels[axis]],
-        config.accel_offset_mps2[axis],
-        config.accel_scale[axis]
-      );
-      (void)Filter_Sample_WriteFiniteChannel(
-        sample,
-        (uint8_t)accel_channels[axis],
-        corrected
-      );
+      float corrected =
+          filter_imucalibration_apply(sample->value[accel_channels[axis]],
+                                      config.accel_offset_mps2[axis], config.accel_scale[axis]);
+      (void)Filter_Sample_WriteFiniteChannel(sample, (uint8_t)accel_channels[axis], corrected);
     }
   }
 
@@ -181,9 +152,9 @@ static void filter_imucalibration_update(
 }
 
 static const filter_ops_t filter_ops_imu_calibration = {
-  .init = filter_imucalibration_init,
-  .update = filter_imucalibration_update,
-  .reset = filter_imucalibration_reset,
+    .init = filter_imucalibration_init,
+    .update = filter_imucalibration_update,
+    .reset = filter_imucalibration_reset,
 };
 
 /**
@@ -198,24 +169,18 @@ static const filter_ops_t filter_ops_imu_calibration = {
  * @post 成功时 corrected_frames 为 0，配置被复制并持久保存；失败时不修改 filter_h。
  * @note 不分配动态内存；输入通道 schema 与 IMU 固定通道 3..8 一致。
  */
-filter_status_t Filter_ImuCalibration_Init(
-  filter_imu_calibration_t *filter_h,
-  const char *name,
-  const filter_imu_calibration_config_t *config
-) {
+filter_status_t Filter_ImuCalibration_Init(filter_imu_calibration_t *filter_h, const char *name,
+                                           const filter_imu_calibration_config_t *config) {
   if (filter_h == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
   const filter_config_t constructor_config = {
-    .name = name,
-    .data = config,
+      .name = name,
+      .data = config,
   };
-  return Filter_Base_Construct(
-    &filter_h->filter_base,
-    &constructor_config,
-    &filter_ops_imu_calibration
-  );
+  return Filter_Base_Construct(&filter_h->filter_base, &constructor_config,
+                               &filter_ops_imu_calibration);
 }
 
 /**
@@ -229,10 +194,8 @@ filter_status_t Filter_ImuCalibration_Init(
  * @post 成功时后续 update 使用新配置；update 通过临界区复制配置，不会观察到半更新状态。
  * @note 可从参数任务调用；配置提交与帧内读取由 Sys_Critical 串行化，不分配动态内存。
  */
-filter_status_t Filter_ImuCalibration_SetConfig(
-  filter_imu_calibration_t *filter_h,
-  const filter_imu_calibration_config_t *config
-) {
+filter_status_t Filter_ImuCalibration_SetConfig(filter_imu_calibration_t *filter_h,
+                                                const filter_imu_calibration_config_t *config) {
   if (filter_h == NULL || config == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
@@ -254,10 +217,8 @@ filter_status_t Filter_ImuCalibration_SetConfig(
  * @post config 获得临界区内的完整配置快照，滤波器状态不变。
  * @note 可从其他任务读取；不分配动态内存。
  */
-void Filter_ImuCalibration_GetConfig(
-  const filter_imu_calibration_t *filter_h,
-  filter_imu_calibration_config_t *config
-) {
+void Filter_ImuCalibration_GetConfig(const filter_imu_calibration_t *filter_h,
+                                     filter_imu_calibration_config_t *config) {
   assert(filter_h && config);
 
   Sys_Critical_Enter();

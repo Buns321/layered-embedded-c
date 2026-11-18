@@ -34,13 +34,10 @@ typedef struct chassis_twist_s {
  * @note update 只负责解算与下发目标；电机闭环由调用方逐轮运行。
  */
 typedef struct chassis_ops_s {
-  void (*set_motion)(
-    chassis_base_t *chassis_h,
-    const chassis_twist_t *twist
-  );
+  void (*set_motion)(chassis_base_t *chassis_h, const chassis_twist_t *twist);
   void (*update)(chassis_base_t *chassis_h, uint32_t now_ms);
-  void (*stop)  (chassis_base_t *chassis_h);
-  void (*estop) (chassis_base_t *chassis_h);
+  void (*stop)(chassis_base_t *chassis_h);
+  void (*estop)(chassis_base_t *chassis_h);
 } chassis_ops_t;
 
 /**
@@ -49,7 +46,7 @@ typedef struct chassis_ops_s {
  */
 typedef struct chassis_base_s {
   const chassis_ops_t *ops;
-  const char          *name;
+  const char *name;
 } chassis_base_t;
 
 /**
@@ -70,10 +67,7 @@ void Chassis_Base_Init(chassis_base_t *chassis_h, const char *name, const chassi
  * @post 具体底盘保存命令；本层不修改状态。
  * @note 基类不加锁，不分配内存。
  */
-void Chassis_Base_SetMotion(
-  chassis_base_t *chassis_h,
-  const chassis_twist_t *twist
-);
+void Chassis_Base_SetMotion(chassis_base_t *chassis_h, const chassis_twist_t *twist);
 /**
  * @brief 委托具体底盘执行一次解算与目标下发。
  * @param chassis_h 已初始化的底盘句柄；不可为 NULL，所有权不转移。
@@ -105,4 +99,4 @@ void Chassis_Base_EStop(chassis_base_t *chassis_h);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_CHASSIS_BASE_H
+#endif // LAYERED_EMBEDDED_C_CHASSIS_BASE_H

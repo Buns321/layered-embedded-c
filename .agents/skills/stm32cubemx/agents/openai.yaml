@@ -1,3 +1,0 @@
-interface:
-  display_name: "STM32CubeMX"
-  short_description: "Generate CubeMX code and flash ST-Link firmware"

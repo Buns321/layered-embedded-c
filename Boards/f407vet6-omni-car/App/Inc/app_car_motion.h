@@ -36,10 +36,7 @@ typedef struct app_car_motion_s {
  * @post Motion 保存底盘和电机非 owning 指针。
  * @note 只允许初始化阶段调用。
  */
-void App_Car_Motion_Init(
-  app_car_motion_t *motion_h,
-  const app_car_dependencies_t *dependencies
-);
+void App_Car_Motion_Init(app_car_motion_t *motion_h, const app_car_dependencies_t *dependencies);
 
 /**
  * @brief 保存车体系速度命令。
@@ -48,10 +45,7 @@ void App_Car_Motion_Init(
  * @post 命令已提交给底盘接口。
  * @note 不推进电机闭环。
  */
-void App_Car_Motion_SetTwist(
-  app_car_motion_t *motion_h,
-  const chassis_twist_t *twist
-);
+void App_Car_Motion_SetTwist(app_car_motion_t *motion_h, const chassis_twist_t *twist);
 
 /**
  * @brief 推进一次底盘解算和全部电机闭环。
@@ -65,10 +59,7 @@ void App_Car_Motion_SetTwist(
  * @post 底盘目标已解算；电机状态允许时全部闭环已推进。
  * @note 遇到首个控制器错误后停止后续电机更新。
  */
-app_car_motion_status_t App_Car_Motion_Update(
-  app_car_motion_t *motion_h,
-  uint32_t now_ms
-);
+app_car_motion_status_t App_Car_Motion_Update(app_car_motion_t *motion_h, uint32_t now_ms);
 
 /**
  * @brief 使能全部电机并回读状态。
@@ -88,9 +79,7 @@ bool App_Car_Motion_EnableMotors(app_car_motion_t *motion_h);
  * @post 不修改状态。
  * @note 只读取电机状态。
  */
-bool App_Car_Motion_MotorsAreEnabled(
-  const app_car_motion_t *motion_h
-);
+bool App_Car_Motion_MotorsAreEnabled(const app_car_motion_t *motion_h);
 
 /**
  * @brief 请求底盘常规停止。
@@ -116,10 +105,7 @@ void App_Car_Motion_EStop(app_car_motion_t *motion_h);
  * @post 不修改 Motion 状态。
  * @note 范围由底盘电机配置决定。
  */
-float App_Car_Motion_ReadTargetSpeed(
-  const app_car_motion_t *motion_h,
-  uint8_t wheel
-);
+float App_Car_Motion_ReadTargetSpeed(const app_car_motion_t *motion_h, uint8_t wheel);
 
 /**
  * @brief 读取电机当前速度。
@@ -129,11 +115,8 @@ float App_Car_Motion_ReadTargetSpeed(
  * @post 不修改 Motion 状态。
  * @note 只反映最近一次闭环更新结果。
  */
-float App_Car_Motion_ReadCurrentSpeed(
-  const app_car_motion_t *motion_h,
-  uint8_t wheel
-);
+float App_Car_Motion_ReadCurrentSpeed(const app_car_motion_t *motion_h, uint8_t wheel);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_APP_CAR_MOTION_H
+#endif // LAYERED_EMBEDDED_C_APP_CAR_MOTION_H

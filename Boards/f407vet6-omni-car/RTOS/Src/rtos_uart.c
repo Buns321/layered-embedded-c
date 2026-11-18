@@ -10,9 +10,9 @@
 #include "app_car_runtime.h"
 
 static const rtos_periodic_task_config_t s_input_loop = {
-  .name = "UARTTask",
-  .process = App_Car_ProcessInputs,
-  .period_ms = RTOS_CAR_INPUT_PERIOD_MS,
+    .name = "UARTTask",
+    .process = App_Car_ProcessInputs,
+    .period_ms = RTOS_CAR_INPUT_PERIOD_MS,
 };
 
 /**

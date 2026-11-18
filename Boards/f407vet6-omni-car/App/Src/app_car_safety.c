@@ -15,10 +15,7 @@
  * @post 首次故障时置位并写日志。
  * @note 不加锁，只锁存故障。
  */
-void app_car_set_fault(
-  app_car_state_t *state_h,
-  const char *reason
-) {
+void app_car_set_fault(app_car_state_t *state_h, const char *reason) {
   if (!state_h->faulted) {
     state_h->faulted = true;
     SYS_LOG_ERROR("CAR", "%s", reason);
@@ -91,15 +88,9 @@ void app_car_enable_motors(app_car_state_t *state_h) {
  * @post 心跳超时或已有故障时执行急停。
  * @note 只允许监控任务调用。
  */
-void app_car_process_safety(
-  app_car_state_t *state_h,
-  uint32_t now_ms
-) {
-  if (
-    state_h->control_heartbeat_valid &&
-    (uint32_t)(now_ms - state_h->control_heartbeat_ms) >
-      APP_CAR_HEARTBEAT_TIMEOUT_MS
-  ) {
+void app_car_process_safety(app_car_state_t *state_h, uint32_t now_ms) {
+  if (state_h->control_heartbeat_valid &&
+      (uint32_t)(now_ms - state_h->control_heartbeat_ms) > APP_CAR_HEARTBEAT_TIMEOUT_MS) {
     app_car_set_fault(state_h, "control heartbeat timeout");
     app_car_estop(state_h);
   } else if (state_h->faulted) {

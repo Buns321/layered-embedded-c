@@ -37,4 +37,4 @@ void RTOS_Monitor_StartTask(void *argument);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_RTOS_TASKS_H
+#endif // LAYERED_EMBEDDED_C_RTOS_TASKS_H
