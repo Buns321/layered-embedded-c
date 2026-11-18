@@ -26,24 +26,13 @@
  * @note 平动项使用 cos(dir - (wheel_theta + yaw))，自转项使用
  *       omega*wheel_distance*wheel_sign；不分配动态内存，单写者调用。
  */
-static void policy_omni_kinematics_solve(
-  policy_omni_base_t *policy_h,
-  float v,
-  float dir,
-  float yaw,
-  float omega,
-  float out[4]
-) {
+static void policy_omni_kinematics_solve(policy_omni_base_t *policy_h, float v, float dir,
+                                         float yaw, float omega, float out[4]) {
   assert(policy_h && out);
 
   policy_omni_kinematics_t *policy_omni_kinematics_h = (policy_omni_kinematics_t *)policy_h;
 
-  if (
-    !SYS_ISFINITE(v)     ||
-    !SYS_ISFINITE(dir)   ||
-    !SYS_ISFINITE(yaw)   ||
-    !SYS_ISFINITE(omega)
-  ) {
+  if (!SYS_ISFINITE(v) || !SYS_ISFINITE(dir) || !SYS_ISFINITE(yaw) || !SYS_ISFINITE(omega)) {
     for (uint8_t i = 0; i < 4; i++) {
       out[i] = 0.0f;
     }
@@ -53,14 +42,15 @@ static void policy_omni_kinematics_solve(
   for (uint8_t i = 0; i < 4; i++) {
     float alpha = policy_omni_kinematics_h->wheel_theta[i] + yaw;
     float trans = v * cosf(dir - alpha);
-    float rotate = omega * policy_omni_kinematics_h->wheel_distance * policy_omni_kinematics_h->wheel_sign[i];
+    float rotate =
+        omega * policy_omni_kinematics_h->wheel_distance * policy_omni_kinematics_h->wheel_sign[i];
 
     out[i] = trans + rotate;
   }
 }
 
 static const policy_omni_ops_t policy_omni_ops = {
-  .solve = policy_omni_kinematics_solve,
+    .solve = policy_omni_kinematics_solve,
 };
 
 /**
@@ -71,24 +61,14 @@ static const policy_omni_ops_t policy_omni_ops = {
  * @param wheel_theta 四轮安装角数组，单位 rad；四项必须有限。
  * @param wheel_sign 四轮方向符号数组，通常取 ±1；四项必须有限，本函数只检查有限性。
  * @pre policy_h 可写；name 的生命周期覆盖策略对象；wheel_theta 和 wheel_sign 只需在调用期间可读。
- * @post 基对象名称与 ops 已绑定，wheel_distance、wheel_theta 和 wheel_sign 已复制到对象；不保留输入数组指针。
+ * @post 基对象名称与 ops 已绑定，wheel_distance、wheel_theta 和 wheel_sign
+ * 已复制到对象；不保留输入数组指针。
  * @note 仅允许初始化阶段单线程调用；不分配动态内存。
  */
-void Policy_Omni_Kinematics_Init(
-  policy_omni_kinematics_t *policy_h,
-  const char *name,
-  float wheel_distance,
-  const float wheel_theta[4],
-  const float wheel_sign[4]
-) {
-  assert(
-    policy_h            &&
-    name            &&
-    wheel_theta     &&
-    wheel_sign      &&
-    SYS_ISFINITE(wheel_distance) &&
-    wheel_distance > 0.0f
-  );
+void Policy_Omni_Kinematics_Init(policy_omni_kinematics_t *policy_h, const char *name,
+                                 float wheel_distance, const float wheel_theta[4],
+                                 const float wheel_sign[4]) {
+  assert(policy_h && name && wheel_theta && wheel_sign && SYS_IS_POS_FINITE(wheel_distance));
 
   for (uint8_t i = 0; i < 4; i++) {
     assert(SYS_ISFINITE(wheel_theta[i]));
@@ -101,6 +81,6 @@ void Policy_Omni_Kinematics_Init(
 
   for (uint8_t i = 0; i < 4; i++) {
     policy_h->wheel_theta[i] = wheel_theta[i];
-    policy_h->wheel_sign[i]  = wheel_sign[i];
+    policy_h->wheel_sign[i] = wheel_sign[i];
   }
 }

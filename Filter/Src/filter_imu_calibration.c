@@ -9,8 +9,8 @@
  */
 
 #include "filter_imu_calibration.h"
-#include "system_critical.h"
 #include "system_math.h"
+#include "system_snapshot.h"
 #include <assert.h>
 #include <stddef.h>
 
@@ -117,9 +117,7 @@ static void filter_imucalibration_update(filter_base_t *filter_h, filter_sample_
   filter_imu_calibration_t *imu_calibration_h = (filter_imu_calibration_t *)filter_h;
   filter_imu_calibration_config_t config;
 
-  Sys_Critical_Enter();
-  config = imu_calibration_h->config;
-  Sys_Critical_Exit();
+  SYS_SNAPSHOT_READ(&config, &imu_calibration_h->config);
 
   const uint32_t gyro_channels[3] = {
       FILTER_IMU_CAL_GYRO_X_CHANNEL,
@@ -203,9 +201,7 @@ filter_status_t Filter_ImuCalibration_SetConfig(filter_imu_calibration_t *filter
     return FILTER_STATUS_INVALID_CONFIG;
   }
 
-  Sys_Critical_Enter();
-  filter_h->config = *config;
-  Sys_Critical_Exit();
+  SYS_SNAPSHOT_WRITE(&filter_h->config, config);
   return FILTER_STATUS_OK;
 }
 
@@ -221,7 +217,5 @@ void Filter_ImuCalibration_GetConfig(const filter_imu_calibration_t *filter_h,
                                      filter_imu_calibration_config_t *config) {
   assert(filter_h && config);
 
-  Sys_Critical_Enter();
-  *config = filter_h->config;
-  Sys_Critical_Exit();
+  SYS_SNAPSHOT_READ(config, &filter_h->config);
 }

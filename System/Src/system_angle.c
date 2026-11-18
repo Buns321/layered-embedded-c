@@ -9,8 +9,6 @@
 #include <math.h>
 #include <stddef.h>
 
-#define SYS_ANGLE_PI 3.14159265358979323846f
-
 /**
  * @brief 把已知有限角度归一化到 [-180, 180] deg。
  * @param angle_deg 待归一化角度，单位 deg；必须有限。
@@ -38,11 +36,11 @@ static float sys_angle_wrapdegreesfinite(float angle_deg) {
  * @note 私有辅助函数，使用 fmodf 先缩小范围；不分配内存。
  */
 static float sys_angle_wrapradiansfinite(float angle_rad) {
-  const float period_rad = 2.0f * SYS_ANGLE_PI;
+  const float period_rad = 2.0f * SYS_PI;
   float wrapped_rad = fmodf(angle_rad, period_rad);
-  if (wrapped_rad > SYS_ANGLE_PI) {
+  if (wrapped_rad > SYS_PI) {
     wrapped_rad -= period_rad;
-  } else if (wrapped_rad < -SYS_ANGLE_PI) {
+  } else if (wrapped_rad < -SYS_PI) {
     wrapped_rad += period_rad;
   }
   return wrapped_rad;

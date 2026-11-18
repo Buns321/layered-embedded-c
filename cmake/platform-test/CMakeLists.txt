@@ -23,6 +23,7 @@ add_executable(imu_pipeline_test
     ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/mpu6050_i2c.c
     ${REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/uart_rx_stream.c
     ${REPO_ROOT}/Filter/Base/Src/filter_base.c
     ${REPO_ROOT}/Filter/Src/filter_passthrough.c
     ${REPO_ROOT}/System/Src/system_angle.c
@@ -221,6 +222,7 @@ add_executable(joycon_uart_contract_test
     ${REPO_ROOT}/DeviceDrivers/Base/Src/joycon_base.c
     ${REPO_ROOT}/DeviceDrivers/Base/Src/uart_base.c
     ${REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
+    ${REPO_ROOT}/DeviceDrivers/Src/uart_rx_stream.c
     ${REPO_ROOT}/System/Src/system_byte_ring.c
 )
 

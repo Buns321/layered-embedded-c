@@ -50,6 +50,11 @@ typedef struct app_car_command_s {
   bool valid;
 } app_car_command_t;
 
+typedef struct app_car_heartbeat_s {
+  uint32_t time_ms;
+  bool valid;
+} app_car_heartbeat_t;
+
 typedef struct app_car_state_s {
   volatile app_car_boot_state_t boot_state;
   const app_car_dependencies_t *dependencies_h;
@@ -60,8 +65,7 @@ typedef struct app_car_state_s {
   uint32_t zero_done_ms;
   uint32_t last_telemetry_ms;
   uint32_t last_log_ms;
-  volatile uint32_t control_heartbeat_ms;
-  volatile bool control_heartbeat_valid;
+  app_car_heartbeat_t control_heartbeat;
   volatile bool imu_ready;
   volatile bool faulted;
   volatile bool estop_latched;
@@ -109,6 +113,24 @@ void app_car_set_command(app_car_state_t *state_h, const joycon_input_t *input,
  * @note 返回值是值副本，不保留内部指针。
  */
 app_car_command_t app_car_get_command(app_car_state_t *state_h);
+
+/**
+ * @brief 在临界区内发布控制任务心跳快照。
+ * @param state_h App 状态，不得为 NULL。
+ * @param now_ms 当前控制任务时间，单位 ms。
+ * @post control_heartbeat 已原子性更新为 valid=true、time_ms=now_ms。
+ * @note 使用 System 临界区保证与监控/遥测任务并发读取时的一致性。
+ */
+void app_car_set_heartbeat(app_car_state_t *state_h, uint32_t now_ms);
+
+/**
+ * @brief 在临界区内读取控制任务心跳快照。
+ * @param state_h App 状态，不得为 NULL。
+ * @return 控制任务心跳快照副本。
+ * @post 不修改 App 状态。
+ * @note 使用 System 临界区保证 valid 与 time_ms 成对一致。
+ */
+app_car_heartbeat_t app_car_get_heartbeat(const app_car_state_t *state_h);
 
 /**
  * @brief 首次故障时锁存故障并记录日志。

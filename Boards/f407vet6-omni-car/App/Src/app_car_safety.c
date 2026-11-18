@@ -7,6 +7,7 @@
 #include "app_car_internal.h"
 #include "app_car_config.h"
 #include "system_log.h"
+#include "system_time_window.h"
 
 /**
  * @brief 首次故障时锁存 faulted 并记录错误。
@@ -89,8 +90,9 @@ void app_car_enable_motors(app_car_state_t *state_h) {
  * @note 只允许监控任务调用。
  */
 void app_car_process_safety(app_car_state_t *state_h, uint32_t now_ms) {
-  if (state_h->control_heartbeat_valid &&
-      (uint32_t)(now_ms - state_h->control_heartbeat_ms) > APP_CAR_HEARTBEAT_TIMEOUT_MS) {
+  app_car_heartbeat_t heartbeat = app_car_get_heartbeat(state_h);
+  if (heartbeat.valid &&
+      Sys_Time_IsExpiredMs(now_ms, heartbeat.time_ms, APP_CAR_HEARTBEAT_TIMEOUT_MS)) {
     app_car_set_fault(state_h, "control heartbeat timeout");
     app_car_estop(state_h);
   } else if (state_h->faulted) {

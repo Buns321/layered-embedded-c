@@ -12,18 +12,6 @@
 #include <assert.h>
 
 /**
- * @brief 判断时间戳是否晚于参考点。
- * @param timestamp_ms 待比较时间戳，单位 ms。
- * @param reference_ms 参考时间戳，单位 ms。
- * @retval true 有符号差大于零。
- * @retval false 时间戳等于或早于参考点。
- * @note 要求间隔小于 2^31 ms。
- */
-static bool app_car_timestamp_is_after(uint32_t timestamp_ms, uint32_t reference_ms) {
-  return (int32_t)(timestamp_ms - reference_ms) > 0;
-}
-
-/**
  * @brief 切换启动状态并重置静止检测计时。
  * @param state_h App 状态，不得为 NULL。
  * @param state 新状态。
@@ -54,9 +42,8 @@ bool app_car_imu_yaw_is_fresh(const imu_sample_t *sample, uint32_t now_ms) {
     return false;
   }
 
-  uint32_t yaw_age_ms = now_ms - sample->channel_update_ms[IMU_CHANNEL_INDEX_YAW];
-
-  return yaw_age_ms <= APP_CAR_IMU_TIMEOUT_MS;
+  return !Sys_Time_IsExpiredMs(now_ms, sample->channel_update_ms[IMU_CHANNEL_INDEX_YAW],
+                               APP_CAR_IMU_TIMEOUT_MS);
 }
 
 /**
@@ -98,10 +85,10 @@ static void app_car_update_boot_state(app_car_state_t *state_h, uint32_t now_ms)
     bool has_fresh_channels =
         (imu_sample.valid_mask & IMU_CHANNEL_YAW) != 0U &&
         (imu_sample.valid_mask & IMU_CHANNEL_GYRO_Z) != 0U &&
-        app_car_timestamp_is_after(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW],
-                                   state_h->config_done_ms) &&
-        app_car_timestamp_is_after(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_GYRO_Z],
-                                   state_h->config_done_ms);
+        Sys_Time_IsAfterMs(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW],
+                           state_h->config_done_ms) &&
+        Sys_Time_IsAfterMs(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_GYRO_Z],
+                           state_h->config_done_ms);
     bool is_still =
         has_fresh_channels && SYS_ABS(imu_sample.gyro_dps[2]) <= APP_CAR_IMU_STILL_GYRO_DPS;
 
@@ -146,8 +133,8 @@ static void app_car_update_boot_state(app_car_state_t *state_h, uint32_t now_ms)
     }
 
     if ((imu_sample.valid_mask & IMU_CHANNEL_YAW) != 0U &&
-        app_car_timestamp_is_after(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW],
-                                   state_h->zero_done_ms) &&
+        Sys_Time_IsAfterMs(imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW],
+                           state_h->zero_done_ms) &&
         SYS_ABS(imu_sample.yaw_deg) <= APP_CAR_IMU_ZERO_RESIDUAL_DEG) {
       Dev_IMU_Base_ZeroYaw(imu_h);
       state_h->imu_ready = true;

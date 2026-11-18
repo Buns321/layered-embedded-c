@@ -9,7 +9,9 @@
  */
 
 #include "chassis_omni.h"
+#include "system_angle.h"
 #include "system_math.h"
+#include "system_time_window.h"
 #include <assert.h>
 #include <math.h>
 
@@ -66,16 +68,14 @@ static void chassis_omni_update(chassis_base_t *chassis_h, uint32_t now_ms) {
   imu_sample_t imu_sample = {0};
   bool imu_available = Dev_IMU_Base_GetSample(chassis_omni_h->imu_h, &imu_sample);
 
-  uint32_t yaw_age_ms = now_ms - imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW];
-
   if (!imu_available || (imu_sample.valid_mask & IMU_CHANNEL_YAW) == 0u ||
-      yaw_age_ms > chassis_omni_h->imu_timeout_ms) {
+      Sys_Time_IsExpiredMs(now_ms, imu_sample.channel_update_ms[IMU_CHANNEL_INDEX_YAW],
+                           chassis_omni_h->imu_timeout_ms)) {
     chassis_omni_stop(chassis_h);
     return;
   }
 
-  const float deg_to_rad = 3.14159265358979323846f / 180.0f;
-  float yaw_rad = imu_sample.yaw_deg * deg_to_rad;
+  float yaw_rad = Sys_Angle_DegToRad(imu_sample.yaw_deg);
   float linear_speed_mps =
       hypotf(chassis_omni_h->command.vx_body_mps, chassis_omni_h->command.vy_body_mps);
   float direction_rad =

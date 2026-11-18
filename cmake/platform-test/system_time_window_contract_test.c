@@ -24,6 +24,28 @@ static void test_time_windows(void) {
   assert(Sys_Time_HasElapsedMs(110u, 100u, 10u));
   assert(!Sys_Time_HasElapsedMs(109u, 100u, 10u));
   assert(Sys_Time_HasElapsedMs(5u, UINT32_MAX - 4u, 10u));
+
+  assert(Sys_Time_IsAfterMs(101u, 100u));
+  assert(!Sys_Time_IsAfterMs(100u, 100u));
+  assert(!Sys_Time_IsAfterMs(99u, 100u));
+  assert(Sys_Time_IsAfterMs(0u, UINT32_MAX));
+  assert(!Sys_Time_IsAfterMs(UINT32_MAX, 0u));
+
+  assert(Sys_Time_ElapsedMs(100u, 125u) == 25u);
+  assert(Sys_Time_ElapsedMs(UINT32_MAX - 4u, 5u) == 10u);
+
+  assert(!Sys_Time_IsExpiredMs(110u, 100u, 10u));
+  assert(Sys_Time_IsExpiredMs(111u, 100u, 10u));
+  assert(Sys_Time_IsExpiredMs(6u, UINT32_MAX - 4u, 10u));
+
+  uint32_t last_ms = 0u;
+  assert(Sys_Time_TryStepPeriodicMs(&last_ms, 50u, 100u));
+  assert(last_ms == 50u);
+  assert(!Sys_Time_TryStepPeriodicMs(&last_ms, 149u, 100u));
+  assert(last_ms == 50u);
+  assert(Sys_Time_TryStepPeriodicMs(&last_ms, 150u, 100u));
+  assert(last_ms == 150u);
+  assert(!Sys_Time_TryStepPeriodicMs(NULL, 200u, 100u));
 }
 
 /**

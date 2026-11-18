@@ -8,6 +8,7 @@
 #include "app_car_config.h"
 #include "system_log.h"
 #include "system_math.h"
+#include "system_time_window.h"
 #include <math.h>
 
 /**
@@ -19,8 +20,7 @@
  */
 void app_car_process_control(app_car_state_t *state_h, uint32_t now_ms) {
   const app_car_dependencies_t *dependencies = state_h->dependencies_h;
-  state_h->control_heartbeat_ms = now_ms;
-  state_h->control_heartbeat_valid = true;
+  app_car_set_heartbeat(state_h, now_ms);
 
   if (state_h->faulted) {
     app_car_estop(state_h);
@@ -34,7 +34,7 @@ void app_car_process_control(app_car_state_t *state_h, uint32_t now_ms) {
 
   joycon_input_t joycon_input = {0};
   if (!Dev_JoyCon_Base_GetInput(dependencies->input_h, &joycon_input) ||
-      (uint32_t)(now_ms - joycon_input.time_ms) > APP_CAR_COMMAND_TIMEOUT_MS) {
+      Sys_Time_IsExpiredMs(now_ms, joycon_input.time_ms, APP_CAR_COMMAND_TIMEOUT_MS)) {
     app_car_stop_motion(state_h);
     return;
   }

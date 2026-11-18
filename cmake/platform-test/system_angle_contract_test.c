@@ -18,9 +18,7 @@
  * @post 不修改参数。
  * @note 测试辅助函数。
  */
-static bool near(float left, float right) {
-  return fabsf(left - right) <= 1e-5f;
-}
+static bool near(float left, float right) { return fabsf(left - right) <= 1e-5f; }
 
 /**
  * @brief 验证角度归一化和非有限输入保护。
@@ -49,6 +47,11 @@ static void test_angle_wrap(void) {
   assert(value == 7.0f);
   assert(!Sys_Angle_WrapDegrees(0.0f, NULL));
   assert(!Sys_Angle_WrapRadians(0.0f, NULL));
+
+  assert(near(Sys_Angle_DegToRad(180.0f), SYS_PI));
+  assert(near(Sys_Angle_DegToRad(-90.0f), -SYS_PI * 0.5f));
+  assert(near(Sys_Angle_RadToDeg(SYS_PI), 180.0f));
+  assert(near(Sys_Angle_RadToDeg(-SYS_PI * 0.5f), -90.0f));
 }
 
 /**

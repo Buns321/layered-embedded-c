@@ -7,6 +7,7 @@
 #include "app_car_internal.h"
 #include "app_car_config.h"
 #include "system_log.h"
+#include "system_time_window.h"
 
 /**
  * @brief 根据有效电机数量构造遥测有效位掩码。
@@ -36,12 +37,11 @@ uint32_t app_car_build_telemetry_mask(uint8_t motor_count) {
  * @note 发送忙时整帧丢弃，不等待 DMA。
  */
 void app_car_process_telemetry(app_car_state_t *state_h, uint32_t now_ms) {
-  if (state_h->last_telemetry_ms != 0U &&
-      (uint32_t)(now_ms - state_h->last_telemetry_ms) < APP_CAR_TELEMETRY_PERIOD_MS) {
+  if (!Sys_Time_TryStepPeriodicMs(&state_h->last_telemetry_ms, now_ms,
+                                  APP_CAR_TELEMETRY_PERIOD_MS)) {
     return;
   }
 
-  state_h->last_telemetry_ms = now_ms;
   const app_car_dependencies_t *dependencies = state_h->dependencies_h;
   telemetry_sample_t sample = {
       .valid_mask = app_car_build_telemetry_mask(state_h->motion.motor_count),
@@ -100,13 +100,12 @@ void app_car_process_telemetry(app_car_state_t *state_h, uint32_t now_ms) {
  * @note 不修改车辆状态。
  */
 void app_car_process_log(app_car_state_t *state_h, uint32_t now_ms) {
-  if (state_h->last_log_ms != 0U &&
-      (uint32_t)(now_ms - state_h->last_log_ms) < APP_CAR_LOG_PERIOD_MS) {
+  if (!Sys_Time_TryStepPeriodicMs(&state_h->last_log_ms, now_ms, APP_CAR_LOG_PERIOD_MS)) {
     return;
   }
 
-  state_h->last_log_ms = now_ms;
   const app_car_dependencies_t *dependencies = state_h->dependencies_h;
+  app_car_heartbeat_t heartbeat = app_car_get_heartbeat(state_h);
   imu_status_t imu_status = {0};
   joycon_status_t joycon_status = {0};
   telemetry_status_t telemetry_status = {0};
@@ -120,6 +119,5 @@ void app_car_process_log(app_car_state_t *state_h, uint32_t now_ms) {
       (unsigned int)state_h->boot_state, (unsigned long)imu_status.error_count,
       (unsigned long)joycon_status.invalid_frames, (unsigned long)joycon_status.rx_overflow_count,
       (unsigned long)telemetry_status.dropped_frames,
-      (unsigned long)(state_h->control_heartbeat_valid ? now_ms - state_h->control_heartbeat_ms
-                                                       : 0U));
+      (unsigned long)(heartbeat.valid ? Sys_Time_ElapsedMs(heartbeat.time_ms, now_ms) : 0U));
 }

@@ -10,6 +10,27 @@
 
 #include <stdbool.h>
 
+/** @brief 单精度圆周率常量（无量纲）。 */
+#define SYS_PI 3.14159265358979323846f
+
+/**
+ * @brief 将角度从度换算为弧度。
+ * @param angle_deg 角度值，单位 deg。
+ * @return 对应的弧度值，单位 rad。
+ * @post 纯函数，不修改共享状态。
+ * @note 不做范围归一化；可在任务或 ISR 中调用。
+ */
+static inline float Sys_Angle_DegToRad(float angle_deg) { return angle_deg * (SYS_PI / 180.0f); }
+
+/**
+ * @brief 将角度从弧度换算为度。
+ * @param angle_rad 角度值，单位 rad。
+ * @return 对应的角度值，单位 deg。
+ * @post 纯函数，不修改共享状态。
+ * @note 不做范围归一化；可在任务或 ISR 中调用。
+ */
+static inline float Sys_Angle_RadToDeg(float angle_rad) { return angle_rad * (180.0f / SYS_PI); }
+
 /**
  * @brief 把有限角度归一化到 [-180, 180] deg。
  * @param angle_deg 待归一化角度，单位 deg；必须为有限值。
@@ -36,4 +57,4 @@ bool Sys_Angle_WrapRadians(float angle_rad, float *wrapped_rad);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_SYSTEM_ANGLE_H
+#endif // LAYERED_EMBEDDED_C_SYSTEM_ANGLE_H

@@ -13,8 +13,8 @@
 #define LAYERED_EMBEDDED_C_IMU_WHT101_UART_H
 
 #include "imu_base.h"
-#include "system_byte_ring.h"
 #include "uart_base.h"
+#include "uart_rx_stream.h"
 #include <stdbool.h>
 
 /**
@@ -34,10 +34,10 @@ typedef enum imu_wht101_state_e {
  * @note 数值为设备协议的寄存器编号，不是内存地址；写入前需先发送 KEY 解锁。
  */
 typedef enum imu_wht101_reg_e {
-  IMU_WHT101_REG_SAVE    = 0x00,
-  IMU_WHT101_REG_RRATE   = 0x03,
-  IMU_WHT101_REG_BAUD    = 0x04,
-  IMU_WHT101_REG_KEY     = 0x69,
+  IMU_WHT101_REG_SAVE = 0x00,
+  IMU_WHT101_REG_RRATE = 0x03,
+  IMU_WHT101_REG_BAUD = 0x04,
+  IMU_WHT101_REG_KEY = 0x69,
   IMU_WHT101_REG_CALIYAW = 0x76,
   IMU_WHT101_REG_MANCALI = 0xA6,
 } imu_wht101_reg_t;
@@ -47,7 +47,7 @@ typedef enum imu_wht101_reg_e {
  * @note 数值是写入 RRATE 寄存器的原始配置码，不是以 Hz 为单位的频率。
  */
 typedef enum imu_wht101_rate_e {
-  IMU_RATE_10HZ  = 0x06,
+  IMU_RATE_10HZ = 0x06,
   IMU_RATE_100HZ = 0x09,
   IMU_RATE_200HZ = 0x0B,
 } imu_wht101_rate_t;
@@ -65,23 +65,23 @@ typedef enum imu_wht101_config_state_e {
   IMU_WHT101_CONFIG_RATE_WAIT_SAVE,
 } imu_wht101_config_state_t;
 
-#define IMU_WHT101_SCALE      32768.0f
-#define IMU_WHT101_YAW_RANGE  180.0f
+#define IMU_WHT101_SCALE 32768.0f
+#define IMU_WHT101_YAW_RANGE 180.0f
 #define IMU_WHT101_GYRO_RANGE 2000.0f
 
-#define IMU_WHT101_FRAME_HEADER    0x55
-#define IMU_WHT101_FRAME_LEN       11
-#define IMU_WHT101_TYPE_GYRO       0x52
-#define IMU_WHT101_TYPE_ANGLE      0x53
-#define IMU_WHT101_WRITE_HDR1      0xFF
-#define IMU_WHT101_WRITE_HDR2      0xAA
-#define IMU_WHT101_KEY_UNLOCK      0xB588
+#define IMU_WHT101_FRAME_HEADER 0x55
+#define IMU_WHT101_FRAME_LEN 11
+#define IMU_WHT101_TYPE_GYRO 0x52
+#define IMU_WHT101_TYPE_ANGLE 0x53
+#define IMU_WHT101_WRITE_HDR1 0xFF
+#define IMU_WHT101_WRITE_HDR2 0xAA
+#define IMU_WHT101_KEY_UNLOCK 0xB588
 #define IMU_WHT101_DELAY_UNLOCK_MS 200
-#define IMU_WHT101_DELAY_SAVE_MS   500
-#define IMU_WHT101_DELAY_WRITE_MS  100
-#define IMU_WHT101_WRITE_LEN       5
-#define IMU_WHT101_SAVE_VALUE      0x0000
-#define IMU_WHT101_CALIYAW_ZERO    0x0000
+#define IMU_WHT101_DELAY_SAVE_MS 500
+#define IMU_WHT101_DELAY_WRITE_MS 100
+#define IMU_WHT101_WRITE_LEN 5
+#define IMU_WHT101_SAVE_VALUE 0x0000
+#define IMU_WHT101_CALIYAW_ZERO 0x0000
 
 #define IMU_WHT101_RX_BUFFER_SIZE 256u
 
@@ -110,14 +110,11 @@ typedef struct imu_wht101_uart_s {
   volatile bool config_failed;
   uint8_t rate_pending_value;
 
-  uint8_t rx_byte;
   uint8_t rx_buffer[IMU_WHT101_RX_BUFFER_SIZE];
-  sys_byte_ring_t rx_ring;
+  uart_rx_stream_t rx_stream;
 
-  volatile uint32_t rx_byte_count;
   volatile uint32_t rx_error_count;
   volatile uint32_t rx_checksum_error_count;
-  volatile bool rx_resync_requested;
 } imu_wht101_uart_t;
 
 /**
@@ -132,12 +129,8 @@ typedef struct imu_wht101_uart_s {
  * @note 必须在任务上下文、Start 之前调用；重复初始化会丢弃未完成的配置请求状态。
  * @warning 不分配动态内存；对象、name、uart_h 和 filter_h 的生命周期必须覆盖整个使用期。
  */
-void Dev_IMU_WHT101_UART_Init(
-  imu_wht101_uart_t *imu_h,
-  const char *name,
-  uart_base_t *uart_h,
-  filter_base_t *filter_h
-);
+void Dev_IMU_WHT101_UART_Init(imu_wht101_uart_t *imu_h, const char *name, uart_base_t *uart_h,
+                              filter_base_t *filter_h);
 /**
  * @brief 向 WHT101 帧解析状态机输入一个字节。
  * @param imu_h 已 Init 且已 Start 的对象；由 process 或主机测试调用。
@@ -149,16 +142,17 @@ void Dev_IMU_WHT101_UART_Init(
  * @note 失败不返回错误码；提交失败由 imu_base 内部断言/过滤处理，本函数不重试。
  * @warning 必须在 Start 之后调用，否则 Dev_IMU_Base_SubmitSample 断言失败。
  */
-void Dev_IMU_WHT101_UART_FeedByte      (imu_wht101_uart_t *imu_h, uint8_t byte, uint32_t now_ms);
+void Dev_IMU_WHT101_UART_FeedByte(imu_wht101_uart_t *imu_h, uint8_t byte, uint32_t now_ms);
 /**
  * @brief 请求设备侧设置 yaw 零点。
  * @param imu_h 已 Start 的对象；请求只置位 pending 标志。
  * @pre imu_h 非空且 is_started 为 true；只能由单一任务调用，不得与 process 并发。
  * @post zero_pending 置 true，config_failed 清零；实际“解锁、CALIYAW、保存”由后续 process 推进。
- * @note 非阻塞，不等待设备应答，也不改变 imu_base 的 yaw 偏移；成功/失败通过状态快照的 is_busy 与 last_request_failed 观察。
+ * @note 非阻塞，不等待设备应答，也不改变 imu_base 的 yaw 偏移；成功/失败通过状态快照的 is_busy 与
+ * last_request_failed 观察。
  * @warning 若已有配置事务进行中，本请求会等到该事务空闲后执行；不会取消正在进行的写入。
  */
-void Dev_IMU_WHT101_UART_SetZero       (imu_wht101_uart_t *imu_h);
+void Dev_IMU_WHT101_UART_SetZero(imu_wht101_uart_t *imu_h);
 /**
  * @brief 请求设置设备输出速率。
  * @param imu_h 已 Start 的对象；请求只缓存速率并置位 pending 标志。
@@ -170,8 +164,8 @@ void Dev_IMU_WHT101_UART_SetZero       (imu_wht101_uart_t *imu_h);
  * @note 非阻塞；若置零请求同时存在，置零事务先完成；成功/失败通过状态快照观察。
  * @warning 请求不排队多次：新的调用会覆盖尚未处理的 rate_pending_value。
  */
-void Dev_IMU_WHT101_UART_SetOutputRate (imu_wht101_uart_t *imu_h, uint8_t rate);
+void Dev_IMU_WHT101_UART_SetOutputRate(imu_wht101_uart_t *imu_h, uint8_t rate);
 
 /** @} */
 
-#endif //LAYERED_EMBEDDED_C_IMU_WHT101_UART_H
+#endif // LAYERED_EMBEDDED_C_IMU_WHT101_UART_H

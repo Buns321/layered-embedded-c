@@ -16,6 +16,7 @@
 #include "justfloat_uart.h"
 #include "motor_tb6612.h"
 #include "policy_omni_kinematics.h"
+#include "system_angle.h"
 #include "system_log.h"
 #include "uart_port.h"
 #include <stdbool.h>
@@ -23,7 +24,20 @@
 #include <string.h>
 
 #define CAR_BOARD_WHEEL_COUNT CHASSIS_OMNI_WHEEL_COUNT
-#define CAR_BOARD_PI 3.14159265358979323846f
+
+typedef struct car_board_wheel_hw_s {
+  const char *encoder_name;
+  const char *controller_name;
+  const char *motor_name;
+  platform_encoder_instance_t encoder_instance;
+  platform_pwm_channel_t pwm_channel;
+  platform_gpio_port_t ain1_port;
+  uint16_t ain1_pin;
+  platform_gpio_port_t ain2_port;
+  uint16_t ain2_pin;
+  platform_gpio_port_t stby_port;
+  uint16_t stby_pin;
+} car_board_wheel_hw_t;
 
 static encoder_tim_t s_encoders[CAR_BOARD_WHEEL_COUNT];
 static controller_pid_t s_pid[CAR_BOARD_WHEEL_COUNT];
@@ -41,25 +55,66 @@ static joycon_uart_t s_joycon;
 static app_car_dependencies_t s_dependencies;
 static bool s_initialized;
 
-static const platform_encoder_instance_t s_encoder_instances[CAR_BOARD_WHEEL_COUNT] = {
-    PLATFORM_ENCODER_TIM2,
-    PLATFORM_ENCODER_TIM3,
-    PLATFORM_ENCODER_TIM4,
-    PLATFORM_ENCODER_TIM5,
-};
-
-static const platform_pwm_channel_t s_pwm_channels[CAR_BOARD_WHEEL_COUNT] = {
-    PLATFORM_PWM_CHANNEL_1,
-    PLATFORM_PWM_CHANNEL_2,
-    PLATFORM_PWM_CHANNEL_3,
-    PLATFORM_PWM_CHANNEL_4,
+static const car_board_wheel_hw_t s_wheel_hw[CAR_BOARD_WHEEL_COUNT] = {
+    {
+        .encoder_name = "encoder_a",
+        .controller_name = "pid_a",
+        .motor_name = "motor_a",
+        .encoder_instance = PLATFORM_ENCODER_TIM2,
+        .pwm_channel = PLATFORM_PWM_CHANNEL_1,
+        .ain1_port = CAR_BOARD_AIN1_A_PORT,
+        .ain1_pin = CAR_BOARD_AIN1_A_PIN,
+        .ain2_port = CAR_BOARD_AIN2_A_PORT,
+        .ain2_pin = CAR_BOARD_AIN2_A_PIN,
+        .stby_port = CAR_BOARD_STBY_AB_PORT,
+        .stby_pin = CAR_BOARD_STBY_AB_PIN,
+    },
+    {
+        .encoder_name = "encoder_b",
+        .controller_name = "pid_b",
+        .motor_name = "motor_b",
+        .encoder_instance = PLATFORM_ENCODER_TIM3,
+        .pwm_channel = PLATFORM_PWM_CHANNEL_2,
+        .ain1_port = CAR_BOARD_AIN1_B_PORT,
+        .ain1_pin = CAR_BOARD_AIN1_B_PIN,
+        .ain2_port = CAR_BOARD_AIN2_B_PORT,
+        .ain2_pin = CAR_BOARD_AIN2_B_PIN,
+        .stby_port = CAR_BOARD_STBY_AB_PORT,
+        .stby_pin = CAR_BOARD_STBY_AB_PIN,
+    },
+    {
+        .encoder_name = "encoder_c",
+        .controller_name = "pid_c",
+        .motor_name = "motor_c",
+        .encoder_instance = PLATFORM_ENCODER_TIM4,
+        .pwm_channel = PLATFORM_PWM_CHANNEL_3,
+        .ain1_port = CAR_BOARD_AIN1_C_PORT,
+        .ain1_pin = CAR_BOARD_AIN1_C_PIN,
+        .ain2_port = CAR_BOARD_AIN2_C_PORT,
+        .ain2_pin = CAR_BOARD_AIN2_C_PIN,
+        .stby_port = CAR_BOARD_STBY_CD_PORT,
+        .stby_pin = CAR_BOARD_STBY_CD_PIN,
+    },
+    {
+        .encoder_name = "encoder_d",
+        .controller_name = "pid_d",
+        .motor_name = "motor_d",
+        .encoder_instance = PLATFORM_ENCODER_TIM5,
+        .pwm_channel = PLATFORM_PWM_CHANNEL_4,
+        .ain1_port = CAR_BOARD_AIN1_D_PORT,
+        .ain1_pin = CAR_BOARD_AIN1_D_PIN,
+        .ain2_port = CAR_BOARD_AIN2_D_PORT,
+        .ain2_pin = CAR_BOARD_AIN2_D_PIN,
+        .stby_port = CAR_BOARD_STBY_CD_PORT,
+        .stby_pin = CAR_BOARD_STBY_CD_PIN,
+    },
 };
 
 static const float s_wheel_theta_rad[CAR_BOARD_WHEEL_COUNT] = {
-    CAR_BOARD_PI * 1.75f,
-    CAR_BOARD_PI * 1.25f,
-    CAR_BOARD_PI * 0.75f,
-    CAR_BOARD_PI * 0.25f,
+    SYS_PI * 1.75f,
+    SYS_PI * 1.25f,
+    SYS_PI * 0.75f,
+    SYS_PI * 0.25f,
 };
 
 static const float s_wheel_sign[CAR_BOARD_WHEEL_COUNT] = {
@@ -68,131 +123,6 @@ static const float s_wheel_sign[CAR_BOARD_WHEEL_COUNT] = {
     1.0f,
     1.0f,
 };
-
-static const char *const s_encoder_names[CAR_BOARD_WHEEL_COUNT] = {
-    "encoder_a",
-    "encoder_b",
-    "encoder_c",
-    "encoder_d",
-};
-
-static const char *const s_controller_names[CAR_BOARD_WHEEL_COUNT] = {
-    "pid_a",
-    "pid_b",
-    "pid_c",
-    "pid_d",
-};
-
-static const char *const s_motor_names[CAR_BOARD_WHEEL_COUNT] = {
-    "motor_a",
-    "motor_b",
-    "motor_c",
-    "motor_d",
-};
-
-/**
- * @brief 返回 AIN1 GPIO 端口映射。
- * @param wheel 轮位下标，范围 0..3。
- * @return 对应端口；非法下标回退到轮位 A。
- * @note 私有纯函数。
- */
-static platform_gpio_port_t car_board_ain1_port(uint8_t wheel) {
-  switch (wheel) {
-  case 0U:
-    return CAR_BOARD_AIN1_A_PORT;
-  case 1U:
-    return CAR_BOARD_AIN1_B_PORT;
-  case 2U:
-    return CAR_BOARD_AIN1_C_PORT;
-  case 3U:
-    return CAR_BOARD_AIN1_D_PORT;
-  default:
-    return CAR_BOARD_AIN1_A_PORT;
-  }
-}
-
-/**
- * @brief 返回 AIN1 引脚映射。
- * @param wheel 轮位下标，范围 0..3。
- * @return 对应引脚掩码；非法下标回退到轮位 A。
- * @note 私有纯函数。
- */
-static uint16_t car_board_ain1_pin(uint8_t wheel) {
-  switch (wheel) {
-  case 0U:
-    return CAR_BOARD_AIN1_A_PIN;
-  case 1U:
-    return CAR_BOARD_AIN1_B_PIN;
-  case 2U:
-    return CAR_BOARD_AIN1_C_PIN;
-  case 3U:
-    return CAR_BOARD_AIN1_D_PIN;
-  default:
-    return CAR_BOARD_AIN1_A_PIN;
-  }
-}
-
-/**
- * @brief 返回 AIN2 GPIO 端口映射。
- * @param wheel 轮位下标，范围 0..3。
- * @return 对应端口；非法下标回退到轮位 A。
- * @note 私有纯函数。
- */
-static platform_gpio_port_t car_board_ain2_port(uint8_t wheel) {
-  switch (wheel) {
-  case 0U:
-    return CAR_BOARD_AIN2_A_PORT;
-  case 1U:
-    return CAR_BOARD_AIN2_B_PORT;
-  case 2U:
-    return CAR_BOARD_AIN2_C_PORT;
-  case 3U:
-    return CAR_BOARD_AIN2_D_PORT;
-  default:
-    return CAR_BOARD_AIN2_A_PORT;
-  }
-}
-
-/**
- * @brief 返回 AIN2 引脚映射。
- * @param wheel 轮位下标，范围 0..3。
- * @return 对应引脚掩码；非法下标回退到轮位 A。
- * @note 私有纯函数。
- */
-static uint16_t car_board_ain2_pin(uint8_t wheel) {
-  switch (wheel) {
-  case 0U:
-    return CAR_BOARD_AIN2_A_PIN;
-  case 1U:
-    return CAR_BOARD_AIN2_B_PIN;
-  case 2U:
-    return CAR_BOARD_AIN2_C_PIN;
-  case 3U:
-    return CAR_BOARD_AIN2_D_PIN;
-  default:
-    return CAR_BOARD_AIN2_A_PIN;
-  }
-}
-
-/**
- * @brief 返回指定轮位的共享 STBY 端口。
- * @param wheel 轮位下标，范围 0..3。
- * @return A/B 两轮返回 AB 组端口，C/D 两轮返回 CD 组端口。
- * @note 私有纯函数。
- */
-static platform_gpio_port_t car_board_stby_port(uint8_t wheel) {
-  return wheel < 2U ? CAR_BOARD_STBY_AB_PORT : CAR_BOARD_STBY_CD_PORT;
-}
-
-/**
- * @brief 返回指定轮位的共享 STBY 引脚。
- * @param wheel 轮位下标，范围 0..3。
- * @return A/B 两轮返回 AB 组引脚，C/D 两轮返回 CD 组引脚。
- * @note 私有纯函数。
- */
-static uint16_t car_board_stby_pin(uint8_t wheel) {
-  return wheel < 2U ? CAR_BOARD_STBY_AB_PIN : CAR_BOARD_STBY_CD_PIN;
-}
 
 /**
  * @brief 初始化具体设备并填写小车 App 依赖。
@@ -247,38 +177,34 @@ platform_status_t Core_Board_Init(app_car_dependencies_t *dependencies) {
     return PLATFORM_STATUS_ERROR;
   }
 
+  motor_base_t *motor_h[CAR_BOARD_WHEEL_COUNT] = {0};
   for (uint8_t wheel = 0U; wheel < CAR_BOARD_WHEEL_COUNT; wheel++) {
-    status = Dev_Encoder_TIM_Init(&s_encoders[wheel], s_encoder_names[wheel],
-                                  s_encoder_instances[wheel]);
+    const car_board_wheel_hw_t *hw = &s_wheel_hw[wheel];
+    status = Dev_Encoder_TIM_Init(&s_encoders[wheel], hw->encoder_name, hw->encoder_instance);
     if (status != PLATFORM_STATUS_OK) {
       return status;
     }
 
-    Ctrl_PID_Init(&s_pid[wheel], s_controller_names[wheel], APP_CAR_PID_KP, APP_CAR_PID_KI,
+    Ctrl_PID_Init(&s_pid[wheel], hw->controller_name, APP_CAR_PID_KP, APP_CAR_PID_KI,
                   APP_CAR_PID_KD, APP_CAR_MAX_WHEEL_MPS, -APP_CAR_MAX_WHEEL_MPS,
                   (float)CAR_BOARD_PWM_MAX_DUTY, -(float)CAR_BOARD_PWM_MAX_DUTY,
                   APP_CAR_PID_MAX_INTEGRAL, APP_CAR_PID_DERIVATIVE_TAU_S);
 
     status = Dev_Motor_TB6612_Init(
-        &s_motors[wheel], s_motor_names[wheel], &s_pid[wheel].controller_base,
+        &s_motors[wheel], hw->motor_name, &s_pid[wheel].controller_base,
         &s_encoders[wheel].encoder_base, CAR_BOARD_COUNTS_PER_METER, APP_CAR_CONTROL_PERIOD_S, 0.0f,
-        CAR_BOARD_PWM_MAX_DUTY, CAR_BOARD_PWM_INSTANCE, s_pwm_channels[wheel],
-        car_board_ain1_port(wheel), car_board_ain1_pin(wheel), car_board_ain2_port(wheel),
-        car_board_ain2_pin(wheel), car_board_stby_port(wheel), car_board_stby_pin(wheel));
+        CAR_BOARD_PWM_MAX_DUTY, CAR_BOARD_PWM_INSTANCE, hw->pwm_channel, hw->ain1_port,
+        hw->ain1_pin, hw->ain2_port, hw->ain2_pin, hw->stby_port, hw->stby_pin);
     if (status != PLATFORM_STATUS_OK) {
       return status;
     }
+
+    motor_h[wheel] = &s_motors[wheel].motor_base;
+    s_dependencies.motor_h[wheel] = motor_h[wheel];
   }
 
   Policy_Omni_Kinematics_Init(&s_policy, "omni", CAR_BOARD_WHEEL_DISTANCE_M, s_wheel_theta_rad,
                               s_wheel_sign);
-
-  motor_base_t *motor_h[CAR_BOARD_WHEEL_COUNT] = {
-      &s_motors[0].motor_base,
-      &s_motors[1].motor_base,
-      &s_motors[2].motor_base,
-      &s_motors[3].motor_base,
-  };
 
   Chassis_Omni_Init(&s_chassis, "chassis", motor_h, &s_imu.imu_base, &s_policy.base,
                     APP_CAR_IMU_TIMEOUT_MS);
@@ -286,9 +212,6 @@ platform_status_t Core_Board_Init(app_car_dependencies_t *dependencies) {
   Dev_IMU_WHT101_UART_SetOutputRate(&s_imu, IMU_RATE_10HZ);
 
   s_dependencies.chassis_h = &s_chassis.base;
-  for (uint8_t wheel = 0U; wheel < CAR_BOARD_WHEEL_COUNT; wheel++) {
-    s_dependencies.motor_h[wheel] = &s_motors[wheel].motor_base;
-  }
   s_dependencies.motor_count = CAR_BOARD_WHEEL_COUNT;
   s_dependencies.imu_h = &s_imu.imu_base;
   s_dependencies.input_h = &s_joycon.base;

@@ -30,7 +30,7 @@ static filter_status_t filter_lowpass_init(filter_base_t *filter_h,
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
 
-  if (!SYS_ISFINITE(*default_time_constant_s) || *default_time_constant_s <= 0.0f) {
+  if (!SYS_IS_POS_FINITE(*default_time_constant_s)) {
     return FILTER_STATUS_INVALID_CONFIG;
   }
 
@@ -155,8 +155,7 @@ filter_status_t Filter_Lowpass_SetChannelTimeConstant(filter_lowpass_t *filter_h
   if (filter_h == NULL) {
     return FILTER_STATUS_INVALID_ARGUMENT;
   }
-  if (channel >= FILTER_CHANNEL_CAPACITY || !SYS_ISFINITE(time_constant_s) ||
-      time_constant_s <= 0.0f) {
+  if (channel >= FILTER_CHANNEL_CAPACITY || !SYS_IS_POS_FINITE(time_constant_s)) {
     return FILTER_STATUS_INVALID_CONFIG;
   }
 

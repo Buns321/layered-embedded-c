@@ -9,15 +9,15 @@
  */
 
 #include "filter_ekf.h"
+#include "system_angle.h"
 #include "system_critical.h"
 #include "system_math.h"
+#include "system_snapshot.h"
 #include <assert.h>
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
 
-#define FILTER_EKF_DEG_TO_RAD 0.01745329251994329577f
-#define FILTER_EKF_RAD_TO_DEG 57.295779513082320876f
 #define FILTER_EKF_IMU_YAW_CHANNEL 0u
 #define FILTER_EKF_IMU_ROLL_CHANNEL 1u
 #define FILTER_EKF_IMU_PITCH_CHANNEL 2u
@@ -38,9 +38,7 @@
  * @post 不修改 EKF 状态、配置、输入样本或全局状态。
  * @note 用于 EKF 噪声方差和正门限校验；纯函数，不分配动态内存。
  */
-static bool filter_ekf_valueispositivefinite(float value) {
-  return SYS_ISFINITE(value) && value > 0.0f;
-}
+static bool filter_ekf_valueispositivefinite(float value) { return SYS_IS_POS_FINITE(value); }
 
 /**
  * @brief 校验 EKF 配置范围和有限性。
@@ -273,9 +271,9 @@ static void filter_ekf_coreupdate(filter_ekf_t *filter_h, const float gyro_radps
  * @note 内部角度为 rad，输出边界转为 deg；不修改角速度通道或时间戳，不分配动态内存。
  */
 static void filter_ekf_publishattitude(filter_ekf_t *filter_h, filter_sample_t *sample) {
-  float yaw_deg = filter_h->state.yaw_rad * FILTER_EKF_RAD_TO_DEG;
-  float roll_deg = filter_h->state.roll_rad * FILTER_EKF_RAD_TO_DEG;
-  float pitch_deg = filter_h->state.pitch_rad * FILTER_EKF_RAD_TO_DEG;
+  float yaw_deg = Sys_Angle_RadToDeg(filter_h->state.yaw_rad);
+  float roll_deg = Sys_Angle_RadToDeg(filter_h->state.roll_rad);
+  float pitch_deg = Sys_Angle_RadToDeg(filter_h->state.pitch_rad);
 
   if (filter_h->state.valid && !filter_h->state.placeholder) {
     (void)Filter_Sample_WriteFiniteChannel(sample, FILTER_EKF_IMU_YAW_CHANNEL, yaw_deg);
@@ -333,9 +331,9 @@ static void filter_ekf_update(filter_base_t *filter_h, filter_sample_t *sample) 
   }
 
   float gyro_radps[3] = {
-      sample->value[FILTER_EKF_IMU_GYRO_X_CHANNEL] * FILTER_EKF_DEG_TO_RAD,
-      sample->value[FILTER_EKF_IMU_GYRO_Y_CHANNEL] * FILTER_EKF_DEG_TO_RAD,
-      sample->value[FILTER_EKF_IMU_GYRO_Z_CHANNEL] * FILTER_EKF_DEG_TO_RAD,
+      Sys_Angle_DegToRad(sample->value[FILTER_EKF_IMU_GYRO_X_CHANNEL]),
+      Sys_Angle_DegToRad(sample->value[FILTER_EKF_IMU_GYRO_Y_CHANNEL]),
+      Sys_Angle_DegToRad(sample->value[FILTER_EKF_IMU_GYRO_Z_CHANNEL]),
   };
   float accel_mps2[3] = {
       sample->value[FILTER_EKF_IMU_ACCEL_X_CHANNEL],
@@ -455,9 +453,7 @@ void Filter_Ekf_ResetParameters(filter_ekf_t *filter_h) {
 void Filter_Ekf_GetConfig(const filter_ekf_t *filter_h, filter_ekf_config_t *config) {
   assert(filter_h && config);
 
-  Sys_Critical_Enter();
-  *config = filter_h->config;
-  Sys_Critical_Exit();
+  SYS_SNAPSHOT_READ(config, &filter_h->config);
 }
 
 /**
@@ -471,7 +467,5 @@ void Filter_Ekf_GetConfig(const filter_ekf_t *filter_h, filter_ekf_config_t *con
 void Filter_Ekf_GetState(const filter_ekf_t *filter_h, filter_ekf_state_t *state) {
   assert(filter_h && state);
 
-  Sys_Critical_Enter();
-  *state = filter_h->state;
-  Sys_Critical_Exit();
+  SYS_SNAPSHOT_READ(state, &filter_h->state);
 }

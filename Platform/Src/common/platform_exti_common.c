@@ -4,6 +4,7 @@
  * @ingroup platform
  */
 
+#include "platform_callback_internal.h"
 #include "platform_exti.h"
 #include "platform_exti_backend.h"
 #include <stdbool.h>
@@ -21,11 +22,7 @@ static bool exti_cb_registered[PLATFORM_EXTI_LINE_COUNT];
  * @note 纯映射函数，不访问硬件或共享状态，可从任务或 ISR 上下文调用。
  */
 static bool platform_exti_pin_to_index(uint16_t pin, uint8_t *index) {
-  if (
-    pin == 0U ||
-    (pin & (uint16_t)(pin - 1U)) != 0U ||
-    index == NULL
-  ) {
+  if (pin == 0U || (pin & (uint16_t)(pin - 1U)) != 0U || index == NULL) {
     return false;
   }
 
@@ -53,21 +50,13 @@ static bool platform_exti_pin_to_index(uint16_t pin, uint8_t *index) {
  * @note 一个 EXTI 线只允许一个回调所有者，不支持静默覆盖。
  * @note cb 只需在调用期间有效，context 生命周期由调用方保证；不分配内存。
  */
-platform_status_t Platform_EXTI_RegisterCallback(
-  uint16_t GPIO_Pin,
-  const platform_exti_callback_binding_t *cb
-) {
+platform_status_t Platform_EXTI_RegisterCallback(uint16_t GPIO_Pin,
+                                                 const platform_exti_callback_binding_t *cb) {
   uint8_t idx;
   if (cb == NULL || !platform_exti_pin_to_index(GPIO_Pin, &idx)) {
     return PLATFORM_STATUS_INVALID_ARGUMENT;
   }
-  if (exti_cb_registered[idx]) {
-    return PLATFORM_STATUS_BUSY;
-  }
-
-  exti_cb[idx] = *cb;
-  exti_cb_registered[idx] = true;
-  return PLATFORM_STATUS_OK;
+  return platform_callback_register_slot(&exti_cb_registered[idx], &exti_cb[idx], cb, sizeof(*cb));
 }
 
 /**
@@ -79,10 +68,7 @@ platform_status_t Platform_EXTI_RegisterCallback(
  */
 void platform_exti_dispatch_event(uint16_t GPIO_Pin) {
   uint8_t idx;
-  if (
-    !platform_exti_pin_to_index(GPIO_Pin, &idx) ||
-    !exti_cb_registered[idx]
-  ) {
+  if (!platform_exti_pin_to_index(GPIO_Pin, &idx) || !exti_cb_registered[idx]) {
     return;
   }
   if (exti_cb[idx].exti_cb != NULL) {

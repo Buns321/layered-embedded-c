@@ -18,29 +18,8 @@
 #define FIREWATER_MAX_SCALED_VALUE 1000000000.0f
 
 static const uint32_t s_pow10[] = {
-  1u, 10u, 100u, 1000u, 10000u, 100000u, 1000000u,
+    1u, 10u, 100u, 1000u, 10000u, 100000u, 1000000u,
 };
-
-/**
- * @brief 发送完成后释放忙状态并通知完成。
- * @param uart_h 产生完成事件的 UART 基类视图；本回调不使用其内容，但必须非 NULL。
- * @param context 初始化时注册的 firewater_uart_t 借用指针，不得为 NULL。
- * @pre context 指向已初始化且正等待本次 TX 完成的对象。
- * @post sent_frames 自增 1（按 32 位回绕），busy 置为 false，允许下一次发送。
- * @note 在 TX 完成中断上下文执行；不阻塞、不分配动态内存、不复制发送缓冲区。
- * @warning 只允许一个发送任务与 TX 中断竞争状态；不得在回调中再次启动发送。
- */
-static void dev_firewater_uart_ontxcplt(
-  uart_base_t *uart_h,
-  void *context
-) {
-  (void)uart_h;
-  assert(context);
-
-  firewater_uart_t *firewater_uart_h = (firewater_uart_t *)context;
-  firewater_uart_h->sent_frames++;
-  firewater_uart_h->busy = false;
-}
 
 /**
  * @brief 向容量受限缓冲区追加单字节。
@@ -54,12 +33,8 @@ static void dev_firewater_uart_ontxcplt(
  * @post 成功时新字节位于 buffer[*length - 1]，且不写入字符串结束符。
  * @note 不做并发保护；调用方必须保证同一缓冲区只有一个写者。
  */
-static bool dev_firewater_uart_appendchar(
-  uint8_t *buffer,
-  uint32_t capacity,
-  uint32_t *length,
-  char value
-) {
+static bool dev_firewater_uart_appendchar(uint8_t *buffer, uint32_t capacity, uint32_t *length,
+                                          char value) {
   if (*length >= capacity) {
     return false;
   }
@@ -81,18 +56,11 @@ static bool dev_firewater_uart_appendchar(
  * @post 成功时不复制结尾 NUL，length 指向下一个可写字节。
  * @note 缓冲区不做并发保护；内存不足时整段字符串原子拒绝。
  */
-static bool dev_firewater_uart_appendstring(
-  uint8_t *buffer,
-  uint32_t capacity,
-  uint32_t *length,
-  const char *value
-) {
+static bool dev_firewater_uart_appendstring(uint8_t *buffer, uint32_t capacity, uint32_t *length,
+                                            const char *value) {
   uint32_t value_length = (uint32_t)strlen(value);
 
-  if (
-    *length > capacity ||
-    value_length > capacity - *length
-  ) {
+  if (*length > capacity || value_length > capacity - *length) {
     return false;
   }
 
@@ -113,12 +81,8 @@ static bool dev_firewater_uart_appendstring(
  * @post 成功时不写入前导零或字符串结束符。
  * @note 只使用固定 10 字节栈空间，不分配动态内存；调用方负责串行化缓冲区访问。
  */
-static bool dev_firewater_uart_appendunsigned(
-  uint8_t *buffer,
-  uint32_t capacity,
-  uint32_t *length,
-  uint32_t value
-) {
+static bool dev_firewater_uart_appendunsigned(uint8_t *buffer, uint32_t capacity, uint32_t *length,
+                                              uint32_t value) {
   char digits[10];
   uint32_t digit_count = 0u;
 
@@ -127,10 +91,7 @@ static bool dev_firewater_uart_appendunsigned(
     value /= 10u;
   } while (value != 0u);
 
-  if (
-    *length > capacity ||
-    digit_count > capacity - *length
-  ) {
+  if (*length > capacity || digit_count > capacity - *length) {
     return false;
   }
 
@@ -155,13 +116,8 @@ static bool dev_firewater_uart_appendunsigned(
  *       失败时 length 可能已因缓冲区耗尽而前进并留下部分前缀，调用方不得发送该帧。
  * @note 不分配动态内存；调用方负责串行化缓冲区访问并丢弃任何失败编码。
  */
-static bool dev_firewater_uart_appendvalue(
-  uint8_t *buffer,
-  uint32_t capacity,
-  uint32_t *length,
-  float value,
-  uint8_t precision
-) {
+static bool dev_firewater_uart_appendvalue(uint8_t *buffer, uint32_t capacity, uint32_t *length,
+                                           float value, uint8_t precision) {
   if (!SYS_ISFINITE(value) || precision > FIREWATER_MAX_PRECISION) {
     return false;
   }
@@ -169,20 +125,14 @@ static bool dev_firewater_uart_appendvalue(
   uint32_t scale = s_pow10[precision];
   float scaled_value = value * (float)scale;
 
-  if (
-    !SYS_ISFINITE(scaled_value) ||
-    SYS_ABS(scaled_value) > FIREWATER_MAX_SCALED_VALUE
-  ) {
+  if (!SYS_ISFINITE(scaled_value) || SYS_ABS(scaled_value) > FIREWATER_MAX_SCALED_VALUE) {
     return false;
   }
 
-  int32_t integer_scaled = scaled_value >= 0.0f
-    ? (int32_t)(scaled_value + 0.5f)
-    : (int32_t)(scaled_value - 0.5f);
+  int32_t integer_scaled =
+      scaled_value >= 0.0f ? (int32_t)(scaled_value + 0.5f) : (int32_t)(scaled_value - 0.5f);
 
-  uint32_t magnitude = integer_scaled < 0
-    ? (uint32_t)(-integer_scaled)
-    : (uint32_t)integer_scaled;
+  uint32_t magnitude = integer_scaled < 0 ? (uint32_t)(-integer_scaled) : (uint32_t)integer_scaled;
 
   if (integer_scaled < 0) {
     if (!dev_firewater_uart_appendchar(buffer, capacity, length, '-')) {
@@ -193,11 +143,7 @@ static bool dev_firewater_uart_appendvalue(
   uint32_t integer_part = magnitude / scale;
   uint32_t decimal_part = magnitude % scale;
 
-  if (!dev_firewater_uart_appendunsigned(
-        buffer,
-        capacity,
-        length,
-        integer_part)) {
+  if (!dev_firewater_uart_appendunsigned(buffer, capacity, length, integer_part)) {
     return false;
   }
 
@@ -233,11 +179,8 @@ static bool dev_firewater_uart_appendvalue(
  *       失败时 frame_size 不变，tx_buffer 内容未定义。缓冲区所有权始终归对象。
  * @note 仅执行 CPU 编码，不启动 UART、不修改 busy；非线程安全，仅由单一发送任务调用。
  */
-static bool dev_firewater_uart_encode(
-  firewater_uart_t *firewater_uart_h,
-  const telemetry_sample_t *sample,
-  uint32_t *frame_size
-) {
+static bool dev_firewater_uart_encode(firewater_uart_t *firewater_uart_h,
+                                      const telemetry_sample_t *sample, uint32_t *frame_size) {
   uint32_t length = 0u;
   bool has_value = false;
 
@@ -248,33 +191,19 @@ static bool dev_firewater_uart_encode(
     }
 
     if (has_value) {
-      if (!dev_firewater_uart_appendchar(
-            firewater_uart_h->tx_buffer,
-            FIREWATER_UART_TX_CAPACITY,
-            &length,
-            ',')) {
+      if (!dev_firewater_uart_appendchar(firewater_uart_h->tx_buffer, FIREWATER_UART_TX_CAPACITY,
+                                         &length, ',')) {
         return false;
       }
     }
 
-    if (
-      !dev_firewater_uart_appendstring(
-        firewater_uart_h->tx_buffer,
-        FIREWATER_UART_TX_CAPACITY,
-        &length,
-        firewater_uart_h->channel_names[channel]) ||
-      !dev_firewater_uart_appendchar(
-        firewater_uart_h->tx_buffer,
-        FIREWATER_UART_TX_CAPACITY,
-        &length,
-        ':') ||
-      !dev_firewater_uart_appendvalue(
-        firewater_uart_h->tx_buffer,
-        FIREWATER_UART_TX_CAPACITY,
-        &length,
-        sample->value[channel],
-        firewater_uart_h->precision)
-    ) {
+    if (!dev_firewater_uart_appendstring(firewater_uart_h->tx_buffer, FIREWATER_UART_TX_CAPACITY,
+                                         &length, firewater_uart_h->channel_names[channel]) ||
+        !dev_firewater_uart_appendchar(firewater_uart_h->tx_buffer, FIREWATER_UART_TX_CAPACITY,
+                                       &length, ':') ||
+        !dev_firewater_uart_appendvalue(firewater_uart_h->tx_buffer, FIREWATER_UART_TX_CAPACITY,
+                                        &length, sample->value[channel],
+                                        firewater_uart_h->precision)) {
       return false;
     }
 
@@ -285,11 +214,8 @@ static bool dev_firewater_uart_encode(
     return false;
   }
 
-  if (!dev_firewater_uart_appendchar(
-        firewater_uart_h->tx_buffer,
-        FIREWATER_UART_TX_CAPACITY,
-        &length,
-        '\n')) {
+  if (!dev_firewater_uart_appendchar(firewater_uart_h->tx_buffer, FIREWATER_UART_TX_CAPACITY,
+                                     &length, '\n')) {
     return false;
   }
 
@@ -309,45 +235,23 @@ static bool dev_firewater_uart_encode(
  * @note 不阻塞、不分配动态内存；只能由单一任务调用，TX 完成由中断回调更新状态。
  * @warning busy 为 true 时不得改写对象配置或复用 tx_buffer，否则会破坏正在发送的数据。
  */
-static dev_telemetry_status_t dev_firewater_uart_send(
-  telemetry_base_t *telemetry_h,
-  const telemetry_sample_t *sample
-) {
+static dev_telemetry_status_t dev_firewater_uart_send(telemetry_base_t *telemetry_h,
+                                                      const telemetry_sample_t *sample) {
   assert(telemetry_h && sample);
 
   firewater_uart_t *firewater_uart_h = (firewater_uart_t *)telemetry_h;
 
-  if (firewater_uart_h->busy) {
-    firewater_uart_h->dropped_frames++;
+  if (!Dev_TelemetryUartTx_TryBegin(&firewater_uart_h->tx)) {
     return DEV_TELEMETRY_BUSY;
   }
 
   uint32_t frame_size = 0u;
   if (!dev_firewater_uart_encode(firewater_uart_h, sample, &frame_size)) {
-    firewater_uart_h->error_count++;
+    Dev_TelemetryUartTx_RecordError(&firewater_uart_h->tx);
     return DEV_TELEMETRY_ERROR;
   }
 
-  firewater_uart_h->busy = true;
-  dev_uart_status_t status = Dev_UART_TransmitDMA(
-    firewater_uart_h->uart_h,
-    firewater_uart_h->tx_buffer,
-    (uint16_t)frame_size
-  );
-
-  if (status != DEV_UART_OK) {
-    firewater_uart_h->busy = false;
-
-    if (status == DEV_UART_BUSY) {
-      firewater_uart_h->dropped_frames++;
-      return DEV_TELEMETRY_BUSY;
-    }
-
-    firewater_uart_h->error_count++;
-    return DEV_TELEMETRY_ERROR;
-  }
-
-  return DEV_TELEMETRY_OK;
+  return Dev_TelemetryUartTx_SubmitDMA(&firewater_uart_h->tx, (uint16_t)frame_size);
 }
 
 /**
@@ -356,27 +260,19 @@ static dev_telemetry_status_t dev_firewater_uart_send(
  * @param status 状态输出缓冲区，不得为 NULL；所有权归调用方。
  * @pre status 至少可写一个 telemetry_status_t。
  * @post 写入 is_busy、sent_frames、dropped_frames 和 error_count；不修改对象。
- * @note 各字段读取期间可能与 TX 完成中断交错，快照不保证字段严格同属一个时刻；
- *       计数器按 uint32_t 回绕，不阻塞、不分配动态内存。
+ * @note 使用临界区读取发送状态机，不阻塞、不分配动态内存。
  */
-static void dev_firewater_uart_getstatus(
-  telemetry_base_t *telemetry_h,
-  telemetry_status_t *status
-) {
+static void dev_firewater_uart_getstatus(telemetry_base_t *telemetry_h,
+                                         telemetry_status_t *status) {
   assert(telemetry_h && status);
 
   firewater_uart_t *firewater_uart_h = (firewater_uart_t *)telemetry_h;
-  *status = (telemetry_status_t){
-    .is_busy = firewater_uart_h->busy,
-    .sent_frames = firewater_uart_h->sent_frames,
-    .dropped_frames = firewater_uart_h->dropped_frames,
-    .error_count = firewater_uart_h->error_count,
-  };
+  Dev_TelemetryUartTx_GetStatus(&firewater_uart_h->tx, status);
 }
 
 static const telemetry_ops_t telemetry_ops_firewater = {
-  .send       = dev_firewater_uart_send,
-  .get_status = dev_firewater_uart_getstatus,
+    .send = dev_firewater_uart_send,
+    .get_status = dev_firewater_uart_getstatus,
 };
 
 /**
@@ -395,51 +291,23 @@ static const telemetry_ops_t telemetry_ops_firewater = {
  * @warning 本对象取得 uart_h 的设备级回调槽所有权；不得再注册其他回调或并发初始化，
  *          也不得在已有 DMA 发送时调用，否则旧完成事件将无法归还给原所有者。
  */
-void Dev_FireWater_UART_Init(
-  firewater_uart_t *telemetry_h,
-  const char *name,
-  uart_base_t *uart_h,
-  const char *const channel_names[],
-  uint8_t channel_count,
-  uint8_t precision
-) {
-  assert(
-    telemetry_h &&
-    name &&
-    uart_h &&
-    channel_names &&
-    channel_count > 0u &&
-    channel_count <= TELEMETRY_CHANNEL_CAPACITY &&
-    precision <= FIREWATER_MAX_PRECISION
-  );
+void Dev_FireWater_UART_Init(firewater_uart_t *telemetry_h, const char *name, uart_base_t *uart_h,
+                             const char *const channel_names[], uint8_t channel_count,
+                             uint8_t precision) {
+  assert(telemetry_h && name && uart_h && channel_names && channel_count > 0u &&
+         channel_count <= TELEMETRY_CHANNEL_CAPACITY && precision <= FIREWATER_MAX_PRECISION);
 
   for (uint8_t channel = 0u; channel < channel_count; channel++) {
-    assert(
-      channel_names[channel] &&
-      channel_names[channel][0] != '\0' &&
-      strchr(channel_names[channel], ',') == NULL &&
-      strchr(channel_names[channel], ':') == NULL
-    );
+    assert(channel_names[channel] && channel_names[channel][0] != '\0' &&
+           strchr(channel_names[channel], ',') == NULL &&
+           strchr(channel_names[channel], ':') == NULL);
   }
 
-  Dev_Telemetry_Base_Init(
-    &telemetry_h->base,
-    name,
-    &telemetry_ops_firewater
-  );
+  Dev_Telemetry_Base_Init(&telemetry_h->base, name, &telemetry_ops_firewater);
 
-  telemetry_h->uart_h = uart_h;
   telemetry_h->channel_names = channel_names;
   telemetry_h->channel_count = channel_count;
   telemetry_h->precision = precision;
-  telemetry_h->busy = false;
-  telemetry_h->sent_frames = 0u;
-  telemetry_h->dropped_frames = 0u;
-  telemetry_h->error_count = 0u;
-
-  dev_uart_callbacks_t callbacks = {
-    .tx_complete_cb = dev_firewater_uart_ontxcplt,
-    .context = telemetry_h,
-  };
-  Dev_UART_RegisterCallback(uart_h, &callbacks);
+  Dev_TelemetryUartTx_Init(&telemetry_h->tx, uart_h, telemetry_h->tx_buffer,
+                           sizeof(telemetry_h->tx_buffer));
 }

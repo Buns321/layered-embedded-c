@@ -338,7 +338,9 @@ set(LAYERED_DEVICE_DRIVER_SOURCES
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/imu_wht101_uart.c
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/joycon_uart.c
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/justfloat_uart.c
+  ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/telemetry_uart_tx.c
   ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/uart_link.c
+  ${LAYERED_REPO_ROOT}/DeviceDrivers/Src/uart_rx_stream.c
 )
 
 if("gpio" IN_LIST LAYERED_PLATFORM_FEATURES)

@@ -11,6 +11,7 @@
 #include "joycon_uart.h"
 #include "system_critical.h"
 #include "system_math.h"
+#include "system_snapshot.h"
 #include <assert.h>
 #include <string.h>
 
@@ -244,47 +245,19 @@ static void joycon_publish_frame(joycon_uart_t *joycon_h, uint32_t now_ms) {
 }
 
 /**
- * @brief 重新挂接单字节中断接收，并记录失败。
- * @param joycon_h 已绑定 uart_h 的对象；rx_byte 是接收目标，挂接期间必须保持有效。
- * @pre joycon_h 与 uart_h 非空；可在任务或 UART 中断上下文调用。
- * @post Dev_UART_ReceiveIT 成功时清除 rx_rearm_pending；失败时置位并递增 rearm_error_count。
- * @note 不阻塞、不等待；UART 后端返回任何非 OK 状态都按待重挂处理。
- * @warning 中断与任务都可能调用本函数；rx_rearm_pending 为
- * volatile，但实现不做互斥，调用方需保证不在同一时刻并发重挂。
- */
-static void joycon_rearm_receive(joycon_uart_t *joycon_h) {
-  assert(joycon_h && joycon_h->uart_h);
-
-  dev_uart_status_t status = Dev_UART_ReceiveIT(joycon_h->uart_h, &joycon_h->rx_byte, 1u);
-
-  if (status == DEV_UART_OK) {
-    joycon_h->rx_rearm_pending = false;
-    return;
-  }
-
-  joycon_h->rx_rearm_pending = true;
-  joycon_h->rearm_error_count++;
-}
-
-/**
  * @brief UART 接收完成中断回调：入队单字节并重新挂接。
  * @param uart_h 触发事件的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 joycon_uart_t 指针，由 UART 后端原样回传。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post rx_byte_count 递增；字节环未满时写入一字节，满时递增自身的丢弃计数；随后尝试重挂接收。
+ * @post 接收流计数递增、单字节入队并尝试重挂接收。
  * @note 不在 ISR 中解析 ASCII，也不调用临界区或阻塞 API。
- * @warning 队列实际容量为 255 字节；溢出字节被丢弃，错误仅通过计数暴露。
  */
 static void joycon_rx_complete_cb(uart_base_t *uart_h, void *context) {
   joycon_uart_t *joycon_h = (joycon_uart_t *)context;
   assert(joycon_h && uart_h == joycon_h->uart_h);
   (void)uart_h;
 
-  joycon_h->rx_byte_count++;
-
-  (void)Sys_ByteRing_PushFromISR(&joycon_h->rx_ring, joycon_h->rx_byte);
-
-  joycon_rearm_receive(joycon_h);
+  Dev_UartRxStream_OnRxComplete(&joycon_h->rx_stream);
 }
 
 /**
@@ -292,17 +265,15 @@ static void joycon_rx_complete_cb(uart_base_t *uart_h, void *context) {
  * @param uart_h 触发错误的 UART 后端；必须等于对象保存的 uart_h。
  * @param context 注册时传入的 joycon_uart_t 指针。
  * @pre 回调和对象生命周期覆盖注册期；只在中断上下文执行。
- * @post uart_error_count 递增并尝试重挂接收；组帧状态和已发布快照保持不变。
- * @note 与 WHT101 不同，本回调不请求重新同步，ASCII 解析器可从下一字节继续组帧。
- * @warning 重挂失败只通过 rearm_error_count 与状态快照暴露，本回调无法通知上层。
+ * @post 错误计数递增并尝试重挂接收；组帧状态和已发布快照保持不变。
+ * @note 重挂失败通过 rearm_error_count 与状态快照暴露。
  */
 static void joycon_uart_error_cb(uart_base_t *uart_h, void *context) {
   joycon_uart_t *joycon_h = (joycon_uart_t *)context;
   assert(joycon_h && uart_h == joycon_h->uart_h);
   (void)uart_h;
 
-  joycon_h->uart_error_count++;
-  joycon_rearm_receive(joycon_h);
+  Dev_UartRxStream_OnError(&joycon_h->rx_stream);
 }
 
 /**
@@ -320,7 +291,8 @@ void Dev_JoyCon_UART_Init(joycon_uart_t *joycon_h, const char *name, uart_base_t
   assert(joycon_h && name && uart_h);
 
   (void)memset(joycon_h, 0, sizeof(*joycon_h));
-  assert(Sys_ByteRing_Init(&joycon_h->rx_ring, joycon_h->rx_buffer, sizeof(joycon_h->rx_buffer)));
+  assert(Dev_UartRxStream_Init(&joycon_h->rx_stream, uart_h, joycon_h->rx_buffer,
+                               sizeof(joycon_h->rx_buffer)));
   Dev_JoyCon_Base_Init(&joycon_h->base, name, &joycon_ops_uart);
   joycon_h->uart_h = uart_h;
 }
@@ -347,9 +319,7 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
 
   Dev_UART_RegisterCallback(joycon_h->uart_h, &callbacks);
   joycon_h->is_started = true;
-  joycon_rearm_receive(joycon_h);
-
-  if (joycon_h->rx_rearm_pending) {
+  if (Dev_UartRxStream_Rearm(&joycon_h->rx_stream) != DEV_UART_OK) {
     return DEV_UART_ERROR;
   }
 
@@ -368,12 +338,10 @@ dev_uart_status_t Dev_JoyCon_UART_Start(joycon_uart_t *joycon_h) {
 void Dev_JoyCon_UART_Process(joycon_uart_t *joycon_h, uint32_t now_ms) {
   assert(joycon_h && joycon_h->is_started);
 
-  if (joycon_h->rx_rearm_pending) {
-    joycon_rearm_receive(joycon_h);
-  }
+  Dev_UartRxStream_EnsureArmed(&joycon_h->rx_stream);
 
   uint8_t byte = 0u;
-  while (Sys_ByteRing_Pop(&joycon_h->rx_ring, &byte)) {
+  while (Dev_UartRxStream_Pop(&joycon_h->rx_stream, &byte)) {
     Dev_JoyCon_UART_FeedByte(joycon_h, byte, now_ms);
   }
 }
@@ -469,13 +437,9 @@ static bool dev_joycon_uart_getinputop(joycon_base_t *joycon_h, joycon_input_t *
   assert(joycon_h && input);
 
   joycon_uart_t *joycon_uart_h = (joycon_uart_t *)joycon_h;
+  SYS_SNAPSHOT_READ(input, &joycon_uart_h->input);
 
-  Sys_Critical_Enter();
-  *input = joycon_uart_h->input;
-  bool available = input->sequence != 0u;
-  Sys_Critical_Exit();
-
-  return available;
+  return input->sequence != 0u;
 }
 
 /**
@@ -508,12 +472,12 @@ static void dev_joycon_uart_getstatusop(joycon_base_t *joycon_h, joycon_status_t
   Sys_Critical_Enter();
   *status = (joycon_status_t){
       .is_started = joycon_uart_h->is_started,
-      .received_bytes = joycon_uart_h->rx_byte_count,
+      .received_bytes = joycon_uart_h->rx_stream.rx_byte_count,
       .parsed_frames = joycon_uart_h->parsed_frame_count,
       .invalid_frames = joycon_uart_h->invalid_frame_count,
-      .rx_overflow_count = Sys_ByteRing_GetDroppedBytes(&joycon_uart_h->rx_ring),
-      .uart_error_count = joycon_uart_h->uart_error_count,
-      .rearm_error_count = joycon_uart_h->rearm_error_count,
+      .rx_overflow_count = Dev_UartRxStream_GetDroppedBytes(&joycon_uart_h->rx_stream),
+      .uart_error_count = joycon_uart_h->rx_stream.uart_error_count,
+      .rearm_error_count = joycon_uart_h->rx_stream.rearm_error_count,
       .last_frame_ms = joycon_uart_h->input.time_ms,
       .sequence = joycon_uart_h->input.sequence,
   };
