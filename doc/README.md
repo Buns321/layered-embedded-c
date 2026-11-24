@@ -25,6 +25,7 @@
 - [Platform 编译检查](../cmake/platform-check/README.md)：F4/F1 全实例编译验证。
 - 主机测试说明：`cmake/platform-test/README.md`，公共契约与管线测试入口。
 - [迁移路线](todo.md)：功能基线和架构迁移任务，不作为门禁。
+- [V2 架构精简重构详案](v2-refactor-plan.md)：路线 A（根目录单工程、C11、极薄 BSP、核心多态保留与 `Car_Omni` 门面）完整技术规范与实施路线。
 - [Doxygen 主页](doxygen/mainpage.md)：API 文档入口。
 
 生成 API 文档：
