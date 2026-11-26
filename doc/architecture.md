@@ -1,256 +1,68 @@
-# 架构说明
+# V2 三层架构说明
 
-## 1. 目标
+本工程采用根目录单工程布局（ISO C11），分为三层与 CubeMX 硬件基座，所有长期对象静态分配，零动态内存。
 
-- 应用代码集中在 `App/` 和 `RTOS/`。
-- 具体设备、硬件映射和对象装配集中在 `Core/Board/`。
-- App 只依赖领域接口、选定算法接口和 System 公共接口。
-- RTOS 固定使用 CMSIS-RTOS2，任务代码调用 App 公共入口。
-- 控制律、运动策略、滤波器和设备驱动可以独立替换。
-- 所有长期对象静态分配。
-- 单位、所有权、调用上下文和安全规则在接口处声明。
-
-架构门禁和验收规则见 [框架契约](framework-contract.md)。
-
-## 2. 分层
+## 1. 分层与单向依赖矩阵
 
 ```text
-Core / main
-    ├── CubeMX 生成代码
-    └── Core/Board
-           ├── 具体设备与算法对象
-           ├── 板级资源映射
-           ├── 对象装配
-           └── App 依赖注入
+Layer 3: User/ + Core/
+  ├── User/board_cfg.{h,c}    # 映射 CubeMX 句柄、引脚与 PID/机械参数，提供 Board_BootServices/InitCar
+  ├── User/app_car.{h,c}      # 纯业务入口（启用 CAR_OMNI_APP_VIEW=1，零 HAL/BSP/FreeRTOS 依赖）
+  └── User/rtos_tasks.{h,c}   # 通过 RTOS_TASK_PERIODIC 集中声明周期任务
 
-App
-    └── 业务状态、控制决策、安全策略、命令和输出
+Layer 2: Framework/
+  ├── Chassis/                # chassis_base, chassis_omni, car_omni（一键整车门面）
+  ├── Drivers/                # motor_*, imu_*, rc_joycon, telem_*, led（直连 bsp_*）
+  ├── Control/                # 100% HAL-Free：controller_*, filter_*, kinematics_omni
+  └── Core/                   # sys_*, sys_daemon, sys_topic, rtos_task（封装临界区/延时/日志/Flash）
 
-RTOS
-    └── CMSIS-RTOS2 薄任务入口、周期和 OS 原语
+Layer 1: BSP/                 # 极薄 STM32 HAL 服务（≤18 文件 / ≤2,000 行）
+  └── bsp_mcu, bsp_def, bsp_dwt, bsp_gpio, bsp_pwm, bsp_encoder, bsp_uart, bsp_i2c, bsp_flash
 
-共享框架
-    ├── Platform
-    ├── DeviceDrivers
-    ├── Controller
-    ├── Policy
-    ├── Filter
-    └── System
+Base: Core/ + Drivers/ + Middlewares/   # STM32CubeMX 生成代码、F4 HAL 与 FreeRTOS
 ```
 
-依赖方向：
+CMake（[cmake/car_framework.cmake](../cmake/car_framework.cmake)）与 [tools/check.py](../tools/check.py) 强制执行以下隔离规则：
 
-```text
-Core/Board -> App 公共依赖契约
-Core/Board -> Platform / 具体设备 / Controller / Policy / Filter
-RTOS -> App 公共入口
-RTOS -> CMSIS-RTOS2
-App -> DeviceDrivers base/domain / Controller / Policy / Filter / System
-```
+| 目标 | 允许依赖 | 严禁包含 |
+| --- | --- | --- |
+| `car_bsp` | `stm32cubemx`（或宿主机 `bsp_stub`）、`sys_byte_ring`、`sys_critical` | `Control/`、`Drivers/`、`Chassis/`、`User/` |
+| `car_core` | `BSP/Inc`（部分模块）、`car_rtt`（可选） | `Control/`、`Drivers/`、`Chassis/`、`User/` |
+| `car_control` | `Framework/Core/Inc` 纯数学/角度/快照头、`<math.h>` | **`BSP/`、STM32 HAL、FreeRTOS、`Core/Inc/`** |
+| `car_drivers` | `car_bsp`、`car_core`、`car_control` | `Chassis/`、`User/`、`Core/Inc/main.h` |
+| `car_chassis` | `car_core`、`car_control`、`car_drivers` | `User/`、`Core/Inc/main.h` |
+| `board_user_app` | `car_omni.h`（`CAR_OMNI_APP_VIEW=1`）、`board_cfg.h`、`sys_*` | **任何 HAL、`BSP/`、`FreeRTOS`、CubeMX 外设头** |
+| `board_user_rtos` | `rtos_task.h`、`User/app_car.h`、`cmsis_os2.h` | `BSP/`、`Drivers/`、HAL |
 
-共享框架向上提供稳定接口。App 和 RTOS 不依赖 Core/Board 私有实现。
+`User/app_car.c` 借助 `CAR_OMNI_APP_VIEW=1` 只可见 `car_omni_t *` 不透明指针及控制接口，硬件级 `BSP_DWT_Init` 与 `Sys_Log_RTT_Init` 隔离在 `User/board_cfg.c` 的 `Board_BootServices()` 中完成。
 
-## 3. C 对象模型
+## 2. 保留的 5 处 C 多态边界
 
-- `xxx_base_t` 是抽象接口。
-- 具体类型把 base 放在结构体第一个成员。
-- 具体初始化绑定静态 ops 表并初始化自己的字段。
-- 回调通过角色句柄还原具体对象。
-- 上层通过 `<role>_h` 持有 base 视图。
-- base 对象按引用传递，不复制。
-- 长期对象由 Core/Board 或 App 静态持有。
+均采用“具体结构体首成员嵌入 `*_base_t` + 绑定静态只读 `*_ops_t` 虚表”模式，上层通过基类指针操作，禁止值拷贝：
 
-## 4. 各层职责
+1. **`controller_base_t`**：`controller_pid`、`controller_linear`、`controller_compose`（轮级 SISO 控制律）。
+2. **`motor_base_t`**：`motor_tb6612`（闭环执行器基类，保留后续 CAN 电机扩展槽）。
+3. **`imu_base_t`**：`imu_wht101`、`imu_mpu6050`（9 通道快照 + `filter_base_t` 滤波管线 + `ZeroYaw`）。
+4. **`telemetry_base_t`**：`telem_justfloat`、`telem_firewater`（共享内部 `telem_uart_tx`）。
+5. **`chassis_base_t`**：`chassis_omni`（底盘运动与急停生命周期基类）。
 
-### Core/Board
+其余无多实现模块（`bsp_uart`、`bsp_encoder`、`rc_joycon`、`led`、`kinematics_omni`）直接扁平实现，不设 1:1 虚表。
 
-- CubeMX 负责时钟、引脚、DMA、NVIC、外设结构和 `MX_*_Init()`。
-- `Core/Board/Inc/core_board.h` 提供 `Core_Board_Init()`。
-- Core/Board 定义静态具体设备、控制器、策略、滤波器和组合对象。
-- Core/Board 完成硬件角色映射、驱动初始化和算法依赖注入。
-- Core/Board 填写 `<app_module>_dependencies_t`。
-- Core/Board 保持对象生命周期覆盖整个固件运行期。
+## 3. 三大静态核心服务（`Framework/Core/`）
 
-### App
+- **`sys_daemon`**：固定槽位（`SYS_DAEMON_MAX_NODES=16`）离线监控；`Feed`/`FeedFromISR` 在临界区内原子更新时间戳与序号；`Sys_Daemon_Poll()` 处理 32 位回绕与 `INIT_GRACE` 宽限，并在临界区外执行边沿回调。
+- **`sys_topic`**：通过 `SYS_TOPIC_DECLARE` / `SYS_TOPIC_DEFINE` 生成严格 ISO C11 类型安全 Pub-Sub 通道（无 GNU 扩展），由 `Sys_Critical_*` 保护结构体快照一致性。
+- **`rtos_task`**：`RTOS_TASK_PERIODIC` 声明 8 字节对齐 `uint64_t` 静态栈与 `StaticTask_t`；内部基于 `osDelayUntil` 保持无漂移周期并用 `BSP_DWT_GetCycles()` 统计耗时与 `osThreadGetStackSpace()` 栈余量；强实现 `vApplicationStackOverflowHook()` 在栈溢出时触发 `rtos_emergency_halt_fn_t` 并关中断停机。
 
-- App 负责业务状态机、输入语义、安全策略、命令和输出内容。
-- App 通过依赖头接收 Core/Board 创建的逻辑服务。
-- App 公共初始化入口返回 `bool`。
-- App 可以使用 `Sys_Critical_*` 保护短临界区。
-- App 配置包含控制参数、算法参数和输出语义。
-- App 公共入口由 RTOS 任务按固定周期调用。
+## 4. `Car_Omni` 一键门面与运行流
 
-### RTOS
+`car_omni_t` 静态聚合 4 套 `bsp_encoder_t`/`controller_pid_t`/`motor_tb6612_t`、`kinematics_omni_t`、`chassis_omni_t` 及可选 `imu_wht101_t`/`rc_joycon_t`/`telem_*` 与 3 个 `sys_daemon_t`（`rc`、`imu`、`control_hb`）。
 
-- RTOS 固定使用 CMSIS-RTOS2。
-- CubeMX 负责任务属性、静态 TCB、静态栈和任务创建。
-- RTOS 层负责薄任务入口、周期、队列、信号量和事件组。
-- RTOS 将 tick 转换为统一毫秒时间并传给 App。
-- RTOS 任务循环保持调度和转发职责。
-- 超时、状态迁移和业务决策位于 App。
+- **启动顺序**（[Core/Src/main.c](../Core/Src/main.c)）：`MX_*_Init()` → `App_Car_Boot()`（含注册急停钩子）→ `osKernelInitialize()` → `MX_FREERTOS_Init()` → `RTOS_StartAllTasks()` → `osKernelStart()`。
+- **状态机**：`CAR_STATE_BOOTING`（若开启 `auto_zero_on_boot` 等待 WHT101 归零）→ `CAR_STATE_READY` ↔ `CAR_STATE_RUNNING`；控制心跳超时、电机控制器错误或 IMU 启动故障则进入不可逆 `CAR_STATE_FAULT` 并切断 PWM/STBY；RC/IMU 运行期离线则触发可恢复的 `Car_Omni_Stop()`。
+- **按需裁剪**：配置中 `huart == NULL` 时自动跳过对应外设与看门狗，无需任何外部脚本或手写胶水即可分步调试。
 
-### Platform
+## 5. 静态内存与预算红线
 
-- Platform 使用功能独立的枚举身份替代 HAL handle。
-- `platform_config.h` 在编译期声明可用实例。
-- CubeMX/Core 负责引脚、时钟、DMA、NVIC 和 `MX_*_Init()`。
-- Platform 负责运行期启动、传输、校准、状态读取和回调分发。
-- 各 backend 负责 HAL handle、时钟、位宽和能力差异。
-- 公共契约、参数校验、状态机和错误映射位于 `Platform/Src/common/`。
-- Platform 公共头不暴露 HAL 类型。
-
-### DeviceDrivers
-
-- `Base/` 提供设备抽象接口。
-- `Inc/`、`Src/` 提供具体设备实现。
-- 具体驱动依赖 base 接口和 Platform。
-- 设备负责协议、采样、状态和维护自身数据。
-- 上层通过 base/domain 接口使用设备。
-
-### Controller
-
-- Controller 提供轮级 SISO 控制接口。
-- Controller 接收目标值、测量值、控制周期和输出范围。
-- 具体实现包括线性、PID 和组合控制律。
-- Controller 输出由执行器量程和后续限幅约束。
-
-### Policy
-
-- Policy 提供底盘级 MIMO 运动解算。
-- Policy 接收速度、方向、姿态和角速度命令。
-- Policy 输出各执行器目标。
-- 具体 Policy 与底盘类型匹配。
-
-### Filter
-
-- Filter 使用固定容量样本、有效位掩码和时间戳。
-- Filter base 统一执行输入复制、输出清洗和状态复位。
-- 具体滤波器实现自己的配置和更新算法。
-- Chain 和 Distributor 组合多个滤波器。
-- Filter 层使用静态存储。
-
-### System
-
-- System 提供数学、检查、限幅、符号和单位辅助。
-- System 提供统一时间、临界区和时间窗口。
-- System 提供故障诊断、日志门面和日志后端接口。
-- System 提供静态字节环和记录存储。
-- System 公共头保持硬件无关；MCU 实现位于 System backend。
-
-## 5. 初始化与依赖注入
-
-```c
-app_<module>_dependencies_t dependencies;
-
-if (Core_Board_Init(&dependencies) != PLATFORM_STATUS_OK) {
-  Error_Handler();
-}
-
-if (!App_<Module>_Init(&dependencies)) {
-  Error_Handler();
-}
-
-osKernelInitialize();
-
-MX_FREERTOS_Init(); /* CubeMX 创建静态任务、TCB 和栈。 */
-
-osKernelStart();
-```
-
-规则：
-
-- CubeMX 先完成 `MX_*_Init()`。
-- Core/Board 在调度器启动前完成静态装配。
-- App 依赖由 Core/Board 创建、填写并发布。
-- App 只保存依赖指针，不拥有依赖对象。
-- `MX_FREERTOS_Init()` 在 App 初始化成功后创建 CubeMX 配置的静态任务。
-- 初始化失败停止启动流程。
-
-## 6. 通用数据流
-
-### 周期业务处理
-
-```text
-RTOS Task
-    ├── 获取 tick
-    ├── 转换为 now_ms
-    └── 调用 App_<Module>_Process<Phase>(now_ms)
-            ├── 读取逻辑服务
-            ├── 推进业务状态
-            ├── 发布输出或快照
-            └── 更新故障状态
-```
-
-### 控制输出
-
-```text
-App
-    ├── 计算控制目标
-    ├── 写入领域控制接口
-    └── 推进 Controller/Motor 更新
-            ├── 读取编码器
-            ├── 计算控制输出
-            └── 写入执行器
-```
-
-### 遥测
-
-```text
-App
-    ├── 组装固定通道样本
-    ├── 设置有效位和时间戳
-    └── 调用 Telemetry base
-            └── 具体协议驱动
-                    └── UART 输出
-```
-
-### 持久记录
-
-```text
-Core/Board
-    ├── 配置物理存储
-    ├── 初始化 system_record_store_t
-    └── 注入 App
-
-App
-    ├── 定义记录 schema
-    ├── 加载和校验记录
-    ├── 应用默认值
-    └── 提交新记录
-```
-
-## 7. 所有权与内存
-
-- 设备、控制器、策略、滤波器和组合对象由 Core/Board 静态持有。
-- App 状态和快照由 App 静态持有。
-- RTOS 任务控制块和栈使用静态内存。
-- base 视图是非 owning 指针。
-- App 依赖指针由 Core/Board 保证生命周期。
-- 固件不使用动态内存。
-
-## 8. 约束与不变量
-
-- 具体设备初始化和板级映射位于 `Core/Board/`。
-- App 依赖通过 `<app_module>_dependencies.h` 声明。
-- `Core_Board_Init()` 在调度器启动前完成板级装配。
-- RTOS 任务代码使用 CMSIS-RTOS2 和 App 公共入口。
-- HAL 类型不越过 Platform 层。
-- base 是具体类型的第一个成员。
-- 编码器等有状态设备按接口规定消费数据。
-- 控制周期参数与 RTOS 实际调度周期一致。
-- 时间步参数有限且大于 0。
-- 执行器输出经过量程约束。
-- ISR 只做入队、通知和重新挂接。
-- 跨任务共享数据有明确并发规则。
-
-## 9. 扩展方式
-
-- **新设备**：实现对应 base/domain 接口，在 Core/Board 中装配。
-- **新 Controller**：实现 `controller_ops_t` 并内嵌 `controller_base_t`。
-- **新 Policy**：实现底盘 policy base 和静态 ops。
-- **新 Filter**：实现 `filter_ops_t`，通过 Filter base 构造和配置。
-- **新 App 模块**：增加 `<app_module>_dependencies.h`，实现
-  `App_<Module>_Init()` 和业务入口。
-- **新板卡**：增加 CubeMX 工程、Core/Board 装配、板级 CMake 和资源映射。
-- **新 MCU**：增加 Platform backend、System backend、CMSIS-RTOS2 port、
-  启动文件、链接脚本和工具链配置。
+- 生产代码与链接产物 **0 动态分配**：FreeRTOS `configSUPPORT_DYNAMIC_ALLOCATION=0`、禁用 `heap_4.c`；[cmake/verify_static_elf.cmake](../cmake/verify_static_elf.cmake) 链接后拦截 `malloc`/`calloc`/`realloc`/`free`/`ucHeap`/`pvPortMalloc`/`vPortFree` 并强校验 `vApplicationStackOverflowHook`。
+- 体量红线由 `tools/check.py` `budgets` 阶段强制门禁：`BSP/` ≤ 18 文件 / 2,000 行，`User/` + 根 `CMakeLists.txt` ≤ 320 行，`tests/test_*.c` ≤ 2,800 行，`Release` ELF ≤ 63,520 B Flash / 20,408 B RAM。

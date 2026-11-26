@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "arm-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake"
+    },
+    {
+      "name": "Debug",
+      "inherits": "arm-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Release",
+      "inherits": "arm-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "Test",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "BUILD_HOST_TESTS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Debug",
+      "configurePreset": "Debug"
+    },
+    {
+      "name": "Release",
+      "configurePreset": "Release"
+    },
+    {
+      "name": "Test",
+      "configurePreset": "Test"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "Test",
+      "configurePreset": "Test",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

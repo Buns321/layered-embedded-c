@@ -15,8 +15,12 @@
 #include <stdint.h>
 
 #define IMU_WHT101_FRAME_LEN 11U
-#define IMU_WHT101_RX_RING_SIZE 256U
-#define IMU_WHT101_RX_DMA_SIZE 64U
+#ifndef IMU_WHT101_RX_RING_SIZE
+#define IMU_WHT101_RX_RING_SIZE 128U
+#endif
+#ifndef IMU_WHT101_RX_DMA_SIZE
+#define IMU_WHT101_RX_DMA_SIZE 32U
+#endif
 
 /**
  * @brief WHT101 输出速率寄存器码。

@@ -38,8 +38,8 @@ static car_omni_cfg_t make_base_cfg(void) {
     cfg.wheels[i] = (car_omni_wheel_cfg_t){
         .pwm = {.htim = &s_htim_pwm, .channel = ch[i], .max_duty = 1000U},
         .encoder = {.htim = &s_htim_enc[i]},
-        .in1 = {&s_gpio_d, pins[i * 2U]},
-        .in2 = {&s_gpio_d, pins[(i * 2U) + 1U]},
+        .in1 = {&s_gpio_d, pins[(size_t)i * 2U]},
+        .in2 = {&s_gpio_d, pins[((size_t)i * 2U) + 1U]},
         .stby = {&s_gpio_c, GPIO_PIN_13},
         .theta_rad = theta[i],
         .sign = 1.0f,

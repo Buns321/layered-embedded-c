@@ -1,61 +1,57 @@
 # layered-embedded-c Agent 工程规范
 
-面向 STM32F407 / STM32F103 的分层嵌入式 C 工程（共享框架 `Platform/`、`DeviceDrivers/`、`Controller/`、`Policy/`、`Filter/`、`System/`，以及 `Boards/<mcu>-<name>/` 下三套独立板级固件）。
+面向 STM32 全系列（当前实装 **STM32F407VET6**）的精简 C11 分层嵌入式工程（`BSP/` + `Framework/` + `User/` + `Core/`）。
 
 ---
 
-## 1. TBD（Trunk-Based Development）铁律
+## 1. 反过度抽象三条铁律
 
-- **严禁直接在 `main` 分支开发或提交**。所有工作必须在短生命周期工作分支（`feat/*`、`fix/*`、`refactor/*`、`docs/*`）上进行。
-- **小步快跑**：保持变更聚焦、频繁同步 `main`（`git fetch && git rebase origin/main`）。
-- **每轮自动 Checkpoint**：`.agents/hooks.json` 的 `Stop` hook 会在每轮对话结束后自动在当前工作分支创建 `[auto-commit]` checkpoint；合入 `main` 前应整理提交历史并跑通本地门禁。
+1. **硬件闭环优先**：先基于 `BSP/` 与 CubeMX 句柄打通硬件闭环，禁止提前构造无实际调用方的多层空壳。
+2. **二次复用才抽象**：仅保留 5 处高价值领域多态（`controller_base_t`、`motor_base_t`、`imu_base_t`、`telemetry_base_t`、`chassis_base_t`），禁止 1:1 单实现虚表或枚举包装层。
+3. **代码行数与体积预算红线**：
+   - `BSP/` ≤ 18 文件且 ≤ 2,000 行
+   - `User/` + 根 `CMakeLists.txt` ≤ 320 行
+   - `Release` 固件 ≤ 63,520 B Flash、≤ 20,408 B RAM
 
 ---
 
-## 2. 文档驱动设计实现（Doc-Driven Development）
+## 2. TBD（Trunk-Based Development）铁律
 
-- **先读后写**：修改任何源码或配置前，必须先阅读 [tools/doc_map.json](tools/doc_map.json) 中对应路径映射的文档（`PreToolUse` `doc_gate` hook 会对此进行硬性检查）。
-- **核心文档入口**：
-  - 编码规范：[doc/conventions.md](doc/conventions.md)
-  - 架构与分层：[doc/architecture.md](doc/architecture.md)、[doc/framework-contract.md](doc/framework-contract.md)
-  - 平台契约：[doc/platform-contract.md](doc/platform-contract.md)、[doc/platform.md](doc/platform.md)
+- **严禁直接在 `main` 分支开发或提交**，所有工作必须在短生命周期分支（`feat/*`、`fix/*`、`refactor/*`、`docs/*`）上进行。
+- 保持变更聚焦、频繁同步 `main`（`git fetch && git rebase origin/main`）；`Stop` hook 会自动创建 `[auto-commit]` checkpoint，合入前整理提交并跑通本地门禁。
+
+---
+
+## 3. 文档驱动设计与编码底线
+
+- **先读后写**：修改源码或配置前，先阅读 [tools/doc_map.json](tools/doc_map.json) 映射的核心文档：
+  - 编码约定：[doc/conventions.md](doc/conventions.md)
+  - 架构与分层：[doc/architecture.md](doc/architecture.md)
   - 物理单位：[doc/units.md](doc/units.md)
-- **文档同步**：修改公共接口、模块边界或板级硬件映射时，必须同步更新对应文档与 [tools/doc_map.json](tools/doc_map.json)。
-
----
-
-## 3. 嵌入式 C 编码与分层底线
-
-- **静态分配**：所有长期对象、RTOS 任务控制块与缓冲区必须静态分配；禁止在生产代码中使用 `malloc`/`calloc`/`realloc`/`free`。
-- **分层隔离**：
-  - `Platform/`、`DeviceDrivers/`、`Controller/`、`Policy/`、`Filter/`、`System/` 不得包含板级头文件或具体 MCU HAL（`Platform/` 后端与 `Core/` 除外）。
-  - `App/` 只依赖领域接口、`app_*_dependencies_t` 注入服务与 `System/` 公共接口，禁止直接操作 HAL 或板级硬件映射。
-  - `RTOS/` 固定使用 CMSIS-RTOS2，仅作薄任务入口与周期调度。
-- **零警告**：所有新增/修改代码须满足 `-Wall -Wextra` 零警告及 `.clang-tidy` 检查。
+  - 硬件映射：[doc/hardware-map.md](doc/hardware-map.md)
+- **ISO C11 零警告**：`-std=c11 -Wall -Wextra -Werror`（主机与 ARM 双端）及 `.clang-tidy` 零告警；禁止 GNU 语句表达式等非标准扩展。
+- **静态分配铁律**：0 处 `malloc`/`calloc`/`realloc`/`free`；FreeRTOS 维持 `configSUPPORT_STATIC_ALLOCATION=1`、`configSUPPORT_DYNAMIC_ALLOCATION=0` 与 `configCHECK_FOR_STACK_OVERFLOW=2`。
+- **单向分层隔离**：
+  - `Framework/Control/` 100% HAL-Free，禁止包含 `BSP/`、HAL、FreeRTOS 或 `Core/Inc/`。
+  - `User/app_*.c` 禁止直接包含任何 STM32 HAL、`BSP/`、`FreeRTOS` 或 CubeMX 外设头文件。
+  - `User/rtos_*.c` 固定使用 CMSIS-RTOS2 与 `rtos_task.h`，仅作薄任务声明与周期转发。
 
 ---
 
 ## 4. 本地多维度验证
 
-不依赖云端 CI/CD，合入 `main` 或交付任务前必须运行本地门禁：
+合入 `main` 或交付前必须运行本地门禁（禁止在自动化命令中使用 `sudo`）：
 
 ```bash
-python3 tools/check.py --profile quick   # 秒级：卫生、格式、约定、分层、文档映射
-python3 tools/check.py --profile pr      # 提交前：quick + 主机契约测试 + clang-tidy + F1/F4 Platform 编译
-python3 tools/check.py --profile full    # 全量：pr + 三块板级固件构建 + ELF 静态内存/体积检查
+python3 tools/check.py --profile quick --scope all   # 卫生、格式、静态分配、分层、文档、行数预算
+python3 tools/check.py --profile pr --scope all      # quick + 主机 14 项 CTest + clang-tidy
+python3 tools/check.py --profile full --scope all    # pr + Debug/Release 固件构建与 ELF 体积/符号检查
 ```
 
 ---
 
-## 5. 环境与权限边界
+## 5. 专项技能（`.agents/skills/`）
 
-- **禁止运行 `sudo`**：Agent 不得在自动化命令中使用 `sudo`（无交互式密码输入且存在安全边界）。若缺少系统工具（如 `clang-tidy`），向用户说明并请用户在本地终端手动执行安装命令。
-
----
-
-## 6. 专项技能（按需加载）
-
-详细操作流程位于 `.agents/skills/`：
-- `tbd-workflow`：TBD 分支生命周期、checkpoint 整理与合入流程
+- `tbd-workflow`：分支生命周期、checkpoint 整理与合入流程
 - `doc-driven-dev`：文档映射查询、契约对齐与文档同步规范
 - `local-verify`：本地多维度测试矩阵、`clang-tidy` 与交叉编译排障

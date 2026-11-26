@@ -14,8 +14,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define RC_JOYCON_RX_RING_SIZE 256U
-#define RC_JOYCON_RX_DMA_SIZE 64U
+#ifndef RC_JOYCON_RX_RING_SIZE
+#define RC_JOYCON_RX_RING_SIZE 128U
+#endif
+#ifndef RC_JOYCON_RX_DMA_SIZE
+#define RC_JOYCON_RX_DMA_SIZE 32U
+#endif
 #define RC_JOYCON_FRAME_CAPACITY 64U
 
 _Static_assert((RC_JOYCON_RX_RING_SIZE & (RC_JOYCON_RX_RING_SIZE - 1U)) == 0U,

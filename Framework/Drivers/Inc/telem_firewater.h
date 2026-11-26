@@ -13,7 +13,9 @@
 #include "telemetry_base.h"
 #include <stdint.h>
 
-#define FIREWATER_UART_TX_CAPACITY 512U
+#ifndef FIREWATER_UART_TX_CAPACITY
+#define FIREWATER_UART_TX_CAPACITY 256U
+#endif
 
 /**
  * @brief FireWater 遥测初始化配置（channel_names 非空且不含 `,` 或 `:`，precision 0..6）。
