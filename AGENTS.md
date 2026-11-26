@@ -18,7 +18,8 @@
 ## 2. TBD（Trunk-Based Development）铁律
 
 - **严禁直接在 `main` 分支开发或提交**，所有工作必须在短生命周期分支（`feat/*`、`fix/*`、`refactor/*`、`docs/*`）上进行。
-- 保持变更聚焦、频繁同步 `main`（`git fetch && git rebase origin/main`）；`Stop` hook 会自动创建 `[auto-commit]` checkpoint，合入前整理提交并跑通本地门禁。
+- 保持变更聚焦、频繁同步 `main`（`git fetch && git rebase origin/main`）；`Stop` hook 会自动创建 `[auto-commit]` checkpoint。
+- **合入 `main` 规范**：合入前必须跑通本地门禁，并将零散 `[auto-commit]` 整理为按逻辑阶段/主题划分的少量干净提交（Conventional Commits，去除 `[auto-commit]` 标记，禁止全部分支压成单个大提交）；合入 `main` 时使用 `git merge --no-ff`（或 GitHub PR **Create a merge commit**），保留功能分支合并节点与阶段提交历史。
 
 ---
 
