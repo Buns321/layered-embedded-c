@@ -1,0 +1,29 @@
+# Doxyfile for layered-embedded-c
+# 当前先行覆盖已完成 Doxygen 示范改造的 User/ 目录；后续随 BSP/ 与 Framework/ 迁移逐步扩展 INPUT。
+
+PROJECT_NAME           = "layered-embedded-c"
+PROJECT_BRIEF          = "STM32F407VET6 分层嵌入式 C11 工程"
+OUTPUT_DIRECTORY       = build/docs
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = English
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+JAVADOC_AUTOBRIEF      = YES
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = YES
+
+INPUT                  = User
+FILE_PATTERNS          = *.h *.c
+RECURSIVE              = NO
+EXCLUDE_PATTERNS       = */Drivers/* */Middlewares/* */ThirdParty/*
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_AS_ERROR          = YES
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES

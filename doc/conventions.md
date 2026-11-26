@@ -40,14 +40,23 @@
 - ISR 中仅执行最小工作：入队、清标志、重新挂接接收与 `Sys_Daemon_FeedFromISR`；禁止阻塞调用与浮点密集解算。
 - ISR 与任务共享状态须使用 `volatile` 并通过 `Sys_Critical_Enter/Exit` 或 `SYS_SNAPSHOT_*` 保证原子性。
 
-## 4. ISO C11 风格与精简注释规范
+## 4. ISO C11 风格与 Doxygen 注释规范
 
 - **ISO C11 严格兼容**：所有自有代码必须通过 `-std=c11 -Wall -Wextra -Werror`（主机测试附加 `-pedantic`），禁止 GNU statement-expression 等非标准扩展；使用 `_Static_assert`、`_Generic`、`<stdbool.h>` 与定宽整数类型。
 - **格式规范**：2 空格缩进、UTF-8、LF 换行、遵循 [.clang-format](../.clang-format)。
-- **精简注释规范**（有效代码注释占比收敛至 15%–25%）：
-  - 文件头包含 `@file` 与 1 句简体中文 `@brief`（公共头可按模块保留 `@addtogroup`）。
-  - 公共头文件 API 与核心结构体保留 **1–3 行简明中文 `@brief`** 及关键单位、范围、所有权或 ISR/任务上下文约束。
-  - `.c` 实现文件与私有 `static` 函数不强制编写多段 `@param`/`@return`/`@pre`/`@post`/`@note` 模板；普通 `//` 或行内注释只解释非显而易见的硬件约束、状态机步骤或并发原因。
+- **适用范围**：覆盖全部自有代码（`User/`、`BSP/`、`Framework/`）；`Drivers/`、`Middlewares/`、`Framework/ThirdParty/` 与 CubeMX 生成区豁免。
+- **Doxygen 文档注释规范**：
+  - **文件头（所有 `.h` / `.c`）**：必须包含 `@file`、`@brief` 与 `@details`（说明模块职责、所属分层与静态分配/隔离约束）。
+  - **模块分组（公共 `.h`）**：使用 `@defgroup` / `@addtogroup` 按分层归类。
+  - **类型与字段（`struct` / `enum` / `union` / 关键宏）**：类型使用 `/** @brief ... */`，字段使用行尾 `/**< ... */` 注明物理单位（对齐 [units.md](units.md)）、合法范围、默认值或所有权；关键宏注明量纲与设计依据。
+  - **公开函数（`.h` 声明处）**：必须完整包含 `@brief`、`@param[in|out|in,out]`（注明单位、范围与是否允许 `NULL`）、`@return` / `@retval`，以及必要的 `@pre` / `@post` / `@note` / `@warning`（如 ISR/任务上下文、调用顺序与线程安全约束）。
+  - **内部 `static` 函数（`.c` 定义处）**：至少包含 `@brief`、`@param`、`@return`（无参数/无返回值可省略对应标签）。
+- **详细行内注释规范**：
+  - **硬件映射与配置表**（如 `User/board_cfg.c`）：逐项标注物理轮位/坐标系角度、引脚功能、共用信号（如 `STBY`）、外设参数与 PID/周期量纲依据。
+  - **控制流与并发逻辑**：解释状态机迁移条件、急停与看门狗策略、临界区/快照保护的竞态原因、ISR 最小化处理及防溢出/强转依据；禁止复述代码字面语法的无效注释。
+- **门禁与体量口径**：
+  - `tools/check.py` 的 `budgets` 阶段仅统计**有效代码行**（剔除空行与 `#` / `//` / `/* ... */` 纯注释行），以保证详尽注释不挤占代码体量红线。
+  - 根目录 [Doxyfile](../Doxyfile) 开启 `WARN_AS_ERROR = YES`，由 `tools/check.py` 执行 Doxygen 零告警校验（当前先行覆盖已完成示范改造的 `User/`，后续随分层推进逐步扩展至 `BSP/` 与 `Framework/`）。
 
 ## 5. 分层与构建约束
 

@@ -136,13 +136,13 @@ bool RTOS_Task_StartPeriodic(rtos_periodic_task_t *task) {
   task->stats = (rtos_task_stats_t){.last_exec_us = 0U};
 
   const osThreadAttr_t attr = {
-      .name = task->name,
-      .attr_bits = 0U,
-      .cb_mem = &task->tcb,
-      .cb_size = (uint32_t)sizeof(task->tcb),
-      .stack_mem = task->stack_buf,
-      .stack_size = task->stack_bytes,
-      .priority = task->priority,
+    .name = task->name,
+    .attr_bits = 0U,
+    .cb_mem = &task->tcb,
+    .cb_size = (uint32_t)sizeof(task->tcb),
+    .stack_mem = task->stack_buf,
+    .stack_size = task->stack_bytes,
+    .priority = task->priority,
   };
 
   osThreadId_t handle = osThreadNew(rtos_task_entry, task, &attr);

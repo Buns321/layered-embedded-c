@@ -65,4 +65,4 @@ CMake（[cmake/car_framework.cmake](../cmake/car_framework.cmake)）与 [tools/c
 ## 5. 静态内存与预算红线
 
 - 生产代码与链接产物 **0 动态分配**：FreeRTOS `configSUPPORT_DYNAMIC_ALLOCATION=0`、禁用 `heap_4.c`；[cmake/verify_static_elf.cmake](../cmake/verify_static_elf.cmake) 链接后拦截 `malloc`/`calloc`/`realloc`/`free`/`ucHeap`/`pvPortMalloc`/`vPortFree` 并强校验 `vApplicationStackOverflowHook`。
-- 体量红线由 `tools/check.py` `budgets` 阶段强制门禁：`BSP/` ≤ 18 文件 / 2,000 行，`User/` + 根 `CMakeLists.txt` ≤ 320 行，`tests/test_*.c` ≤ 2,800 行，`Release` ELF ≤ 63,520 B Flash / 20,408 B RAM。
+- 体量红线由 `tools/check.py` `budgets` 阶段强制门禁（按有效非注释代码行统计）：`BSP/` ≤ 18 文件 / 2,000 行，`User/` + 根 `CMakeLists.txt` ≤ 320 行，`tests/test_*.c` ≤ 2,800 行，`Release` ELF ≤ 63,520 B Flash / 20,408 B RAM；同时由 `doxygen` 阶段执行根目录 `Doxyfile` 零告警校验。

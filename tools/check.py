@@ -2,7 +2,7 @@
 """layered-embedded-c (v2) 本地多维度验证入口。
 
 Profiles:
-  quick : hygiene, format, static-alloc, layers, docs, budgets
+  quick : hygiene, format, static-alloc, layers, docs, budgets, doxygen
   pr    : quick + host-test, clang-tidy
   full  : pr + board-build (Debug/Release 构建 + ELF 静态符号与体积红线检查)
 """
@@ -44,6 +44,7 @@ OWNED_TEXT_PREFIXES = ("doc/", "tools/", ".agents/", ".githooks/", "cmake/")
 OWNED_ROOT_TEXT_FILES = {
     "CMakeLists.txt",
     "CMakePresets.json",
+    "Doxyfile",
     "AGENTS.md",
     "README.md",
 }
@@ -56,7 +57,7 @@ F407_RELEASE_MAX_FLASH_BYTES = 63520
 F407_RELEASE_MAX_RAM_BYTES = 20408
 
 PROFILES = {
-    "quick": ["hygiene", "format", "static-alloc", "layers", "docs", "budgets"],
+    "quick": ["hygiene", "format", "static-alloc", "layers", "docs", "budgets", "doxygen"],
     "pr": [
         "hygiene",
         "format",
@@ -64,6 +65,7 @@ PROFILES = {
         "layers",
         "docs",
         "budgets",
+        "doxygen",
         "host-test",
         "clang-tidy",
     ],
@@ -74,6 +76,7 @@ PROFILES = {
         "layers",
         "docs",
         "budgets",
+        "doxygen",
         "host-test",
         "clang-tidy",
         "board-build",
@@ -383,10 +386,79 @@ def check_docs(files: list[str], verbose: bool) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 6. Line / File Budgets (始终全仓统计)
+# 6. Line / File Budgets (始终全仓统计，仅计有效非注释代码行)
 # ---------------------------------------------------------------------------
 def count_lines(path: Path) -> int:
-    return len(path.read_text(encoding="utf-8", errors="replace").splitlines())
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if path.name == "CMakeLists.txt":
+        total = 0
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                total += 1
+        return total
+
+    total = 0
+    in_block = False
+    for line in text.splitlines():
+        has_code = False
+        in_str = False
+        in_chr = False
+        esc = False
+        i = 0
+        n = len(line)
+        while i < n:
+            ch = line[i]
+            nxt = line[i + 1] if i + 1 < n else ""
+            if in_block:
+                if ch == "*" and nxt == "/":
+                    in_block = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+            if in_str:
+                has_code = True
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                i += 1
+                continue
+            if in_chr:
+                has_code = True
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == "'":
+                    in_chr = False
+                i += 1
+                continue
+            if ch == "/" and nxt == "*":
+                in_block = True
+                i += 2
+                continue
+            if ch == "/" and nxt == "/":
+                break
+            if ch == '"':
+                has_code = True
+                in_str = True
+                i += 1
+                continue
+            if ch == "'":
+                has_code = True
+                in_chr = True
+                i += 1
+                continue
+            if not ch.isspace():
+                has_code = True
+            i += 1
+        if has_code:
+            total += 1
+    return total
 
 
 def check_budgets(files: list[str], verbose: bool) -> str:
@@ -565,6 +637,22 @@ def check_board_build(files: list[str], verbose: bool) -> str:
     return " | ".join(summaries)
 
 
+def check_doxygen(files: list[str], verbose: bool) -> str:
+    del files
+    dox = shutil.which("doxygen")
+    if not dox:
+        raise SkipCheck("缺少 doxygen")
+    doxyfile = REPO_ROOT / "Doxyfile"
+    if not doxyfile.is_file():
+        raise FailCheck("缺少根目录 Doxyfile")
+    (REPO_ROOT / "build" / "docs").mkdir(parents=True, exist_ok=True)
+    res = run_cmd([dox, str(doxyfile)], verbose=verbose)
+    if res.returncode != 0:
+        out = (res.stderr or res.stdout).strip()
+        raise FailCheck(out[-1500:] if out else f"doxygen exited with {res.returncode}")
+    return "Doxyfile 0 warnings"
+
+
 STAGES: dict[str, Callable[[list[str], bool], str]] = {
     "hygiene": check_hygiene,
     "format": check_format,
@@ -572,6 +660,7 @@ STAGES: dict[str, Callable[[list[str], bool], str]] = {
     "layers": check_layers,
     "docs": check_docs,
     "budgets": check_budgets,
+    "doxygen": check_doxygen,
     "host-test": check_host_test,
     "clang-tidy": check_clang_tidy,
     "board-build": check_board_build,

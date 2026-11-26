@@ -102,16 +102,20 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  // 在这里初始化小车
   if (!App_Car_Boot())
   {
     Error_Handler();
   }
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 
+  // 在这里启动任务
   if (!RTOS_StartAllTasks())
   {
     Error_Handler();

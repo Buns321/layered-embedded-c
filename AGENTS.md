@@ -9,8 +9,8 @@
 1. **硬件闭环优先**：先基于 `BSP/` 与 CubeMX 句柄打通硬件闭环，禁止提前构造无实际调用方的多层空壳。
 2. **二次复用才抽象**：仅保留 5 处高价值领域多态（`controller_base_t`、`motor_base_t`、`imu_base_t`、`telemetry_base_t`、`chassis_base_t`），禁止 1:1 单实现虚表或枚举包装层。
 3. **代码行数与体积预算红线**：
-   - `BSP/` ≤ 18 文件且 ≤ 2,000 行
-   - `User/` + 根 `CMakeLists.txt` ≤ 320 行
+   - `BSP/` ≤ 18 文件且 ≤ 2,000 行（有效非注释代码行）
+   - `User/` + 根 `CMakeLists.txt` ≤ 320 行（有效非注释代码行）
    - `Release` 固件 ≤ 63,520 B Flash、≤ 20,408 B RAM
 
 ---
@@ -43,7 +43,7 @@
 合入 `main` 或交付前必须运行本地门禁（禁止在自动化命令中使用 `sudo`）：
 
 ```bash
-python3 tools/check.py --profile quick --scope all   # 卫生、格式、静态分配、分层、文档、行数预算
+python3 tools/check.py --profile quick --scope all   # 卫生、格式、静态分配、分层、文档、行数预算、Doxygen
 python3 tools/check.py --profile pr --scope all      # quick + 主机 14 项 CTest + clang-tidy
 python3 tools/check.py --profile full --scope all    # pr + Debug/Release 固件构建与 ELF 体积/符号检查
 ```
