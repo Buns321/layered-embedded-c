@@ -1,7 +1,9 @@
 /**
  * @file telemetry_base.c
  * @brief 遥测设备多态基类实现。
- * @ingroup drivers
+ * @details 属于 Framework/Drivers 设备驱动层，负责虚表绑定、通道掩码越界检查、
+ *          有效通道有限性校验（拦截 NaN/Inf）以及向具体协议后端转发。
+ * @ingroup Framework_Drivers
  */
 
 #include "telemetry_base.h"
@@ -28,6 +30,7 @@ dev_telemetry_status_t Dev_Telemetry_Base_Send(telemetry_base_t *telemetry_h,
     return DEV_TELEMETRY_ERROR;
   }
 
+  // 仅检查 valid_mask 置位的通道是否为有限浮点数，避免未启用通道的垃圾值阻塞发送
   for (uint32_t ch = 0U; ch < TELEMETRY_CHANNEL_CAPACITY; ++ch) {
     uint32_t mask = (uint32_t)1U << ch;
     if ((sample->valid_mask & mask) != 0U && !SYS_ISFINITE(sample->value[ch])) {

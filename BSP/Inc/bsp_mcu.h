@@ -1,7 +1,11 @@
 /**
  * @file bsp_mcu.h
  * @brief 唯一芯片家族与主机测试桩头文件选择器。
- * @addtogroup bsp
+ * @details 集中隔离 STM32F4/G4/H7 HAL 头文件与主机单元测试桩（BSP_HOST_STUB）的条件包含，
+ *          确保 BSP 其余模块无需重复编写芯片家族预处理分支。
+ *          本文件仅允许被 BSP 与 User/board_cfg 等底层模块直接或间接包含，严禁渗透至应用视图。
+ *
+ * @addtogroup BSP
  * @{
  */
 
@@ -20,6 +24,6 @@
 #error "Define STM32F4xx, STM32G4xx, STM32H7xx, or BSP_HOST_STUB"
 #endif
 
-/** @} */
-
 #endif /* LAYERED_CAR_BSP_MCU_H */
+
+/** @} */

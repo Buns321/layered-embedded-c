@@ -1,7 +1,9 @@
 /**
  * @file bsp_encoder.c
  * @brief 定时器正交编码器解码与位置累计实现。
- * @ingroup bsp
+ * @details 在初始化阶段自动识别 16/32 位硬件计数器位宽并启动编码器接口，
+ *          在周期采样时通过有符号半量程展开消除计数器回绕跳变，并支持极性反转与单周期限幅。
+ * @ingroup BSP
  */
 
 #include "bsp_encoder.h"
@@ -9,9 +11,15 @@
 #include <limits.h>
 #include <string.h>
 
+/**
+ * @brief 读取编码器硬件定时器当前原始计数值。
+ * @param[in] enc 编码器运行期对象指针（须保证 `enc` 与 `enc->htim` 非空）。
+ * @return 按 `bit_width` 掩码截断后的无符号计数值（16 位或 32 位）。
+ */
 static uint32_t bsp_encoder_readraw(const bsp_encoder_t *enc) {
   uint32_t raw = __HAL_TIM_GET_COUNTER(enc->htim);
   if (enc->bit_width == 16U) {
+    // 16 位定时器仅保留低 16 位，防止宿主机桩或高位残留干扰回绕计算
     raw &= 0xFFFFU;
   }
   return raw;
@@ -22,6 +30,7 @@ bsp_status_t BSP_Encoder_Init(bsp_encoder_t *enc, const bsp_encoder_cfg_t *cfg) 
     return BSP_ERR_INVALID_ARG;
   }
 
+  // 必须使用满量程 Period（0xFFFF 或 32 位定时器的 0xFFFFFFFF），否则半量程回绕展开公式不成立
   uint8_t bit_width = 0U;
   if (cfg->htim->Init.Period == 0xFFFFFFFFU && IS_TIM_32B_COUNTER_INSTANCE(cfg->htim->Instance)) {
     bit_width = 32U;
@@ -37,6 +46,7 @@ bsp_status_t BSP_Encoder_Init(bsp_encoder_t *enc, const bsp_encoder_cfg_t *cfg) 
   enc->bit_width = bit_width;
   enc->invert = cfg->invert;
 
+  // 正交编码器需同时使能 CH1/CH2 输入捕获通道（TIM_CHANNEL_ALL）
   HAL_StatusTypeDef hal_st = HAL_TIM_Encoder_Start(enc->htim, TIM_CHANNEL_ALL);
   if (hal_st != HAL_OK) {
     enc->htim = NULL;
@@ -51,12 +61,14 @@ int32_t BSP_Encoder_GetDelta(bsp_encoder_t *enc) {
   }
 
   uint32_t now = bsp_encoder_readraw(enc);
+  // 首帧仅建立采样基线，避免上电前机械抖动或初始 CNT 偏移被误算为首周期速度尖峰
   if (!enc->has_base) {
     enc->last_count = now;
     enc->has_base = true;
     return 0;
   }
 
+  // 通过无符号模运算差值 + 半量程有符号展开，将 16/32 位回绕还原为 64 位带符号增量
   int64_t delta64 = 0;
   if (enc->bit_width == 16U) {
     uint32_t diff = (now - enc->last_count) & 0xFFFFU;
@@ -70,6 +82,8 @@ int32_t BSP_Encoder_GetDelta(bsp_encoder_t *enc) {
     delta64 = -delta64;
   }
 
+  // 若配置了单周期限幅阈值则对称夹紧并锁存 overflow；未限幅时仅防止极端 32 位增量超出 int32_t
+  // 正上限
   if (enc->max_counts_per_period != 0U) {
     int64_t limit = (enc->max_counts_per_period > (uint32_t)INT32_MAX)
                         ? (int64_t)INT32_MAX

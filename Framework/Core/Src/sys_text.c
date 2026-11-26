@@ -1,13 +1,20 @@
 /**
  * @file sys_text.c
  * @brief 受限 ASCII 文本切分、比较与有限浮点解析实现。
- * @ingroup sys_core
+ * @details 属于 Layer 2（Framework/Core），完全不依赖 C 标准库 locale 与 strtof，
+ *          在静态/栈空间内完成字符串切分与确定性浮点转换。
+ * @ingroup Framework_Core
  */
 
 #include "sys_text.h"
 #include "sys_math.h"
 #include <stddef.h>
 
+/**
+ * @brief 判断单个 ASCII 字符是否为空白分隔符（仅支持空格、制表符与回车符）。
+ * @param[in] value 待判定字符。
+ * @return 若为空白分隔符返回 true，否则返回 false。
+ */
 static bool sys_text_isspace(char value) { return value == ' ' || value == '\t' || value == '\r'; }
 
 bool Sys_Text_EqualsIgnoreCase(const char *left, const char *right) {
@@ -62,6 +69,7 @@ bool Sys_Text_SplitWhitespace(char *line, char **tokens, uint32_t token_capacity
       break;
     }
 
+    // 原地写入 NUL 终结当前 token，再跳过后续连续空白字符
     *cursor++ = '\0';
     while (sys_text_isspace(*cursor)) {
       cursor++;
@@ -104,6 +112,7 @@ bool Sys_Text_ParseFiniteF32(const char *text, float *value) {
     }
   }
 
+  // 整数与小数部分至少须存在一位数字（拒绝仅符号或孤立小数点）
   if (!digits_seen) {
     return false;
   }
@@ -120,6 +129,7 @@ bool Sys_Text_ParseFiniteF32(const char *text, float *value) {
     }
     while (*cursor >= '0' && *cursor <= '9') {
       uint32_t digit = (uint32_t)(*cursor - '0');
+      // 将指数上限钳位至 100，防止超大指数导致循环耗时过长或整数溢出
       if (exponent < 100U) {
         exponent = exponent * 10U + digit;
         if (exponent > 100U) {
@@ -140,6 +150,7 @@ bool Sys_Text_ParseFiniteF32(const char *text, float *value) {
     result = exponent_negative ? (result / factor) : (result * factor);
   }
 
+  // 严格校验无尾随字符且未上溢为 Inf/NaN
   if (*cursor != '\0' || !SYS_ISFINITE(result)) {
     return false;
   }

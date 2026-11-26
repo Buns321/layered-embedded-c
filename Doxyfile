@@ -1,5 +1,5 @@
 # Doxyfile for layered-embedded-c
-# 当前先行覆盖已完成 Doxygen 示范改造的 User/ 目录；后续随 BSP/ 与 Framework/ 迁移逐步扩展 INPUT。
+# 覆盖全部自有业务代码目录（User/、BSP/、Framework/{Core,Control,Drivers,Chassis}/）。
 
 PROJECT_NAME           = "layered-embedded-c"
 PROJECT_BRIEF          = "STM32F407VET6 分层嵌入式 C11 工程"
@@ -12,10 +12,15 @@ JAVADOC_AUTOBRIEF      = YES
 EXTRACT_ALL            = NO
 EXTRACT_STATIC         = YES
 
-INPUT                  = User
+INPUT                  = User \
+                         BSP/Inc BSP/Src \
+                         Framework/Core/Inc Framework/Core/Src \
+                         Framework/Control/Inc Framework/Control/Src \
+                         Framework/Drivers/Inc Framework/Drivers/Src \
+                         Framework/Chassis/Inc Framework/Chassis/Src
 FILE_PATTERNS          = *.h *.c
 RECURSIVE              = NO
-EXCLUDE_PATTERNS       = */Drivers/* */Middlewares/* */ThirdParty/*
+EXCLUDE_PATTERNS       = */ThirdParty/*
 
 QUIET                  = YES
 WARNINGS               = YES

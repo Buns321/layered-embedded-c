@@ -1,7 +1,9 @@
 /**
  * @file imu_base.c
  * @brief 9 通道 IMU 多态基类与快照合并实现。
- * @ingroup drivers
+ * @details 属于 Framework/Drivers 设备驱动层，实现样本清洗（非有限值剔除）、
+ *          filter_base_t 滤波调度、偏航角相对零参考折叠以及临界区原子快照发布。
+ * @ingroup Framework_Drivers
  */
 
 #include "imu_base.h"
@@ -11,6 +13,12 @@
 #include <stddef.h>
 #include <string.h>
 
+/**
+ * @brief 根据通道索引返回 imu_sample_t 中对应物理量字段的指针。
+ * @param[in,out] sample  IMU 样本结构体指针。
+ * @param[in]     channel 通道索引（0..IMU_CHANNEL_INDEX_COUNT-1）。
+ * @return 对应浮点字段指针；通道索引越界时返回 NULL。
+ */
 static float *imu_value_slot(imu_sample_t *sample, uint32_t channel) {
   switch (channel) {
   case IMU_CHANNEL_INDEX_YAW:
@@ -36,6 +44,14 @@ static float *imu_value_slot(imu_sample_t *sample, uint32_t channel) {
   }
 }
 
+/**
+ * @brief 清洗输入帧：校验通道掩码范围并清除非有限值通道的 valid_mask 位。
+ * @param[in]  input     原始输入样本帧。
+ * @param[out] sanitized 清洗后的输出样本帧。
+ * @return 清洗后是否仍包含至少一个有效通道。
+ * @retval true  掩码合法且至少存在一个有限值通道。
+ * @retval false 存在越界掩码位或所有通道均非有限值。
+ */
 static bool imu_sanitize_frame(const filter_sample_t *input, filter_sample_t *sanitized) {
   if ((input->valid_mask & ~IMU_CHANNEL_MASK) != 0U) {
     return false;
@@ -51,6 +67,16 @@ static bool imu_sanitize_frame(const filter_sample_t *input, filter_sample_t *sa
   return sanitized->valid_mask != 0U;
 }
 
+/**
+ * @brief 将单帧多通道数据合并至目标 imu_sample_t 快照，并应用偏航零偏移。
+ * @param[in,out] sample         待更新的快照结构体（调用方须持有临界区）。
+ * @param[in]     frame          已清洗或已滤波的样本帧。
+ * @param[in]     clear_mask     若输入帧未覆盖该掩码位则同步清除快照对应有效位。
+ * @param[in]     yaw_offset_deg 软件偏航零参考偏移量（单位：deg）。
+ * @return 是否有至少一个通道实际写入快照。
+ * @retval true  至少更新了一个通道并递增了 sequence。
+ * @retval false 未发生有效更新。
+ */
 static bool imu_merge_frame(imu_sample_t *sample, const filter_sample_t *frame, uint32_t clear_mask,
                             float yaw_offset_deg) {
   bool updated = false;
@@ -58,6 +84,7 @@ static bool imu_merge_frame(imu_sample_t *sample, const filter_sample_t *frame, 
   for (uint32_t ch = 0U; ch < IMU_CHANNEL_INDEX_COUNT; ++ch) {
     uint32_t mask = (uint32_t)1U << ch;
 
+    // 若本次提交声明覆盖某通道（clear_mask）但滤波后该通道失效，则清除旧有效标志
     if ((clear_mask & mask) != 0U && (frame->valid_mask & mask) == 0U) {
       sample->valid_mask &= ~mask;
     }
@@ -72,6 +99,7 @@ static bool imu_merge_frame(imu_sample_t *sample, const filter_sample_t *frame, 
     }
 
     if (ch == IMU_CHANNEL_INDEX_YAW) {
+      // 扣除软件偏航零点偏移后统一折叠至 [-180, 180) 度，避免跨 ±180 度跳变
       float wrapped_deg = 0.0f;
       if (!Sys_Angle_WrapDegrees(value - yaw_offset_deg, &wrapped_deg)) {
         sample->valid_mask &= ~mask;
@@ -136,13 +164,16 @@ bool Dev_IMU_Base_SubmitSample(imu_base_t *imu_h, const filter_sample_t *frame) 
     return false;
   }
 
+  // 临界区保护原始快照合并，防止控制/遥测任务读到撕裂的多通道结构体
   Sys_Critical_Enter();
   (void)imu_merge_frame(&imu_h->raw_sample, &sanitized, 0U, 0.0f);
   Sys_Critical_Exit();
 
+  // 滤波计算在临界区外执行，减少关中断时间
   filter_sample_t filtered;
   Filter_Base_Update(imu_h->filter_h, &sanitized, &filtered);
 
+  // 临界区原子合并滤波后快照与偏航零参考偏移，并递增发布计数
   Sys_Critical_Enter();
   bool published =
       imu_merge_frame(&imu_h->sample, &filtered, sanitized.valid_mask, imu_h->yaw_offset_deg);
@@ -184,6 +215,7 @@ void Dev_IMU_Base_GetStatus(imu_base_t *imu_h, imu_status_t *status) {
   imu_status_t dev_status = {0};
   imu_h->ops->get_status(imu_h, &dev_status);
 
+  // 在临界区内补齐基类侧的样本计数与时间戳字段，保证与最新快照一致
   Sys_Critical_Enter();
   dev_status.is_started = imu_h->is_started;
   dev_status.has_timestamp = (imu_h->sample.sequence != 0U);
@@ -258,6 +290,7 @@ void Dev_IMU_Base_ZeroYaw(imu_base_t *imu_h) {
   Sys_Critical_Enter();
   if ((imu_h->sample.valid_mask & IMU_CHANNEL_YAW) != 0U) {
     float wrapped_deg = 0.0f;
+    // 将当前显示 yaw_deg 叠加回 yaw_offset_deg，使下一刻输出相对当前朝向归零
     if (Sys_Angle_WrapDegrees(imu_h->yaw_offset_deg + imu_h->sample.yaw_deg, &wrapped_deg)) {
       imu_h->yaw_offset_deg = wrapped_deg;
       imu_h->sample.yaw_deg = 0.0f;

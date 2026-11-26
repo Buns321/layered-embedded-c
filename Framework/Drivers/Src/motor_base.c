@@ -1,7 +1,9 @@
 /**
  * @file motor_base.c
  * @brief 闭环电机多态基类实现。
- * @ingroup drivers
+ * @details 属于 Framework/Drivers 设备驱动层，实现编码器增量到 m/s 的换算、
+ *          SISO 控制律调度、输出饱和钳位以及非有限值故障保护。
+ * @ingroup Framework_Drivers
  */
 
 #include "motor_base.h"
@@ -65,6 +67,7 @@ void Dev_Motor_Base_Enable(motor_base_t *motor_h) {
   if (motor_h == NULL || motor_h->ops == NULL || motor_h->ops->enable == NULL) {
     return;
   }
+  // 使能前先清空积分历史并重对齐编码器，防止历史误差或累积脉冲引起启动突变
   Dev_Motor_Base_Reset(motor_h);
   motor_h->ops->enable(motor_h);
   motor_h->state = DEV_MOTOR_ENABLE;
@@ -75,6 +78,7 @@ void Dev_Motor_Base_Disable(motor_base_t *motor_h) {
       motor_h->ops->disable == NULL) {
     return;
   }
+  // 先撤去占空比再拉低硬件使能引脚，确保无带载关断冲击
   motor_h->ops->set_power(motor_h, 0.0f);
   motor_h->ops->disable(motor_h);
   motor_h->state = DEV_MOTOR_DISABLE;
@@ -112,6 +116,7 @@ void Dev_Motor_Base_Update(motor_base_t *motor_h) {
   }
 
   if (motor_h->encoder_h != NULL) {
+    // 轮速换算：v = delta_counts / (counts_per_meter * control_period_s)
     int32_t delta_counts = BSP_Encoder_GetDelta(motor_h->encoder_h);
     float speed_scale = motor_h->counts_per_meter * motor_h->control_period_s;
     if (!SYS_IS_POS_FINITE(speed_scale)) {
@@ -142,12 +147,14 @@ void Dev_Motor_Base_Update(motor_base_t *motor_h) {
       Ctrl_Base_Update(motor_h->controller_h, motor_h->target_speed_mps, motor_h->current_speed_mps,
                        motor_h->control_period_s, &power_duty);
 
+  // 控制律返回非有限值或错误态时立即归零占空比，防止失控输出
   if (!SYS_ISFINITE(power_duty) || status == CONTROLLER_STATUS_ERROR) {
     motor_h->controller_status = CONTROLLER_STATUS_ERROR;
     motor_h->ops->set_power(motor_h, 0.0f);
     return;
   }
 
+  // 对执行器占空比进行对称限幅，并标记是否发生输出饱和
   float limit_duty = (float)motor_h->max_duty;
   float clamped_duty = SYS_CLAMP(power_duty, -limit_duty, limit_duty);
   if (clamped_duty != power_duty) {

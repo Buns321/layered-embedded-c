@@ -1,7 +1,10 @@
 /**
  * @file imu_mpu6050.c
  * @brief MPU6050 I2C 6 轴 IMU 驱动实现。
- * @ingroup drivers
+ * @details 属于 Framework/Drivers 设备驱动层，实现寄存器配置与回读校验、
+ *          14 字节突发读取（加速度/温度/陀螺仪）、静止方差校验零偏标定与
+ *          imu_base_t 快照提交。
+ * @ingroup Framework_Drivers
  */
 
 #include "imu_mpu6050.h"
@@ -14,27 +17,53 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief 采样率分频寄存器地址（SMPLRT_DIV）。 */
 #define MPU6050_REG_SMPLRT_DIV 0x19U
+/** @brief 数字低通滤波器配置寄存器地址（CONFIG）。 */
 #define MPU6050_REG_CONFIG 0x1AU
+/** @brief 陀螺仪量程配置寄存器地址（GYRO_CONFIG）。 */
 #define MPU6050_REG_GYRO_CONFIG 0x1BU
+/** @brief 加速度计量程配置寄存器地址（ACCEL_CONFIG）。 */
 #define MPU6050_REG_ACCEL_CONFIG 0x1CU
+/** @brief 中断使能寄存器地址（INT_ENABLE）。 */
 #define MPU6050_REG_INT_ENABLE 0x38U
+/** @brief 加速度 X 轴高字节起始地址（连续 14 字节突发读取起点）。 */
 #define MPU6050_REG_ACCEL_XOUT_H 0x3BU
+/** @brief 用户控制寄存器地址（USER_CTRL）。 */
 #define MPU6050_REG_USER_CTRL 0x6AU
+/** @brief 电源管理 1 寄存器地址（PWR_MGMT_1）。 */
 #define MPU6050_REG_PWR_MGMT_1 0x6BU
+/** @brief 电源管理 2 寄存器地址（PWR_MGMT_2）。 */
 #define MPU6050_REG_PWR_MGMT_2 0x6CU
+/** @brief 器件 ID 寄存器地址（WHO_AM_I）。 */
 #define MPU6050_REG_WHO_AM_I 0x75U
 
+/** @brief PWR_MGMT_1 软复位位掩码（DEVICE_RESET）。 */
 #define MPU6050_PWR1_DEVICE_RESET 0x80U
+/** @brief PWR_MGMT_1 时钟源选择：PLL with X-axis gyroscope reference。 */
 #define MPU6050_PWR1_CLOCK_PLL_XGYRO 0x01U
+/** @brief 最小轮询采样周期（单位：ms）。 */
 #define MPU6050_SAMPLE_PERIOD_MIN_MS 1U
+/** @brief 软复位后等待内部电路稳定的延时（单位：ms）。 */
 #define MPU6050_RESET_DELAY_MS 100U
+/** @brief 突发读取字节数：Accel(6B) + Temp(2B) + Gyro(6B) = 14 字节。 */
 #define MPU6050_BURST_SIZE 14U
+/** @brief 标准重力加速度常数（单位：m/s^2）。 */
 #define MPU6050_GRAVITY_MPS2 9.80665f
+/** @brief 静止校准允许的最大陀螺仪标准差阈值（单位：deg/s）。 */
 #define MPU6050_CAL_MAX_STD_DPS 3.0f
+/** @brief 静止校准加速度模长下限，过滤失重/异常读数（单位：m/s^2）。 */
 #define MPU6050_CAL_MIN_ACCEL_MPS2 3.0f
+/** @brief 静止校准加速度模长上限，过滤剧烈晃动（单位：m/s^2）。 */
 #define MPU6050_CAL_MAX_ACCEL_MPS2 15.0f
 
+/**
+ * @brief 向 MPU6050 指定寄存器写入单字节并统计 I2C 错误。
+ * @param[in,out] imu   MPU6050 对象指针。
+ * @param[in]     reg   8 位寄存器地址。
+ * @param[in]     value 待写入字节。
+ * @return I2C 写操作状态码。
+ */
 static bsp_status_t mpu6050_write_reg(imu_mpu6050_t *imu, uint8_t reg, uint8_t value) {
   bsp_status_t st = BSP_I2C_MemWrite(&imu->cfg.i2c, reg, 1U, &value, 1U);
   if (st != BSP_OK) {
@@ -44,6 +73,14 @@ static bsp_status_t mpu6050_write_reg(imu_mpu6050_t *imu, uint8_t reg, uint8_t v
   return st;
 }
 
+/**
+ * @brief 从 MPU6050 指定寄存器连续读取多字节并统计 I2C 错误。
+ * @param[in,out] imu  MPU6050 对象指针。
+ * @param[in]     reg  起始寄存器地址。
+ * @param[out]    data 接收缓冲区指针。
+ * @param[in]     size 读取字节数。
+ * @return I2C 读操作状态码。
+ */
 static bsp_status_t mpu6050_read_regs(imu_mpu6050_t *imu, uint8_t reg, uint8_t *data,
                                       uint16_t size) {
   bsp_status_t st = BSP_I2C_MemRead(&imu->cfg.i2c, reg, 1U, data, size);
@@ -54,7 +91,13 @@ static bsp_status_t mpu6050_read_regs(imu_mpu6050_t *imu, uint8_t reg, uint8_t *
   return st;
 }
 
+/**
+ * @brief 将大端序两字节原始数据解码为有符号 16 位整数。
+ * @param[in] data 指向高字节在前、低字节在后的 2 字节数组。
+ * @return 解码后的有符号 16 位整数。
+ */
 static int16_t mpu6050_be_i16(const uint8_t *data) {
+  // 显式按无符号组合再做补码转换，避免 C11 下有符号左移溢出的未定义行为
   int32_t raw = ((int32_t)data[0] << 8) | (int32_t)data[1];
   if ((raw & 0x8000) != 0) {
     raw -= 0x10000;
@@ -62,6 +105,11 @@ static int16_t mpu6050_be_i16(const uint8_t *data) {
   return (int16_t)raw;
 }
 
+/**
+ * @brief 根据加速度计量程枚举返回灵敏度（LSB/g）。
+ * @param[in] range 加速度计量程枚举。
+ * @return 灵敏度数值（单位：LSB/g；非法枚举返回 0.0f）。
+ */
 static float mpu6050_accel_lsb(mpu6050_accel_range_t range) {
   switch (range) {
   case MPU6050_ACCEL_RANGE_2G:
@@ -77,6 +125,11 @@ static float mpu6050_accel_lsb(mpu6050_accel_range_t range) {
   }
 }
 
+/**
+ * @brief 根据陀螺仪量程枚举返回灵敏度（LSB/(deg/s)）。
+ * @param[in] range 陀螺仪量程枚举。
+ * @return 灵敏度数值（单位：LSB/(deg/s)；非法枚举返回 0.0f）。
+ */
 static float mpu6050_gyro_lsb(mpu6050_gyro_range_t range) {
   switch (range) {
   case MPU6050_GYRO_RANGE_250DPS:
@@ -92,10 +145,21 @@ static float mpu6050_gyro_lsb(mpu6050_gyro_range_t range) {
   }
 }
 
+/**
+ * @brief 根据 DLPF 配置返回陀螺仪内部基准输出速率（Hz）。
+ * @param[in] dlpf 数字低通滤波器配置枚举。
+ * @return 内部基准速率（DLPF 关闭即 256 Hz 时为 8000 Hz，其余为 1000 Hz）。
+ */
 static uint32_t mpu6050_gyro_rate_hz(mpu6050_dlpf_t dlpf) {
   return (dlpf == MPU6050_DLPF_256HZ) ? 8000U : 1000U;
 }
 
+/**
+ * @brief 按配置的轴排列与符号将芯片坐标系三轴向量映射至车体坐标系。
+ * @param[in]  cfg    驱动配置结构体指针。
+ * @param[in]  input  芯片坐标系三轴分量。
+ * @param[out] output 车体坐标系三轴分量。
+ */
 static void mpu6050_apply_axis_map(const imu_mpu6050_cfg_t *cfg, const float input[3],
                                    float output[3]) {
   for (uint8_t axis = 0U; axis < 3U; ++axis) {
@@ -104,9 +168,18 @@ static void mpu6050_apply_axis_map(const imu_mpu6050_cfg_t *cfg, const float inp
   }
 }
 
+/**
+ * @brief 突发读取 14 字节原始寄存器并换算为车体系工程单位样本。
+ * @param[in,out] imu    MPU6050 对象指针。
+ * @param[in]     now_ms 当前系统单调时间戳（单位：ms）。
+ * @param[out]    sample 转换后的工程单位样本输出指针。
+ * @return I2C 读取状态码。
+ */
 static bsp_status_t mpu6050_acquire(imu_mpu6050_t *imu, uint32_t now_ms,
                                     mpu6050_raw_sample_t *sample) {
   uint8_t data[MPU6050_BURST_SIZE] = {0};
+  // 从 ACCEL_XOUT_H (0x3B) 连续突发读取 14 字节，保证同一时刻的六轴与温度锁存一致性：
+  // [0..5]=ACCEL_XYZ(大端), [6..7]=TEMP(大端), [8..13]=GYRO_XYZ(大端)
   bsp_status_t st = mpu6050_read_regs(imu, MPU6050_REG_ACCEL_XOUT_H, data, MPU6050_BURST_SIZE);
   if (st != BSP_OK) {
     return st;
@@ -133,12 +206,18 @@ static bsp_status_t mpu6050_acquire(imu_mpu6050_t *imu, uint32_t now_ms,
     sample->gyro_dps[axis] = mapped_gyro_dps[axis];
   }
 
+  // 数据手册温度换算公式：T(°C) = TEMP_OUT / 340.0 + 36.53
   int16_t temp_raw = mpu6050_be_i16(&data[6]);
   sample->temperature_c = ((float)temp_raw / 340.0f) + 36.53f;
   sample->time_ms = now_ms;
   return BSP_OK;
 }
 
+/**
+ * @brief 检查加速度模长是否处于静止重力加速度合理窗口 [3, 15] m/s^2 内。
+ * @param[in] sample 工程单位样本指针。
+ * @return 是否满足静止条件。
+ */
 static bool mpu6050_accel_is_stationary(const mpu6050_raw_sample_t *sample) {
   float norm_sq = 0.0f;
   for (uint8_t axis = 0U; axis < 3U; ++axis) {
@@ -148,6 +227,10 @@ static bool mpu6050_accel_is_stationary(const mpu6050_raw_sample_t *sample) {
   return norm >= MPU6050_CAL_MIN_ACCEL_MPS2 && norm <= MPU6050_CAL_MAX_ACCEL_MPS2;
 }
 
+/**
+ * @brief 清空陀螺仪零偏校准累加器。
+ * @param[in,out] imu MPU6050 对象指针。
+ */
 static void mpu6050_cal_reset(imu_mpu6050_t *imu) {
   imu->calibration_count = 0U;
   for (uint8_t axis = 0U; axis < 3U; ++axis) {
@@ -156,6 +239,13 @@ static void mpu6050_cal_reset(imu_mpu6050_t *imu) {
   }
 }
 
+/**
+ * @brief 结束零偏采集：校验各轴标准差并更新 gyro_bias_dps。
+ * @param[in,out] imu MPU6050 对象指针。
+ * @return 校准是否通过标准差门限。
+ * @retval true  三轴标准差均 <= MPU6050_CAL_MAX_STD_DPS，均值已写入零偏。
+ * @retval false 存在某轴抖动超标，拒绝更新零偏。
+ */
 static bool mpu6050_cal_finish(imu_mpu6050_t *imu) {
   float count = (float)imu->calibration_count;
   for (uint8_t axis = 0U; axis < 3U; ++axis) {
@@ -172,6 +262,11 @@ static bool mpu6050_cal_finish(imu_mpu6050_t *imu) {
   return true;
 }
 
+/**
+ * @brief 写入时钟、分频、DLPF、量程寄存器并执行回读校验。
+ * @param[in,out] imu MPU6050 对象指针。
+ * @return 配置与回读校验状态码。
+ */
 static bsp_status_t mpu6050_configure(imu_mpu6050_t *imu) {
   const uint8_t gyro_cfg = (uint8_t)((uint8_t)imu->cfg.gyro_range << 3U);
   const uint8_t accel_cfg = (uint8_t)((uint8_t)imu->cfg.accel_range << 3U);
@@ -209,6 +304,7 @@ static bsp_status_t mpu6050_configure(imu_mpu6050_t *imu) {
     return st;
   }
 
+  // 逐一读回关键配置寄存器，防止 I2C 总线干扰或芯片未退出复位导致配置静默丢失
   uint8_t rb = 0U;
   st = mpu6050_read_regs(imu, MPU6050_REG_SMPLRT_DIV, &rb, 1U);
   if (st != BSP_OK || rb != imu->sample_rate_divider) {
@@ -234,11 +330,20 @@ static bsp_status_t mpu6050_configure(imu_mpu6050_t *imu) {
   return BSP_OK;
 }
 
+/**
+ * @brief 将状态机转入错误态并置位失败标志。
+ * @param[in,out] imu MPU6050 对象指针。
+ */
 static void mpu6050_enter_error(imu_mpu6050_t *imu) {
   imu->state = MPU6050_STATE_ERROR;
   imu->last_request_failed = true;
 }
 
+/**
+ * @brief 推进静止陀螺仪零偏采集状态机。
+ * @param[in,out] imu    MPU6050 对象指针。
+ * @param[in]     now_ms 当前系统单调时间戳（单位：ms）。
+ */
 static void mpu6050_process_calibration(imu_mpu6050_t *imu, uint32_t now_ms) {
   if (!Sys_Time_HasReachedMs(now_ms, imu->next_sample_ms)) {
     return;
@@ -272,6 +377,11 @@ static void mpu6050_process_calibration(imu_mpu6050_t *imu, uint32_t now_ms) {
   imu->last_request_failed = false;
 }
 
+/**
+ * @brief 在 READY 状态下按采样周期读取六轴数据、扣除零偏并提交基类滤波发布。
+ * @param[in,out] imu    MPU6050 对象指针。
+ * @param[in]     now_ms 当前系统单调时间戳（单位：ms）。
+ */
 static void mpu6050_process_ready(imu_mpu6050_t *imu, uint32_t now_ms) {
   if (!Sys_Time_HasReachedMs(now_ms, imu->next_sample_ms)) {
     return;
@@ -288,6 +398,7 @@ static void mpu6050_process_ready(imu_mpu6050_t *imu, uint32_t now_ms) {
     raw.gyro_dps[axis] -= imu->gyro_bias_dps[axis];
   }
 
+  // 临界区更新原始工程单位快照，供外部诊断接口读取
   Sys_Critical_Enter();
   imu->raw_sample = raw;
   imu->has_raw_sample = true;
@@ -313,6 +424,10 @@ static void mpu6050_process_ready(imu_mpu6050_t *imu, uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief MPU6050 虚表回调：启动软复位状态机。
+ * @param[in,out] imu_h IMU 基类指针（实际指向 imu_mpu6050_t）。
+ */
 static void mpu6050_start_op(imu_base_t *imu_h) {
   imu_mpu6050_t *imu = (imu_mpu6050_t *)imu_h;
   if (imu == NULL || imu->is_started) {
@@ -323,6 +438,11 @@ static void mpu6050_start_op(imu_base_t *imu_h) {
   imu->last_request_failed = false;
 }
 
+/**
+ * @brief MPU6050 虚表回调：周期推进复位、配置、校准与采样状态机。
+ * @param[in,out] imu_h  IMU 基类指针（实际指向 imu_mpu6050_t）。
+ * @param[in]     now_ms 当前系统单调时间戳（单位：ms）。
+ */
 static void mpu6050_process_op(imu_base_t *imu_h, uint32_t now_ms) {
   imu_mpu6050_t *imu = (imu_mpu6050_t *)imu_h;
   if (imu == NULL || !imu->is_started) {
@@ -379,6 +499,11 @@ static void mpu6050_process_op(imu_base_t *imu_h, uint32_t now_ms) {
   }
 }
 
+/**
+ * @brief MPU6050 虚表回调：汇总设备忙闲状态与饱和累加错误计数。
+ * @param[in,out] imu_h  IMU 基类指针（实际指向 imu_mpu6050_t）。
+ * @param[out]    status 状态输出结构体指针。
+ */
 static void mpu6050_get_status_op(imu_base_t *imu_h, imu_status_t *status) {
   imu_mpu6050_t *imu = (imu_mpu6050_t *)imu_h;
   if (imu == NULL || status == NULL) {
@@ -402,8 +527,13 @@ static void mpu6050_get_status_op(imu_base_t *imu_h, imu_status_t *status) {
   };
 }
 
+/**
+ * @brief MPU6050 虚表回调：委托基类执行软件偏航归零。
+ * @param[in,out] imu_h IMU 基类指针。
+ */
 static void mpu6050_set_zero_op(imu_base_t *imu_h) { Dev_IMU_Base_ZeroYaw(imu_h); }
 
+/** @brief MPU6050 IMU 多态虚表实例。 */
 static const imu_ops_t s_mpu6050_ops = {
     .start = mpu6050_start_op,
     .process = mpu6050_process_op,
@@ -411,6 +541,11 @@ static const imu_ops_t s_mpu6050_ops = {
     .set_zero = mpu6050_set_zero_op,
 };
 
+/**
+ * @brief 校验 MPU6050 初始化配置参数、分频器范围与轴映射排列合法性。
+ * @param[in] cfg 待校验的配置结构体指针。
+ * @return 配置是否合法。
+ */
 static bool mpu6050_cfg_isvalid(const imu_mpu6050_cfg_t *cfg) {
   if (cfg == NULL || cfg->name == NULL || cfg->filter == NULL || cfg->i2c.hi2c == NULL ||
       cfg->i2c.timeout_ms == 0U ||
@@ -429,6 +564,7 @@ static bool mpu6050_cfg_isvalid(const imu_mpu6050_cfg_t *cfg) {
     return false;
   }
 
+  // 校验 axis_source 为 {0, 1, 2} 的无重复排列，且 axis_sign 仅为 ±1
   bool seen[3] = {false, false, false};
   for (uint8_t axis = 0U; axis < 3U; ++axis) {
     uint8_t src = cfg->axis_source[axis];
@@ -500,6 +636,7 @@ bsp_status_t Dev_IMU_MPU6050_RequestGyroCalibration(imu_mpu6050_t *imu) {
 
 #else
 
+/** @brief I2C 模块未启用时的空编译单元占位类型。 */
 typedef int imu_mpu6050_empty_tu_t;
 
 #endif /* HAL_I2C_MODULE_ENABLED || BSP_HOST_STUB */
