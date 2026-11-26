@@ -39,7 +39,7 @@
       {
         "type": "command",
         "command": "python3 ./hooks/auto_commit_stop.py",
-        "timeout": 15
+        "timeout": 45
       }
     ]
   }
