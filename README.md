@@ -1,183 +1,71 @@
 # layered-embedded-c
 
-面向 STM32F407 和 STM32F103 的分层嵌入式 C 工程：应用开发集中在 App 和 RTOS，
-具体设备、硬件映射和对象装配集中在 Core/Board，共享框架提供 HAL 封装、设备
-接口、控制、运动解算、滤波和系统服务。
+面向 **STM32F407VET6** 四轮全向小车的精简 **ISO C11** 分层嵌入式工程（根目录单工程布局，旧版 v1 多板与 `Platform/` 架构归档于 Git 标签 `v1-layered-archive`）。
 
-## 当前状态
+## 核心特性
 
-F407 小车已完成 App/Core/Board 迁移，并将 App 内部拆分为命令、启动、安全、
-控制和遥测模块；F103 继续按
-[迁移路线](doc/todo.md)逐步完成边界调整。
-已完成并通过工具链构建的是**基础设施层**：
+- **极薄 `BSP/` 层**：直连 CubeMX 句柄的 `bsp_dwt` / `bsp_gpio` / `bsp_pwm` / `bsp_encoder` / `bsp_uart` / `bsp_i2c` / `bsp_flash`，消除枚举包装壳。
+- **三大静态核心服务**（`Framework/Core/`）：
+  - `sys_daemon`：静态离线看门狗，支持 `INIT_GRACE` 宽限与临界区外边沿回调。
+  - `sys_topic`：严格 ISO C11 静态类型安全 Pub-Sub 通道宏。
+  - `rtos_task`：集中式静态周期任务宏 `RTOS_TASK_PERIODIC`、DWT 耗时/栈水位监控与强实现 `vApplicationStackOverflowHook` 紧急断电钩子。
+- **5 处领域多态边界**（首成员嵌入 `base` + 静态只读 `ops`）：
+  `controller_base_t`、`motor_base_t`、`imu_base_t`、`telemetry_base_t`、`chassis_base_t`。
+- **`Car_Omni` 一键门面**：静态装配四轮 TB6612 + 编码器 + PID + 全向运动学，按 `huart == NULL` 自动裁剪可选外设（WHT101 / JoyCon / JustFloat / FireWater），支持悬空分步调试与失联急停锁存。
+- **零动态内存**：生产代码与 ELF 禁止 `malloc`/`calloc`/`realloc`/`free`/`ucHeap`/`pvPortMalloc`/`vPortFree`，开启 `configCHECK_FOR_STACK_OVERFLOW=2`。
 
-- **Platform**：GPIO / PWM / Encoder / UART / EXTI / I2C / SPI / ADC / DAC / CAN / RTC / Flash / CRC / RNG 的不依赖 HAL 类型接口。F407 实现覆盖 Todo 中全部实例；F103C8T6 实现覆盖 USART1–3、TIM、I2C1–2、SPI1–2、ADC1–2、CAN1、RTC 和内部 Flash，不伪造芯片不存在的 DAC、CAN2、I2C3、ADC3、SPI3 和 USART4–6。两层都遵循编译期实例开关、CubeMX 初始化边界、回调所有权、错误快照与 IT/DMA 缓冲区契约。
-- **DeviceDrivers**：LED（GPIO / PWM）、电机（TB6612 + 闭环 base）、编码器（TIM + delta / resync）、UART（base + port）、IMU（统一原始帧/滤波管线、WHT101 UART、MPU6050 I2C）、JoyCon ASCII 命令、遥测（base + FireWater / JustFloat UART）。
-- **Controller**：轮级 SISO 控制契约、线性控制律、PID、compose。
-- **Policy**：独立 MIMO 运动策略层，当前实现 omni 运动学。
-- **Chassis**：底盘生命周期基类 + omni 底盘。
-- **Filter**：样本、base、低通、透传、chain、distributor、IMU 六轴校正和
-  七状态 EKF 接口壳层。
-- **System**：数学、检查、限幅、符号、延时、临界区、Fault 诊断、日志 base、
-  SEGGER RTT、DWT 时间辅助和双页 Flash 记录存储。
-- **RTOS / App**：两块板各自持有独立的 App 和 RTOS 入口；RTOS 固定使用
-  CMSIS-RTOS2；F407 已接入 100 Hz
-  四轮 PID、WHT101 上电归零、JoyCon 命令、50 Hz JustFloat 和 RTT 监控，
-  F103 继续使用自己的 CubeMX 任务配置。
-- **Core/Board**：F407 已建立板级装配区，负责具体设备、资源映射、依赖注入和
-  `Core_Board_Init()`；App 通过 `app_car_dependencies_t` 接收逻辑服务。
-- **Boards**：`Boards/f103c8t6-platform-test/`、
-  `Boards/f103c8t6-fast-channel-task-1/` 和
-  `Boards/f407vet6-omni-car/` 是三个平级、独立的
-  固件工程，各自持有 CubeMX、HAL、FreeRTOS、App、RTOS、启动文件、链接脚本和
-  CMake presets。F407 已在板级工程内建立 Core/Board 边界，F103 迁移待完成。
-  共享的 Platform、DeviceDrivers、Controller、Policy、Filter、System 仍位于
-  仓库根目录。工程目录统一采用 `<mcu>-<name>` 命名。
+## 5 分钟快速开始
 
-尚未完成或暂缓：
+依赖：CMake ≥ 3.22、Ninja、`arm-none-eabi-gcc`（交叉编译）及宿主机 GCC/Clang（单测与检查）。
 
-- F407 蓝牙/JoyCon/JustFloat 和 WHT101 的实板联调
-- 参数标定
-- EKF 核心姿态算法、速通板完整六面翻转与蜂鸣器听测
-- Platform 新增外设的板上电气与时序验证
-- MCU 运行时与安全（剩余：复位原因、PVD/BOR、MPU、SWO/ITM、参数存储）
+```bash
+# 1. 宿主机 CTest 单元测试（14 项）
+cmake --preset Test && cmake --build --preset Test && ctest --preset Test --output-on-failure
 
-## 构建
+# 2. STM32F407VET6 固件构建（Debug / Release）
+cmake --preset Debug   && cmake --build --preset Debug
+cmake --preset Release && cmake --build --preset Release
 
-两块板级固件依赖：
-
-- `arm-none-eabi-gcc`（F407 Cortex-M4F 硬浮点，F103 Cortex-M3）
-- CMake ≥ 3.22
-- Ninja
-
-`arm-none-eabi-` 必须在 `PATH` 中，或在 CLion 工具链里配置。
-工程默认启用 `-Wall -Wextra`；第三方 HAL/FreeRTOS 目标单独关闭其不拥有的
-`unused-parameter` 告警。
-
-```powershell
-cd Boards/f407vet6-omni-car
-cmake --preset Debug
-cmake --build --preset Debug
+# 3. 本地全维度门禁（卫生 / 格式 / 静态分配 / 分层 / 预算 / CTest / clang-tidy / ELF）
+python3 tools/check.py --profile full --scope all
 ```
 
-F407 产物位于 `Boards/f407vet6-omni-car/build/Debug/`，包括 `f407vet6.elf` 和
-`f407vet6.map`。完整说明见
-[F407 板级工程](Boards/f407vet6-omni-car/README.md)。
-
-Release 构建：
-
-```powershell
-cmake --preset Release
-cmake --build --preset Release
-```
-
-F4 与 F1 的全实例 Platform 独立检查：
-
-```powershell
-cd cmake/platform-check
-cmake --preset f4-debug
-cmake --build --preset f4-debug
-cmake --preset f1-debug
-cmake --build --preset f1-debug
-```
-
-Release 检查和详细能力矩阵见 [Platform 契约](doc/platform.md)。
-
-F103 同样使用板级目录中的独立 presets：
-
-```powershell
-cd Boards/f103c8t6-platform-test
-cmake --preset Debug
-cmake --build --preset Debug
-```
-
-F103 产物位于 `Boards/f103c8t6-platform-test/build/Debug/`，包括 `f103c8t6.elf` 和
-`f103c8t6.map`。完整命令和当前接入状态见
-[F103 板级说明](Boards/f103c8t6-platform-test/README.md)。
-
-速通赛道任务一工程：
-
-```powershell
-cd Boards/f103c8t6-fast-channel-task-1
-cmake --preset Debug
-cmake --build --preset Debug
-```
-
-说明见
-[F103 速通任务一](Boards/f103c8t6-fast-channel-task-1/README.md)。
-
-## 烧录 / 调试
-
-工程使用 ST-Link + OpenOCD 即可，例如：
+烧录 `build/Debug/f407vet6.elf` 并查看 SEGGER RTT 日志（ST-Link + OpenOCD）：
 
 ```bash
 openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
-  -c "program Boards/f407vet6-omni-car/build/Debug/f407vet6.elf verify reset exit"
+  -c "program build/Debug/f407vet6.elf verify reset exit"
 ```
 
-实际接口配置按你的调试器与板卡调整。
-
-### RTT 日志
-
-F103 或 F407 构建时保持 `SYS_LOG_USE_RTT=ON`，烧录后运行：
+Windows 下通过 PowerShell 接收 RTT（详见 [RTT 日志接收](tools/rtt/README.md)）：
 
 ```powershell
-$env:OPENOCD_EXE = "D:\path\to\openocd.exe"
-.\tools\rtt\Receive-Rtt.ps1 -Board f103c8t6
+.\tools\rtt\Receive-Rtt.ps1 -Board f407vet6
 ```
 
-脚本通过 ST-Link 启动 OpenOCD RTT server，并把日志输出到当前终端。
-按 `Ctrl+C` 结束。详细参数见 [RTT 日志接收](tools/rtt/README.md)。
+## 目录结构
 
-## 文档
-
-- [框架契约](doc/framework-contract.md)
-- [架构说明](doc/architecture.md)
-- [应用示例](doc/examples/README.md)
-- [单位与量纲](doc/units.md)
-- [编码约定](doc/conventions.md)
-- [IMU 与 MPU6050](doc/imu.md)
-- [Platform 契约与能力矩阵](doc/platform.md)
-- [Platform 公共契约](doc/platform-contract.md)
-- Platform 全实例编译检查：`cmake/platform-check/README.md`
-- Platform/IMU 原生测试：`cmake/platform-test/README.md`
-- [F407 板级工程](Boards/f407vet6-omni-car/README.md)
-- [F407 硬件与接口规范](Boards/f407vet6-omni-car/hardware-map.md)
-- [F103 硬件与接口规范](Boards/f103c8t6-platform-test/hardware-map.md)
-- [F103 速通赛道任务一](Boards/f103c8t6-fast-channel-task-1/README.md)
-- [F103 速通赛道任务一硬件规范](Boards/f103c8t6-fast-channel-task-1/hardware-map.md)
-- [日志与遥测](doc/telemetry.md)
-- [RTT 日志接收](tools/rtt/README.md)
-- [TODO](doc/todo.md)
-- Doxygen：`doxygen doc/doxygen/Doxyfile`，或在 F407 板级构建目录执行
-  `cmake --build --preset Debug --target docs`
-
-## 目录
-
-| 目录 | 职责 |
+| 目录 / 文件 | 职责 |
 | --- | --- |
-| `Platform/` | HAL-free 公共契约 + common 逻辑；F4 / F1 只保留 HAL backend |
-| `DeviceDrivers/` | 设备抽象 base + 具体驱动 |
-| `Controller/` | 轮级 SISO 控制律 |
-| `Policy/` | 底盘级 MIMO 运动策略 |
-| `Filter/` | 固定容量多通道滤波 |
-| `System/` | 数学、检查、延时 |
-| `Middlewares/Third_Party/SEGGER_RTT/` | 两块板共享的可选 RTT 日志后端 |
-| `doc/` | 文档 |
-| `Boards/<mcu>-<name>/` | 独立板级固件：CubeMX、HAL、FreeRTOS、Core/Board、App、RTOS、启动文件和链接脚本 |
+| `BSP/` | Layer 1：极薄 STM32 HAL 封装（≤ 18 文件，≤ 2,000 行） |
+| `Framework/Core/` | 数学/角度/环形缓冲/日志/Flash 存储、`sys_daemon`、`sys_topic`、`rtos_task` |
+| `Framework/Control/` | 100% HAL-Free 控制律（PID/Linear/Compose）、滤波器与 `kinematics_omni` |
+| `Framework/Drivers/` | TB6612、WHT101、MPU6050、JoyCon、JustFloat/FireWater、LED |
+| `Framework/Chassis/` | `chassis_base`、`chassis_omni` 与 `car_omni` 一键整车门面 |
+| `Framework/ThirdParty/` | SEGGER RTT 源码 |
+| `User/` | Layer 3：用户板级映射 `board_cfg`、纯业务入口 `app_car` 与周期任务 `rtos_tasks` |
+| `Core/` / `Drivers/` / `Middlewares/` | CubeMX 生成工程、STM32F4 HAL 与 FreeRTOS（禁止手改非 USER CODE 区） |
+| `cmake/` | `car_framework.cmake` 统一编译子图、`verify_static_elf.cmake` 与 CubeMX 清单 |
+| `tests/` | 宿主机桩（`tests/stubs/`）与 14 项 CTest 单元测试 |
+| `tools/` | `check.py` 多维度门禁、`doc_map.json` 文档映射与 `rtt/` 接收脚本 |
+| `doc/` | 架构、硬件映射、新手上手指南、编码约定与物理单位规范 |
 
-## 设计要点
+## 文档导航
 
-- **静态设备模型**：设备在编译期确定，上层只接触 base 接口。
-- **应用与板级分离**：App 编写业务，Core/Board 完成硬件映射、对象装配和依赖注入。
-- **RTOS 固定 CMSIS-RTOS2**：任务负责调度和转发，业务状态机位于 App。
-- **base 首成员**：具体类型通过首成员嵌入 base，回调里强转回具体类型。
-- **注入式算法**：电机注入 `controller_base_t`，底盘注入对应类型的 policy base。
-- **无动态内存**：所有对象静态定义。
-- **单位显式**：物理量标识符带规范单位后缀，对外 SI 单位，设备层 duty，
-  编码器 counts。
-- **assert 管编程错误，状态枚举管运行时错误**。
-
-## 许可
-
-见 `LICENSE`。
+- [文档索引](doc/README.md)
+- [V2 三层架构说明](doc/architecture.md)
+- [新硬件接线与上手指南](doc/quickstart-new-board.md)
+- [STM32F407VET6 硬件与接口规范](doc/hardware-map.md)
+- [编码约定](doc/conventions.md)
+- [物理单位与量纲](doc/units.md)
+- [V2 架构精简重构详案](doc/v2-refactor-plan.md)

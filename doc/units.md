@@ -2,14 +2,7 @@
 
 ## 1. 标识符单位后缀
 
-表示物理量或工程量的标识符必须带规范单位后缀。规则适用于参数、结构体字段、
-局部变量、全局变量和常量；函数名、类型名、状态名、索引、对象或事件计数器
-和纯协议控制字段不因本规则改名。编码器 `counts` 属于工程量，仍使用 `_counts`
-后缀。后缀必须反映实际存储的量纲和倍率，不能只作为注释存在。
-
-下表是项目已登记的规范后缀。表中单位用于声明量纲，实际标识符必须按本表采用
-统一缩写；单位后必须以独立下划线 token 接入语义主体，新增单位、倍率或复合
-单位必须先登记到本表。
+表示物理量或工程量的标识符必须带规范单位后缀。规则适用于参数、结构体字段、局部变量、全局变量和常量；函数名、类型名、状态名、索引、对象或事件计数器和纯协议控制字段不因本规则改名。编码器 `counts` 属于工程量，仍使用 `_counts` 后缀。后缀必须反映实际存储的量纲和倍率，不能只作为注释存在。
 
 | 后缀 | 含义 | 示例 |
 | --- | --- | --- |
@@ -42,145 +35,75 @@
 
 补充约束：
 
-- 标识符保持项目原有大小写规则；小写标识符使用小写后缀，宏使用大写后缀，
-  例如 `timeout_ms` 与 `APP_CAR_TIMEOUT_MS`。
+- 标识符保持项目原有大小写规则；小写标识符使用小写后缀，宏使用大写后缀，例如 `timeout_ms` 与 `CAR_DEFAULT_RC_TIMEOUT_MS`。
 - `_g` 只表示标准重力加速度；质量统一使用 `_kg`。
-- `_mps2` 固定表示 m/s²，不得复用为加速度平方；方差和协方差使用登记过的
-  平方后缀。
-- 传感器灵敏度等复合单位使用 `<被测量>_per_<基准单位>` 形式登记，例如
-  `accel_lsb_per_g`、`gyro_lsb_per_dps`。
+- `_mps2` 固定表示 m/s²，不得复用为加速度平方；方差和协方差使用登记过的平方后缀。
+- 传感器灵敏度等复合单位使用 `<被测量>_per_<基准单位>` 形式登记，例如 `accel_lsb_per_g`、`gyro_lsb_per_dps`。
 - `_h` 只表示对象句柄，不表示亨利。
-- 单位后缀不能替代 Doxygen 契约；单位、范围、符号、所有权和调用上下文仍需
-  在公开接口处完整说明。
-
-本规则适用于新增和修改的标识符。存量不合规标识符按模块单独迁移，不得把
-单位后缀迁移混入无关功能改动。
+- 单位后缀不能替代接口契约；单位、范围、符号与调用上下文仍需在公开头文件简明说明。
 
 ## 2. 各层单位
 
-下表中的 `duty`、`target`、`measure`、`v`、`dir`、`omega` 等是量纲说明简写，
-不代表 C 标识符名；实际标识符必须按第 1 节带规范单位后缀。第 2–7 节保留的
-旧标识符用于描述存量接口，迁移时按第 1 节改名。
-
 | 层 / 对象 | 输入 | 输出 | 说明 |
 | --- | --- | --- | --- |
-| Platform PWM | `duty`, `max_duty` | CCR | `ccr = ARR * duty / max_duty` |
-| Platform Encoder | — | counts | 原始计数器 / 累计位置 |
-| Platform I2C | 7 位地址、字节数、毫秒超时 | 字节数 | IT/DMA 超时由设备层管理 |
-| Platform SPI | 字节数；16 位模式要求偶数长度 | 字节数 | HAL 帧数在实现内部换算 |
-| Platform ADC | 转换次数 | 原始 ADC 码值 | DMA `length` 是转换次数 |
-| Platform DAC | 原始样本 | 原始模拟码值 | DMA `length` 是样本数 |
-| Platform CAN | 经典帧、毫秒超时 | 经典帧 | DLC 为 `0..8` |
-| Platform RTC | 二进制日期/时间 | 二进制日期/时间 | 年份 2000..2099 |
-| Platform Flash | 字节地址/长度 | 字节数 | 写入要求 4 字节对齐 |
-| Encoder | — | delta counts | 自上次读取以来的增量 |
-| Motor | target m/s | duty | `current = delta / (counts_per_meter * period)` |
-| Controller | target/measure m/s, dt s | duty | 输出范围由调用方/电机上限约束 |
-| Policy (omni) | v m/s, dir rad, yaw rad, omega rad/s | 四轮 m/s | 世界系平动 + 独立自转 |
-| Chassis twist | `vx_body_mps`, `vy_body_mps`, `wz_radps` | 四轮目标 m/s | 车体系速度命令，具体底盘负责映射 |
-| IMU | 原始加速度 m/s²、陀螺仪 deg/s、姿态 deg | 滤波后使用相同单位 | 通道 0–8 固定 |
-| IMU 六轴校正 | offset m/s²、scale 无量纲、gyro bias deg/s | 标定后同一框架单位 | 原始通道由 `imu_base.raw_sample` 保留 |
-| EKF | 标定后六轴；核心内部 rad、rad/s | 状态 rad、rad/s；框架姿态 deg | 在线参数使用 SI |
-| JoyCon | ASCII 原始量 `[-100,100]` | 归一化 `[-1,1]` | 设备层不解释底盘单位 |
-| Filter | 用户定义通道 | 用户定义通道 | `time_ms` 毫秒 |
-| System delay | us / ms | — | DWT / `osDelay` |
+| `BSP_PWM` | `duty`、`max_duty` | CCR | `ccr = ARR * clamped_duty / effective_max`（64 位防溢出） |
+| `BSP_Encoder` | — | `counts` | 16/32 位增量 `delta_counts` 与累计 `position_counts` |
+| `BSP_I2C` | 7 位地址、字节数、毫秒超时 | 状态码 | 内部自动左移 1 位 |
+| `BSP_Flash` | 字节地址/长度 | 状态码 | F4 扇区擦除（16/64/128 KiB），写入须 4 字节对齐 |
+| `Motor`（TB6612） | `target_speed_mps` | `duty` | `current_speed_mps = delta_counts / (counts_per_meter * control_period_s)` |
+| `Controller` | `target`、`measure`、`dt_s` | `out` | 由 `ctrl_*_cfg_t` 声明目标与输出限幅 |
+| `Kinematics`（Omni） | `vx_mps`、`vy_mps`、`wz_radps`、`frame`、`yaw_rad` | 四轮 `out_wheel_mps[4]` | 显式区分 `CHASSIS_FRAME_BODY` 与 `CHASSIS_FRAME_WORLD` |
+| `Chassis` twist | `vx_body_mps`、`vy_body_mps`、`wz_radps` | 四轮目标 `m/s` | 底盘控制指令，由 `chassis_omni` 映射 |
+| `IMU` | 原始加速度 `m/s²`、角速度 `deg/s`、姿态 `deg` | 滤波后同一单位 | 9 通道样本 + 六轴标定滤波器 `filter_imu_cal` |
+| `JoyCon` | ASCII 原始值 `[-100, 100]` | 归一化 `[-1.0, 1.0]` | `left_x_norm`、`left_y_norm`、`right_x_norm`、`right_y_norm` |
+| `Filter` | 通道样本、`time_ms` | 滤波后样本 | 支持低通、透传、链式与六轴标定 |
+| `BSP_DWT` / `RTOS` | `us` / `ms` | 周期微秒 / 毫秒时间戳 | DWT 忙等短延时；`RTOS_TASK_PERIODIC` 基于 `osDelayUntil` |
 
 ## 3. 关键换算
 
-轮速：
+轮速换算：
 
-```
-current_speed[m/s] = delta[counts] / (counts_per_meter[counts/m] * control_period[s])
-```
-
-反推目标增量（需要时）：
-
-```
-delta[counts] = target_speed[m/s] * counts_per_meter[counts/m] * control_period[s]
+```text
+current_speed_mps = delta_counts / (counts_per_meter * control_period_s)
 ```
 
-PWM：
+PWM 占空比换算（`effective_max = (max_duty > 0) ? max_duty : (arr + 1)`）：
 
-```
-ccr = ARR * duty / max_duty
-```
-
-`Platform_PWM_SetDuty` 内部使用 64 位中间量，避免乘法溢出。
-
-SPI：
-
-```
-hal_size[frames] = 8-bit ? size[bytes] : size[bytes] / 2
-```
-
-ADC 与 DAC：
-
-```
-ADC DMA length = 转换次数
-DAC DMA length = 样本数
-```
-
-CAN：
-
-```
-标准标识符范围 = 0..0x7FF
-扩展标识符范围 = 0..0x1FFFFFFF
-DLC 范围 = 0..8 字节
-```
-
-RTC：
-
-```
-年份范围 = 2000..2099
-星期范围 = 1..7（周一到周日）
-```
-
-Flash：
-
-```
-F407 擦除单元 = 扇区（16 KiB、64 KiB 或 128 KiB）
-F103 擦除单元 = 页（1 KiB）
-Platform_FLASH_Write 对齐要求 = 4 字节
+```text
+ccr = (uint32_t)(((uint64_t)arr * clamped_duty) / effective_max)
 ```
 
 ## 4. 常数归属
 
 | 常数 | 归属 | 说明 |
 | --- | --- | --- |
-| `counts_per_meter` | 电机 / 传动 | 编码器每米计数，包含减速比与轮径 |
-| `control_period` | 电机 / 控制任务 | 必须与任务真实周期一致，单位 s |
-| `max_duty` | 电机 | 执行器量程，通常等于 PWM ARR |
-| `wheel_theta[4]` | policy | 轮子滚动方向与车头夹角，单位 rad |
-| `wheel_sign[4]` | policy | 安装方向符号，通常 ±1 |
-| `wheel_distance` | policy | 轮子到车体中心距离，单位 m |
-| MPU6050 `axis_source/sign` | Core/Board 器件配置 | 板级适配者定义芯片轴到车体轴的映射 |
-| RTC 唤醒计数 | Platform RTC | 所选 RTC 唤醒时钟的 tick 数 |
-| Flash 擦除粒度 | Platform Flash | F4 sector / F1 page，单位 byte |
-| 引脚 / STBY 分组 | Core/Board 设备装配 | 由板级适配者持有映射并注入具体设备 |
+| `counts_per_meter` | `User/board_cfg.c` → `car_omni_wheel_cfg_t` | 编码器每米计数，含减速比与轮径 |
+| `control_period_s` | `User/board_cfg.c` → `car_omni_cfg_t` | 必须与 `User/rtos_tasks.c` 中控制任务周期一致 |
+| `pwm.max_duty` | `User/board_cfg.c` | 执行器量程（F407 `TIM1` 为 `1000`） |
+| `theta_rad` / `sign` | `User/board_cfg.c` → `kinematics_omni_cfg_t` | 轮子滚动方向角（`rad`）与安装方向符号（`±1`） |
+| `wheel_distance_m` | `User/board_cfg.c` → `car_omni_cfg_t` | 轮心到车体中心距离（`m`） |
+| `MPU6050` 轴映射 | 驱动配置 `imu_mpu6050_cfg_t` | 芯片轴到车体轴的映射与零偏标定 |
+| 引脚 / `STBY` 分组 | `User/board_cfg.c` | `bsp_gpio_t` 映射 `PC13`/`PE5` 等 |
 
-## 5. 符号约定
+## 5. 符号与运动学约定
 
-- `dir` / `yaw`：弧度，逆时针为正。
-- `omega`：rad/s，逆时针为正。
-- 轮速：正值表示该轮“向前”滚动；`wheel_sign` 负责抵消安装方向。
-- duty：符号表示方向；`motor_tb6612` 根据符号写 IN1/IN2。
-- `yaw` 由 IMU 提供，世界系平动方向通过 `dir - (wheel_theta + yaw)` 落到轮子上。
-- CAN 标识符只表示协议 ID，不包含 IDE/RTR 位；IDE/RTR 使用独立字段。
-- RTC 时间字段统一为二进制，不使用 BCD。
+- `yaw_rad` / `wz_radps`：弧度与弧度每秒，逆时针为正；`theta_rad` 以车头 `x` 轴为 `0`，逆时针为正。
+- **车体系（`CHASSIS_FRAME_BODY`）**：不依赖 IMU `yaw_rad`，直接令 `vx_body = vx_mps`、`vy_body = vy_mps`。
+- **世界系 / 无头模式（`CHASSIS_FRAME_WORLD`）**：先按 `-yaw_rad` 将世界系平动旋至车体系：
+  `vx_body = vx * cos(yaw) + vy * sin(yaw)`，`vy_body = -vx * sin(yaw) + vy * cos(yaw)`。
+- **单轮出力与 `wheel_sign[i]`**：作用于整轮总输出 `v_i = (vx_body * cos(theta_i) + vy_body * sin(theta_i) + wz * R) * wheel_sign[i]`，正值表示轮子沿设定正方向滚动。
+- `duty` 符号由 `motor_tb6612` 决定方向写 `IN1`/`IN2`，切换方向前先置零占空比；短路制动使用 `IN1=IN2=HIGH`。
 
 ## 6. 标定流程
 
-1. 固定一个占空比，让轮子空载稳态转动。
-2. 读取一段时间内的编码器增量，计算 `counts/period`。
-3. 用实测轮速反推 `counts_per_meter`。
-4. 检查正方向：正 duty 应产生正的 `current_speed`；否则调整 `wheel_sign` 或接线。
-5. 标定 `wheel_theta`、`wheel_distance`，验证 omni 解算方向。
-6. 确认 `control_period` 与 `osDelayUntil` 周期一致。
+1. 架空车轮，固定低占空比或开启闭环读取 `delta_counts`，确认正指令对应正速度方向；反向则设置 `encoder.invert = true` 或调整接线/`wheel_sign`。
+2. 用已知位移反推并填写 `counts_per_meter`。
+3. 实测轮心距 `wheel_distance_m` 与四轮角度 `theta_rad`，验证平移与自转解算无耦合。
+4. 确认 `s_car_cfg.control_period_s`（`0.01f`）与 `s_control_task` 周期（`10U` ms）严格一致。
 
 ## 7. 常见错误
 
-- 把 `max_duty` 当速度用。
-- 控制周期常数与任务周期不一致，导致速度换算错误。
-- 同一周期重复调用 `get_delta`，第二次得到 0。
-- 把 `dir`（世界系行进方向）和 `yaw`（机身当前朝向）混为一谈。
-- 忘记设置 `counts_per_meter`，导致目标速度与实际速度对不上。
+- 把 `max_duty` 当速度（`m/s`）传给闭环接口。
+- 控制周期常数 `control_period_s` 与 RTOS 周期不一致，导致速度与 PID 积分/微分时间常数失真。
+- 同一控制周期内重复调用 `BSP_Encoder_GetDelta()` 导致第二次读取得到 `0`。
+- 在世界系模式下忘记确认 WHT101 归零完成或混淆车体前方与世界零度方向。

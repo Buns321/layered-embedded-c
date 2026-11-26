@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [ValidateSet("f103c8t6", "f407vet6")]
-  [string]$Board = "f103c8t6",
+  [string]$Board = "f407vet6",
 
   [string]$OpenOcdExe,
 

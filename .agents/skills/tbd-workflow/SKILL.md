@@ -25,12 +25,18 @@ description: >-
 - **每轮自动 Checkpoint**：对话结束时 `Stop` hook 会自动在当前工作分支提交带 `[auto-commit]` 的 checkpoint。
 
 ## 3. 合入 `main` 前
-1. 整理零散的 `[auto-commit]` 提交（交互式 squash/reword）：
+1. 整理零散的 `[auto-commit]` 提交为按逻辑阶段/主题划分的少量干净提交（使用 Conventional Commits，去除 `[auto-commit]` 标记，不要全部压成单个大提交）：
    ```bash
    git rebase -i origin/main
    ```
 2. 运行本地门禁验证：
    ```bash
-   python3 tools/check.py --profile pr
+   python3 tools/check.py --profile full --scope all
    ```
-3. 合并到 `main`（推荐使用快进或 squash merge）并删除已合并的短分支。
+3. 合并到 `main` 时使用 `--no-ff`（或在 GitHub PR 中选择 **Create a merge commit**），保留功能分支的合并节点与阶段提交历史，随后删除已合并的短分支：
+   ```bash
+   git checkout main && git pull --ff-only origin main
+   git merge --no-ff <type>/<short-topic>
+   git push origin main
+   git branch -d <type>/<short-topic>
+   ```

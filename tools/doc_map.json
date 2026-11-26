@@ -1,77 +1,21 @@
 {
-  "$comment": "文档驱动映射：修改匹配路径前必须先阅读对应文档（.agents/hooks/doc_gate.py 与 tools/check.py 共用）。",
+  "$comment": "文档驱动映射（v2）：修改匹配路径前必须先阅读对应文档（.agents/hooks/doc_gate.py 与 tools/check.py 共用）。",
   "rules": [
     {
       "paths": ["\\.(c|h)$"],
       "docs": ["doc/conventions.md"]
     },
     {
-      "paths": ["^Platform/"],
-      "docs": ["doc/platform-contract.md", "doc/platform.md"]
-    },
-    {
-      "paths": ["^DeviceDrivers/"],
+      "paths": ["^(BSP|Framework|User)/", "^cmake/", "^CMakeLists\\.txt$"],
       "docs": ["doc/architecture.md"]
     },
     {
-      "paths": ["^DeviceDrivers/(Base/)?(Inc|Src)/(imu|mpu6050)"],
-      "docs": ["doc/imu.md"]
+      "paths": ["^Framework/(Control|Drivers|Chassis)/", "^User/board_cfg\\.(c|h)$"],
+      "docs": ["doc/units.md"]
     },
     {
-      "paths": ["^DeviceDrivers/(Base/)?(Inc|Src)/(telemetry|justfloat|firewater|joycon|uart)"],
-      "docs": ["doc/telemetry.md"]
-    },
-    {
-      "paths": ["^(Controller|Policy|Filter)/"],
-      "docs": ["doc/architecture.md", "doc/units.md"]
-    },
-    {
-      "paths": ["^System/"],
-      "docs": ["doc/architecture.md"]
-    },
-    {
-      "paths": ["^System/(Inc|Src)/system_log"],
-      "docs": ["doc/telemetry.md"]
-    },
-    {
-      "paths": ["^Boards/[^/]+/(App|RTOS|Core/Board)/"],
-      "docs": ["doc/framework-contract.md"]
-    },
-    {
-      "paths": ["^Boards/[^/]+/(Core|cmake)/|\\.ioc$|\\.ld$|startup_.*\\.s$"],
-      "docs": ["doc/framework-contract.md"]
-    },
-    {
-      "paths": ["^Boards/f407vet6-omni-car/"],
-      "docs": ["Boards/f407vet6-omni-car/README.md", "Boards/f407vet6-omni-car/hardware-map.md"]
-    },
-    {
-      "paths": ["^Boards/f103c8t6-platform-test/"],
-      "docs": ["Boards/f103c8t6-platform-test/README.md", "Boards/f103c8t6-platform-test/hardware-map.md"]
-    },
-    {
-      "paths": ["^Boards/f103c8t6-fast-channel-task-1/"],
-      "docs": ["Boards/f103c8t6-fast-channel-task-1/README.md", "Boards/f103c8t6-fast-channel-task-1/hardware-map.md"]
-    },
-    {
-      "paths": ["^cmake/platform-test/"],
-      "docs": ["cmake/platform-test/README.md"]
-    },
-    {
-      "paths": ["^cmake/platform-check/"],
-      "docs": ["cmake/platform-check/README.md"]
-    },
-    {
-      "paths": ["^cmake/(framework/|check_layer)", "CMakeLists\\.txt$"],
-      "docs": ["doc/framework-contract.md"]
-    },
-    {
-      "paths": ["^doc/units\\.md$"],
-      "docs": ["doc/units.md", "doc/conventions.md"]
-    },
-    {
-      "paths": ["^doc/(architecture|framework-contract|platform|platform-contract|conventions)\\.md$"],
-      "docs": ["doc/framework-contract.md"]
+      "paths": ["^BSP/", "^Core/", "^User/board_cfg\\.(c|h)$", "\\.ioc$", "\\.ld$", "^startup_.*\\.s$"],
+      "docs": ["doc/hardware-map.md"]
     }
   ]
 }

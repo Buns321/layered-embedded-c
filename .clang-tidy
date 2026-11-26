@@ -6,6 +6,7 @@ Checks: >
   -bugprone-branch-clone,
   -bugprone-narrowing-conversions,
   clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
   performance-*,
   readability-braces-around-statements,
   readability-const-return-type,
@@ -14,10 +15,10 @@ Checks: >
   misc-unused-parameters,
   misc-redundant-expression
 
-WarningsAsErrors: ''
+WarningsAsErrors: '*'
 
-# 仅检查仓库自有源码，排除第三方 HAL / CMSIS / FreeRTOS / ST 头文件
-HeaderFilterRegex: '^(Platform|DeviceDrivers|Controller|Policy|Filter|System|Boards/[^/]+/(App|RTOS|Core/Board))/.*\.(h|c)$'
+# 仅检查仓库自有源码，排除第三方 HAL / CMSIS / FreeRTOS / SEGGER_RTT
+HeaderFilterRegex: '^(BSP|Framework|User)/.*\.(h|c)$'
 
 CheckOptions:
   - key: readability-braces-around-statements.ShortStatementLines
